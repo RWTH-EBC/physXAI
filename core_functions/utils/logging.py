@@ -168,6 +168,7 @@ class Logger:
             if save_name_preprocessing is None:
                 save_name_preprocessing = Logger.save_name_preprocessing
             path = os.path.join(Logger._logger, save_name_preprocessing)
+            path = create_full_path(path)
             Logger.override_question(path)
             with open(path, "w") as f:
                 json.dump(preprocessing_dict, f, indent=4)
@@ -177,6 +178,7 @@ class Logger:
                 if save_name_constructed is None:
                     save_name_constructed = Logger.save_name_constructed
                 path = os.path.join(Logger._logger, save_name_constructed)
+                path = create_full_path(path)
                 Logger.override_question(path)
                 with open(path, "w") as f:
                     json.dump(constructed_config, f, indent=4)
@@ -189,6 +191,7 @@ class Logger:
             if save_name_model is None:
                 save_name_model = Logger.save_name_model_config
             path = os.path.join(Logger._logger, save_name_model)
+            path = create_full_path(path)
             Logger.override_question(path)
             with open(path, "w") as f:
                 json.dump(model_dict, f, indent=4)
@@ -211,6 +214,7 @@ class Logger:
                 path = path + '.json'
 
         p = os.path.join(Logger._logger, path)
+        p = create_full_path(p)
         Logger.override_question(p)
         with open(p, "w") as f:
             json.dump(td_dict, f, indent=4)
