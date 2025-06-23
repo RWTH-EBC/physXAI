@@ -11,7 +11,7 @@ Creates a physics-informed model (PINN) to predict the power of the heat pump us
 Logger.setup_logger(folder_name='P_hp_pinn', override=True)
 
 # File path to data
-file_path = r"data/Boptest/pid_data.csv"
+file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
 
 # List of input features. Can include constructed features
 inputs = ['oveHeaPumY_u', 'Func(logistic)', 'weaSta_reaWeaTDryBul_y', 'reaTZon_y']
