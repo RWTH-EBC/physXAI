@@ -10,7 +10,7 @@ Creates a recurrent neural network (RNN) to predict the air temperature using th
 Logger.setup_logger(folder_name='TAir_rnn', override=True)
 
 # File path to data
-file_path = r"data/Boptest/pid_data.csv"
+file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
 
 
 """

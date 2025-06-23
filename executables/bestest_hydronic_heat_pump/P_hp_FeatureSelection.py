@@ -12,7 +12,7 @@ Feature selection for linear regression to predict the power of the heat pump us
 Logger.setup_logger(folder_name='P_hp_feature', override=True)
 
 # File path to data
-file_path = r"data/Boptest/pid_data.csv"
+file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
 
 # List of all possible input features candidates.
 inputs = ['oveHeaPumY_u', 'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2', 'Func(logistic)', 'Func(logistic)_lag1',

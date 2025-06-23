@@ -13,7 +13,7 @@ The model is trained as a single step model, but evaluated as a multi step model
 Logger.setup_logger(folder_name='TAir', override=True)
 
 # File path to data
-file_path = r"data/Boptest/pid_data.csv"
+file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
 
 # List of input features. Can include constructed features and lagged inputs
 inputs = ['reaTZon_y', 'reaTZon_y_lag1', 'reaTZon_y_lag2', 'weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaTDryBul_y_lag1',
