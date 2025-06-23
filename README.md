@@ -15,7 +15,7 @@ The physXAI Toolbox is designed for creating physics-guided machine learning mod
 These models are specifically intended for application in Model Predictive Control (MPC) of Building Energy Systems (BES). <br />
 The toolbox aims to integrate physical knowledge into machine learning models to improve their accuracy, robustness, and interpretability for energy system optimization. <br />
 <br />
-If you have any questions regarding AixWeather, feel free to contact us at ebc-tools@eonerc.rwth-aachen.de  
+If you have any questions regarding physXAI, feel free to contact us at ebc-tools@eonerc.rwth-aachen.de  
 
 ## Installation
 Create conda or virtual environment with Python 3.12 and install requirements with pip:
