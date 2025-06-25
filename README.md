@@ -1,6 +1,7 @@
 ![E.ON EBC RWTH Aachen University](https://raw.githubusercontent.com/RWTH-EBC/AixWeather/main/docs/source/_static/EBC_Logo.png)
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+![Coverage](build/reports/coverage.svg)
 [![DOI:10.2139/ssrn.5276153](http://img.shields.io/badge/DOI-10.2139/ssrn.5276153-0A3874.svg)](http://dx.doi.org/10.2139/ssrn.5276153)
 
 
