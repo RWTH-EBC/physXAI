@@ -1,3 +1,5 @@
+import os
+
 from core_functions.preprocessing.preprossesing import PreprocessingSingleStep
 from core_functions.preprocessing.constructed import Feature
 from core_functions.models.models import LinearRegressionModel
@@ -6,7 +8,7 @@ from core_functions.utils.logging import Logger
 
 
 """
-Creates standard models to predict the power of the heat pump using the Boptest data
+Creates standard models to predict the power of the heat pump using the Boptest data.
 """
 
 # Setup up logger for saving
@@ -54,8 +56,8 @@ m = ClassicalANNModel(epochs=50)  # Classical ANN
 model = m.pipeline(td)
 
 """Example usage of online learning"""
-# m.epochs = 5
-# model_ol = m.online_pipeline(td)
+m.epochs = 5
+model_ol = m.online_pipeline(td, os.path.join(Logger._logger, 'model.keras'))
 
 # Log setup of preprocessing and model as json
 Logger.log_setup(prep, m)
