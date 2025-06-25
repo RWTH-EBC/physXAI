@@ -26,8 +26,7 @@ jobs:
         id: get_changed_files
         uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c
         with:
-          # files: |
-            # executables/**.py
+          files: 'executables/**.py'
           json: true
           base_sha: ${{ github.event.pull_request.base.sha }}
 
