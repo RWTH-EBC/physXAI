@@ -29,6 +29,7 @@ jobs:
           files: |
             executables/**.py
           json: true
+          base_sha: ${{ github.event.pull_request.base.sha }}
 
       - name: Get all Python files (Manual Run)
         if: github.event_name == 'workflow_dispatch'

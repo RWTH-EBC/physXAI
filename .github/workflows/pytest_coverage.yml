@@ -62,7 +62,6 @@ jobs:
           echo "changed=true" >> $GITHUB_OUTPUT
           echo "Badge is new file"
         fi
-        fi
         
     - name: Commit and push coverage badge
       if: steps.badge-check.outputs.changed == 'true' && github.event_name == 'pull_request'
