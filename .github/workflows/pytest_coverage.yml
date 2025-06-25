@@ -44,14 +44,25 @@ jobs:
       run: |
         coverage-badge -o build/reports/coverage.svg -f
         
-    - name: Check if badge changed
-      id: badge-check
-      run: |
-        if git diff --quiet HEAD -- build/reports/coverage.svg 2>/dev/null || [ ! -f build/reports/coverage.svg ]; then
-          echo "changed=false" >> $GITHUB_OUTPUT
-        else
-          echo "changed=true" >> $GITHUB_OUTPUT
-        fi
+    - name: Check if badge changed or is new
+          id: badge-check
+          run: |
+            # Check if the file exists in git (tracked)
+            if git ls-files --error-unmatch build/reports/coverage.svg 2>/dev/null; then
+              # File exists in git, check if it changed
+              if git diff --quiet HEAD -- build/reports/coverage.svg; then
+                echo "changed=false" >> $GITHUB_OUTPUT
+                echo "Badge exists and unchanged"
+              else
+                echo "changed=true" >> $GITHUB_OUTPUT
+                echo "Badge exists and changed"
+              fi
+            else
+              # File doesn't exist in git (new file)
+              echo "changed=true" >> $GITHUB_OUTPUT
+              echo "Badge is new file"
+            fi
+            fi
         
     - name: Commit and push coverage badge
       if: steps.badge-check.outputs.changed == 'true' && github.event_name == 'pull_request'

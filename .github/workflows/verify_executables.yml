@@ -28,16 +28,16 @@ jobs:
             executables/**.py
           json: true
           
-     - name: Save changed files JSON to artifact
-      run: |
-        echo '${{ steps.changed_files_py.outputs.all_changed_files }}' > changed_files.json
+      - name: Save changed files JSON to artifact
+        run: |
+          echo '${{ steps.changed_files_py.outputs.all_changed_files }}' > changed_files.json
           
-    - name: Upload JSON artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: changed-python-files
-        path: changed_files.json
-        retention-days: 30
+      - name: Upload JSON artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: changed-python-files
+          path: changed_files.json
+          retention-days: 30
 
   run-scripts:
     needs: setup
