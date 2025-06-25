@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  run_pytest_coverage:
     runs-on: ubuntu-latest
 
     steps:
