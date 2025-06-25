@@ -1,0 +1,41 @@
+# .coveragerc
+
+[run]
+# Specify the source code to measure.
+source = core_functions/
+data_file = build/.coverage
+
+# Enable branch coverage analysis
+branch = True
+
+# Exclude files and directories from coverage analysis.
+omit =
+    conftest.py
+    unittests/*
+    */__init__.py
+    executables/*
+
+[report]
+# Report missing lines
+show_missing = True
+
+# Do not report on lines containing these pragmas.
+exclude_lines =
+    # Specify specific functions without coverage
+    pragma: no cover
+    # Don't complain if tests don't hit defensive assertion code
+    raise NotImplementedError
+    # Don't complain about abstract methods
+    @abstractmethod
+    # Logger setup
+    if Logger._logger is None:
+        Logger.setup_logger()
+
+[xml]
+# Specify the path where the coverage.xml file should be saved.
+# It's good practice to put build artifacts in a dedicated directory.
+output = build/reports/coverage.xml
+
+[html]
+# Tell coverage where to put the HTML report
+directory = build/reports/coverage_html
