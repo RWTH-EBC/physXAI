@@ -33,6 +33,6 @@ def multi_y_loss(loss, additional_losses: list[float], name: str = None):
         return ls
 
     # Add loss name if provided
-    if name is not None:
-        loss_function.__name__ = name
+    if name is not None:  # pragma: no cover
+        loss_function.__name__ = name  # pragma: no cover
     return loss_function

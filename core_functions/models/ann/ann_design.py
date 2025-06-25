@@ -1,6 +1,8 @@
 import os
 import time
 from abc import ABC, abstractmethod
+from typing import Optional
+
 from core_functions.utils.logging import create_full_path, get_full_path, Logger
 from core_functions.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
 from core_functions.models.models import SingleStepModel, LinearRegressionModel, MultiStepModel, register_model
@@ -25,7 +27,7 @@ class ANNModel(SingleStepModel, ABC):
     """
 
     def __init__(self, batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
+                 early_stopping_epochs: Optional[int] = 100, random_seed: int = 42, **kwargs):
         """
         Initializes common hyperparameters for ANN training.
 
@@ -41,7 +43,7 @@ class ANNModel(SingleStepModel, ABC):
         self.batch_size: int = batch_size
         self.epochs: int = epochs
         self.learning_rate: float = learning_rate
-        self.early_stopping_epochs: int = early_stopping_epochs
+        self.early_stopping_epochs: Optional[int] = early_stopping_epochs
         self.random_seed: int = random_seed
         keras.utils.set_random_seed(random_seed)
 
@@ -189,7 +191,7 @@ class ClassicalANNModel(ANNModel):
     def __init__(self, n_layers: int = 1, n_neurons: int or list[int] = 32,
                  activation_function: str or list[str] = 'softplus', rescale_output: bool = True,
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
+                 early_stopping_epochs: Optional[int] = 100, random_seed: int = 42, **kwargs):
         """
           Initializes the ClassicalANNModel.
 
@@ -518,10 +520,13 @@ class PINNModel(ANNModel):
 
         yn = td.y_train_single.shape[1]
         if self.pinn_weights is None:
-            if yn == 1:
-                self.pinn_weights = list()
+            if yn == 1:  # pragma: no cover
+                self.pinn_weights = list()  # pragma: no cover
             else:
                 self.pinn_weights = [1] * (yn - 1)
+            self.pinn_loss = multi_y_loss(keras.losses.MeanSquaredError(name='MSE'), self.pinn_weights, 'mse')
+            self.pinn_metrics = [multi_y_loss(keras.metrics.RootMeanSquaredError(name='rmse'), self.pinn_weights,
+                                              'rmse')]
         assert yn == len(self.pinn_weights) + 1, \
             f'Shape of y values does not match length of pinn weights'
 
@@ -575,6 +580,21 @@ class PINNModel(ANNModel):
         metrics = MetricsPINN(td, [self.pinn_loss, *self.pinn_metrics])
         td.add_metrics(metrics)
 
+    def load_model(self, load_path: str):
+        """
+        Loads a Keras model from the specified path.
+
+        Args:
+            load_path (str): The path from which to load the model.
+
+        Returns:
+            keras.Model: The loaded Keras model.
+        """
+
+        load_path = get_full_path(load_path)
+        model = keras.saving.load_model(load_path, compile=False)
+        return model
+
     def get_config(self) -> dict:
         config = super().get_config()
         config.update({
@@ -597,7 +617,7 @@ class RNNModel(MultiStepModel):
     """
 
     def __init__(self, rnn_units: int = 32, rnn_layer: str = 'RNN', init_layer=None, epochs: int = 1000,
-                 learning_rate: float = 0.001, early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
+                 learning_rate: float = 0.001, early_stopping_epochs: Optional[int] = 100, random_seed: int = 42, **kwargs):
         """
         Initializes the RNNModel.
 

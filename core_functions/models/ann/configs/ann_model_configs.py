@@ -27,8 +27,13 @@ class ClassicalANNConstruction_config(BaseModel):
         ls = info.data.get('n_layers')
         if isinstance(v, list):
             if len(v) != ls:
-                raise ValueError('List of n_neurons must have same length than n_layers')
+                raise ValueError('List of activation functions must have same length than n_layers')
         return v
+
+
+class RBFConstruction_config(ClassicalANNConstruction_config):
+
+    random_state: int = 42
 
 
 class CMNNModelConstruction_config(ClassicalANNConstruction_config):

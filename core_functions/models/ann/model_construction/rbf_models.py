@@ -1,7 +1,7 @@
 import keras
 from sklearn.cluster import KMeans
 from core_functions.preprocessing.training_data import TrainingDataGeneric
-from core_functions.models.ann.configs.ann_model_configs import ClassicalANNConstruction_config
+from core_functions.models.ann.configs.ann_model_configs import RBFConstruction_config
 from core_functions.models.ann.keras_models.keras_models import RBFLayer
 
 
@@ -25,7 +25,7 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
     """
 
     # Validate the input configuration dictionary using the Pydantic model and convert it to a dictionary
-    config = ClassicalANNConstruction_config.model_validate(config).model_dump()
+    config = RBFConstruction_config.model_validate(config).model_dump()
 
     # Get config
     n_layers = config['n_layers']

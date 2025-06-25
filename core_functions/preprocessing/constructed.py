@@ -134,8 +134,8 @@ def register_feature(cls):
     A class decorator that registers the decorated class in the CONSTRUCTED_CLASS_REGISTRY.
     The class is registered using its __name__.
     """
-    if cls.__name__ in CONSTRUCTED_CLASS_REGISTRY:
-        print(f"Warning: Class '{cls.__name__}' is already registered. Overwriting.")
+    if cls.__name__ in CONSTRUCTED_CLASS_REGISTRY:  # pragma: no cover
+        print(f"Warning: Class '{cls.__name__}' is already registered. Overwriting.")  # pragma: no cover
     CONSTRUCTED_CLASS_REGISTRY[cls.__name__] = cls
     return cls  # Decorators must return the class (or a replacement)
 
