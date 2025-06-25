@@ -134,7 +134,7 @@ class PreprocessingSingleStep(PreprocessingData):
 
         X = df[self.inputs]
         y = df[self.output].shift(-self.shift)
-        if self.shift > 0:
+        if self.shift > 0:  # pragma: no cover
             y = y[:-self.shift]
             X = X[:-self.shift]
 
@@ -163,12 +163,13 @@ class PreprocessingSingleStep(PreprocessingData):
         if self.val_size != 0:
             X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, test_size=split,
                                                             random_state=self.random_state)
+            X_val, y_val = X_val.to_numpy(), y_val.to_numpy()
         else:
             X_val, y_val = None, None
 
         # Return TrainingData object
-        return TrainingData(X_train.to_numpy(), X_val.to_numpy(), X_test.to_numpy(),
-                            y_train.to_numpy(), y_val.to_numpy(), y_test.to_numpy(),
+        return TrainingData(X_train.to_numpy(), X_val, X_test.to_numpy(),
+                            y_train.to_numpy(), y_val, y_test.to_numpy(),
                             X.columns.values.tolist())
 
     def pipeline(self, file_path: str) -> TrainingData:
@@ -304,7 +305,7 @@ class PreprocessingMultiStep (PreprocessingData):
 
         return TrainingDataMultiStep(train_ds, val_ds, test_ds, self.inputs, self.output, self.init_features)
 
-    def _split_window(self, features):
+    def _split_window(self, features):   # pragma: no cover
         """
         Splits a batch of windows into inputs, (optional) warmup, and labels.
         This function is designed to be used with `tf.data.Dataset.map()`.

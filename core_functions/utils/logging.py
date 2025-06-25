@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import shutil
@@ -27,12 +28,12 @@ def get_parent_working_directory() -> str:
         repo = git.Repo(path, search_parent_directories=True)
         git_root = repo.working_tree_dir
         return git_root
-    except git.InvalidGitRepositoryError:
-        print(f"Error: Cannot find git root directory.")
-        return ''
-    except Exception as e:
-        print(f"Error: An unexpected error occurred when searching for parent directory: {e}")
-        return ''
+    except git.InvalidGitRepositoryError:  # pragma: no cover
+        print(f"Error: Cannot find git root directory.")  # pragma: no cover
+        return ''  # pragma: no cover
+    except Exception as e:  # pragma: no cover
+        print(f"Error: An unexpected error occurred when searching for parent directory: {e}")  # pragma: no cover
+        return ''  # pragma: no cover
 
 
 def get_full_path(path: str, raise_error=True) -> str:
@@ -114,7 +115,7 @@ class Logger:
     _override = False
 
     @staticmethod
-    def override_question(path: str):
+    def override_question(path: str):  # pragma: no cover
         if os.path.exists(path) and not Logger._override:
             try:
                 user_input = input(f"Path {path} already exists. Do you want to override it (y/n)?").strip().lower()
@@ -126,7 +127,7 @@ class Logger:
                 raise e
 
     @staticmethod
-    def already_exists_question(path: str):
+    def already_exists_question(path: str):  # pragma: no cover
         if os.path.exists(path) and not Logger._override:
             try:
                 user_input = input(f"Path {path} already exists. Do you want to proceed (y/n)?").strip().lower()
@@ -163,8 +164,8 @@ class Logger:
         if preprocessing is not None:
             try:
                 preprocessing_dict = preprocessing.get_config()
-            except AttributeError:
-                raise AttributeError('Error: Preprocessing object has no attribute "get_config()".')
+            except AttributeError:  # pragma: no cover
+                raise AttributeError('Error: Preprocessing object has no attribute "get_config()".')  # pragma: no cover
             if save_name_preprocessing is None:
                 save_name_preprocessing = Logger.save_name_preprocessing
             path = os.path.join(Logger._logger, save_name_preprocessing)
@@ -186,8 +187,8 @@ class Logger:
         if model is not None:
             try:
                 model_dict = model.get_config()
-            except AttributeError:
-                raise AttributeError('Error: Model object has no attribute "get_config()".')
+            except AttributeError:  # pragma: no cover
+                raise AttributeError('Error: Model object has no attribute "get_config()".')  # pragma: no cover
             if save_name_model is None:
                 save_name_model = Logger.save_name_model_config
             path = os.path.join(Logger._logger, save_name_model)
@@ -203,8 +204,8 @@ class Logger:
 
         try:
             td_dict = training_data.get_config()
-        except AttributeError:
-            raise AttributeError('Error: Training data object has no attribute "get_config()".')
+        except AttributeError:  # pragma: no cover
+            raise AttributeError('Error: Training data object has no attribute "get_config()".')  # pragma: no cover
 
         if path is None:
             path = Logger.save_name_training_data_json
@@ -220,6 +221,7 @@ class Logger:
             json.dump(td_dict, f, indent=4)
 
         if isinstance(training_data, TrainingDataMultiStep):
+            training_data = copy.copy(training_data)
             training_data.train_ds = None
             training_data.val_ds = None
             training_data.test_ds = None

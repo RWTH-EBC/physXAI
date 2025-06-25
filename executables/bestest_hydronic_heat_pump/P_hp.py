@@ -55,7 +55,7 @@ model = m.pipeline(td)
 
 """Example usage of online learning"""
 # m.epochs = 5
-# model_ol = m.online_pipeline(td, save_path)
+# model_ol = m.online_pipeline(td)
 
 # Log setup of preprocessing and model as json
 Logger.log_setup(prep, m)

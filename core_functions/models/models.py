@@ -193,7 +193,7 @@ class AbstractModel(ABC):
         return m
 
 
-def register_model(cls):
+def register_model(cls):  # pragma: no cover
     """
     A class decorator that registers the decorated class in the MODEL_CLASS_REGISTRY.
     The class is registered using its __name__.

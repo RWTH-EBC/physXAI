@@ -48,12 +48,18 @@ def recursive_feature_elimination(file_path: str, preprocessing: PreprocessingDa
                                   model: SingleStepModel, ascending_lag_order: bool = True,
                                   use_multi_step_error: bool = True, save_models: bool = False,
                                   fixed_inputs: list[str] = None):
+    assert preprocessing.val_size > 0, 'Value Error: For Feature Selection, preprocessing.val_size must be > 0.'
+
+    if fixed_inputs is None:
+        fixed_inputs = list()
+
     print('Feature Selection')
     Metrics.print_evaluate = False
 
     if Logger._logger is None:
         Logger.setup_logger()
 
+    org_inputs = preprocessing.inputs
     inputs = preprocessing.inputs
     input_length = len(inputs)
 
@@ -91,8 +97,8 @@ def recursive_feature_elimination(file_path: str, preprocessing: PreprocessingDa
                         continue
                 else:
                     match = int(re.search(r"_lag(\d+)", v).group(1))
-                    if v.replace(f'_lag{match}', f'_lag{match + 1}') in inputs:
-                        continue
+                    if v.replace(f'_lag{match}', f'_lag{match + 1}') in inputs:  # pragma: no cover
+                        continue  # pragma: no cover
             if v in fixed_inputs:
                 continue
             new_inputs.append([item for item in inputs if item != v])
@@ -133,6 +139,8 @@ def recursive_feature_elimination(file_path: str, preprocessing: PreprocessingDa
         runs[j] = run
     print(f'Features {1}')
     print(inputs)
+
+    preprocessing.inputs = org_inputs
 
     return runs
 

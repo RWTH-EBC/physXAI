@@ -49,7 +49,7 @@ def LinResidualANNConstruction(config: dict, td: TrainingDataGeneric, lin_model:
     rbf_model = RBFModelConstruction(config, td)
 
     # Combine linear layer and rbf model
-    output = keras.layers.Add(rbf_model(inputs) + lin(inputs))
+    output = keras.layers.Add()([rbf_model(inputs), lin(inputs)])
 
     # Create model
     model = keras.Model(inputs, output)
