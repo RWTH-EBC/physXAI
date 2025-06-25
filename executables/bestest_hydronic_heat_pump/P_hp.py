@@ -6,7 +6,7 @@ from core_functions.utils.logging import Logger
 
 
 """
-Creates standard models to predict the power of the heat pump using the Boptest data
+Creates standard models to predict the power of the heat pump using the Boptest data.
 """
 
 # Setup up logger for saving
