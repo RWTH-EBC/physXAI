@@ -103,4 +103,6 @@ jobs:
         pip install -r requirements.txt
         
     - name: Run script -> ${{ matrix.script }}
-      run: python ${{ matrix.script }}
+      run: |
+        export PYTHONPATH=$PYTHONPATH:.
+        python ${{ matrix.script }}
