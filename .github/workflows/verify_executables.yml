@@ -53,8 +53,8 @@ jobs:
             echo "All changed files: $ALL_FILES"
             
             # Filter for Python files in executables directory
-            # Use printf to properly handle the escaped quotes
-            FILTERED_JSON=$(printf '%s' "$ALL_FILES" | jq -c '[.[] | select(test("^executables/.*\\.py$"))]')
+            # Remove the escaped quotes and parse with jq
+            FILTERED_JSON=$(echo "$ALL_FILES" | sed 's/\\"/"/g' | jq -c '[.[] | select(test("^executables/.*\\.py$"))]')
             echo "Filtered Python files in executables: $FILTERED_JSON"
             echo "filtered_json=$FILTERED_JSON" >> $GITHUB_OUTPUT
           else
