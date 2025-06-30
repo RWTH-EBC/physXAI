@@ -104,4 +104,4 @@ jobs:
         
     - name: Run script -> ${{ matrix.script }}
       run: |
-        python ${{ matrix.script }}
+        echo "2" | python ${{ matrix.script }}
