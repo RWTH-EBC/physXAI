@@ -2,4 +2,7 @@
 /stored_data
 **/__pycache__/
 /.run
-/build/reports/coverage.xml
+**/coverage.xml
+**/_version.py
+/**.egg-info
+**/.coverage

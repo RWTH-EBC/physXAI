@@ -3,17 +3,17 @@ import time
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from core_functions.utils.logging import create_full_path, get_full_path, Logger
-from core_functions.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
-from core_functions.models.models import SingleStepModel, LinearRegressionModel, MultiStepModel, register_model
-from core_functions.models.ann.model_construction.ann_models import ClassicalANNConstruction, CMNNModelConstruction
-from core_functions.models.ann.model_construction.rbf_models import RBFModelConstruction
-from core_functions.models.ann.model_construction.redidual_models import LinResidualANNConstruction
-from core_functions.models.ann.model_construction.rnn_models import RNNModelConstruction
-from core_functions.models.ann.pinn.pinn_loss import multi_y_loss
-from core_functions.plotting.plotting import plot_prediction_correlation, plot_predictions, plot_training_history, \
+from physXAI.utils.logging import create_full_path, get_full_path, Logger
+from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
+from physXAI.models.models import SingleStepModel, LinearRegressionModel, MultiStepModel, register_model
+from physXAI.models.ann.model_construction.ann_models import ClassicalANNConstruction, CMNNModelConstruction
+from physXAI.models.ann.model_construction.rbf_models import RBFModelConstruction
+from physXAI.models.ann.model_construction.redidual_models import LinResidualANNConstruction
+from physXAI.models.ann.model_construction.rnn_models import RNNModelConstruction
+from physXAI.models.ann.pinn.pinn_loss import multi_y_loss
+from physXAI.plotting.plotting import plot_prediction_correlation, plot_predictions, plot_training_history, \
     plot_metrics_table, subplots, plot_multi_rmse
-from core_functions.evaluation.metrics import MetricsPINN
+from physXAI.evaluation.metrics import MetricsPINN
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'

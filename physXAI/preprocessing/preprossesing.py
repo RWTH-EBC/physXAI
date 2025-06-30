@@ -3,9 +3,9 @@ from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from core_functions.preprocessing.constructed import FeatureConstruction
-from core_functions.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
-from core_functions.utils.logging import get_full_path
+from physXAI.preprocessing.constructed import FeatureConstruction
+from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
+from physXAI.utils.logging import get_full_path
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'

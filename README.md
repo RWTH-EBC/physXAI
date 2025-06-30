@@ -19,14 +19,27 @@ The toolbox aims to integrate physical knowledge into machine learning models to
 If you have any questions regarding physXAI, feel free to contact us at ebc-tools@eonerc.rwth-aachen.de  
 
 ## Installation
-Create conda or virtual environment with Python 3.12 and install requirements with pip:
+1. Create conda or virtual environment with Python 3.12:
 ```
 conda create -n <name_of_environment> python=3.12 pip
 conda activate <name_of_environment>
+```
+2. Clone pyhsXAI git repo:
+```
+git clone https://github.com/RWTH-EBC/physXAI.git
+```
+3. Switch in project directory:
+```
 cd <path_to_repository>
 ```
+4.
+A) To install physXAI as a user:
 ```
-pip install -r requirements.txt
+pip install .
+```
+B) To install physXAI as a developer:
+```
+pip install -e .[dev]
 ```
 
 ## Getting Started
@@ -53,7 +66,7 @@ The project is organized into the following directories:
 	- The base example uses data from the BOPTEST 'Bestest Hydronic Heat Pump' test case: https://ibpsa.github.io/project1-boptest/testcases/ibpsa/testcases_ibpsa_bestest_hydronic_heat_pump/
 - `data`: Storage for input data, typically in `.csv` format. Datasets required for training and evaluating models should be placed here.
 - `stored_data`: This directory is used to save trained models, model parameters, and any relevant metadata generated during the modeling process.
-- `core_functions`: Contains the core logic and main functionalities of the physXAI Toolbox.
+- `physXAI`: Contains the core logic and main functionalities of the physXAI Toolbox.
 	- `preprocessing`: Modules and scripts for data preprocessing tasks (e.g., cleaning, normalization, feature engineering).
 	- `feature_selection`: Pipelines for (automatic) feature selection. Currently supports recursive feature elimination.
 	- `models`: Modules related to model creation and definition.

@@ -1,41 +1,6 @@
-import sys
-from pathlib import Path
-import git
-
-
-def get_parent_working_directory() -> str:
-    """
-    Finds the root directory of the Git repository that contains the current working directory.
-
-    This function is useful for locating project-relative paths when the script
-    might be run from different subdirectories within a Git project.
-
-    Returns:
-        str: The absolute path to the root of the Git working tree if found.
-             Returns an empty string if not in a Git repository or if an error occurs.
-    """
-
-    try:
-        path = Path(__file__)
-        repo = git.Repo(path, search_parent_directories=True)
-        git_root = repo.working_tree_dir
-        return git_root
-    except git.InvalidGitRepositoryError:
-        print(f"Error: Cannot find git root directory.")
-        return ''
-    except Exception as e:
-        print(f"Error: An unexpected error occurred when searching for parent directory: {e}")
-        return ''
-parent = get_parent_working_directory()
-sys.path.insert(0,parent)
-
-
-######################################################################################################################
-
-from core_functions.preprocessing.preprossesing import PreprocessingSingleStep
-from core_functions.models.models import LinearRegressionModel
-from core_functions.utils.logging import Logger
-
+from physXAI.preprocessing.preprossesing import PreprocessingSingleStep
+from physXAI.models.models import LinearRegressionModel
+from physXAI.utils.logging import Logger
 
 """
 Creates standard model to predict the power of the heat pump using the Boptest data

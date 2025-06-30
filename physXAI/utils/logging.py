@@ -4,11 +4,11 @@ import os
 import shutil
 from datetime import datetime
 import git
-from core_functions.preprocessing.constructed import FeatureConstruction
+from physXAI.preprocessing.constructed import FeatureConstruction
 import pickle
 from pathlib import Path
 
-from core_functions.preprocessing.training_data import TrainingDataMultiStep
+from physXAI.preprocessing.training_data import TrainingDataMultiStep
 
 
 def get_parent_working_directory() -> str:

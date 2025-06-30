@@ -1,8 +1,8 @@
 import keras
 from sklearn.cluster import KMeans
-from core_functions.preprocessing.training_data import TrainingDataGeneric
-from core_functions.models.ann.configs.ann_model_configs import RBFConstruction_config
-from core_functions.models.ann.keras_models.keras_models import RBFLayer
+from physXAI.preprocessing.training_data import TrainingDataGeneric
+from physXAI.models.ann.configs.ann_model_configs import RBFConstruction_config
+from physXAI.models.ann.keras_models.keras_models import RBFLayer
 
 
 def RBFModelConstruction(config: dict, td: TrainingDataGeneric):

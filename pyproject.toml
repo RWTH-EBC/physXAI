@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=80.9", "setuptools-scm>=8.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "physXAI"
+authors = [
+    { name = "Patrick Henkel", email = "ebc-tools@eonerc.rwth-aachen.de" }
+]
+description = "Framework for development and execution of physics-guided machine learning for application in Model Predictive Control (MPC) of Building Energy Systems (BES)"
+readme = "README.md"
+requires-python = ">=3.12"
+keywords = [
+    "physics-guided", "physics-informed", "machine-learning", "mpc", "model-predictive-control", "building-energy-systems", 
+]
+license = { text = "BSD-3-Clause" }
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    'Programming Language :: Python :: 3.12',
+]
+dependencies = [
+    "numpy>=2.1.3",
+    "pandas>=2.2.3",
+    "scikit-learn>=1.6.1",
+    "keras>=3.9.2",
+    "tensorflow>=2.19.0",
+    "GitPython>=3.1.44",
+    "pydantic>=2.11.4",
+    "plotly>=6.0.1",
+]
+
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
+    "coverage-badge>=1.1.2"
+]
+
+[project.urls]
+homepage = "https://github.com/RWTH-EBC/physXAI"
+repository = "https://github.com/RWTH-EBC/physXAI"
+documentation = "https://github.com/RWTH-EBC/physXAI/blob/main/README.md"
+"Bug Tracker" = "https://github.com/RWTH-EBC/physXAI/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["physXAI*"]
+exclude = ["unittests*", "executables*", "data*", "build*", "docs*"]
+
+[tool.setuptools_scm]
+write_to = "physXAI/_version.py"
+
+[tool.pytest.ini_options]
+cache_dir = "build/.pytest_cache"
+
+[tool.coverage.run]
+source = ["physXAI/"]
+data_file = "build/.coverage"
+branch = true
+omit = [
+    "conftest.py",
+    "unittests/*",
+    "*/__init__.py",
+    "executables/*"
+]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "@abstractmethod",
+    "if Logger._logger is None:",
+    "Logger.setup_logger()"
+]
+
+[tool.coverage.xml]
+output = "build/reports/coverage.xml"
+
+[tool.coverage.html]
+directory = "build/reports/coverage_html"

@@ -1,13 +1,13 @@
 import os
 import re
 import numpy as np
-from core_functions.plotting.plotting import plot_recFeatureSelection
-from core_functions.preprocessing.preprossesing import PreprocessingSingleStep, PreprocessingMultiStep, \
+from physXAI.plotting.plotting import plot_recFeatureSelection
+from physXAI.preprocessing.preprossesing import PreprocessingSingleStep, PreprocessingMultiStep, \
     PreprocessingData
-from core_functions.preprocessing.training_data import TrainingDataMultiStep
-from core_functions.utils.logging import Logger
-from core_functions.evaluation.metrics import Metrics
-from core_functions.models.models import SingleStepModel
+from physXAI.preprocessing.training_data import TrainingDataMultiStep
+from physXAI.utils.logging import Logger
+from physXAI.evaluation.metrics import Metrics
+from physXAI.models.models import SingleStepModel
 
 
 def search_best_features(runs: dict, multi_step: bool, use_multi_step_error: bool):

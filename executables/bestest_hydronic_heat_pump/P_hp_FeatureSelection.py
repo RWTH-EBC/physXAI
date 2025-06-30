@@ -1,8 +1,8 @@
-from core_functions.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
-from core_functions.models.models import LinearRegressionModel
-from core_functions.preprocessing.constructed import Feature
-from core_functions.preprocessing.preprossesing import PreprocessingSingleStep
-from core_functions.utils.logging import Logger
+from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
+from physXAI.models.models import LinearRegressionModel
+from physXAI.preprocessing.constructed import Feature
+from physXAI.preprocessing.preprossesing import PreprocessingSingleStep
+from physXAI.utils.logging import Logger
 
 
 """

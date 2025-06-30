@@ -1,7 +1,7 @@
-from core_functions.preprocessing.preprossesing import PreprocessingSingleStep
-from core_functions.preprocessing.constructed import Feature
-from core_functions.models.ann.ann_design import PINNModel
-from core_functions.utils.logging import Logger
+from physXAI.preprocessing.preprossesing import PreprocessingSingleStep
+from physXAI.preprocessing.constructed import Feature
+from physXAI.models.ann.ann_design import PINNModel
+from physXAI.utils.logging import Logger
 
 
 """
@@ -23,7 +23,7 @@ which is created as a constructed feature
 output = ['reaPHeaPum_y', 'pinn']
 
 """ 
-The constructed features are automatically added to the data via 'core_functions.preprocessing.constructed.py' 
+The constructed features are automatically added to the data via 'physXAI.preprocessing.constructed.py' 
 The names of the constructed features should be added to the input list
 """
 u_hp = Feature('oveHeaPumY_u')

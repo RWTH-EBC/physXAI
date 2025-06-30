@@ -1,10 +1,10 @@
 import os
 
-from core_functions.preprocessing.preprossesing import PreprocessingSingleStep
-from core_functions.preprocessing.constructed import Feature
-from core_functions.models.models import LinearRegressionModel
-from core_functions.models.ann.ann_design import ClassicalANNModel, CMNNModel, LinANNModel
-from core_functions.utils.logging import Logger
+from physXAI.preprocessing.preprossesing import PreprocessingSingleStep
+from physXAI.preprocessing.constructed import Feature
+from physXAI.models.models import LinearRegressionModel
+from physXAI.models.ann.ann_design import ClassicalANNModel, CMNNModel, LinANNModel
+from physXAI.utils.logging import Logger
 
 
 """
@@ -24,7 +24,7 @@ output = 'reaPHeaPum_y'
 
 """ 
 Example how to use constructed features. 
-The constructed features are automatically added to the data via 'core_functions.preprocessing.constructed.py' 
+The constructed features are automatically added to the data via 'physXAI.preprocessing.constructed.py' 
 The names of the constructed features should be added to the input list
 """
 # x = Feature('weaSta_reaWeaTDryBul_y')  # Create Feature for calculation
