@@ -1,13 +1,8 @@
 import json
 import os
-import sys
-from pathlib import Path
 from unittest.mock import patch
 import keras
 import pytest
-current_file = Path(__file__)
-parent_directory = current_file.parent.parent
-sys.path.insert(0, str(parent_directory))
 ######################################################################################################################
 from physXAI.utils.logging import Logger, get_parent_working_directory
 from physXAI.preprocessing.preprossesing import PreprocessingSingleStep, PreprocessingMultiStep, \
