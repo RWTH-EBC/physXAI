@@ -1,7 +1,7 @@
 import os
 import numpy as np
-from core_functions.preprocessing.training_data import TrainingDataMultiStep
-from core_functions.models.ann.configs.ann_model_configs import RNNModelConstruction_config
+from physXAI.preprocessing.training_data import TrainingDataMultiStep
+from physXAI.models.ann.configs.ann_model_configs import RNNModelConstruction_config
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'

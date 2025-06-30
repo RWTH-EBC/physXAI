@@ -1,6 +1,6 @@
-from core_functions.models.ann.ann_design import RNNModel
-from core_functions.preprocessing.preprossesing import PreprocessingMultiStep
-from core_functions.utils.logging import Logger
+from physXAI.models.ann.ann_design import RNNModel
+from physXAI.preprocessing.preprossesing import PreprocessingMultiStep
+from physXAI.utils.logging import Logger
 
 
 """

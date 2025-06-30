@@ -1,8 +1,8 @@
 import os
 import numpy as np
 from sklearn.linear_model import LinearRegression
-from core_functions.preprocessing.training_data import TrainingDataGeneric
-from core_functions.models.ann.model_construction.rbf_models import RBFModelConstruction
+from physXAI.preprocessing.training_data import TrainingDataGeneric
+from physXAI.models.ann.model_construction.rbf_models import RBFModelConstruction
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'

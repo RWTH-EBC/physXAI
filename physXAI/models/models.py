@@ -5,10 +5,10 @@ import joblib
 import numpy as np
 from joblib import dump
 from sklearn.linear_model import LinearRegression
-from core_functions.utils.logging import get_full_path, create_full_path, Logger
-from core_functions.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
-from core_functions.evaluation.metrics import Metrics, MetricsMultiStep
-from core_functions.plotting.plotting import (plot_prediction_correlation, plot_metrics_table, subplots,
+from physXAI.utils.logging import get_full_path, create_full_path, Logger
+from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
+from physXAI.evaluation.metrics import Metrics, MetricsMultiStep
+from physXAI.plotting.plotting import (plot_prediction_correlation, plot_metrics_table, subplots,
                                               plot_predictions, plot_multi_rmse)
 
 

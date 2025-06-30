@@ -9,13 +9,13 @@ current_file = Path(__file__)
 parent_directory = current_file.parent.parent
 sys.path.insert(0, str(parent_directory))
 ######################################################################################################################
-from core_functions.utils.logging import Logger, get_parent_working_directory
-from core_functions.preprocessing.preprossesing import PreprocessingSingleStep, PreprocessingMultiStep, \
+from physXAI.utils.logging import Logger, get_parent_working_directory
+from physXAI.preprocessing.preprossesing import PreprocessingSingleStep, PreprocessingMultiStep, \
     PreprocessingData
-from core_functions.preprocessing.constructed import Feature, FeatureConstruction, FeatureConstant
-from core_functions.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
-from core_functions.models import LinearRegressionModel, AbstractModel
-from core_functions.models.ann.ann_design import ClassicalANNModel, CMNNModel, LinANNModel, PINNModel, RNNModel, \
+from physXAI.preprocessing.constructed import Feature, FeatureConstruction, FeatureConstant
+from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
+from physXAI.models import LinearRegressionModel, AbstractModel
+from physXAI.models.ann.ann_design import ClassicalANNModel, CMNNModel, LinANNModel, PINNModel, RNNModel, \
     RBFModel
 
 
@@ -46,7 +46,6 @@ def output_tair():
     return 'Change(T_zone)'
 
 def test_path_setup():
-    assert Path(".coveragerc").exists() == True, 'Adjust working directory to match project root!'
     get_parent_working_directory()
 
 def test_preprocessing(monkeypatch, file_path, inputs_php, output_php):

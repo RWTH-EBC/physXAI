@@ -1,8 +1,8 @@
 import os
-from core_functions.preprocessing.training_data import TrainingDataGeneric
-from core_functions.models.ann.configs.ann_model_configs import (ClassicalANNConstruction_config,
+from physXAI.preprocessing.training_data import TrainingDataGeneric
+from physXAI.models.ann.configs.ann_model_configs import (ClassicalANNConstruction_config,
                                                                  CMNNModelConstruction_config)
-from core_functions.models.ann.keras_models.keras_models import NonNegPartial, ConcaveActivation, SaturatedActivation
+from physXAI.models.ann.keras_models.keras_models import NonNegPartial, ConcaveActivation, SaturatedActivation
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'

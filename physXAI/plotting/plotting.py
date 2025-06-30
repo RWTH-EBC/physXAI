@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
-from core_functions.preprocessing.training_data import TrainingDataMultiStep, TrainingDataGeneric
+from physXAI.preprocessing.training_data import TrainingDataMultiStep, TrainingDataGeneric
 
 
 def subplots(header: str, *figures) -> go.Figure:

@@ -1,7 +1,7 @@
 import math
 import numpy as np
 from sklearn.metrics import mean_squared_error, r2_score
-from core_functions.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
+from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
 
 
 class Metrics:

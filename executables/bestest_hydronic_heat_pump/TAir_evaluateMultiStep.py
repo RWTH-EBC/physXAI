@@ -1,8 +1,8 @@
-from core_functions.models.models import LinearRegressionModel
-from core_functions.preprocessing.constructed import Feature
-from core_functions.models.ann.ann_design import ClassicalANNModel
-from core_functions.preprocessing.preprossesing import PreprocessingMultiStep
-from core_functions.utils.logging import Logger
+from physXAI.models.models import LinearRegressionModel
+from physXAI.preprocessing.constructed import Feature
+from physXAI.models.ann.ann_design import ClassicalANNModel
+from physXAI.preprocessing.preprossesing import PreprocessingMultiStep
+from physXAI.utils.logging import Logger
 
 
 """
@@ -22,7 +22,7 @@ inputs = ['reaTZon_y', 'reaTZon_y_lag1', 'reaTZon_y_lag2', 'weaSta_reaWeaTDryBul
 output = 'Change(T_zone)'
 
 """ 
-The constructed features are automatically added to the data via 'core_functions.preprocessing.constructed.py' 
+The constructed features are automatically added to the data via 'physXAI.preprocessing.constructed.py' 
 Lagged inputs can be added directly based on the feature
 """
 x1 = Feature('reaTZon_y')
