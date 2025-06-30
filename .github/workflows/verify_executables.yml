@@ -12,7 +12,7 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      scripts: ${{ steps.get_changed_files.outputs.all_changed_files || steps.get_all_files.outputs.scripts_json }}
+      scripts: ${{ steps.filter_files.outputs.filtered_json }}
 
     steps:
       - name: Checkout repository
@@ -26,7 +26,6 @@ jobs:
         id: get_changed_files
         uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c
         with:
-          files: 'executables/**.py'
           json: true
           base_sha: ${{ github.event.pull_request.base.sha }}
 
@@ -44,11 +43,30 @@ jobs:
             echo "Found scripts. Formatting as a JSON array."
             echo "scripts_json=$(echo "$scripts_list" | jq --compact-output --raw-input --slurp 'split("\n") | map(select(length > 0))')" >> $GITHUB_OUTPUT
           fi
+
+      - name: Filter Python files in executables directory
+        id: filter_files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Get all changed files from the previous step
+            ALL_FILES='${{ steps.get_changed_files.outputs.all_changed_files }}'
+            echo "All changed files: $ALL_FILES"
+            
+            # Filter for Python files in executables directory
+            FILTERED_JSON=$(echo "$ALL_FILES" | jq -c '[.[] | select(test("^executables/.*\\.py$"))]')
+            echo "Filtered Python files in executables: $FILTERED_JSON"
+            echo "filtered_json=$FILTERED_JSON" >> $GITHUB_OUTPUT
+          else
+            # For manual runs, use the already filtered list
+            FILTERED_JSON='${{ steps.get_all_files.outputs.scripts_json }}'
+            echo "Manual run - using all Python files: $FILTERED_JSON"
+            echo "filtered_json=$FILTERED_JSON" >> $GITHUB_OUTPUT
+          fi
           
       - name: Save files JSON to artifact for debugging
         if: always()
         run: |
-          JSON_OUTPUT='${{ steps.get_changed_files.outputs.all_changed_files || steps.get_all_files.outputs.scripts_json }}'
+          JSON_OUTPUT='${{ steps.filter_files.outputs.filtered_json }}'
           echo "Final JSON for downstream jobs: $JSON_OUTPUT"
           echo "$JSON_OUTPUT" > changed_files.json
           
