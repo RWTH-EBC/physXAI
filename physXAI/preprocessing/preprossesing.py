@@ -301,7 +301,8 @@ class PreprocessingMultiStep (PreprocessingData):
         train_ds = train_ds.map(lambda x: self._split_window(x))
         if val_ds is not None:
             val_ds = val_ds.map(lambda x: self._split_window(x))
-        test_ds = test_ds.map(lambda x: self._split_window(x))
+        if test_ds is not None:
+            test_ds = test_ds.map(lambda x: self._split_window(x))
 
         return TrainingDataMultiStep(train_ds, val_ds, test_ds, self.inputs, self.output, self.init_features)
 
@@ -385,7 +386,10 @@ class PreprocessingMultiStep (PreprocessingData):
         temp_ds = ds.skip(train_batches)
 
         # Split the dataset into validation and test batch_dataset
-        val_ratio_temp = self.val_size / (self.val_size + self.test_size)
+        if self.val_size + self.test_size > 0:
+            val_ratio_temp = self.val_size / (self.val_size + self.test_size)
+        else:
+            val_ratio_temp = 0
         total_batches = len(temp_ds)
         train_batches = int(total_batches * val_ratio_temp)
         val_ds = temp_ds.take(train_batches)
@@ -393,6 +397,8 @@ class PreprocessingMultiStep (PreprocessingData):
 
         if len(val_ds) == 0:
             val_ds = None
+        if len(test_ds) == 0:
+            test_ds = None
 
         return train_ds, val_ds, test_ds
 

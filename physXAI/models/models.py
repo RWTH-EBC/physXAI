@@ -48,7 +48,7 @@ class AbstractModel(ABC):
 
     @staticmethod
     @abstractmethod
-    def evaluate(model, td: TrainingDataGeneric):
+    def evaluate(model, td: TrainingDataGeneric, **kwargs):
         pass
 
     @abstractmethod
@@ -85,7 +85,8 @@ class AbstractModel(ABC):
         """
         pass
 
-    def pipeline(self, td: TrainingDataGeneric, save_path: str = None, plot: bool = True, save_model: bool = True):
+    def pipeline(self, td: TrainingDataGeneric, save_path: str = None, plot: bool = True, save_model: bool = True,
+                 **kwargs):
         """
           Defines a standard pipeline for single-step models:
           1. Generate model
@@ -109,7 +110,7 @@ class AbstractModel(ABC):
         self.compile_model(model)
         self.fit_model(model, td)
 
-        self.evaluate(model, td)
+        self.evaluate(model, td, **kwargs)
         if plot:
             self.plot(td)
         if save_model:
@@ -215,7 +216,7 @@ class SingleStepModel(AbstractModel, ABC):
         pass
 
     @staticmethod
-    def evaluate(model, td: TrainingDataGeneric):
+    def evaluate(model, td: TrainingDataGeneric, **kwargs):
         """
         Evaluates the trained model on training, validation (if available), and test sets.
         Predictions are stored in the TrainingData object, and metrics are calculated and stored.
@@ -453,7 +454,7 @@ class MultiStepModel(AbstractModel, ABC):
         pass
 
     @staticmethod
-    def evaluate(model, td: TrainingDataMultiStep):
+    def evaluate(model, td: TrainingDataMultiStep, clipped_warmup_length: int = 0):
         """
         Evaluates the trained model on training, validation (if available), and test sets.
         Predictions are stored in the TrainingDataMultiStep object, and metrics are calculated and stored.
@@ -461,6 +462,7 @@ class MultiStepModel(AbstractModel, ABC):
         Args:
             model: The trained model instance.
             td (TrainingDataMultistep): The TrainingDataMultiStep object containing datasets and for storing results.
+            clipped_warmup_length (int): The clipped warmup length of the time series is not included in the evaluation sequence. Default is 0.
         """
 
         y_pred_train = model.predict(td.X_train)
@@ -469,6 +471,18 @@ class MultiStepModel(AbstractModel, ABC):
         else:
             y_pred_val = None
         y_pred_test = model.predict(td.X_test)
+
+        if clipped_warmup_length > 0:
+            y_pred_train = y_pred_train[:, clipped_warmup_length:, :]
+            if y_pred_val is not None:
+                y_pred_val = y_pred_val[:, clipped_warmup_length:, :]
+            y_pred_test = y_pred_test[:, clipped_warmup_length:, :]
+
+            td.y_train = td.y_train[:, clipped_warmup_length:, :]
+            if td.X_val is not None:
+                td.y_val = td.y_val[:, clipped_warmup_length:, :]
+            td.y_test = td.y_test[:, clipped_warmup_length:, :]
+
         td.add_predictions(y_pred_train, y_pred_val, y_pred_test)
 
         metrics = MetricsMultiStep(td)

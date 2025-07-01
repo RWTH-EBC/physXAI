@@ -244,7 +244,11 @@ class TrainingDataMultiStep(TrainingDataGeneric):
         else:
             self.X_val = None
             self.y_val = None
-        self._Xy_test()
+        if self.test_ds is not None:
+            self._Xy_test()
+        else:
+            self.X_test = None
+            self.y_test = None
 
         self.single_step_metrics = None
 
