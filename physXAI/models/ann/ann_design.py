@@ -9,7 +9,7 @@ from physXAI.models.models import SingleStepModel, LinearRegressionModel, MultiS
 from physXAI.models.ann.model_construction.ann_models import ClassicalANNConstruction, CMNNModelConstruction
 from physXAI.models.ann.model_construction.rbf_models import RBFModelConstruction
 from physXAI.models.ann.model_construction.redidual_models import LinResidualANNConstruction
-from physXAI.models.ann.model_construction.rnn_models import RNNModelConstruction
+from physXAI.models.ann.model_construction.rnn_models import RNNModelConstruction, PCNNModelConstruction
 from physXAI.models.ann.pinn.pinn_loss import multi_y_loss
 from physXAI.plotting.plotting import plot_prediction_correlation, plot_predictions, plot_training_history, \
     plot_metrics_table, subplots, plot_multi_rmse
@@ -764,4 +764,55 @@ class RNNModel(MultiStepModel):
             'early_stopping_epochs': self.early_stopping_epochs,
             'random_seed': self.random_seed
         })
+        return config
+
+
+@register_model
+class PCNNModel(RNNModel):
+    """
+      A Recurrent Neural Network (RNN) model for multi-step forecasting.
+      Inherits from MultiStepModel.
+      """
+
+    def __init__(self, dis_ann: ANNModel, dis_features: int, epochs: int = 1000,
+                 learning_rate: float = 0.001, early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
+        """
+        Initializes the PCNNModel based on a RNNModel.
+
+        Args:
+            dis_ann (ANNModel): The disturbance ANN (ClassicalANN, CMNN etc.)
+            dis_feature (int): Index of last feature that is fed into the disturbance ANN; (rest of inputs will be inputs to lin module)
+            epochs (int): Number of times to iterate over the entire training dataset.
+            learning_rate (float): Learning rate for the Adam optimizer.
+            early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
+                                         If None, early stopping is disabled.
+            random_seed (int): Seed for random number generators to ensure reproducibility.
+        """
+
+        # initialization parameters for RNN
+        rnn_units = 1
+        init_layer = None
+        rnn_layer = 'RNN'
+
+        super().__init__(rnn_units, rnn_layer, init_layer, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
+
+        self.disturbance_ann = dis_ann
+
+        self.model_config.update({
+            'dis_features': dis_features,
+        })
+
+    def generate_model(self, **kwargs):
+        """
+        Generates the PCNN using PCNNModelConstruction.
+        """
+
+        td = kwargs['td']
+        model = PCNNModelConstruction(self.model_config, self.disturbance_ann, td)
+        return model
+
+    def get_config(self) -> dict:
+        config = super().get_config()
+        config.update({'disturbance_ann': self.disturbance_ann.get_config()}) # TODO: necessary ? because already in PCNN cell
+        # TODO parameters of lin_module to config?
         return config

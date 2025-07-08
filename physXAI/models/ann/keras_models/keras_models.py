@@ -3,7 +3,7 @@ import numpy as np
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
-
+import tensorflow as tf
 
 @keras.saving.register_keras_serializable(package='custom_constraint', name='NonNegPartial')
 class NonNegPartial(keras.constraints.Constraint):
@@ -382,3 +382,67 @@ class RBFLayer(keras.Layer):
         if initial_centers_list is not None:
             config["initial_centers"] = np.array(initial_centers_list)
         return cls(**config)
+
+
+@keras.saving.register_keras_serializable(package='custom_cell', name='PCNNCell')
+class PCNNCell(keras.Layer):
+    def __init__(self, ann: keras.models, ann_inputs: int):
+        super(PCNNCell, self).__init__()
+
+        # Define layers for ANN and Linear modules
+        self.ann = ann
+        self.ann_inputs = ann_inputs
+        self.lin = keras.layers.Dense(1, activation='linear', kernel_constraint=keras.constraints.NonNeg(), name='lin_layer')  # has to be trainable!
+        #TODO: non-linearity for u_hp a problem?
+
+        # instantiate add layer here to use it in call
+        self.add_layer = keras.layers.Add(trainable=False)
+
+    @property
+    def state_size(self):
+        return [2]  # Return list with sizes of D_k+1 and E_k+1
+
+    @property
+    def output_size(self):
+        return 1
+
+    def build(self, input_shape):
+        super(PCNNCell, self).build(input_shape)
+
+        lin_input_shape = (input_shape[0], input_shape[1]-self.ann_inputs)
+        self.lin.build(lin_input_shape)
+
+    def call(self, inputs, states):
+        # TODO Evtl. hier auch cropping nötig
+        states = states[0]  # states is a tuple of tensors, therefore get first element of tuple
+        previous_state_D = states[:, 0]  # Previous state D_k+1
+        previous_state_D = keras.ops.reshape(previous_state_D, (-1, 1))
+        previous_state_E = states[:, 1]  # Previous state E_k+1
+        previous_state_E = keras.ops.reshape(previous_state_E, (-1, 1))
+
+        disturbance_inputs = inputs[:, :self.ann_inputs]  # evtl. als CroppingLayer (evtl. ist der nur für cropping auf time axis) or Reshape First part for ANN module
+        linear_inputs = inputs[:, self.ann_inputs:]  # Second part for linear module
+
+        ann_output = self.ann(disturbance_inputs)
+        lin_output = self.lin(linear_inputs)
+
+        # State D_k+1 is output of disturbance ann + previous state
+        D_k_plus_1 = self.add_layer([previous_state_D, ann_output])
+        # State E_k+1 is output of linear module + previous state
+        E_k_plus_1 = self.add_layer([previous_state_E, lin_output])
+
+        T_k_plus_1 = self.add_layer([D_k_plus_1, E_k_plus_1])
+
+        return T_k_plus_1, [tf.concat([D_k_plus_1, E_k_plus_1], axis=1)]  # Return output and updated state
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            "state_size": self.state_size,
+            "output_size": self.output_size,
+            "lin_module": self.lin.get_config(),
+            "disturbance_module": self.ann.get_config(),
+            "disturbance_inputs": self.ann_inputs,
+        })
+        return config
+

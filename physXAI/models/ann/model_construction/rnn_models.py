@@ -1,10 +1,12 @@
 import os
 import numpy as np
-from physXAI.preprocessing.training_data import TrainingDataMultiStep
+from physXAI.preprocessing.training_data import TrainingDataMultiStep, copy_and_crop_td_multistep
 from physXAI.models.ann.configs.ann_model_configs import RNNModelConstruction_config
+from physXAI.models.ann.keras_models.keras_models import PCNNCell
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+import tensorflow as tf
 
 
 def RNNModelConstruction(config: dict, td: TrainingDataMultiStep):
@@ -227,3 +229,108 @@ def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_unit
     pred = rescaling_layer(pred)
 
     return keras.Model([inputs, input_init], [pred, *state], name='out_model')
+
+
+def PCNNModelConstruction(config: dict, disturbance_ann, td: TrainingDataMultiStep):
+    """
+    Constructs a Physically Consistent Neural Network (PCNN) for multi-step time series forecasting.
+
+    Args:
+        config (dict): A dictionary containing configuration parameters for the RNN model.
+                       Validated against `RNNModelConstruction_config`.
+        disturbance_ann (ANNModel): The disturbance ANN for the disturbance module of the PCNN.
+        td (TrainingDataMultiStep): An object containing the multi-step training data.
+                                    It provides shapes for inputs, outputs, and warmup sequences.
+
+    Returns:
+        keras.Model: The constructed Keras functional model for RNN-based forecasting.
+    """
+
+    dis_features = config['dis_features']
+    # solely feed disturbance ann with disturbance training data too initialize correct dimension
+    cropped_td = copy_and_crop_td_multistep(td, dis_features)
+    disturbance_ann_keras = disturbance_ann.generate_model(td=cropped_td)
+
+    out_steps = td.X_train.shape[1]
+    num_features = td.X_train.shape[2]
+    num_outputs = td.y_train.shape[2]
+
+    # Get config
+    rnn_units = config['rnn_units']
+    rnn_layer = config['rnn_layer']
+
+    # Rescaling for output layer
+    rescale_min = keras.ops.cast(keras.ops.min(td.y_train), dtype="float32")
+    rescale_max = keras.ops.cast(keras.ops.max(td.y_train), dtype="float32")
+
+    # Input layer
+    inputs = keras.Input(shape=(out_steps, num_features))
+
+    def out_pcnn_model(inputs_df: np.ndarray, num_features: int, rnn_units: int, num_outputs: int,
+              rescale_min: float, rescale_max: float):
+
+        # Input layer
+        inputs = keras.Input(shape=(None, num_features))
+
+        # Normalization layer
+        normalization_layer = keras.layers.Normalization()
+        normalization_layer.adapt(inputs_df)
+        normalized_inputs = normalization_layer(inputs)
+
+        #input_init = [keras.Input(shape=(rnn_units,)) for _ in range(2)]
+        input_init = keras.Input(shape=(2,))
+
+        # Define the RNN layer using PCNNCell properly.
+        rnn_cell_instance = PCNNCell(ann=disturbance_ann_keras, ann_inputs=dis_features)
+        rnn_layer = keras.layers.RNN(rnn_cell_instance, return_state=True, return_sequences=True)
+
+        # Call the RNN layer with normalized inputs and initial state.
+        predictions_and_states = rnn_layer(normalized_inputs, initial_state=input_init)
+
+        # Unpack predictions and states correctly.
+        pred, *state = predictions_and_states
+
+        return keras.Model([inputs, input_init], [pred, *state], name='out_model')
+
+    # Output pcnn model
+    o_model = out_pcnn_model(td.X_train[0].reshape(-1, num_features), num_features, rnn_units, num_outputs,
+                        rescale_min, rescale_max)
+
+    def init_pcnn(out_steps) -> keras.Model:
+        ''' Generate initial model state: D_0 = TAirRoom, E_0 = 0 '''
+
+        initial_value_layer = keras.Input(shape=(out_steps, 1))
+        dense_ones = keras.layers.Dense(1, activation='linear', use_bias=False,
+                                        kernel_initializer=keras.initializers.Ones(), trainable=False)(initial_value_layer)
+        dense_zeros = keras.layers.Dense(1, activation='linear', use_bias=False,
+                                         kernel_initializer=keras.initializers.Zeros(), trainable=False)(initial_value_layer)
+        concat = keras.layers.Concatenate(axis=-1)([dense_ones, dense_zeros])
+
+        return keras.Model(inputs=initial_value_layer, outputs=concat, name='init_pcnn')
+
+    #int_model = init_pcnn(out_steps)
+    #state = [int_model(keras.Input(shape=(out_steps, 1)))]  # input is
+
+    int_model = init_zeros(num_features, 2, out_steps)
+    #state = [int_model(inputs)]
+
+    # td.train_ds.element_spec[0].shape[0]
+    #a = tf.constant([0.0] * 32)
+    #b = tf.constant([293.15] * 32)
+    a = tf.zeros((32, 1))
+    b = tf.ones((32, 1))
+    b = b*293.15
+    state = tf.concat([b, a], axis=1)
+    # Get output predictions
+    prediction, *_ = o_model([inputs, state])
+
+    # Reshape output
+    outputs = keras.layers.Reshape((out_steps, num_outputs))(prediction)
+
+    # Define the model
+    model = keras.Model(inputs, outputs)
+
+    model.summary(show_trainable=True)
+    o_model.summary(show_trainable=True)
+
+    return model
