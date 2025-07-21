@@ -48,14 +48,18 @@ def RNNModelConstruction(config: dict, td: TrainingDataMultiStep):
     rnn_layer = config['rnn_layer']
 
     # Rescaling for output layer
-    rescale_min = keras.ops.cast(keras.ops.min(td.y_train), dtype="float32")
-    rescale_max = keras.ops.cast(keras.ops.max(td.y_train), dtype="float32")
+    rescale_min = float(keras.ops.cast(keras.ops.min(td.y_train), dtype="float32").numpy())
+    rescale_max = float(keras.ops.cast(keras.ops.max(td.y_train), dtype="float32").numpy())
 
     # Input layer
     inputs = keras.Input(shape=(out_steps, num_features))
 
     # Output rnn model
-    o_model = out_model(td.X_train[0].reshape(-1, num_features), num_features, rnn_layer, rnn_units,  num_outputs,
+    if warmup:
+        x_train = td.X_train[0]
+    else:
+        x_train = td.X_train
+    o_model = out_model(x_train.reshape(-1, num_features), num_features, rnn_layer, rnn_units,  num_outputs,
                         rescale_min, rescale_max)
 
     # Warmup
@@ -77,7 +81,7 @@ def RNNModelConstruction(config: dict, td: TrainingDataMultiStep):
             state = [int_model(inputs)]
 
     # Get output predictions
-    prediction, *_ = o_model([inputs, state])
+    prediction, *_ = o_model([inputs, *state])
 
     # Reshape output
     outputs = keras.layers.Reshape((out_steps, num_outputs))(prediction)
@@ -103,7 +107,7 @@ def init_model(warmup_df: np.ndarray, warmup_width: int, num_warmup_features: in
 
     Args:
         warmup_df (np.ndarray): The warmup sequence data  used to adapt the normalization layer.
-                                Shape (samples, warmup_width, num_warmup_features).
+                                Shape (samples * warmup_width, num_warmup_features).
         warmup_width (int): Number of time steps in the warmup sequence.
         num_warmup_features (int): Number of features in the warmup sequence.
         init_layer (str): Type of layer to process the warmup sequence ('dense', 'GRU', 'RNN', 'LSTM').
@@ -122,7 +126,6 @@ def init_model(warmup_df: np.ndarray, warmup_width: int, num_warmup_features: in
     normalization_layer = keras.layers.Normalization()
     normalization_layer.adapt(warmup_df)
     normalized_inputs = normalization_layer(inputs)
-    normalized_inputs = keras.layers.Reshape((warmup_width, num_warmup_features))(normalized_inputs)
 
     # Init layer
     if init_layer == 'dense':
