@@ -28,7 +28,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install sphinx sphinx-rtd-theme m2r2
+        pip install -e .[gh-pages]
 
     - name: Build documentation
       run: |
