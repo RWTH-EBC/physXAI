@@ -1,12 +1,12 @@
-![E.ON EBC RWTH Aachen University](https://raw.githubusercontent.com/RWTH-EBC/AixWeather/main/docs/source/_static/EBC_Logo.png)
+![E.ON EBC RWTH Aachen University](https://github.com/RWTH-EBC/physXAI/blob/main/docs/EBC_Logo.png?raw=true)
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-![Coverage](build/reports/coverage.svg)
+![Coverage](https://raw.githubusercontent.com/RWTH-EBC/physXAI/dc3f25cbff23c06eac5344978b431a2faf27aa1c/build/reports/coverage.svg)
 [![DOI:10.2139/ssrn.5276153](http://img.shields.io/badge/DOI-10.2139/ssrn.5276153-0A3874.svg)](http://dx.doi.org/10.2139/ssrn.5276153)
 
 
 <div align="center">
-<img src="docs/physXAI.png" height="300">
+<img src="https://github.com/RWTH-EBC/physXAI/blob/main/docs/physXAI.png?raw=true" height="300">
 </div>
 
 # physXAI
@@ -92,13 +92,13 @@ To cite physXAI, please use the following paper:
 
 ## Copyright and license
 This tool is released by RWTH Aachen University, E.ON Energy Research Center, Institute for Energy Efficient Buildings and Indoor Climate <br />
-and is licensed under the BSD 3 Clause License - see the [LICENSE](LICENSE) file for details.
+and is licensed under the BSD 3 Clause License - see the [LICENSE](https://github.com/RWTH-EBC/physXAI/blob/main/LICENSE) file for details.
 
 ## Acknowledgments
 
 We gratefully acknowledge the financial support by Federal Ministry for Economic Affairs and Climate Action (BMWK), promotional reference 03EN6022B.
 
-<img src="docs/BMWK_logo.png" alt="BMWK" width="200"/>
+<img src="https://github.com/RWTH-EBC/physXAI/blob/main/docs/BMWK_logo.png?raw=true" alt="BMWK" width="200"/>
 
 ## Contact
 Patrick Henkel <br />

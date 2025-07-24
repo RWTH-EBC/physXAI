@@ -39,6 +39,11 @@ dev = [
     "pytest-cov>=6.2.1",
     "coverage-badge>=1.1.2"
 ]
+gh-pages = [
+    "sphinx>=8.2.3",
+    "sphinx_rtd_theme>=3.0.2",
+    "m2r2>=0.3.4"
+]
 
 [project.urls]
 homepage = "https://github.com/RWTH-EBC/physXAI"

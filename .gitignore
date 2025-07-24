@@ -6,3 +6,7 @@
 **/_version.py
 /**.egg-info
 **/.coverage
+/docs/build
+/docs/source
+/docs/Makefile
+/docs/make.bat
