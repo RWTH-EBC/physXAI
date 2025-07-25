@@ -1,7 +1,7 @@
 from physXAI.models.models import LinearRegressionModel
 from physXAI.preprocessing.constructed import Feature
 from physXAI.models.ann.ann_design import ClassicalANNModel
-from physXAI.preprocessing.preprossesing import PreprocessingMultiStep
+from physXAI.preprocessing.preprocessing import PreprocessingMultiStep
 from physXAI.utils.logging import Logger
 
 

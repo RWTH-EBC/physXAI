@@ -20,27 +20,27 @@ If you have any questions regarding physXAI, feel free to contact us at ebc-tool
 
 ## Installation
 1. Create conda or virtual environment with Python 3.12:
-```
-conda create -n <name_of_environment> python=3.12 pip
-conda activate <name_of_environment>
-```
+	```
+	conda create -n <name_of_environment> python=3.12 pip
+	conda activate <name_of_environment>
+	```
 2. Clone pyhsXAI git repo:
-```
-git clone https://github.com/RWTH-EBC/physXAI.git
-```
+	```
+	git clone https://github.com/RWTH-EBC/physXAI.git
+	```
 3. Switch in project directory:
-```
-cd <path_to_repository>
-```
-4.
-A) To install physXAI as a user:
-```
-pip install .
-```
-B) To install physXAI as a developer:
-```
-pip install -e .[dev]
-```
+	```
+	cd <path_to_repository>
+	```
+4. A) To install physXAI as a user:
+	```
+	pip install .
+	```
+ 
+    B) To install physXAI as a developer:
+	```
+	pip install -e .[dev]
+	```
 
 ## Getting Started
 Executable and commented examples demonstrating the use of the physXAI Toolbox can be found in the `executables` directory. <br />
@@ -50,6 +50,7 @@ New executable scripts should be added to the `executables` directory.
 ## Current Model Types
 The physXAI currently focuses on physics-guided neural networks build with Keras and Tensorflow.
 Models in this repository are categorized into two main types:
+
 - Single-Step Models: Predicting one step ahead. Can be used recursivly in the MPC.
 	- Linear Regression (sicit-learn)
 	- Classical ANN
@@ -62,6 +63,7 @@ Models in this repository are categorized into two main types:
 
 ## Project Structure
 The project is organized into the following directories:
+
 - `executables`: Contains executable scripts and configuration files. This is the primary location for users to run and test models.
 	- The base example uses data from the BOPTEST 'Bestest Hydronic Heat Pump' test case: https://ibpsa.github.io/project1-boptest/testcases/ibpsa/testcases_ibpsa_bestest_hydronic_heat_pump/
 - `data`: Storage for input data, typically in `.csv` format. Datasets required for training and evaluating models should be placed here.

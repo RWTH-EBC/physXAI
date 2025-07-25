@@ -2,7 +2,7 @@ import os
 import re
 import numpy as np
 from physXAI.plotting.plotting import plot_recFeatureSelection
-from physXAI.preprocessing.preprossesing import PreprocessingSingleStep, PreprocessingMultiStep, \
+from physXAI.preprocessing.preprocessing import PreprocessingSingleStep, PreprocessingMultiStep, \
     PreprocessingData
 from physXAI.preprocessing.training_data import TrainingDataMultiStep
 from physXAI.utils.logging import Logger
