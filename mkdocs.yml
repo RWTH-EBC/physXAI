@@ -1,6 +1,8 @@
 site_name: physXAI
 site_description: Physics-Guided Machine Learning for Modelling of Building Energy Systems
 site_url: https://RWTH-EBC.github.io/physXAI/
+docs_dir: docs/src
+site_dir: docs/build
 
 repo_name: RWTH-EBC/physXAI
 repo_url: https://github.com/RWTH-EBC/physXAI
