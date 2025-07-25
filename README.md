@@ -1,12 +1,13 @@
 ![E.ON EBC RWTH Aachen University](https://github.com/RWTH-EBC/physXAI/blob/main/docs/EBC_Logo.png?raw=true)
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://rwth-ebc.github.io/physXAI/)
 ![Coverage](https://raw.githubusercontent.com/RWTH-EBC/physXAI/dc3f25cbff23c06eac5344978b431a2faf27aa1c/build/reports/coverage.svg)
 [![DOI:10.2139/ssrn.5276153](http://img.shields.io/badge/DOI-10.2139/ssrn.5276153-0A3874.svg)](http://dx.doi.org/10.2139/ssrn.5276153)
 
 
-<div align="center">
-<img src="https://github.com/RWTH-EBC/physXAI/blob/main/docs/physXAI.png?raw=true" height="300">
+<div>
+<img src="https://github.com/RWTH-EBC/physXAI/blob/main/docs/physXAI.png?raw=true" height="300" alt="physXAI Logo">
 </div>
 
 # physXAI

@@ -2,7 +2,7 @@ name: Build and Deploy Documentation
 
 on:
   push:
-    branches: [ main, 19-create-github-pages ]
+    branches: [ main ]
 
   workflow_dispatch:
 
