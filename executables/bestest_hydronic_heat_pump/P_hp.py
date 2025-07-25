@@ -1,6 +1,6 @@
 import os
 
-from physXAI.preprocessing.preprossesing import PreprocessingSingleStep
+from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 from physXAI.preprocessing.constructed import Feature
 from physXAI.models.models import LinearRegressionModel
 from physXAI.models.ann.ann_design import ClassicalANNModel, CMNNModel, LinANNModel

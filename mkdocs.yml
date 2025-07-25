@@ -1,0 +1,74 @@
+site_name: physXAI
+site_description: Physics-Guided Machine Learning for Modelling of Building Energy Systems
+site_url: https://RWTH-EBC.github.io/physXAI/
+docs_dir: docs/src
+site_dir: docs/build
+
+repo_name: RWTH-EBC/physXAI
+repo_url: https://github.com/RWTH-EBC/physXAI
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: blue
+      accent: blue
+  features:
+    - navigation.tabs
+    - navigation.indexes
+    - navigation.path
+    - toc.follow
+
+nav:
+  - Home: index.md
+  - API Reference:
+    - Overview: api/index.md
+    - Preprocessing:
+        - Overview: api/preprocessing.md
+        - Methods:
+          - Constructed: api/preprocessing/constructed.md
+          - Preprocessing: api/preprocessing/preprocessing.md
+          - Training Data: api/preprocessing/training_data.md
+    - Feature Selection: api/feature_selection.md
+    - Models:
+      - Overview: api/models.md
+      - Methods:
+          - Core Models: api/models/core_models.md
+          - ANN Models: api/models/ann_models.md
+          - Configs: api/models/configs.md
+          - Model Construction: api/models/model_construction.md
+          - Keras Models: api/models/keras_models.md
+          - PINNs: api/models/pinn.md
+    - Evaluation: api/evaluation.md
+    - Plotting: api/plotting.md
+    - Utils: api/utils.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_bases: true
+            show_submodules: true
+            members_order: source
+            group_by_category: true
+            show_category_heading: true
+            show_if_no_docstring: true
+            show_signature_annotations: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            merge_init_into_class: false  # Keep __init__ separate
+            docstring_section_style: table
+            filters:
+              - "!^_"
+              - "__init__"  # Explicitly include __init__
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.snippets
+  - admonition
