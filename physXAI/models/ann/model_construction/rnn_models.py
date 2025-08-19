@@ -251,8 +251,13 @@ def PCNNModelConstruction(config: dict, disturbance_ann, td: TrainingDataMultiSt
     cropped_td = copy_and_crop_td_multistep(td, dis_features)
     disturbance_ann_keras = disturbance_ann.generate_model(td=cropped_td)
 
-    out_steps = td.X_train.shape[1]
-    num_features = td.X_train.shape[2]
+    assert isinstance(td.X_train, tuple), "PCNN needs a warmup-width of 1 to initialize the disturbance state"
+    warmup = True
+    out_steps = td.X_train[0].shape[1]
+    warmup_width = td.X_train[1].shape[1]
+    num_features = td.X_train[0].shape[2]
+    num_warmup_features = td.X_train[1].shape[2]
+
     num_outputs = td.y_train.shape[2]
 
     # Get config
@@ -296,10 +301,12 @@ def PCNNModelConstruction(config: dict, disturbance_ann, td: TrainingDataMultiSt
     o_model = out_pcnn_model(td.X_train[0].reshape(-1, num_features), num_features, rnn_units, num_outputs,
                         rescale_min, rescale_max)
 
-    def init_pcnn(out_steps) -> keras.Model:
-        ''' Generate initial model state: D_0 = TAirRoom, E_0 = 0 '''
+    def init_pcnn(warmup_df: np.ndarray, warmup_width: int, num_warmup_features: int, rnn_units: int, out_steps) -> keras.Model:
+        """ Generate initial model state: D_0 = TAirRoom, E_0 = 0 """
 
-        initial_value_layer = keras.Input(shape=(out_steps, 1))
+        # TODO: warmup_df and warmup_width necessary?
+
+        initial_value_layer = keras.Input(shape=(num_warmup_features,))
         dense_ones = keras.layers.Dense(1, activation='linear', use_bias=False,
                                         kernel_initializer=keras.initializers.Ones(), trainable=False)(initial_value_layer)
         dense_zeros = keras.layers.Dense(1, activation='linear', use_bias=False,
@@ -308,19 +315,15 @@ def PCNNModelConstruction(config: dict, disturbance_ann, td: TrainingDataMultiSt
 
         return keras.Model(inputs=initial_value_layer, outputs=concat, name='init_pcnn')
 
-    #int_model = init_pcnn(out_steps)
-    #state = [int_model(keras.Input(shape=(out_steps, 1)))]  # input is
+    # Create warmup model
+    initial_value_layer = keras.Input(shape=(num_warmup_features,))
+    int_model = init_pcnn(td.X_train[1].reshape(-1, num_warmup_features), warmup_width, num_warmup_features,
+                          rnn_units, out_steps)
+    state = int_model(initial_value_layer)
 
-    int_model = init_zeros(num_features, 2, out_steps)
+    #int_model = init_zeros(num_features, 2, out_steps)
     #state = [int_model(inputs)]
 
-    # td.train_ds.element_spec[0].shape[0]
-    #a = tf.constant([0.0] * 32)
-    #b = tf.constant([293.15] * 32)
-    a = tf.zeros((32, 1))
-    b = tf.ones((32, 1))
-    b = b*293.15
-    state = tf.concat([b, a], axis=1)
     # Get output predictions
     prediction, *_ = o_model([inputs, state])
 
@@ -328,9 +331,10 @@ def PCNNModelConstruction(config: dict, disturbance_ann, td: TrainingDataMultiSt
     outputs = keras.layers.Reshape((out_steps, num_outputs))(prediction)
 
     # Define the model
-    model = keras.Model(inputs, outputs)
+    model = keras.Model([inputs, initial_value_layer], outputs)
 
     model.summary(show_trainable=True)
+    int_model.summary(show_trainable=True)
     o_model.summary(show_trainable=True)
 
     return model

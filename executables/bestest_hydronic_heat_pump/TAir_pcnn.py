@@ -33,7 +33,7 @@ x3 = x2-x1
 x3.rename('weaSta_reaWeaTDryBul_y - reaTZon_y')
 
 # Create Training data
-prep = PreprocessingMultiStep(inputs, output, label_width=48, warmup_width=0, init_features=['reaTZon_y'])
+prep = PreprocessingMultiStep(inputs, output, label_width=48, warmup_width=1, init_features=['reaTZon_y'])
 # Process Training data
 td = prep.pipeline(file_path)
 
