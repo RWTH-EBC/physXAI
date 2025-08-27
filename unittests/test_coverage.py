@@ -5,7 +5,7 @@ import keras
 import pytest
 ######################################################################################################################
 from physXAI.utils.logging import Logger, get_parent_working_directory
-from physXAI.preprocessing.preprossesing import PreprocessingSingleStep, PreprocessingMultiStep, \
+from physXAI.preprocessing.preprocessing import PreprocessingSingleStep, PreprocessingMultiStep, \
     PreprocessingData
 from physXAI.preprocessing.constructed import Feature, FeatureConstruction, FeatureConstant
 from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline

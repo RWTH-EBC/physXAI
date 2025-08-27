@@ -8,7 +8,7 @@ from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiS
 from physXAI.models.models import SingleStepModel, LinearRegressionModel, MultiStepModel, register_model
 from physXAI.models.ann.model_construction.ann_models import ClassicalANNConstruction, CMNNModelConstruction
 from physXAI.models.ann.model_construction.rbf_models import RBFModelConstruction
-from physXAI.models.ann.model_construction.redidual_models import LinResidualANNConstruction
+from physXAI.models.ann.model_construction.residual_models import LinResidualANNConstruction
 from physXAI.models.ann.model_construction.rnn_models import RNNModelConstruction, PCNNModelConstruction
 from physXAI.models.ann.pinn.pinn_loss import multi_y_loss
 from physXAI.plotting.plotting import plot_prediction_correlation, plot_predictions, plot_training_history, \

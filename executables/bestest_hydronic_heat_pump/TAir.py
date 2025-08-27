@@ -1,6 +1,6 @@
 from physXAI.preprocessing.constructed import Feature
 from physXAI.models.ann.ann_design import CMNNModel
-from physXAI.preprocessing.preprossesing import PreprocessingSingleStep
+from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 from physXAI.utils.logging import Logger
 
 
