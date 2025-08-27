@@ -822,7 +822,7 @@ class PCNNModel(RNNModel):
             'disturbance_inputs': self.model_config['dis_inputs'],
             'disturbance_ann': self.disturbance_ann.get_config(),
             'non_linear_inputs': self.model_config['non_lin_inputs'],
-            'non_linear_ann': self.non_lin_ann.get_config(),
+            'non_linear_ann': self.non_lin_ann.get_config() if self.non_lin_ann is not None else None,
         })
         # TODO parameters of lin_module to config?
         return config
