@@ -386,17 +386,20 @@ class RBFLayer(keras.Layer):
 
 @keras.saving.register_keras_serializable(package='custom_cell', name='PCNNCell')
 class PCNNCell(keras.Layer):
-    def __init__(self, ann: keras.models, ann_inputs: int):
+    def __init__(self, dis_ann: keras.models, dis_inputs: int,
+                 non_lin_ann: keras.models = None, non_lin_inputs: int = None):
         super(PCNNCell, self).__init__()
 
         # Define layers for ANN and Linear modules
-        self.ann = ann
-        self.ann_inputs = ann_inputs
-        self.lin = keras.layers.Dense(1, activation='linear', kernel_constraint=keras.constraints.NonNeg(), name='lin_layer')  # has to be trainable!
-        #TODO: non-linearity for u_hp a problem?
+        self.dis_ann = dis_ann
+        self.dis_inputs = dis_inputs
+        self.lin_layer = keras.layers.Dense(1, activation='linear', kernel_constraint=keras.constraints.NonNeg(), name='lin_layer')  # has to be trainable!
+        self.non_lin_ann = non_lin_ann
+        self.non_lin_inputs = non_lin_inputs
 
-        # instantiate add layer here to use it in call
+        # instantiate add and concatenate layer here to use it in call
         self.add_layer = keras.layers.Add(trainable=False)
+        self.concatenate_layer = keras.layers.Concatenate(trainable=False)
 
     @property
     def state_size(self):
@@ -409,8 +412,8 @@ class PCNNCell(keras.Layer):
     def build(self, input_shape):
         super(PCNNCell, self).build(input_shape)
 
-        lin_input_shape = (input_shape[0], input_shape[1]-self.ann_inputs)
-        self.lin.build(lin_input_shape)
+        lin_input_shape = (input_shape[0], input_shape[1]-self.dis_inputs)
+        self.lin_layer.build(lin_input_shape)
 
     def call(self, inputs, states):
         # TODO Evtl. hier auch cropping nötig
@@ -420,17 +423,29 @@ class PCNNCell(keras.Layer):
         previous_state_E = states[:, 1]  # Previous state E_k+1
         previous_state_E = keras.ops.reshape(previous_state_E, (-1, 1))
 
-        disturbance_inputs = inputs[:, :self.ann_inputs]  # evtl. als CroppingLayer (evtl. ist der nur für cropping auf time axis) or Reshape First part for ANN module
-        linear_inputs = inputs[:, self.ann_inputs:]  # Second part for linear module
+        # disturbance module
+        disturbance_inputs = inputs[:, :self.dis_inputs]  # evtl. als CroppingLayer (evtl. ist der nur für cropping auf time axis) or Reshape First part for ANN module
+        dis_ann_output = self.dis_ann(disturbance_inputs)
 
-        ann_output = self.ann(disturbance_inputs)
-        lin_output = self.lin(linear_inputs)
+        # linear module
+        if self.non_lin_inputs is None:
+            linear_inputs = inputs[:, self.dis_inputs:]
+            lin_module_output = self.lin_layer(linear_inputs)
+
+        else:
+            # non-linear inputs have to be fed through additional ANN to capture
+            # non-linear dynamics appropriately before entering lin module
+            non_linear_inputs = inputs[:, -self.non_lin_inputs:]
+            non_linear_output = self.non_lin_ann(non_linear_inputs)
+
+            linear_inputs = inputs[:, self.dis_inputs:-self.non_lin_inputs]
+            lin_module_inputs = self.concatenate_layer([linear_inputs, non_linear_output])
+            lin_module_output = self.lin_layer(lin_module_inputs)
 
         # State D_k+1 is output of disturbance ann + previous state
-        D_k_plus_1 = self.add_layer([previous_state_D, ann_output])
+        D_k_plus_1 = self.add_layer([previous_state_D, dis_ann_output])
         # State E_k+1 is output of linear module + previous state
-        E_k_plus_1 = self.add_layer([previous_state_E, lin_output])
-
+        E_k_plus_1 = self.add_layer([previous_state_E, lin_module_output])
         T_k_plus_1 = self.add_layer([D_k_plus_1, E_k_plus_1])
 
         return T_k_plus_1, [tf.concat([D_k_plus_1, E_k_plus_1], axis=1)]  # Return output and updated state
@@ -440,9 +455,10 @@ class PCNNCell(keras.Layer):
         config.update({
             "state_size": self.state_size,
             "output_size": self.output_size,
-            "lin_module": self.lin.get_config(),
-            "disturbance_module": self.ann.get_config(),
-            "disturbance_inputs": self.ann_inputs,
+            "lin_module": self.lin_layer.get_config(),
+            "disturbance_module": self.dis_ann.get_config(),
+            "disturbance_inputs": self.dis_inputs,
         })
+        # TODO: pcnn config is not saved to model_config correctly
         return config
 

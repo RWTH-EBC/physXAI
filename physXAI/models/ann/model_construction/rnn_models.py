@@ -231,7 +231,7 @@ def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_unit
     return keras.Model([inputs, input_init], [pred, *state], name='out_model')
 
 
-def PCNNModelConstruction(config: dict, disturbance_ann, td: TrainingDataMultiStep):
+def PCNNModelConstruction(config: dict, disturbance_ann, td: TrainingDataMultiStep, non_lin_ann=None):
     """
     Constructs a Physically Consistent Neural Network (PCNN) for multi-step time series forecasting.
 
@@ -241,15 +241,24 @@ def PCNNModelConstruction(config: dict, disturbance_ann, td: TrainingDataMultiSt
         disturbance_ann (ANNModel): The disturbance ANN for the disturbance module of the PCNN.
         td (TrainingDataMultiStep): An object containing the multi-step training data.
                                     It provides shapes for inputs, outputs, and warmup sequences.
-
+        non_lin_ann (ANNModel): An additional ANN to fully capture non-linear input dynamics of inputs that are then fed into the linear module
     Returns:
         keras.Model: The constructed Keras functional model for RNN-based forecasting.
     """
 
-    dis_features = config['dis_features']
+    dis_inputs = config['dis_inputs']
     # solely feed disturbance ann with disturbance training data too initialize correct dimension
-    cropped_td = copy_and_crop_td_multistep(td, dis_features)
-    disturbance_ann_keras = disturbance_ann.generate_model(td=cropped_td)
+    cropped_dis_td = copy_and_crop_td_multistep(td, dis_inputs)
+    disturbance_ann_keras = disturbance_ann.generate_model(td=cropped_dis_td)
+
+    non_lin_inputs = config['non_lin_inputs']
+    if non_lin_inputs is not None:
+        assert non_lin_ann is not None, ("If non-linear inputs are given for the linear modul, an additional ANN has to"
+                                         "be given as well to capture the non-linear dynamics appropriately")
+        cropped_non_lin_td = copy_and_crop_td_multistep(td, -non_lin_inputs)
+        non_lin_ann_keras = non_lin_ann.generate_model(td=cropped_non_lin_td)
+    else:
+        non_lin_ann_keras = None
 
     assert isinstance(td.X_train, tuple), "PCNN needs a warmup-width of 1 to initialize the disturbance state"
     warmup = True
@@ -286,7 +295,8 @@ def PCNNModelConstruction(config: dict, disturbance_ann, td: TrainingDataMultiSt
         input_init = keras.Input(shape=(2,))
 
         # Define the RNN layer using PCNNCell properly.
-        rnn_cell_instance = PCNNCell(ann=disturbance_ann_keras, ann_inputs=dis_features)
+        rnn_cell_instance = PCNNCell(dis_ann=disturbance_ann_keras, dis_inputs=dis_inputs,
+                                     non_lin_ann=non_lin_ann_keras, non_lin_inputs=non_lin_inputs)
         rnn_layer = keras.layers.RNN(rnn_cell_instance, return_state=True, return_sequences=True)
 
         # Call the RNN layer with normalized inputs and initial state.

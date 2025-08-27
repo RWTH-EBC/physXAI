@@ -774,14 +774,17 @@ class PCNNModel(RNNModel):
       Inherits from MultiStepModel.
       """
 
-    def __init__(self, dis_ann: ANNModel, dis_features: int, epochs: int = 1000,
-                 learning_rate: float = 0.001, early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
+    def __init__(self, dis_ann: ANNModel, dis_inputs: int, non_lin_ann: ANNModel = None, non_lin_inputs: int = None,
+                 epochs: int = 1000, learning_rate: float = 0.001, early_stopping_epochs: int = 100,
+                 random_seed: int = 42, **kwargs):
         """
         Initializes the PCNNModel based on a RNNModel.
 
         Args:
             dis_ann (ANNModel): The disturbance ANN (ClassicalANN, CMNN etc.)
-            dis_feature (int): Index of last feature that is fed into the disturbance ANN; (rest of inputs will be inputs to lin module)
+            dis_inputs (int): Number of inputs that are fed into the disturbance ANN; (rest of inputs will be inputs to the lin module)
+            non_lin_ann (ANNModel): An additional ANN to capture non-linear behaviour when non-linear inputs should be fed into the linear module
+            non_lin_inputs (int): Number of inputs of linear module that are non-linear and are therefore have to be fed through the non-linear ANN first.
             epochs (int): Number of times to iterate over the entire training dataset.
             learning_rate (float): Learning rate for the Adam optimizer.
             early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
@@ -797,9 +800,11 @@ class PCNNModel(RNNModel):
         super().__init__(rnn_units, rnn_layer, init_layer, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
 
         self.disturbance_ann = dis_ann
+        self.non_lin_ann = non_lin_ann
 
         self.model_config.update({
-            'dis_features': dis_features,
+            'dis_inputs': dis_inputs,
+            'non_lin_inputs': non_lin_inputs,
         })
 
     def generate_model(self, **kwargs):
@@ -808,11 +813,16 @@ class PCNNModel(RNNModel):
         """
 
         td = kwargs['td']
-        model = PCNNModelConstruction(self.model_config, self.disturbance_ann, td)
+        model = PCNNModelConstruction(self.model_config, self.disturbance_ann, td, self.non_lin_ann)
         return model
 
     def get_config(self) -> dict:
         config = super().get_config()
-        config.update({'disturbance_ann': self.disturbance_ann.get_config()}) # TODO: necessary ? because already in PCNN cell
+        config.update({
+            'disturbance_inputs': self.model_config['dis_inputs'],
+            'disturbance_ann': self.disturbance_ann.get_config(),
+            'non_linear_inputs': self.model_config['non_lin_inputs'],
+            'non_linear_ann': self.non_lin_ann.get_config(),
+        })
         # TODO parameters of lin_module to config?
         return config

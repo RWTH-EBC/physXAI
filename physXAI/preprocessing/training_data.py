@@ -438,18 +438,32 @@ def copy_and_crop_td_multistep(td: TrainingDataMultiStep, crop_feature_index: in
     object is returned while the old object remains with all features.
     Note: A potential warmup sequence is not present in the new training data.
 
-    :param crop_feature_index: index after which the feature axis will be cropped
+    :param crop_feature_index: index after which the feature axis will be cropped (>0)
+                                or index before which the feature axis will be cropped (<0)
     """
     ctd = TrainingDataMultiStep(td.train_ds, td.val_ds, td.test_ds, td.columns, td.output, td.init_columns)
 
-    if isinstance(td.X_train, tuple):
-        ctd.X_train = td.X_train[0][:, :, :crop_feature_index]
-        ctd.X_val = td.X_val[0][:, :, :crop_feature_index]
-        ctd.X_test = td.X_test[0][:, :, :crop_feature_index]
+    if crop_feature_index > 0:
+        if isinstance(td.X_train, tuple):
+            ctd.X_train = td.X_train[0][:, :, :crop_feature_index]
+            ctd.X_val = td.X_val[0][:, :, :crop_feature_index]
+            ctd.X_test = td.X_test[0][:, :, :crop_feature_index]
+        else:
+            ctd.X_train = td.X_train[:, :, :crop_feature_index]
+            ctd.X_val = td.X_val[:, :, :crop_feature_index]
+            ctd.X_test = td.X_test[:, :, :crop_feature_index]
+
+    elif crop_feature_index < 0:
+        if isinstance(td.X_train, tuple):
+            ctd.X_train = td.X_train[0][:, :, crop_feature_index:]
+            ctd.X_val = td.X_val[0][:, :, crop_feature_index:]
+            ctd.X_test = td.X_test[0][:, :, crop_feature_index:]
+        else:
+            ctd.X_train = td.X_train[:, :, crop_feature_index:]
+            ctd.X_val = td.X_val[:, :, crop_feature_index:]
+            ctd.X_test = td.X_test[:, :, crop_feature_index:]
     else:
-        ctd.X_train = td.X_train[:, :, :crop_feature_index]
-        ctd.X_val = td.X_val[:, :, :crop_feature_index]
-        ctd.X_test = td.X_test[:, :, :crop_feature_index]
+        raise ValueError("crop_feature_index cannot be 0")
 
     ctd.y_train = td.y_train
     ctd.y_val = td.y_val
