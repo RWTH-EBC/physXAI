@@ -1,6 +1,6 @@
 from physXAI.preprocessing.constructed import Feature
 from physXAI.models.ann.ann_design import ANNModel, ClassicalANNModel, PCNNModel
-from physXAI.preprocessing.preprossesing import PreprocessingMultiStep
+from physXAI.preprocessing.preprocessing import PreprocessingMultiStep
 from physXAI.utils.logging import Logger
 
 
@@ -16,7 +16,7 @@ system dynamics.
 Logger.setup_logger(folder_name='TAirRoom', override=True)
 
 # File path to data
-file_path = "D:/phe-sro/Python2/physXAI/data/Boptest/pid_data.csv" # r"data/bestest_hydronic_heat_pump/pid_data.csv"
+file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
 
 # List of input features. Can include constructed features and lagged inputs
 inputs = ['weaSta_reaWeaHDirNor_y', 'weaSta_reaWeaTDryBul_y - reaTZon_y', 'oveHeaPumY_u']
@@ -39,7 +39,7 @@ td = prep.pipeline(file_path)
 
 disturbance_ann = ClassicalANNModel(rescale_output=False)
 
-m = PCNNModel(disturbance_ann, dis_features=1, epochs=500)
+m = PCNNModel(disturbance_ann, dis_features=1, epochs=10000)
 
 # Training pipeline
 model = m.pipeline(td)
