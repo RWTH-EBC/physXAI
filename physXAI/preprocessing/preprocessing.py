@@ -30,9 +30,15 @@ class PreprocessingData(ABC):
             output (Union[str, List[str]]): Column name(s) for the target variable(s).
             shift (int): The number of time steps to shift the target variable for forecasting.
                          A shift of one means predicting the next time step.
+            time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
             test_size (float): Proportion of the dataset to allocate to the test set.
             val_size (float): Proportion of the dataset to allocate to the validation set.
             random_state (int): Seed for random number generators to ensure reproducible splits.
+            time_index_col (Union[str, float]): Optional name or index of the time index column.
+            csv_delimiter (str): Delimiter for csv data. Default is ';'.
+            csv_encoding (str): Encoding for csv data. Default is 'latin1'.
+            csv_header (int): Row number of csv header. Default is 0.
+            csv_skiprows (Union[int, list[int]]): Row numbers of skipped data in csv. Default is no skipping.
         """
         self.time_index_col = time_index_col
         self.csv_delimiter = csv_delimiter
@@ -73,6 +79,7 @@ class PreprocessingData(ABC):
                          header=self.csv_header,
                          skiprows=self.csv_skiprows)
 
+        # Determine Sampling
         sampling = df.index.to_series().diff().dropna().unique()
         assert len(sampling) == 1, f"Data Error: Training Data has different sampling times: {sampling}"
         time_step = sampling[0]
@@ -130,9 +137,15 @@ class PreprocessingSingleStep(PreprocessingData):
             output (Union[str, List[str]]): Column name(s) for the target variable(s).
             shift (int): The number of time steps to shift the target variable for forecasting.
                          A shift of one means predicting the next time step.
+            time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
             test_size (float): Proportion of the dataset to allocate to the test set.
             val_size (float): Proportion of the dataset to allocate to the validation set.
             random_state (int): Seed for random number generators to ensure reproducible splits.
+            time_index_col (Union[str, float]): Optional name or index of the time index column.
+            csv_delimiter (str): Delimiter for csv data. Default is ';'.
+            csv_encoding (str): Encoding for csv data. Default is 'latin1'.
+            csv_header (int): Row number of csv header. Default is 0.
+            csv_skiprows (Union[int, list[int]]): Row numbers of skipped data in csv. Default is no skipping.
         """
 
         super().__init__(inputs, output, shift, time_step, test_size, val_size, random_state, time_index_col,
@@ -159,6 +172,7 @@ class PreprocessingSingleStep(PreprocessingData):
 
         df = df[self.inputs + [out for out in self.output if out not in self.inputs]]
 
+        # Nan handling
         non_nan_rows = df.notna().all(axis=1)
         first_valid_index = non_nan_rows.idxmax() if non_nan_rows.any() else None
         last_valid_index = non_nan_rows.iloc[::-1].idxmax() if non_nan_rows.any() else None
@@ -263,16 +277,22 @@ class PreprocessingMultiStep (PreprocessingData):
             label_width (int): Number of time steps in the output (label) sequence.
             warmup_width (int): Number of time steps in the warmup sequence (for RNN state initialization).
                                 If 0, no warmup sequence is used.
+            shift (int): Offset between the end of the input window and the start of the label window.
+            time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
+            test_size (float): Proportion for the test set.
+            val_size (float): Proportion for the validation set.
+            random_state (int): Seed for reproducibility (though shuffle in timeseries_dataset_from_array
+                                might behave differently with seeds across calls if not reset).
+            time_index_col (Union[str, float]): Optional name or index of the time index column.
+            csv_delimiter (str): Delimiter for csv data. Default is ';'.
+            csv_encoding (str): Encoding for csv data. Default is 'latin1'.
+            csv_header (int): Row number of csv header. Default is 0.
+            csv_skiprows (Union[int, list[int]]): Row numbers of skipped data in csv. Default is no skipping.
             overlapping_sequences (bool): Whether to use overlapping sequences to generate multi-step sequences.
             batch_size (int): Batch size for creating tf.data.Dataset objects.
             init_features (Optional[List[str]]): Features to include in the warmup sequence.
                                                  If None and warmup_width > 0, defaults to `inputs`.
                                                  If None and warmup_width <= 0, defaults to empty list.
-            shift (int): Offset between the end of the input window and the start of the label window.
-            test_size (float): Proportion for the test set.
-            val_size (float): Proportion for the validation set.
-            random_state (int): Seed for reproducibility (though shuffle in timeseries_dataset_from_array
-                                might behave differently with seeds across calls if not reset).
         """
         super().__init__(inputs, output, shift, time_step, test_size, val_size, random_state, time_index_col,
                          csv_delimiter, csv_encoding, csv_header, csv_skiprows)
