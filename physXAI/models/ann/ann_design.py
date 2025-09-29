@@ -617,14 +617,15 @@ class RNNModel(MultiStepModel):
     """
 
     def __init__(self, rnn_units: int = 32, rnn_layer: str = 'RNN', init_layer=None, epochs: int = 1000,
-                 learning_rate: float = 0.001, early_stopping_epochs: Optional[int] = 100, random_seed: int = 42, **kwargs):
+                 learning_rate: float = 0.001, early_stopping_epochs: Optional[int] = 100, random_seed: int = 42,
+                 prior_layer: str = None, activation: str = 'tanh', **kwargs):
         """
         Initializes the RNNModel.
 
         Args:
             rnn_units (int): Number of units in the RNN layer.
             rnn_layer (str): Type of RNN layer ('RNN', 'LSTM', 'GRU').
-            init_layer (str, optional): Type of layer  ('dense', 'RNN', 'LSTM', 'GRU')
+            init_layer (str, optional): Type of layer  ('dense', 'RNN', 'LSTM', 'GRU', 'LastOutput')
                                         used for initializing RNN state if warmup is used.
                                         Defaults to the same as `rnn_layer`.
             epochs (int): Number of times to iterate over the entire training dataset.
@@ -632,6 +633,8 @@ class RNNModel(MultiStepModel):
             early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
                                          If None, early stopping is disabled.
             random_seed (int): Seed for random number generators to ensure reproducibility.
+            prior_layer (str): The layer before RNN layer to generate more flexibility of the overall model structure.
+            activation (str): The activation function to be used in the out_model, only for RNN.
         """
 
         super().__init__(**kwargs)
@@ -648,11 +651,15 @@ class RNNModel(MultiStepModel):
         self.rnn_units: int = rnn_units
         self.rnn_layer: str = rnn_layer
         self.init_layer: str = init_layer
+        self.prior_layer: str = prior_layer
+        self.activation: str = activation
 
         self.model_config = {
             'rnn_units': rnn_units,
             'init_layer': init_layer,
             'rnn_layer': rnn_layer,
+            'prior_layer': prior_layer,
+            'activation': activation
         }
 
     def generate_model(self, **kwargs):
@@ -759,9 +766,12 @@ class RNNModel(MultiStepModel):
             'rnn_units': self.rnn_units,
             'rnn_layer': self.rnn_layer,
             'init_layer': self.init_layer,
+            'prior_layer': self.prior_layer,
+            'activation': self.activation,
             'epochs': self.epochs,
             'learning_rate': self.learning_rate,
             'early_stopping_epochs': self.early_stopping_epochs,
             'random_seed': self.random_seed
         })
         return config
+

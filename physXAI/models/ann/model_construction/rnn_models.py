@@ -46,6 +46,8 @@ def RNNModelConstruction(config: dict, td: TrainingDataMultiStep):
     rnn_units = config['rnn_units']
     init_layer = config['init_layer']
     rnn_layer = config['rnn_layer']
+    prior_layer = config['prior_layer']
+    activation = config['activation']
 
     # Rescaling for output layer
     rescale_min = float(keras.ops.cast(keras.ops.min(td.y_train), dtype="float32").numpy())
@@ -59,8 +61,8 @@ def RNNModelConstruction(config: dict, td: TrainingDataMultiStep):
         x_train = td.X_train[0]
     else:
         x_train = td.X_train
-    o_model = out_model(x_train.reshape(-1, num_features), num_features, rnn_layer, rnn_units,  num_outputs,
-                        rescale_min, rescale_max)
+    o_model = out_model(x_train.reshape(-1, num_features), num_features, rnn_layer, rnn_units, num_outputs,
+                        rescale_min, rescale_max, prior_layer=prior_layer, activation=activation)
 
     # Warmup
     if warmup:
@@ -145,6 +147,16 @@ def init_model(warmup_df: np.ndarray, warmup_width: int, num_warmup_features: in
     elif init_layer == "LSTM":
         rnn_init = keras.layers.LSTM(units=rnn_units, return_state=True)
         _, *state = rnn_init(normalized_inputs)
+    elif init_layer == "LastOutput":
+        cropped = keras.layers.Cropping1D(cropping=(0, warmup_width - 1))(normalized_inputs)
+        reshaped = keras.layers.Reshape((1, 1))(cropped)
+        flattened = keras.layers.Flatten()(reshaped)
+        if rnn_layer != "LSTM":
+            state = [keras.layers.Dense(rnn_units, trainable=False, use_bias=False, kernel_initializer=keras.initializers.Ones())(flattened)]
+        else:
+            init_h = keras.layers.Dense(rnn_units, trainable=False, use_bias=False, kernel_initializer=keras.initializers.Ones(), name="init_hidden")(flattened)
+            init_c = keras.layers.Dense(rnn_units, trainable=False, use_bias=False, kernel_initializer=keras.initializers.Ones(), name="init_cell")(flattened)
+            state = [init_h, init_c]
     else:
         raise NotImplementedError(f'Not implemented {init_layer}')
 
@@ -166,7 +178,7 @@ def init_zeros(num_features: int, rnn_units: int, out_steps: int):
                      returns a zero tensor suitable as an initial RNN hidden state.
     """
     initial_value_layer = keras.Input(shape=(out_steps, num_features))
-    crop = keras.layers.Cropping1D(cropping=(0, out_steps-1))
+    crop = keras.layers.Cropping1D(cropping=(0, out_steps - 1))
     dense_zeros = keras.layers.Dense(rnn_units, activation='linear', use_bias=False,
                                      kernel_initializer=keras.initializers.Zeros())
     dense_zeros.trainable = False
@@ -178,7 +190,7 @@ def init_zeros(num_features: int, rnn_units: int, out_steps: int):
 
 
 def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_units: int, num_outputs: int,
-              rescale_min: float, rescale_max: float):
+              rescale_min: float, rescale_max: float, prior_layer: str = None, activation: str = 'tanh'):
     """
     Creates the main Keras model that processes an input sequence with an initial RNN state
     to produce predictions and the final RNN state.
@@ -192,6 +204,8 @@ def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_unit
         num_outputs (int): Number of output features to predict at each time step.
         rescale_min (float): Minimum value used by a Rescaling layer applied to the predictions.
         rescale_max (float): Maximum value used by a Rescaling layer applied to the predictions.
+        prior_layer (str): The layer before RNN layer to generate more flexibility of the overall model structure.
+        activation (str): The activation function to be used in the out_model, only for RNN.
 
     Returns:
         keras.Model: A Keras model that takes [main_input_sequence, initial_state(s)]
@@ -211,15 +225,22 @@ def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_unit
         rnn = keras.layers.GRU(rnn_units, return_state=True, return_sequences=True)
     elif rnn_layer == "RNN":
         input_init = keras.Input(shape=(rnn_units,))
-        rnn = keras.layers.SimpleRNN(rnn_units, return_state=True, return_sequences=True)
+        rnn = keras.layers.SimpleRNN(rnn_units, return_state=True, return_sequences=True, activation=activation)
     elif rnn_layer == "LSTM":
         input_init = [keras.Input(shape=(rnn_units,)) for _ in range(2)]  # List of two inputs for LSTM states
         rnn = keras.layers.LSTM(rnn_units, return_state=True, return_sequences=True)
     else:
         raise NotImplementedError(f'Not implemented {rnn_layer}')
 
+    # Prior layer
+    if prior_layer is "dense":
+        prior = keras.layers.Dense(rnn_units, activation='softplus')
+        rnn_input = prior(normalized_inputs)
+    elif prior_layer is None:
+        rnn_input = normalized_inputs
+
     # Predict outputs and states
-    pred, *state = rnn(normalized_inputs, initial_state=input_init)
+    pred, *state = rnn(rnn_input, initial_state=input_init)
 
     # Final dense Layer
     dense = keras.layers.Dense(num_outputs)

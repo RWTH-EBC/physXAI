@@ -1,5 +1,6 @@
 from typing import Union, Optional, Literal
 from pydantic import BaseModel, Field, field_validator
+from keras.src.activations import ALL_OBJECTS_DICT
 
 
 class ClassicalANNConstruction_config(BaseModel):
@@ -66,13 +67,21 @@ class CMNNModelConstruction_config(ClassicalANNConstruction_config):
 class RNNModelConstruction_config(BaseModel):
     rnn_units: int = Field(32, gt=0)
     rnn_layer: Literal["RNN", "GRU", "LSTM"] = "RNN"
-    init_layer: Optional[Literal["dense", "RNN", "GRU", "LSTM"]] = "RNN"
+    init_layer: Optional[Literal["dense", "RNN", "GRU", "LSTM", "LastOutput"]] = "RNN"
+    prior_layer: Optional[Literal['dense']] = None
+    activation: Optional[str] = 'tanh'
 
     @field_validator("init_layer")
     def validate_init_layer(cls, v, info):
         if v is not None:
-            if v != "dense":
+            if v != "dense" and v != "LastOutput":
                 if v is not info.data.get('rnn_layer'):
                     raise ValueError(f"init_layer {v} should be the same as rnn_layer "
                                      f"{info.data.get('rnn_layer')} or dense")
+        return v
+
+    @field_validator("activation")
+    def check_activation(cls, v):
+        if v is not None and v not in ALL_OBJECTS_DICT:
+            raise ValueError(f"activation must be one of {list(ALL_OBJECTS_DICT.keys())}")
         return v
