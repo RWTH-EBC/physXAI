@@ -1,7 +1,7 @@
 from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
 from physXAI.models.models import LinearRegressionModel
 from physXAI.preprocessing.constructed import Feature
-from physXAI.preprocessing.preprossesing import PreprocessingMultiStep
+from physXAI.preprocessing.preprocessing import PreprocessingMultiStep
 from physXAI.utils.logging import Logger
 
 

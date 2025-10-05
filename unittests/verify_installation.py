@@ -1,4 +1,4 @@
-from physXAI.preprocessing.preprossesing import PreprocessingSingleStep
+from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 from physXAI.models.models import LinearRegressionModel
 from physXAI.utils.logging import Logger
 
