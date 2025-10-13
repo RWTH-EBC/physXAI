@@ -126,7 +126,7 @@ class PreprocessingSingleStep(PreprocessingData):
 
     def __init__(self, inputs: list[str], output: str or list[str], shift: int = 1,
                  time_step: Optional[Union[int, float]] = None,
-                 test_size: float = 0.15, val_size: float = 0.15, random_state: int = 42,
+                 test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
                  csv_header: int = 0, csv_skiprows: Union[int, list[int]] = [], **kwargs):
         """
