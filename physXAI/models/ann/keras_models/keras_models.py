@@ -4,6 +4,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 import tensorflow as tf
+from keras.saving import serialize_keras_object, deserialize_keras_object
 
 @keras.saving.register_keras_serializable(package='custom_constraint', name='NonNegPartial')
 class NonNegPartial(keras.constraints.Constraint):
@@ -387,8 +388,8 @@ class RBFLayer(keras.Layer):
 @keras.saving.register_keras_serializable(package='custom_cell', name='PCNNCell')
 class PCNNCell(keras.Layer):
     def __init__(self, dis_ann: keras.models, dis_inputs: int,
-                 non_lin_ann: keras.models = None, non_lin_inputs: int = None):
-        super(PCNNCell, self).__init__()
+                 non_lin_ann: keras.models = None, non_lin_inputs: int = None, **kwargs):
+        super(PCNNCell, self).__init__(**kwargs)
 
         # Define layers for ANN and Linear modules
         self.dis_ann = dis_ann
@@ -451,14 +452,25 @@ class PCNNCell(keras.Layer):
         return T_k_plus_1, [tf.concat([D_k_plus_1, E_k_plus_1], axis=1)]  # Return output and updated state
 
     def get_config(self):
-        config = super().get_config()
-        config.update({
-            "state_size": self.state_size,
-            "output_size": self.output_size,
-            "lin_module": self.lin_layer.get_config(),
-            "disturbance_module": self.dis_ann.get_config(),
-            "disturbance_inputs": self.dis_inputs,
-        })
-        # TODO: pcnn config is not saved to model_config correctly
-        return config
+        config = {
+            "dis_ann": serialize_keras_object(self.dis_ann),
+            "dis_inputs": self.dis_inputs,
+            "non_lin_ann": serialize_keras_object(self.non_lin_ann),
+            "non_lin_inputs": self.non_lin_inputs
+        }
+        base_config = super().get_config()
+        return {**base_config, **config}
 
+    @classmethod
+    def from_config(cls, config):
+        # Pull out serialized specs
+        dis_ann_cfg = config.pop("dis_ann")
+        non_lin_ann_cfg = config.pop("non_lin_ann")
+
+        # Explicitly rebuild objects
+        dis_ann = deserialize_keras_object(dis_ann_cfg) if dis_ann_cfg is not None else None
+        non_lin_ann = deserialize_keras_object(non_lin_ann_cfg) if dis_ann_cfg is not None else None
+
+        # Pass remaining simple fields to __init__
+        obj = cls(dis_ann=dis_ann, non_lin_ann=non_lin_ann, **config)
+        return obj
