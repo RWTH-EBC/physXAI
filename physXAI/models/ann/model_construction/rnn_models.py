@@ -148,7 +148,7 @@ def init_model(warmup_df: np.ndarray, warmup_width: int, num_warmup_features: in
         rnn_init = keras.layers.LSTM(units=rnn_units, return_state=True)
         _, *state = rnn_init(normalized_inputs)
     elif init_layer == "LastOutput":
-        cropped = keras.layers.Cropping1D(cropping=(0, warmup_width - 1))(normalized_inputs)
+        cropped = keras.layers.Cropping1D(cropping=(warmup_width - 1, 0))(normalized_inputs)
         reshaped = keras.layers.Reshape((1, 1))(cropped)
         flattened = keras.layers.Flatten()(reshaped)
         if rnn_layer != "LSTM":
