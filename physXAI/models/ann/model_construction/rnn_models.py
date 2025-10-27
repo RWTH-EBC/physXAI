@@ -284,20 +284,20 @@ def PCNNModelConstruction(config: dict, disturbance_ann, td: TrainingDataMultiSt
               rescale_min: float, rescale_max: float):
 
         # Input layer
-        inputs = keras.Input(shape=(None, num_features))
+        inputs = keras.Input(shape=(None, num_features), name='RNN_input')
 
         # Normalization layer
-        normalization_layer = keras.layers.Normalization()
+        normalization_layer = keras.layers.Normalization(name='RNN_normalization')
         normalization_layer.adapt(inputs_df)
         normalized_inputs = normalization_layer(inputs)
 
         #input_init = [keras.Input(shape=(rnn_units,)) for _ in range(2)]
-        input_init = keras.Input(shape=(2,))
+        input_init = keras.Input(shape=(2,), name='RNN_hidden_input')
 
         # Define the RNN layer using PCNNCell properly.
         rnn_cell_instance = PCNNCell(dis_ann=disturbance_ann_keras, dis_inputs=dis_inputs,
                                      non_lin_ann=non_lin_ann_keras, non_lin_inputs=non_lin_inputs)
-        rnn_layer = keras.layers.RNN(rnn_cell_instance, return_state=True, return_sequences=True)
+        rnn_layer = keras.layers.RNN(rnn_cell_instance, return_state=True, return_sequences=True, name="pcnn")
 
         # Call the RNN layer with normalized inputs and initial state.
         predictions_and_states = rnn_layer(normalized_inputs, initial_state=input_init)
