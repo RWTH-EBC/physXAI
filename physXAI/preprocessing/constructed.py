@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Type
+from typing import Type, Union
 import numpy as np
 from pandas import DataFrame, Series
 
@@ -176,7 +176,7 @@ class FeatureLag(FeatureBase):
     Calculates `df[original_feature_name].shift(lag_steps)`.
     """
 
-    def __init__(self, f: FeatureBase or str, lag: int, name: str = None, **kwargs):
+    def __init__(self, f: Union[FeatureBase, str], lag: int, name: str = None, **kwargs):
         """
         Initializes a FeatureLag instance.
 
@@ -213,7 +213,7 @@ class FeatureTwo(FeatureBase, ABC):
     Examples: FeatureAdd (f1 + f2), FeatureSub (f1 - f2).
     """
 
-    def __init__(self, feature1: FeatureBase or int or float, feature2: FeatureBase or int or float, name: str = None,
+    def __init__(self, feature1: Union[FeatureBase, int, float], feature2: Union[FeatureBase, int, float], name: str = None,
                  **kwargs):
         """
         Initializes a FeatureTwo instance.
@@ -539,7 +539,7 @@ class FeatureConstruction:
             FeatureConstruction.features.append(f)
 
     @staticmethod
-    def get_feature(name: str) -> FeatureBase or None:
+    def get_feature(name: str) -> Union[FeatureBase, None]:
         """
         Retrieves a feature object by its name from the managed list.
 

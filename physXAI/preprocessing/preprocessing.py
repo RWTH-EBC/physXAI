@@ -17,9 +17,9 @@ class PreprocessingData(ABC):
     Abstract Preprocessing Class
     """
 
-    def __init__(self, inputs: list[str], output: str or list[str], shift: int = 1,
+    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: int = 1,
                  time_step: Optional[Union[int, float]] = None,
-                 test_size: float = 0.15, val_size: float = 0.15, random_state: int = 42,
+                 test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
                  csv_header: int = 0, csv_skiprows: Union[int, list[int]] = [],):
         """
@@ -124,7 +124,7 @@ class PreprocessingSingleStep(PreprocessingData):
     validation, and test sets.
     """
 
-    def __init__(self, inputs: list[str], output: str or list[str], shift: int = 1,
+    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: int = 1,
                  time_step: Optional[Union[int, float]] = None,
                  test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
@@ -151,7 +151,7 @@ class PreprocessingSingleStep(PreprocessingData):
         super().__init__(inputs, output, shift, time_step, test_size, val_size, random_state, time_index_col,
                          csv_delimiter, csv_encoding, csv_header, csv_skiprows)
 
-    def process_data(self, df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+    def process_data(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
                 Processes the loaded DataFrame:
                 1. Applies feature constructions defined in `FeatureConstruction`.
@@ -262,9 +262,9 @@ class PreprocessingMultiStep (PreprocessingData):
     including optional warmup sequences.
     """
 
-    def __init__(self, inputs: list[str], output: str or list[str], label_width: int,  warmup_width: int, shift: int = 1,
+    def __init__(self, inputs: list[str], output: Union[str, list[str]], label_width: int,  warmup_width: int, shift: int = 1,
                  time_step: Optional[Union[int, float]] = None,
-                 test_size: float = 0.15, val_size: float = 0.15, random_state: int = 42,
+                 test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
                  csv_header: int = 0, csv_skiprows: Union[int, list[int]] = [],
                  overlapping_sequences: bool = True, batch_size=32, init_features: list[str] = None,**kwargs):
