@@ -33,7 +33,10 @@ def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
         n_neurons = [n_neurons] * n_layers
     else:
         assert len(n_neurons) == n_layers
-    n_featues = td.X_train_single.shape[1]
+    if config['n_features'] is not None:
+        n_features = config['n_features']
+    else:
+        n_features = td.X_train_single.shape[1]
     activation_function = config['activation_function']
     # If activation_function is a single string, replicate it for all layers
     if isinstance(activation_function, str):
@@ -41,20 +44,17 @@ def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
     else:
         assert len(activation_function) == n_layers
 
-    # Rescaling for output layer
-    rescale_min = float(td.y_train_single.min())
-    rescale_max = float(td.y_train_single.max())
-
     # Build artificial neural network as Sequential
     model = keras.Sequential()
 
     # Add input layer
-    model.add(keras.layers.Input(shape=(n_featues,)))
+    model.add(keras.layers.Input(shape=(n_features,)))
 
     # Add normalization layer
-    normalization = keras.layers.Normalization()
-    normalization.adapt(td.X_train_single)
-    model.add(normalization)
+    if config['normalize']:
+        normalization = keras.layers.Normalization()
+        normalization.adapt(td.X_train_single)
+        model.add(normalization)
 
     for i in range(0, n_layers):
         # For each layer add dense
@@ -63,6 +63,9 @@ def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
     model.add(keras.layers.Dense(1, activation='linear'))
     # Add rescaling
     if config['rescale_output']:
+        # Rescaling for output layer
+        rescale_min = float(td.y_train_single.min())
+        rescale_max = float(td.y_train_single.max())
         model.add(keras.layers.Rescaling(scale=rescale_max - rescale_min, offset=rescale_min))
 
     model.summary()
@@ -96,7 +99,10 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
         n_neurons = [n_neurons] * n_layers
     else:
         assert len(n_neurons) == n_layers
-    n_featues = td.X_train_single.shape[1]
+    if config['n_features'] is not None:
+        n_features = config['n_features']
+    else:
+        n_features = td.X_train_single.shape[1]
     activation_function = config['activation_function']
     # If activation_function is a single string, replicate it for all layers
     if isinstance(activation_function, str):
@@ -107,21 +113,20 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
     # Get monotonicity constraints
     mono = config['monotonicities']
     if mono is None:
-        monotonicities = [0] * n_featues
+        monotonicities = [0] * n_features
     else:
         monotonicities = [0 if name not in mono.keys() else mono[name] for name in td.columns]
 
-    # Rescaling for output layer
-    rescale_min = float(td.y_train_single.min())
-    rescale_max = float(td.y_train_single.max())
-
     # Add input layer
-    input_layer = keras.layers.Input(shape=(n_featues,))
+    input_layer = keras.layers.Input(shape=(n_features,))
 
     # Add normalization layer
-    normalization = keras.layers.Normalization()
-    normalization.adapt(td.X_train_single)
-    x = normalization(input_layer)
+    if config['normalize']:
+        normalization = keras.layers.Normalization()
+        normalization.adapt(td.X_train_single)
+        x = normalization(input_layer)
+    else:
+        x = input_layer
 
     # Add dense layer
     activation_split = config['activation_split']
@@ -167,6 +172,9 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
 
     # Add rescaling
     if config['rescale_output']:
+        # Rescaling for output layer
+        rescale_min = float(td.y_train_single.min())
+        rescale_max = float(td.y_train_single.max())
         x = keras.layers.Rescaling(scale=rescale_max - rescale_min, offset=rescale_min)(x)
 
     # # Add min / max constraints

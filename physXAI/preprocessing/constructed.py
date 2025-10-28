@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Type, Union
 import numpy as np
 from pandas import DataFrame, Series
+from physXAI.models.modular.modular_expression import ModularFeature
 
 
 class FeatureBase(ABC):
@@ -121,6 +122,9 @@ class FeatureBase(ABC):
     @classmethod
     def from_config(cls, config: dict) -> 'FeatureBase':
         return cls(**config)
+
+    def input(self, normalize: bool = True) -> ModularFeature:
+        return ModularFeature(self.feature, normalize=normalize)
 
 
 # --- Registry for Feature Classes ---
