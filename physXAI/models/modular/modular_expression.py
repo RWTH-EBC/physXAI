@@ -88,18 +88,19 @@ class ModularTrainable(ModularExpression):
 
     i = 0
 
-    def __init__(self, name: str = None, initial_value: float = None):
+    def __init__(self, name: str = None, initial_value: float = None, trainable: bool = True):
         if name is None:
             name = f"ModularTrainable_{ModularTrainable.i}"
             ModularTrainable.i += 1
         super().__init__(name)
         self.initial_value = initial_value
+        self.trainable = trainable
 
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
         if self.name in ModularExpression.trainable_parameters.keys():
             return ModularExpression.trainable_parameters[self.name]
         else:
-            l = ConstantLayer(trainable=True, name=self.name, value=self.initial_value)(input_layer)
+            l = ConstantLayer(trainable=self.trainable, name=self.name, value=self.initial_value)(input_layer)
             ModularExpression.trainable_parameters[self.name] = l
             return l
 
