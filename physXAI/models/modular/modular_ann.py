@@ -1,4 +1,7 @@
+import functools
+from itertools import combinations
 from logging import warning
+import operator
 import os
 from typing import Optional, Union
 
@@ -6,6 +9,7 @@ from physXAI.models.modular.modular_expression import ModularExpression
 from physXAI.models.ann.ann_design import ANNModel, CMNNModel, ClassicalANNModel
 from physXAI.models.models import register_model
 from physXAI.preprocessing.training_data import TrainingDataGeneric
+from physXAI.preprocessing.constructed import FeatureBase
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
@@ -63,7 +67,7 @@ class ModularModel(ModularExpression):
     allowed_models = [ClassicalANNModel, CMNNModel]
     i = 0
 
-    def __init__(self, model: ANNModel, inputs: list[ModularExpression], rescale_output: bool = False, name: str = None):
+    def __init__(self, model: ANNModel, inputs: list[ModularExpression, FeatureBase], rescale_output: bool = False, name: str = None):
         if not any(isinstance(model, allowed) for allowed in self.allowed_models):
             raise NotImplementedError(f"Currently {type(model)} is not supported. Allowed models are: {self.allowed_models}")
 
@@ -80,7 +84,7 @@ class ModularModel(ModularExpression):
             "normalize": False,
             "rescale_output": rescale_output
         })
-        self.inputs = inputs
+        self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
 
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
         if self.name in ModularExpression.models.keys():
@@ -100,11 +104,12 @@ class ModularModel(ModularExpression):
 class ModularLinear(ModularExpression):
     i = 0
 
-    def __init__(self, inputs: list[ModularExpression]):
+    def __init__(self, inputs: list[ModularExpression, FeatureBase], name: str = None):
         if name is None:
             name = f"ModularLinear_{ModularLinear.i}"
             ModularLinear.i += 1
         super().__init__(name)
+        self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
         
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
         if self.name in ModularExpression.models.keys():
@@ -115,5 +120,65 @@ class ModularLinear(ModularExpression):
                 y = x.construct(input_layer, td)
                 inps.append(y)
             l = keras.layers.Dense(units=1, activation='linear')(keras.layers.Concatenate()(inps))
+            ModularExpression.models[self.name] = l
+            return l
+
+
+class ModularPolynomial(ModularExpression):
+    i = 0
+
+    def __init__(self, inputs: list[ModularExpression, FeatureBase], degree: int = 2, interaction_degree: int = 1, name: str = None):
+        if name is None:
+            name = f"ModularPolynomial_{ModularPolynomial.i}"
+            ModularPolynomial.i += 1
+        super().__init__(name)
+        assert degree >= 1, "Degree must be at least 1."
+        assert interaction_degree >= 1, "Interaction degree must be at least 1."
+        self.degree = degree
+        self.interaction_degree = interaction_degree
+        self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
+
+    def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
+        if self.name in ModularExpression.models.keys():
+            return ModularExpression.models[self.name]
+        else:
+            inps = list()
+            for x in self.inputs:
+                y = x.construct(input_layer, td)
+                inps.append(y)
+
+            new_features = list(inps)
+            for feature in inps:
+                for d in range(2, self.degree + 1):
+                    new_features.append(feature ** d)
+            for k in range(2, self.interaction_degree + 1):
+                for combo in combinations(inps, k):
+                    interaction_term = functools.reduce(operator.mul, combo)
+                    new_features.append(interaction_term)
+
+            l = keras.layers.Dense(units=1, activation='linear')(keras.layers.Concatenate()(new_features))
+            ModularExpression.models[self.name] = l
+            return l
+        
+
+class ModularAverage(ModularExpression):
+    i = 0
+
+    def __init__(self, inputs: list[ModularExpression, FeatureBase], name: str = None):
+        if name is None:
+            name = f"ModularAverage_{ModularAverage.i}"
+            ModularAverage.i += 1
+        super().__init__(name)
+        self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
+
+    def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
+        if self.name in ModularExpression.models.keys():
+            return ModularExpression.models[self.name]
+        else:
+            inps = list()
+            for x in self.inputs:
+                y = x.construct(input_layer, td)
+                inps.append(y)
+            l = keras.layers.Average()(inps)
             ModularExpression.models[self.name] = l
             return l
