@@ -415,6 +415,10 @@ class InputSliceLayer(keras.Layer):
         })
         return config
     
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+    
     def compute_output_shape(self, input_shape):
         output_shape = list(input_shape)
         
@@ -485,6 +489,10 @@ class ConstantLayer(keras.Layer):
             "shape": self.target_shape,
         })
         return config
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 
 @keras.saving.register_keras_serializable(package='custom_layer', name='DivideLayer')
@@ -502,6 +510,14 @@ class DivideLayer(keras.Layer):
     def compute_output_shape(self, input_shape):
         return input_shape[0]
     
+    def get_config(self):
+        config = super().get_config()
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
 
 @keras.saving.register_keras_serializable(package='custom_layer', name='PowerLayer')
 class PowerLayer(keras.Layer):
@@ -517,3 +533,11 @@ class PowerLayer(keras.Layer):
 
     def compute_output_shape(self, input_shape):
         return input_shape[0]
+    
+    def get_config(self):
+        config = super().get_config()
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
