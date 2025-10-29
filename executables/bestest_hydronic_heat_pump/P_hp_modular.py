@@ -21,7 +21,7 @@ func_logistic = Feature('Func(logistic)')
 TDryBul = Feature('weaSta_reaWeaTDryBul_y')
 TZon = Feature('reaTZon_y')
 
-prep = PreprocessingSingleStep(inputs, output)
+prep = PreprocessingSingleStep(inputs=inputs, output=output)
 td = prep.pipeline(file_path)
 
 """Example usages of modular models"""

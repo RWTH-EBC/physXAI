@@ -148,8 +148,8 @@ class PreprocessingSingleStep(PreprocessingData):
             csv_skiprows (Union[int, list[int]]): Row numbers of skipped data in csv. Default is no skipping.
         """
 
-        super().__init__(inputs, output, shift, time_step, test_size, val_size, random_state, time_index_col,
-                         csv_delimiter, csv_encoding, csv_header, csv_skiprows)
+        super().__init__(inputs=inputs, output=output, shift=shift, time_step=time_step, test_size=test_size, val_size=val_size, random_state=random_state, time_index_col=time_index_col,
+                         csv_delimiter=csv_delimiter, csv_encoding=csv_encoding, csv_header=csv_header, csv_skiprows=csv_skiprows)
 
     def process_data(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
@@ -294,8 +294,8 @@ class PreprocessingMultiStep (PreprocessingData):
                                                  If None and warmup_width > 0, defaults to `inputs`.
                                                  If None and warmup_width <= 0, defaults to empty list.
         """
-        super().__init__(inputs, output, shift, time_step, test_size, val_size, random_state, time_index_col,
-                         csv_delimiter, csv_encoding, csv_header, csv_skiprows)
+        super().__init__(inputs=inputs, output=output, shift=shift, time_step=time_step, test_size=test_size, val_size=val_size, random_state=random_state, time_index_col=time_index_col,
+                         csv_delimiter=csv_delimiter, csv_encoding=csv_encoding, csv_header=csv_header, csv_skiprows=csv_skiprows)
 
         self.overlapping_sequences = overlapping_sequences
 

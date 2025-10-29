@@ -13,6 +13,7 @@ class ModularExpression(ABC):
     feature_list = dict()
     feature_list_normalized = dict()
     trainable_parameters = dict()
+    models = dict()
 
     def __init__(self, name: str):
         self.name = name
@@ -95,12 +96,11 @@ class ModularTrainable(ModularExpression):
         self.initial_value = initial_value
 
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
-        if self.name is not None and self.name in ModularExpression.trainable_parameters.keys():
+        if self.name in ModularExpression.trainable_parameters.keys():
             return ModularExpression.trainable_parameters[self.name]
         else:
             l = ConstantLayer(trainable=True, name=self.name, value=self.initial_value)(input_layer)
-            if self.name is not None:
-                ModularExpression.trainable_parameters[self.name] = l
+            ModularExpression.trainable_parameters[self.name] = l
             return l
 
 

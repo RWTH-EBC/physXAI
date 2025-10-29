@@ -1,6 +1,6 @@
 from logging import warning
 import os
-from typing import Optional
+from typing import Optional, Union
 
 from physXAI.models.modular.modular_expression import ModularExpression
 from physXAI.models.ann.ann_design import ANNModel, CMNNModel, ClassicalANNModel
@@ -83,10 +83,37 @@ class ModularModel(ModularExpression):
         self.inputs = inputs
 
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
-        inps = list()
-        for x in self.inputs:
-            y = x.construct(input_layer, td)
-            inps.append(y)
-        self.model.model_config['n_features'] = len(inps)
-        td.columns = [inp.name for inp in self.inputs]
-        return self.model.generate_model(td=td)(keras.layers.Concatenate()(inps))
+        if self.name in ModularExpression.models.keys():
+            return ModularExpression.models[self.name]
+        else:
+            inps = list()
+            for x in self.inputs:
+                y = x.construct(input_layer, td)
+                inps.append(y)
+            self.model.model_config['n_features'] = len(inps)
+            td.columns = [inp.name for inp in self.inputs]
+            l = self.model.generate_model(td=td)(keras.layers.Concatenate()(inps))
+            ModularExpression.models[self.name] = l
+            return l    
+
+
+class ModularLinear(ModularExpression):
+    i = 0
+
+    def __init__(self, inputs: list[ModularExpression]):
+        if name is None:
+            name = f"ModularLinear_{ModularLinear.i}"
+            ModularLinear.i += 1
+        super().__init__(name)
+        
+    def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
+        if self.name in ModularExpression.models.keys():
+            return ModularExpression.models[self.name]
+        else:
+            inps = list()
+            for x in self.inputs:
+                y = x.construct(input_layer, td)
+                inps.append(y)
+            l = keras.layers.Dense(units=1, activation='linear')(keras.layers.Concatenate()(inps))
+            ModularExpression.models[self.name] = l
+            return l

@@ -18,7 +18,7 @@ inputs = ['oveHeaPumY_u', 'Func(logistic)', 'weaSta_reaWeaTDryBul_y', 'reaTZon_y
 output = 'reaPHeaPum_y'
 
 # Create Training data
-prep = PreprocessingSingleStep(inputs, output)
+prep = PreprocessingSingleStep(inputs=inputs, output=output)
 # Process Training data
 td = prep.pipeline(file_path)
 
