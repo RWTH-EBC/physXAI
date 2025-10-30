@@ -92,7 +92,7 @@ Furthermore, you are welcome to contribute via Pull Requests.
 
 To cite physXAI, please use the following paper:
 
-> Henkel, Patrick and Roß, Simon and Rätz, Martin and Müller, Dirk, Monotonic physics-constrained neural networks for model predictive control of building energy systems. 2025.Available at Building and Environment: https://doi.org/10.1016/j.buildenv.2025.113640
+> Henkel, Patrick and Roß, Simon and Rätz, Martin and Müller, Dirk, Monotonic physics-constrained neural networks for model predictive control of building energy systems. 2025. Available at Building and Environment: https://doi.org/10.1016/j.buildenv.2025.113640
 
 ## Copyright and license
 This tool is released by RWTH Aachen University, E.ON Energy Research Center, Institute for Energy Efficient Buildings and Indoor Climate <br />
