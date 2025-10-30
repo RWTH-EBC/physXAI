@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://rwth-ebc.github.io/physXAI/)
 ![Coverage](https://raw.githubusercontent.com/RWTH-EBC/physXAI/dc3f25cbff23c06eac5344978b431a2faf27aa1c/build/reports/coverage.svg)
-[![DOI:10.2139/ssrn.5276153](http://img.shields.io/badge/DOI-10.2139/ssrn.5276153-0A3874.svg)](http://dx.doi.org/10.2139/ssrn.5276153)
+[![DOI:10.1016/j.buildenv.2025.113640](https://img.shields.io/badge/DOI-10.1016%2Fj.buildenv.2025.113640-227BC0)](https://doi.org/10.1016/j.buildenv.2025.113640)
 
 
 <div>
@@ -20,12 +20,19 @@ The toolbox aims to integrate physical knowledge into machine learning models to
 If you have any questions regarding physXAI, feel free to contact us at ebc-tools@eonerc.rwth-aachen.de  
 
 ## Installation
-1. Create conda or virtual environment with Python 3.12:
+1. Create virtual environment with Python 3.12 and activate it:
 	```
-	conda create -n <name_of_environment> python=3.12 pip
-	conda activate <name_of_environment>
+	python -m venv physXAI
 	```
-2. Clone pyhsXAI git repo:
+	- **On Windows:**
+	  ```
+	  physXAI\Scripts\activate.bat
+	  ```
+	- **On Unix/Linux/macOS:**
+	  ```
+	  source physXAI/bin/activate
+	  ```
+2. Clone physXAI git repo:
 	```
 	git clone https://github.com/RWTH-EBC/physXAI.git
 	```
@@ -79,7 +86,8 @@ The project is organized into the following directories:
 	- `evaluation`: Modules for evaluating model performance using various metrics.
 	- `utils`: Utility functions and helper scripts used across different parts of the toolbox.
 - `docs`: Contains documentation for the project.
-- `Archive`: Used for archiving older versions of the code, data, or models to keep the main project structure clean.
+- `build`: Contains saved test reports.
+- `unittests`: Contains unittests for physXAI.
 
 ## How to contribute to the development
 
@@ -91,7 +99,7 @@ Furthermore, you are welcome to contribute via Pull Requests.
 
 To cite physXAI, please use the following paper:
 
-> Henkel, Patrick and Roß, Simon and Rätz, Martin and Müller, Dirk, Monotonic Physics-Constrained Neural Networks for Model Predictive Control of Building Energy Systems. Available at SSRN: https://ssrn.com/abstract=5276153 or http://dx.doi.org/10.2139/ssrn.5276153
+> Henkel, Patrick and Roß, Simon and Rätz, Martin and Müller, Dirk, Monotonic physics-constrained neural networks for model predictive control of building energy systems. Building and Environment, 2025, 285, 113640. https://doi.org/10.1016/j.buildenv.2025.113640
 
 ## Copyright and license
 This tool is released by RWTH Aachen University, E.ON Energy Research Center, Institute for Energy Efficient Buildings and Indoor Climate <br />
