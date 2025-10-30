@@ -23,8 +23,15 @@ If you have any questions regarding physXAI, feel free to contact us at ebc-tool
 1. Create virtual environment with Python 3.12 and activate it:
 	```
 	python -m venv physXAI
-	physXAI\Scripts\activate.bat
 	```
+	- **On Windows:**
+	  ```
+	  physXAI\Scripts\activate.bat
+	  ```
+	- **On Unix/Linux/macOS:**
+	  ```
+	  source physXAI/bin/activate
+	  ```
 2. Clone pyhsXAI git repo:
 	```
 	git clone https://github.com/RWTH-EBC/physXAI.git
