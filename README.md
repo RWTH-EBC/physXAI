@@ -32,7 +32,7 @@ If you have any questions regarding physXAI, feel free to contact us at ebc-tool
 	  ```
 	  source physXAI/bin/activate
 	  ```
-2. Clone pyhsXAI git repo:
+2. Clone physXAI git repo:
 	```
 	git clone https://github.com/RWTH-EBC/physXAI.git
 	```
