@@ -443,7 +443,7 @@ class ConstantLayer(keras.Layer):
     trainable or non-trainable.
     """
 
-    def __init__(self, value=0.0, shape=(1,), trainable=False, name: str = None, **kwargs):
+    def __init__(self, value=0.0, shape=(1,), trainable=False, weight_name: str = None, **kwargs):
         """
         Initializes the layer.
 
@@ -456,7 +456,7 @@ class ConstantLayer(keras.Layer):
         super().__init__(trainable=trainable, **kwargs)
         self.value = value
         self.target_shape = tuple(shape)
-        self.name = name
+        self.weight_name = weight_name
 
     def build(self, input_shape):
         if self.value is not None:
@@ -467,7 +467,7 @@ class ConstantLayer(keras.Layer):
             shape=self.target_shape,
             initializer=init,
             trainable=self.trainable,
-            name=self.name,
+            name=self.weight_name,
         )
 
     def call(self, inputs):
