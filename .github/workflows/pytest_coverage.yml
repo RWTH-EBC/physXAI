@@ -12,6 +12,7 @@ jobs:
   run_pytest_coverage:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
 
