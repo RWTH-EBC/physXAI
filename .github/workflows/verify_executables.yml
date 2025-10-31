@@ -86,7 +86,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        fail-fast: false
         script: ${{ fromJSON(needs.setup.outputs.scripts) }}
         python-version: ['3.9', '3.10', '3.11', '3.12']
 
