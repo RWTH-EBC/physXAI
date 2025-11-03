@@ -16,7 +16,7 @@
 
 ### Testing
 - [ ] Unit tests have been created/updated for new/modified functionality
-- [ ] CI/CD pipeline passes all tests (pytest, coverage, exectuables, installation)
+- [ ] CI/CD pipeline passes all tests (pytest, coverage, executables, installation)
 
 ### Examples
 - [ ] Add examples for new features and functionality
