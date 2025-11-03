@@ -8,7 +8,7 @@
 - **Language**: Python (3.9-3.12)
 - **License**: BSD-3-Clause
 - **Testing**: pytest (unit tests live in `unittests/`)
-- **Dependencies**: Core (numpy, pandas, scikit-learn, keras, tensorflow, pydantic, plotly>), Optional (dev dependencies for testing and coverage)
+- **Dependencies**: Core (numpy, pandas, scikit-learn, keras, tensorflow, pydantic, plotly), Optional (dev dependencies for testing and coverage)
 - **CI/CD**: GitHub Actions (runs pytest, coverage) and documentation under `docs/`
 
 ## Project Structure
