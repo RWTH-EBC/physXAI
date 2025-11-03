@@ -9,7 +9,7 @@ from physXAI.preprocessing.preprocessing import PreprocessingSingleStep, Preproc
     PreprocessingData
 from physXAI.preprocessing.constructed import Feature, FeatureConstruction, FeatureConstant
 from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
-from physXAI.models import LinearRegressionModel, AbstractModel
+from physXAI.models.models import LinearRegressionModel, AbstractModel
 from physXAI.models.ann.ann_design import ClassicalANNModel, CMNNModel, LinANNModel, PINNModel, RNNModel, \
     RBFModel
 

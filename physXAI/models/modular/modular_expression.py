@@ -100,7 +100,7 @@ class ModularTrainable(ModularExpression):
         if self.name in ModularExpression.trainable_parameters.keys():
             return ModularExpression.trainable_parameters[self.name]
         else:
-            l = ConstantLayer(trainable=self.trainable, name=self.name, value=self.initial_value)(input_layer)
+            l = ConstantLayer(trainable=self.trainable, weight_name=self.name, value=self.initial_value)(input_layer)
             ModularExpression.trainable_parameters[self.name] = l
             return l
 

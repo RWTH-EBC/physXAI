@@ -1,5 +1,4 @@
 import os
-import keras
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -9,6 +8,9 @@ from physXAI.models.modular.modular_ann import ModularANN, ModularAverage, Modul
 from physXAI.utils.logging import Logger
 from physXAI.preprocessing.constructed import Feature
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+import keras
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 
 def generate_sample_csv(output_path: str = "data/sample_data.csv", num_rows: int = 1200, num_features: int = 4, seed: int = 42, value_range: tuple = (-100, 100)):
@@ -71,7 +73,7 @@ def generate_sample_model(random_seed: int = 42, training_data_path: str = "data
         m7,
         m8
     ])
-    m = ModularANN(architecture=out, epochs=10, random_seed=random_seed)
+    m = ModularANN(architecture=out, epochs=1000, random_seed=random_seed)
     model = m.pipeline(td, plot=False, save_model=False)
 
     os.makedirs('models', exist_ok=True)
