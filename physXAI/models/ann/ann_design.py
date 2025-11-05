@@ -9,7 +9,7 @@ from physXAI.models.models import SingleStepModel, LinearRegressionModel, MultiS
 from physXAI.models.ann.model_construction.ann_models import ClassicalANNConstruction, CMNNModelConstruction
 from physXAI.models.ann.model_construction.rbf_models import RBFModelConstruction
 from physXAI.models.ann.model_construction.residual_models import LinResidualANNConstruction
-from physXAI.models.ann.model_construction.rnn_models import RNNModelConstruction
+from physXAI.models.ann.model_construction.rnn_models import RNNModelConstruction, MonotonicRNNModelConstruction
 from physXAI.models.ann.pinn.pinn_loss import multi_y_loss
 from physXAI.plotting.plotting import plot_prediction_correlation, plot_predictions, plot_training_history, \
     plot_metrics_table, subplots, plot_multi_rmse
@@ -772,6 +772,94 @@ class RNNModel(MultiStepModel):
             'learning_rate': self.learning_rate,
             'early_stopping_epochs': self.early_stopping_epochs,
             'random_seed': self.random_seed
+        })
+        return config
+
+
+class MonotonicRNNModel(RNNModel):
+    """
+    A Monotonic Recurrent Neural Network (RNN) model for multi-step forecasting.
+    Inherits from RNNModel.
+    """
+
+    def __init__(self, rnn_units: int = 32, rnn_layer: str = 'RNN', init_layer='LastOutput', epochs: int = 1000,
+                 learning_rate: float = 0.001, early_stopping_epochs: Optional[int] = 100, random_seed: int = 42,
+                 prior_layer: str = None, activation: str = 'tanh', monotonicity: dict[str, int] = None, init_dis: str='Zero',
+                 dis_layer: str = 'LSTM', dis_units: int = 16, dis_activation: str = 'tanh',  **kwargs):
+        """
+        Initializes the RNNModel.
+
+        Args:
+            rnn_units (int): Number of units in the RNN layer.
+            rnn_layer (str): Type of RNN layer ('RNN', 'LSTM', 'GRU').
+            init_layer (str, optional): Type of layer  ('dense', 'RNN', 'LSTM', 'GRU', 'LastOutput')
+                                        used for initializing RNN state if warmup is used.
+                                        Defaults to the same as `rnn_layer`.
+            epochs (int): Number of times to iterate over the entire training dataset.
+            learning_rate (float): Learning rate for the Adam optimizer.
+            early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
+                                         If None, early stopping is disabled.
+            random_seed (int): Seed for random number generators to ensure reproducibility.
+            prior_layer (str): The layer before RNN layer to generate more flexibility of the overall model structure. Is None for MRNN
+            activation (str): The activation function to be used in the out_model, only for RNN.
+            monotonicity (dict[str, int]): Dictionary mapping feature names to monotonicity type
+                             (-1 for decreasing, 0 for no constraint, 1 for increasing).
+            dis_layer (str): The layer for capturing the influence of disturbance inputs without monotonicity.
+            dis_units (int): Number of units in the disturbance layer
+            dis_activation (str): The activation function to be used in the disturbance rnn.
+            init_dis (str, optional): Type of layer  ('dense', 'RNN', 'LSTM', 'GRU', 'LastOutput', 'Zero')
+                                                    used for initializing dis_layer state if warmup is used.
+                                                    Defaults to Zero.
+
+        """
+
+        super().__init__(rnn_units, rnn_layer, init_layer, epochs, learning_rate, early_stopping_epochs, random_seed, prior_layer, activation, **kwargs)
+
+        self.monotonicity: dict[str, int] = monotonicity
+        self.dis_layer: str = dis_layer
+        self.dis_units: int = dis_units
+        self.dis_activation: str = dis_activation
+        self.init_dis: str = init_dis
+
+        self.model_config = {
+            'rnn_units': rnn_units,
+            'init_layer': init_layer,
+            'rnn_layer': rnn_layer,
+            'prior_layer': prior_layer,
+            'activation': activation,
+            'monotonicity': monotonicity,
+            'dis_layer': dis_layer,
+            'dis_units': dis_units,
+            'dis_activation': dis_activation,
+            'init_dis': init_dis
+        }
+
+    def generate_model(self, **kwargs):
+        """
+        Generates the Keras RNN model using RNNModelConstruction.
+        """
+
+        td = kwargs['td']
+        model = MonotonicRNNModelConstruction(self.model_config, td)
+        return model
+
+    def get_config(self) -> dict:
+        config = super().get_config()
+        config.update({
+            'rnn_units': self.rnn_units,
+            'rnn_layer': self.rnn_layer,
+            'init_layer': self.init_layer,
+            'prior_layer': self.prior_layer,
+            'activation': self.activation,
+            'epochs': self.epochs,
+            'learning_rate': self.learning_rate,
+            'early_stopping_epochs': self.early_stopping_epochs,
+            'random_seed': self.random_seed,
+            'monotonicity': self.monotonicity,
+            'dis_layer': self.dis_layer,
+            'dis_units': self.dis_units,
+            'dis_activation': self.dis_activation,
+            'init_dis': self.init_dis
         })
         return config
 

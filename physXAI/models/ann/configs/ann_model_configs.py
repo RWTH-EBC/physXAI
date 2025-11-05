@@ -77,11 +77,44 @@ class RNNModelConstruction_config(BaseModel):
             if v != "dense" and v != "LastOutput":
                 if v is not info.data.get('rnn_layer'):
                     raise ValueError(f"init_layer {v} should be the same as rnn_layer "
-                                     f"{info.data.get('rnn_layer')} or dense")
+                                     f"{info.data.get('rnn_layer')} or one of (dense, LastOutput)")
         return v
 
     @field_validator("activation")
     def check_activation(cls, v):
         if v is not None and v not in ALL_OBJECTS_DICT:
             raise ValueError(f"activation must be one of {list(ALL_OBJECTS_DICT.keys())}")
+        return v
+
+
+class MonotonicRNNModelConstruction_config(RNNModelConstruction_config):
+
+    monotonicity: Optional[dict[str, int]] = None
+    dis_layer:  Optional[Literal["dense", "RNN", "GRU", "LSTM", "LastOutput", "Zero"]] = 'Zero'
+    dis_units: int = Field(32, gt=0)
+    dis_activation: Optional[str] = 'tanh'
+    init_dis: Optional[str] = 'Zero'
+
+    @field_validator('monotonicity')
+    def validate_monotonicity(cls, v):
+        if v is not None:
+            for i in v.values():
+                if i not in [-1, 1]:
+                    raise ValueError("monotonicity must 1 (positive monotony) "
+                                     "or -1 (negative monotony). For 0 (no monotony), no need to set.")
+        return v
+
+    @field_validator("dis_activation")
+    def check_dis_activation(cls, v):
+        if v is not None and v not in ALL_OBJECTS_DICT:
+            raise ValueError(f"dis_activation must be one of {list(ALL_OBJECTS_DICT.keys())}")
+        return v
+
+    @field_validator("init_dis")
+    def validate_init_dis(cls, v, info):
+        if v is not None:
+            if v not in ["dense", "LastOutput", "Zero"]:
+                if v is not info.data.get('dis_layer'):
+                    raise ValueError(f"init_dis {v} should be the same as dis_layer "
+                                     f"{info.data.get('dis_layer')} or one of (dense, LastOutput, Zero)")
         return v

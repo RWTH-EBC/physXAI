@@ -1,7 +1,8 @@
 import os
 import numpy as np
 from physXAI.preprocessing.training_data import TrainingDataMultiStep
-from physXAI.models.ann.configs.ann_model_configs import RNNModelConstruction_config
+from physXAI.models.ann.configs.ann_model_configs import RNNModelConstruction_config, MonotonicRNNModelConstruction_config
+from physXAI.models.ann.keras_models.keras_models import NonNegPartial, SliceFeatures, DiagonalPosConstraint
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
@@ -69,18 +70,16 @@ def RNNModelConstruction(config: dict, td: TrainingDataMultiStep):
         # Create warmup model
         initial_value_layer = keras.Input(shape=(warmup_width, num_warmup_features))
         int_model = init_model(td.X_train[1].reshape(-1, num_warmup_features), warmup_width, num_warmup_features,
-                               init_layer, rnn_layer, rnn_units)
+                               init_layer, rnn_layer, rnn_units, 'init_model')
         state = int_model(initial_value_layer)
 
     # No warmup
     else:
         # Initialize models with zeros
         initial_value_layer = None
-        int_model = init_zeros(num_features, rnn_units, out_steps)
-        if rnn_layer == "LSTM":
-            state = [int_model(inputs), int_model(inputs)]
-        else:
-            state = [int_model(inputs)]
+        int_model = init_zeros(num_features, rnn_units, out_steps, rnn_layer)
+        cropped_inputs = keras.layers.Cropping1D(cropping=(0, out_steps - 1))(inputs)
+        state = [int_model(cropped_inputs)]
 
     # Get output predictions
     prediction, *_ = o_model([inputs, *state])
@@ -103,7 +102,7 @@ def RNNModelConstruction(config: dict, td: TrainingDataMultiStep):
 
 
 def init_model(warmup_df: np.ndarray, warmup_width: int, num_warmup_features: int, init_layer: str,
-               rnn_layer: str, rnn_units: int):
+               rnn_layer: str, rnn_units: int, name: str):
     """
     Creates a Keras model to initialize the RNN state using a warmup sequence.
 
@@ -112,10 +111,11 @@ def init_model(warmup_df: np.ndarray, warmup_width: int, num_warmup_features: in
                                 Shape (samples * warmup_width, num_warmup_features).
         warmup_width (int): Number of time steps in the warmup sequence.
         num_warmup_features (int): Number of features in the warmup sequence.
-        init_layer (str): Type of layer to process the warmup sequence ('dense', 'GRU', 'RNN', 'LSTM').
+        init_layer (str): Type of layer to process the warmup sequence ('dense', 'GRU', 'RNN', 'LSTM', 'LastOutput').
         rnn_layer (str): Type of the main RNN layer ('LSTM', 'GRU', 'RNN'), used to determine
                              the number of state tensors needed if init_layer_type is 'dense'.
         rnn_units (int): Number of units for the RNN/Dense layers used in initialization.
+        name (str): The name of the returned model.
 
     Returns:
         keras.Model: A Keras model that takes a warmup sequence and returns the initial RNN state(s).
@@ -132,6 +132,7 @@ def init_model(warmup_df: np.ndarray, warmup_width: int, num_warmup_features: in
     # Init layer
     if init_layer == 'dense':
         dense_init = keras.layers.Dense(units=rnn_units, activation='softplus')
+        normalized_inputs = keras.layers.Reshape((warmup_width, num_warmup_features))(normalized_inputs)
         normalized_inputs = keras.layers.Flatten()(normalized_inputs)
         if rnn_layer == 'LSTM':  # For LSTM, creating two Dense layers
             dense_init2 = keras.layers.Dense(units=rnn_units, activation='softplus')
@@ -160,10 +161,10 @@ def init_model(warmup_df: np.ndarray, warmup_width: int, num_warmup_features: in
     else:
         raise NotImplementedError(f'Not implemented {init_layer}')
 
-    return keras.Model(inputs, state, name='init_model')
+    return keras.Model(inputs, state, name=name)
 
 
-def init_zeros(num_features: int, rnn_units: int, out_steps: int):
+def init_zeros(num_features: int, rnn_units: int, out_steps: int, rnn_layer: str):
     """
     Creates a Keras model that generates a zero initial state for an RNN.
     The state's batch size dimension will match the input batch size.
@@ -172,21 +173,23 @@ def init_zeros(num_features: int, rnn_units: int, out_steps: int):
         num_features (int): Number of features in the main input sequence (used by the input layer).
         rnn_units (int): The number of units in the RNN, determining the size of the zero state.
         out_steps (int): Number of time steps in the main input sequence.
+        rnn_layer (str): Type of the main RNN layer ('LSTM', 'GRU', 'RNN')
 
     Returns:
         keras.Model: A Keras model that takes a dummy input (main sequence shape) and
                      returns a zero tensor suitable as an initial RNN hidden state.
     """
-    initial_value_layer = keras.Input(shape=(out_steps, num_features))
-    crop = keras.layers.Cropping1D(cropping=(0, out_steps - 1))
+
+    initial_value_layer = keras.Input(shape=(1, num_features))
     dense_zeros = keras.layers.Dense(rnn_units, activation='linear', use_bias=False,
                                      kernel_initializer=keras.initializers.Zeros())
     dense_zeros.trainable = False
-    cropped = crop(initial_value_layer)
-    zeros = keras.layers.Reshape((1, num_features))(cropped)
+    zeros = keras.layers.Reshape((1, num_features))(initial_value_layer)
     zeros = keras.layers.Flatten()(zeros)
     zeros = dense_zeros(zeros)
-    return keras.Model(inputs=initial_value_layer, outputs=zeros, name='init_zeros')
+    if rnn_layer == 'LSTM':
+        zeros = [zeros, zeros]
+    return keras.Model(inputs=initial_value_layer, outputs=zeros, name=f'init_zeros_for_{rnn_layer}')
 
 
 def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_units: int, num_outputs: int,
@@ -233,7 +236,7 @@ def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_unit
         raise NotImplementedError(f'Not implemented {rnn_layer}')
 
     # Prior layer
-    if prior_layer is "dense":
+    if prior_layer == "dense":
         prior = keras.layers.Dense(rnn_units, activation='softplus')
         rnn_input = prior(normalized_inputs)
     elif prior_layer is None:
@@ -251,3 +254,224 @@ def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_unit
     pred = rescaling_layer(pred)
 
     return keras.Model([inputs, input_init], [pred, *state], name='out_model')
+
+
+def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
+    """
+    Constructs a Monotonic Recurrent Neural Network (MRNN) model using Keras Functional API.
+    This type of network can enforce monotonicity constraints on the input features.
+
+    Args:
+        config (dict): A dictionary containing the configuration parameters for the MRNN.
+                       Validated against `MonotonicRNNModelConstruction_config`.
+        td (TrainingDataGeneric): An object containing the training data, used for normalization,
+                           input shape, and determining monotonicity constraints based on column names.
+
+    Returns:
+        keras.Model: The constructed Keras functional model.
+    """
+
+    # Validate the input configuration dictionary and convert it to a dictionary
+    config = MonotonicRNNModelConstruction_config.model_validate(config).model_dump()
+
+    # Get boundary conditions from training data
+    # With initialization data
+    if isinstance(td.X_train, tuple):
+        warmup = True
+        out_steps = td.X_train[0].shape[1]
+        warmup_width = td.X_train[1].shape[1]
+        num_features = td.X_train[0].shape[2]
+        num_warmup_features = td.X_train[1].shape[2]
+    # Without initialization data
+    else:
+        warmup = False
+        out_steps = td.X_train.shape[1]
+        warmup_width = 0
+        num_features = td.X_train.shape[2]
+        num_warmup_features = 0
+    num_outputs = td.y_train.shape[2]
+
+    # Get config
+    rnn_units = config['rnn_units']
+    init_layer = config['init_layer']
+    rnn_layer = config['rnn_layer']
+    activation = config['activation']
+    monotonicity = config['monotonicity']
+    dis_layer = config['dis_layer']
+    dis_units = config['dis_units']
+    dis_activation = config['dis_activation']
+    init_dis = config['init_dis']
+
+    # Rescaling for output layer
+    rescale_min = float(keras.ops.cast(keras.ops.min(td.y_train), dtype="float32").numpy())
+    rescale_max = float(keras.ops.cast(keras.ops.max(td.y_train), dtype="float32").numpy())
+
+    # Input layer
+    inputs = keras.Input(shape=(out_steps, num_features))
+
+    # Get training data
+    if warmup:
+        x_train = td.X_train[0]
+    else:
+        x_train = td.X_train
+
+    # Get monotonicity constraints
+    mono = list(monotonicity.values())
+
+    def out_mrnn_model(inputs_df: np.ndarray, num_features: int, rnn_units: int, dis_units: int, num_outputs: int,
+                    rescale_min: float, rescale_max: float, rnn_layer: str, dis_layer: str,
+                       activation: str,  monotonicity: list, dis_activation: str):
+        """
+        Creates the main Keras model that processes an input sequence with an initial RNN state
+        to produce predictions and the final RNN state.
+
+        Args:
+            inputs_df (np.ndarray): The main input sequence data used to adapt the normalization layer.
+                                    Shape (samples, steps, features).
+            num_features (int): Number of features in the main input sequence.
+            rnn_layer (str): Type of monotonic RNN layer to use ('RNN').
+            rnn_units (int): Number of units in the monontonic RNN layer.
+            dis_units (int): Number of units in the disturbance layer
+            num_outputs (int): Number of output features to predict at each time step.
+            rescale_min (float): Minimum value used by a Rescaling layer applied to the predictions.
+            rescale_max (float): Maximum value used by a Rescaling layer applied to the predictions.
+            dis_layer (str): The layer for capturing the influence of disturbance inputs without monotonicity.
+            activation (str): The activation function to be used in the monotonic rnn.
+            monotonicity (dict[str, int]): Dictionary mapping feature names to monotonicity type
+                             (-1 for decreasing, 0 for no constraint, 1 for increasing).
+            dis_activation (str): The activation function to be used in the disturbance rnn.
+
+        Returns:
+            keras.Model: A Keras model that takes [main_input_sequence, initial_state(s)]
+                         and returns [prediction_sequence, final_state(s)].
+        """
+
+        # Input layer
+        inputs = keras.Input(shape=(None, num_features))
+
+        # Normalization layer
+        normalization_layer = keras.layers.Normalization()
+        normalization_layer.adapt(inputs_df)
+        normalized_inputs = normalization_layer(inputs)
+
+        slice_mono = SliceFeatures(0, len(monotonicity))
+        normalized_inputs_mono = slice_mono(normalized_inputs)
+        slice_dis = SliceFeatures(len(monotonicity), inputs.shape[2])
+        normalized_inputs_dis = slice_dis(inputs)
+
+        # Get kernal constraint
+        kernal_constraint = NonNegPartial(monotonicity)
+
+        # 1. Monotonic RNN layer
+        if rnn_layer == "RNN":
+            rnn_input_init = keras.Input(shape=(rnn_units,))
+            rnn = keras.layers.SimpleRNN(rnn_units, return_state=True, return_sequences=True, activation=activation,
+                                         kernel_constraint=kernal_constraint,
+                                         recurrent_constraint=DiagonalPosConstraint()) #DiagonalPosConstraint()
+        else:
+            raise NotImplementedError(f'Not implemented {rnn_layer}')
+
+        # Predict outputs and states
+        pred_mon, *state_mono = rnn(normalized_inputs_mono, initial_state=rnn_input_init)
+
+        # Final dense Layer
+        dense_mono = keras.layers.Dense(num_outputs, kernel_constraint=keras.constraints.NonNeg())
+        pred_mono = dense_mono(pred_mon)
+
+        # 2. Disturbance layer
+        if dis_layer == "LSTM":
+            dis_input_init = [keras.Input(shape=(dis_units,)) for _ in range(2)]
+            dis = keras.layers.LSTM(dis_units, return_state=True, return_sequences=True)
+            pred_dis, *state_dis = dis(normalized_inputs_dis, initial_state=dis_input_init)
+            dense_dis = keras.layers.Dense(num_outputs)
+            pred_dis = dense_dis(pred_dis)
+        elif dis_layer == 'dense':
+            dis = keras.layers.Dense(dis_units, activation=dis_activation)
+            pred_dis = dis(normalized_inputs_dis)
+            pred_dis = keras.layers.Dense(num_outputs)(pred_dis)
+        else:
+            raise NotImplementedError(f'Not implemented {dis_layer}')
+
+        # add up to get the prediction
+        pred = keras.layers.Add()([pred_mono, pred_dis])
+
+        # Rescaling layer
+        rescaling_layer = keras.layers.Rescaling(scale=rescale_max - rescale_min, offset=rescale_min)
+        pred = rescaling_layer(pred)
+
+        # construct the keras model
+        if dis_layer == 'LSTM':
+            mrnn_model = keras.Model([inputs, rnn_input_init, dis_input_init], [pred, *state_mono, *state_dis], name='out_model')
+        else:
+            mrnn_model = keras.Model([inputs, rnn_input_init], [pred, *state_mono], name='out_model')
+
+        return mrnn_model
+
+
+    o_model = out_mrnn_model(x_train.reshape(-1, num_features), num_features, rnn_units, dis_units, num_outputs,
+                        rescale_min, rescale_max, rnn_layer, dis_layer, activation, mono, dis_activation)
+
+    def init_mrnn_model(warmup: bool, warmup_width, num_warmup_features, out_steps, num_features, init_layer, rnn_layer, rnn_units, init_dis, dis_layer, dis_units, td):
+
+        inputs = keras.layers.Input(shape=(out_steps, num_features))
+        initial_value_layer = keras.Input(shape=(warmup_width, num_warmup_features))
+        # Warmup
+        if warmup:
+            # Create warmup model
+            int_model_mono = init_model(td.X_train[1].reshape(-1, num_warmup_features), warmup_width, num_warmup_features,
+                                   init_layer, rnn_layer, rnn_units, 'init_model_mono')
+            state_mono = int_model_mono(initial_value_layer)
+            if dis_layer == 'LSTM':
+                if init_dis == 'Zero':
+                    int_model_dis = init_zeros(num_warmup_features, dis_units, out_steps, dis_layer)
+                    cropped_inputs = keras.layers.Cropping1D(cropping=(0, warmup_width - 1))(initial_value_layer)
+                    state_dis = int_model_dis(cropped_inputs)
+                else:
+                    int_model_dis = init_model(td.X_train[1].reshape(-1, num_warmup_features), warmup_width, num_warmup_features,
+                                               init_dis, dis_layer, dis_units, 'init_model_dis')
+                    state_dis = int_model_dis(initial_value_layer)
+            model = keras.Model([initial_value_layer], [state_mono, state_dis], name='init_model')
+
+        # No warmup
+        else:
+            # Initialize models with zeros
+            int_model_mono = init_zeros(num_features, rnn_units, out_steps, rnn_layer)
+            cropped_inputs = keras.layers.Cropping1D(cropping=(0, out_steps - 1))(inputs)
+            state_mono = [int_model_mono(cropped_inputs)]
+            if dis_layer == "LSTM":
+                int_model_dis = init_zeros(num_features, dis_units, out_steps, dis_layer)
+                cropped_inputs = keras.layers.Cropping1D(cropping=(0, out_steps - 1))(inputs)
+                state_dis = int_model_dis(cropped_inputs)
+            elif dis_layer == "dense":
+                pass
+            model = keras.Model([inputs], [state_mono, state_dis], name='init_model')
+
+        return initial_value_layer, model
+
+    initial_value_layer, i_model = init_mrnn_model(warmup, warmup_width, num_warmup_features, out_steps, num_features, init_layer, rnn_layer, rnn_units, init_dis, dis_layer, dis_units, td)
+    if warmup:
+        state_mono, state_dis = i_model([initial_value_layer])
+    else:
+        state_mono, state_dis = i_model([inputs])
+
+    # Get output predictions
+    if dis_layer == 'LSTM':
+        prediction, *_ = o_model([inputs, *state_mono, state_dis])
+    elif dis_layer == 'dense':
+        prediction, *_ = o_model([inputs, *state_mono])
+
+    # Reshape output
+    outputs = keras.layers.Reshape((out_steps, num_outputs))(prediction)
+
+    # Define the model
+    if warmup:
+        model = keras.Model([inputs, initial_value_layer], outputs)
+    else:
+        model = keras.Model(inputs, outputs)
+
+    model.summary()
+    if warmup:
+        i_model.summary()
+    o_model.summary()
+
+    return model

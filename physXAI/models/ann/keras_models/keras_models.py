@@ -382,3 +382,59 @@ class RBFLayer(keras.Layer):
         if initial_centers_list is not None:
             config["initial_centers"] = np.array(initial_centers_list)
         return cls(**config)
+
+
+@keras.saving.register_keras_serializable(package='custom_layer', name='SliceFeatures')
+class SliceFeatures(keras.Layer):
+    def __init__(self, start, end, **kwargs):
+        super().__init__(**kwargs)
+        self.start = start
+        self.end = end
+
+    def call(self, inputs):
+        return inputs[..., self.start:self.end]
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({"start": self.start, "end": self.end})
+        return config
+
+
+@keras.saving.register_keras_serializable(package='custom_constraint', name='DiagonalConstraint')
+class DiagonalPosConstraint(keras.constraints.Constraint):
+    """Keep only the diagonal of a 2D weight matrix (intended for RNN recurrent kernels)."""
+
+    def __call__(self, w):
+        # Convert to Keras tensor
+        # w = keras.ops.convert_to_tensor(w)
+
+        # Dynamic shape: (rows, cols)
+        shape = keras.ops.shape(w)
+        rows, cols = shape[0], shape[1]
+
+        # Runtime check for squareness
+        if rows != cols:
+            raise ValueError(
+                f"DiagonalConstraint expects a square matrix, got shape {w.shape}"
+            )
+
+        # Build an identity mask
+        mask = keras.ops.eye(rows, cols, dtype=w.dtype)
+
+        # Keep only diagonal elements
+        w = w * mask
+
+        # Extract diagonal values
+        diag = keras.ops.diagonal(w)
+
+        # Set negative diagonal values to zero
+        diag_clipped = keras.ops.maximum(diag, 0)
+
+        # Rebuild matrix with non-negative diagonal
+        # Create a matrix where only the diagonal is diag_clipped
+        w = keras.ops.eye(rows, cols, dtype=w.dtype) * keras.ops.expand_dims(diag_clipped, 0)
+
+        return w
+
+    def get_config(self):
+        return {}
