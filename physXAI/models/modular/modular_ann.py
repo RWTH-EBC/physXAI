@@ -3,6 +3,7 @@ from itertools import combinations
 from logging import warning
 import operator
 import os
+from pathlib import Path
 from typing import Optional, Union
 
 from physXAI.models.modular.modular_expression import ModularExpression
@@ -12,6 +13,8 @@ from physXAI.preprocessing.training_data import TrainingDataGeneric
 from physXAI.preprocessing.constructed import FeatureBase
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
+from keras import Sequential
+from keras.src import Functional
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 
@@ -99,6 +102,34 @@ class ModularModel(ModularExpression):
             l = self.model.generate_model(td=td)(keras.layers.Concatenate()(inps))
             ModularExpression.models[self.name] = l
             return l    
+
+
+class ModularExistingModel(ModularExpression):
+
+    def __init__(self, model: Union[Sequential, Functional, str, Path], original_inputs: list[ModularExpression, FeatureBase], trainable: bool, name: str = None):
+        if name is None:
+            name = model.name + '_existing'
+        super().__init__(name)
+        if isinstance(model, str) or isinstance(model, Path):
+            model = keras.models.load_model(model)
+        self.model = model
+        self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in original_inputs]
+        self.model.trainable = trainable
+        if not trainable:
+            for layer in self.model.layers:
+                layer.trainable = False
+
+    def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
+        if self.name in ModularExpression.models.keys():
+            return ModularExpression.models[self.name]
+        else:
+            inps = list()
+            for x in self.inputs:
+                y = x.construct(input_layer, td)
+                inps.append(y)
+            l = self.model(keras.layers.Concatenate()(inps))
+            ModularExpression.models[self.name] = l
+            return l
 
 
 class ModularLinear(ModularExpression):
