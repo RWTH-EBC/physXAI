@@ -31,7 +31,7 @@ def train_model(base_path: str, folder_name: str, training_data_path: str, time_
     prep = PreprocessingSingleStep(inputs=inputs, output=output, csv_delimiter=',', time_step=time_step, random_state=random_state)
     td = prep.pipeline(training_data_path)
 
-    m = ClassicalANNModel(epochs=1000)
+    m = ClassicalANNModel(epochs=10)
     Logger.save_name_model = output_name
     model = m.pipeline(td, plot=True)
 
