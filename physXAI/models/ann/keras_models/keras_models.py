@@ -3,7 +3,8 @@ import numpy as np
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
-
+import tensorflow as tf
+from keras.saving import serialize_keras_object, deserialize_keras_object
 
 @keras.saving.register_keras_serializable(package='custom_constraint', name='NonNegPartial')
 class NonNegPartial(keras.constraints.Constraint):
@@ -438,3 +439,93 @@ class DiagonalPosConstraint(keras.constraints.Constraint):
 
     def get_config(self):
         return {}
+
+@keras.saving.register_keras_serializable(package='custom_cell', name='PCNNCell')
+class PCNNCell(keras.Layer):
+    def __init__(self, dis_ann: keras.models, dis_inputs: int,
+                 non_lin_ann: keras.models = None, non_lin_inputs: int = None, **kwargs):
+        super(PCNNCell, self).__init__(**kwargs)
+
+        # Define layers for ANN and Linear modules
+        self.dis_ann = dis_ann
+        self.dis_inputs = dis_inputs
+        self.lin_layer = keras.layers.Dense(1, activation='linear', kernel_constraint=keras.constraints.NonNeg(), name='lin_layer')  # has to be trainable!
+        self.non_lin_ann = non_lin_ann
+        self.non_lin_inputs = non_lin_inputs
+
+        # instantiate add and concatenate layer here to use it in call
+        self.add_layer = keras.layers.Add(trainable=False)
+        self.concatenate_layer = keras.layers.Concatenate(trainable=False)
+
+    @property
+    def state_size(self):
+        return [2]  # Return list with sizes of D_k+1 and E_k+1
+
+    @property
+    def output_size(self):
+        return 1
+
+    def build(self, input_shape):
+        super(PCNNCell, self).build(input_shape)
+
+        lin_input_shape = (input_shape[0], input_shape[1]-self.dis_inputs)
+        self.lin_layer.build(lin_input_shape)
+
+    def call(self, inputs, states):
+        # TODO Evtl. hier auch cropping nötig
+        states = states[0]  # states is a tuple of tensors, therefore get first element of tuple
+        previous_state_D = states[:, 0]  # Previous state D_k+1
+        previous_state_D = keras.ops.reshape(previous_state_D, (-1, 1))
+        previous_state_E = states[:, 1]  # Previous state E_k+1
+        previous_state_E = keras.ops.reshape(previous_state_E, (-1, 1))
+
+        # disturbance module
+        disturbance_inputs = inputs[:, :self.dis_inputs]  # evtl. als CroppingLayer (evtl. ist der nur für cropping auf time axis) or Reshape First part for ANN module
+        dis_ann_output = self.dis_ann(disturbance_inputs)
+
+        # linear module
+        if self.non_lin_inputs is None:
+            linear_inputs = inputs[:, self.dis_inputs:]
+            lin_module_output = self.lin_layer(linear_inputs)
+
+        else:
+            # non-linear inputs have to be fed through additional ANN to capture
+            # non-linear dynamics appropriately before entering lin module
+            non_linear_inputs = inputs[:, -self.non_lin_inputs:]
+            non_linear_output = self.non_lin_ann(non_linear_inputs)
+
+            linear_inputs = inputs[:, self.dis_inputs:-self.non_lin_inputs]
+            lin_module_inputs = self.concatenate_layer([linear_inputs, non_linear_output])
+            lin_module_output = self.lin_layer(lin_module_inputs)
+
+        # State D_k+1 is output of disturbance ann + previous state
+        D_k_plus_1 = self.add_layer([previous_state_D, dis_ann_output])
+        # State E_k+1 is output of linear module + previous state
+        E_k_plus_1 = self.add_layer([previous_state_E, lin_module_output])
+        T_k_plus_1 = self.add_layer([D_k_plus_1, E_k_plus_1])
+
+        return T_k_plus_1, [tf.concat([D_k_plus_1, E_k_plus_1], axis=1)]  # Return output and updated state
+
+    def get_config(self):
+        config = {
+            "dis_ann": serialize_keras_object(self.dis_ann),
+            "dis_inputs": self.dis_inputs,
+            "non_lin_ann": serialize_keras_object(self.non_lin_ann),
+            "non_lin_inputs": self.non_lin_inputs
+        }
+        base_config = super().get_config()
+        return {**base_config, **config}
+
+    @classmethod
+    def from_config(cls, config):
+        # Pull out serialized specs
+        dis_ann_cfg = config.pop("dis_ann")
+        non_lin_ann_cfg = config.pop("non_lin_ann")
+
+        # Explicitly rebuild objects
+        dis_ann = deserialize_keras_object(dis_ann_cfg) if dis_ann_cfg is not None else None
+        non_lin_ann = deserialize_keras_object(non_lin_ann_cfg) if dis_ann_cfg is not None else None
+
+        # Pass remaining simple fields to __init__
+        obj = cls(dis_ann=dis_ann, non_lin_ann=non_lin_ann, **config)
+        return obj

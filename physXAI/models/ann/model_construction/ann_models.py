@@ -28,6 +28,11 @@ def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
     # Get config
     n_layers = config['n_layers']
     n_neurons = config['n_neurons']
+    kernal_constraint = config['kernal_constraint']
+    if kernal_constraint == 'NonNeg':
+        k_con = keras.constraints.NonNeg()
+    else:
+        k_con = None
     # If n_neurons is a single integer, replicate it for all layers
     if isinstance(n_neurons, int):
         n_neurons = [n_neurons] * n_layers
@@ -58,9 +63,9 @@ def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
 
     for i in range(0, n_layers):
         # For each layer add dense
-        model.add(keras.layers.Dense(n_neurons[i], activation=activation_function[i]))
+        model.add(keras.layers.Dense(n_neurons[i], activation=activation_function[i], kernel_constraint=k_con))
     # Add output layer
-    model.add(keras.layers.Dense(1, activation='linear'))
+    model.add(keras.layers.Dense(1, activation='linear', kernel_constraint=k_con))
     # Add rescaling
     if config['rescale_output']:
         model.add(keras.layers.Rescaling(scale=rescale_max - rescale_min, offset=rescale_min))

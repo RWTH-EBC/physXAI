@@ -430,3 +430,50 @@ class TrainingDataMultiStep(TrainingDataGeneric):
             return self.y_test_pred.reshape(-1, *self.y_test_pred.shape[2:])
         else:
             return self.y_test_pred
+
+
+def copy_and_crop_td_multistep(td: TrainingDataMultiStep, crop_feature_index: int):
+    """
+    crops the training data on the feature axis. For this, the training data object is copied and the NEW training data
+    object is returned while the old object remains with all features.
+    Note: A potential warmup sequence is not present in the new training data.
+
+    :param crop_feature_index: index after which the feature axis will be cropped (>0)
+                                or index before which the feature axis will be cropped (<0)
+    """
+    ctd = TrainingDataMultiStep(td.train_ds, td.val_ds, td.test_ds, td.columns, td.output, td.init_columns)
+
+    if crop_feature_index > 0:
+        if isinstance(td.X_train, tuple):
+            ctd.X_train = td.X_train[0][:, :, :crop_feature_index]
+            ctd.X_val = td.X_val[0][:, :, :crop_feature_index]
+            ctd.X_test = td.X_test[0][:, :, :crop_feature_index]
+        else:
+            ctd.X_train = td.X_train[:, :, :crop_feature_index]
+            ctd.X_val = td.X_val[:, :, :crop_feature_index]
+            ctd.X_test = td.X_test[:, :, :crop_feature_index]
+
+    elif crop_feature_index < 0:
+        if isinstance(td.X_train, tuple):
+            ctd.X_train = td.X_train[0][:, :, crop_feature_index:]
+            ctd.X_val = td.X_val[0][:, :, crop_feature_index:]
+            ctd.X_test = td.X_test[0][:, :, crop_feature_index:]
+        else:
+            ctd.X_train = td.X_train[:, :, crop_feature_index:]
+            ctd.X_val = td.X_val[:, :, crop_feature_index:]
+            ctd.X_test = td.X_test[:, :, crop_feature_index:]
+    else:
+        raise ValueError("crop_feature_index cannot be 0")
+
+    ctd.y_train = td.y_train
+    ctd.y_val = td.y_val
+    ctd.y_test = td.y_test
+
+    ctd.y_train_pred = td.y_train_pred
+    ctd.y_val_pred = td.y_val_pred
+    ctd.y_test_pred = td.y_test_pred
+
+    ctd.file_path = td.file_path
+    ctd.columns = td.columns[:crop_feature_index]
+
+    return ctd

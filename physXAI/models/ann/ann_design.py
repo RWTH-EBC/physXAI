@@ -9,7 +9,7 @@ from physXAI.models.models import SingleStepModel, LinearRegressionModel, MultiS
 from physXAI.models.ann.model_construction.ann_models import ClassicalANNConstruction, CMNNModelConstruction
 from physXAI.models.ann.model_construction.rbf_models import RBFModelConstruction
 from physXAI.models.ann.model_construction.residual_models import LinResidualANNConstruction
-from physXAI.models.ann.model_construction.rnn_models import RNNModelConstruction, MonotonicRNNModelConstruction
+from physXAI.models.ann.model_construction.rnn_models import RNNModelConstruction, MonotonicRNNModelConstruction, PCNNModelConstruction
 from physXAI.models.ann.pinn.pinn_loss import multi_y_loss
 from physXAI.plotting.plotting import plot_prediction_correlation, plot_predictions, plot_training_history, \
     plot_metrics_table, subplots, plot_multi_rmse
@@ -215,12 +215,17 @@ class ClassicalANNModel(ANNModel):
         self.n_neurons: int or list[int] = n_neurons
         self.activation_function: str or list[str] = activation_function
         self.rescale_output: bool = rescale_output
+        if 'kernal_constraint' in kwargs:
+            self.kernal_constraint: str = kwargs['kernal_constraint']
+        else:
+            self.kernal_constraint = None
 
         self.model_config = {
             "n_layers": self.n_layers,
             "n_neurons": self.n_neurons,
             "activation_function": self.activation_function,
             "rescale_output": self.rescale_output,
+            "kernal_constraint": self.kernal_constraint
         }
 
     def generate_model(self, **kwargs):
@@ -238,7 +243,8 @@ class ClassicalANNModel(ANNModel):
             "n_layers": self.n_layers,
             "n_neurons": self.n_neurons,
             "activation_function": self.activation_function,
-            "rescale_output": self.rescale_output
+            "rescale_output": self.rescale_output,
+            "kernal_constraint": self.kernal_constraint
         })
         return config
 
@@ -773,6 +779,67 @@ class RNNModel(MultiStepModel):
             'early_stopping_epochs': self.early_stopping_epochs,
             'random_seed': self.random_seed
         })
+        return config
+
+
+@register_model
+class PCNNModel(RNNModel):
+    """
+      A Recurrent Neural Network (RNN) model for multi-step forecasting.
+      Inherits from MultiStepModel.
+      """
+
+    def __init__(self, dis_ann: ANNModel, dis_inputs: int, non_lin_ann: ANNModel = None, non_lin_inputs: int = None,
+                 epochs: int = 1000, learning_rate: float = 0.001, early_stopping_epochs: int = 100,
+                 random_seed: int = 42, **kwargs):
+        """
+        Initializes the PCNNModel based on a RNNModel.
+
+        Args:
+            dis_ann (ANNModel): The disturbance ANN (ClassicalANN, CMNN etc.)
+            dis_inputs (int): Number of inputs that are fed into the disturbance ANN; (rest of inputs will be inputs to the lin module)
+            non_lin_ann (ANNModel): An additional ANN to capture non-linear behaviour when non-linear inputs should be fed into the linear module
+            non_lin_inputs (int): Number of inputs of linear module that are non-linear and are therefore have to be fed through the non-linear ANN first.
+            epochs (int): Number of times to iterate over the entire training dataset.
+            learning_rate (float): Learning rate for the Adam optimizer.
+            early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
+                                         If None, early stopping is disabled.
+            random_seed (int): Seed for random number generators to ensure reproducibility.
+        """
+
+        # initialization parameters for RNN
+        rnn_units = 1
+        init_layer = None
+        rnn_layer = 'RNN'
+
+        super().__init__(rnn_units, rnn_layer, init_layer, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
+
+        self.disturbance_ann = dis_ann
+        self.non_lin_ann = non_lin_ann
+
+        self.model_config.update({
+            'dis_inputs': dis_inputs,
+            'non_lin_inputs': non_lin_inputs,
+        })
+
+    def generate_model(self, **kwargs):
+        """
+        Generates the PCNN using PCNNModelConstruction.
+        """
+
+        td = kwargs['td']
+        model = PCNNModelConstruction(self.model_config, self.disturbance_ann, td, self.non_lin_ann)
+        return model
+
+    def get_config(self) -> dict:
+        config = super().get_config()
+        config.update({
+            'disturbance_inputs': self.model_config['dis_inputs'],
+            'disturbance_ann': self.disturbance_ann.get_config(),
+            'non_linear_inputs': self.model_config['non_lin_inputs'],
+            'non_linear_ann': self.non_lin_ann.get_config() if self.non_lin_ann is not None else None,
+        })
+        # TODO parameters of lin_module to config?
         return config
 
 
