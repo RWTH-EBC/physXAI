@@ -151,12 +151,12 @@ class MetricsMultiStep(Metrics):
                                         for multi-step forecasts.
         """
 
-        self.train_kpis = self.evaluate(td.y_train.reshape(-1, 1), td.y_train_pred.reshape(-1, 1), label='Train')
+        self.train_kpis = self.evaluate(td.y_train.reshape(-1, 1).astype(float), td.y_train_pred.reshape(-1, 1).astype(float), label='Train')
         if td.y_val is not None:
-            self.val_kpis = self.evaluate(td.y_val.reshape(-1, 1), td.y_val_pred.reshape(-1, 1), label='Val')
+            self.val_kpis = self.evaluate(td.y_val.reshape(-1, 1).astype(float), td.y_val_pred.reshape(-1, 1).astype(float), label='Val')
         else:
             self.val_kpis = None
-        self.test_kpis = self.evaluate(td.y_test.reshape(-1, 1), td.y_test_pred.reshape(-1, 1), label='Test')
+        self.test_kpis = self.evaluate(td.y_test.reshape(-1, 1).astype(float), td.y_test_pred.reshape(-1, 1).astype(float), label='Test')
 
         # Stepwise RMSE
         rmse_train_l = list[float]()
