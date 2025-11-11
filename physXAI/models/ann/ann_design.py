@@ -215,12 +215,17 @@ class ClassicalANNModel(ANNModel):
         self.n_neurons: int or list[int] = n_neurons
         self.activation_function: str or list[str] = activation_function
         self.rescale_output: bool = rescale_output
+        if 'kernal_constraint' in kwargs:
+            self.kernal_constraint: str = kwargs['kernal_constraint']
+        else:
+            self.kernal_constraint = None
 
         self.model_config = {
             "n_layers": self.n_layers,
             "n_neurons": self.n_neurons,
             "activation_function": self.activation_function,
             "rescale_output": self.rescale_output,
+            "kernal_constraint": self.kernal_constraint
         }
 
     def generate_model(self, **kwargs):
@@ -238,7 +243,8 @@ class ClassicalANNModel(ANNModel):
             "n_layers": self.n_layers,
             "n_neurons": self.n_neurons,
             "activation_function": self.activation_function,
-            "rescale_output": self.rescale_output
+            "rescale_output": self.rescale_output,
+            "kernal_constraint": self.kernal_constraint
         })
         return config
 
