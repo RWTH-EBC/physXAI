@@ -1,5 +1,6 @@
 import json
 import os
+import pathlib
 from unittest.mock import patch
 import keras
 import pytest
@@ -14,6 +15,9 @@ from physXAI.models.ann.ann_design import ClassicalANNModel, CMNNModel, LinANNMo
     RBFModel
 
 
+base_path = os.path.join(pathlib.Path(__file__).resolve().parent.parent, 'stored_data')
+
+
 @pytest.fixture(autouse=True)
 def disable_plotly_show():
     """Automatically disable plotly show() for all tests"""
@@ -22,7 +26,7 @@ def disable_plotly_show():
 
 @pytest.fixture(scope='module')
 def file_path():
-    return r"data/bestest_hydronic_heat_pump/pid_data.csv"
+    return os.path.join(pathlib.Path(__file__).resolve().parent.parent, "data/bestest_hydronic_heat_pump/pid_data.csv")
 
 @pytest.fixture(scope='module')
 def inputs_php():
@@ -47,8 +51,8 @@ def test_preprocessing(monkeypatch, file_path, inputs_php, output_php):
     monkeypatch.setattr('builtins.input', lambda _: "Y")
 
     # Setup up logger for saving
-    Logger.setup_logger(folder_name='unittests\\test_coverage', override=False)
-    Logger.setup_logger(folder_name='unittests\\test_coverage', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=False)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
 
     # Constructed features
     x = Feature('oveHeaPumY_u')
@@ -75,7 +79,7 @@ def test_preprocessing(monkeypatch, file_path, inputs_php, output_php):
     prep.pipeline(file_path)
 
 def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
-    Logger.setup_logger(folder_name='unittests\\test_coverage', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
 
     x1 = Feature('reaTZon_y')
     x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
@@ -92,7 +96,7 @@ def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
 @pytest.fixture(scope='module')
 def p_hp_data(file_path, inputs_php, output_php):
     # Setup up logger for saving
-    Logger.setup_logger(folder_name='unittests\\test_coverage', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
     # Create & process Training data
     prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php)
     td = prep.pipeline(file_path)
@@ -100,7 +104,7 @@ def p_hp_data(file_path, inputs_php, output_php):
 
 @pytest.fixture(scope='module')
 def tair_data_delta(file_path, inputs_tair, output_tair):
-    Logger.setup_logger(folder_name='unittests\\test_coverage', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
     x1 = Feature('reaTZon_y')
     x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
     x2 = Feature('weaSta_reaWeaTDryBul_y')
@@ -114,7 +118,7 @@ def tair_data_delta(file_path, inputs_tair, output_tair):
 
 @pytest.fixture(scope='module')
 def tair_data_noval(file_path, inputs_tair, output_tair):
-    Logger.setup_logger(folder_name='unittests\\test_coverage', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
     x1 = Feature('reaTZon_y')
     x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
     x2 = Feature('weaSta_reaWeaTDryBul_y')
@@ -129,7 +133,7 @@ def tair_data_noval(file_path, inputs_tair, output_tair):
 
 @pytest.fixture(scope='module')
 def tair_data_total(file_path, inputs_tair, output_tair):
-    Logger.setup_logger(folder_name='unittests\\test_coverage', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
     x1 = Feature('reaTZon_y')
     x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
     x2 = Feature('weaSta_reaWeaTDryBul_y')
@@ -143,7 +147,8 @@ def tair_data_total(file_path, inputs_tair, output_tair):
 
 def test_model_linReg(inputs_php, output_php, file_path):
     # Setup up logger for saving
-    Logger.setup_logger(folder_name='unittests\\test_coverage', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
+
     # Create & process Training data
     prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php, val_size=0)
     td = prep.pipeline(file_path)
@@ -157,6 +162,9 @@ def test_model_linReg(inputs_php, output_php, file_path):
     Logger.save_training_data(td, path=os.path.join(Logger._logger, 'training_data2'))
 
 def test_model_ann(p_hp_data, inputs_php, output_php, file_path):
+    # Setup up logger for saving
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
+
     prep = p_hp_data[0]
     td = p_hp_data[1]
 
@@ -172,6 +180,9 @@ def test_model_ann(p_hp_data, inputs_php, output_php, file_path):
     Logger.save_training_data(td)
 
 def test_model_cmnn(p_hp_data, inputs_php, output_php, file_path):
+    # Setup up logger for saving
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
+
     prep = p_hp_data[0]
     td = p_hp_data[1]
 
@@ -207,6 +218,9 @@ def test_model_cmnn(p_hp_data, inputs_php, output_php, file_path):
     Logger.save_training_data(td)
 
 def test_model_linANN(p_hp_data, inputs_php, output_php, file_path):
+    # Setup up logger for saving
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
+
     prep = p_hp_data[0]
     td = p_hp_data[1]
 
@@ -229,6 +243,8 @@ def test_model_linANN(p_hp_data, inputs_php, output_php, file_path):
     Logger.save_training_data(td)
 
 def test_model_pinn(inputs_php, output_php, file_path):
+    # Setup up logger for saving
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
 
     # Check PINNs
     # PINN: Prepare preprocessing
@@ -259,7 +275,7 @@ def test_model_pinn(inputs_php, output_php, file_path):
     Logger.save_training_data(td)
 
 def test_models_rnn(file_path):
-    Logger.setup_logger(folder_name='unittests\\test_coverage', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
 
     # RNN
     inputs = ['weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaHDirNor_y', 'oveHeaPumY_u']
@@ -295,7 +311,7 @@ def test_models_rnn(file_path):
 
 def test_read_setup():
 
-    Logger.setup_logger(folder_name='unittests\\test_coverage', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
 
     # Read setup
     save_name_preprocessing = Logger.save_name_preprocessing
@@ -329,6 +345,8 @@ def test_read_setup():
     AbstractModel.model_from_config(config_model)
 
 def test_feature_selection(monkeypatch, p_hp_data, file_path):
+    # Setup up logger for saving
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
     monkeypatch.setattr('builtins.input', lambda _: "2")
 
     prep = p_hp_data[0]
@@ -342,6 +360,8 @@ def test_feature_selection(monkeypatch, p_hp_data, file_path):
                                            fixed_inputs=['weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u'])
 
 def test_feature_selection_multi(monkeypatch, tair_data_delta, tair_data_noval ,tair_data_total, file_path):
+    # Setup up logger for saving
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
     monkeypatch.setattr('builtins.input', lambda _: "2")
 
     prep = tair_data_delta[0]
