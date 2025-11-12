@@ -468,7 +468,7 @@ class PCNNCell(keras.Layer):
     def build(self, input_shape):
         super(PCNNCell, self).build(input_shape)
 
-        lin_input_shape = (input_shape[0], input_shape[1]-self.dis_inputs)
+        lin_input_shape = (input_shape[0], input_shape[1]-self.dis_inputs-self.non_lin_inputs+1)
         self.lin_layer.build(lin_input_shape)
 
     def call(self, inputs, states):
