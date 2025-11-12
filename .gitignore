@@ -6,3 +6,5 @@
 **/_version.py
 /**.egg-info
 **/.coverage
+/docs/build
+/venv

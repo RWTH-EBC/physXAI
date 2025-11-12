@@ -1,13 +1,16 @@
-from physXAI.preprocessing.preprossesing import PreprocessingSingleStep
+import os
+import pathlib
+from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 from physXAI.models.models import LinearRegressionModel
 from physXAI.utils.logging import Logger
 
 """
 Creates standard model to predict the power of the heat pump using the Boptest data
 """
+base_path = os.path.join(pathlib.Path(__file__).resolve().parent.parent, 'stored_data')
 
 # Setup up logger for saving
-Logger.setup_logger(folder_name='unittests\\verify_installation', override=True)
+Logger.setup_logger(base_path=base_path, folder_name='unittests\\verify_installation', override=True)
 
 # File path to data
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"

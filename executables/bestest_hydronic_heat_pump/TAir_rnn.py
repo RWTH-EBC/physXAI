@@ -1,5 +1,5 @@
 from physXAI.models.ann.ann_design import RNNModel
-from physXAI.preprocessing.preprossesing import PreprocessingMultiStep
+from physXAI.preprocessing.preprocessing import PreprocessingMultiStep
 from physXAI.utils.logging import Logger
 
 

@@ -24,8 +24,7 @@ def get_parent_working_directory() -> str:
     """
 
     try:
-        path = Path(__file__)
-        repo = git.Repo(path, search_parent_directories=True)
+        repo = git.Repo(search_parent_directories=True)
         git_root = repo.working_tree_dir
         return git_root
     except git.InvalidGitRepositoryError:  # pragma: no cover

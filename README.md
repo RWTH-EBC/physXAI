@@ -1,12 +1,13 @@
-![E.ON EBC RWTH Aachen University](https://raw.githubusercontent.com/RWTH-EBC/AixWeather/main/docs/source/_static/EBC_Logo.png)
+![E.ON EBC RWTH Aachen University](https://github.com/RWTH-EBC/physXAI/blob/main/docs/EBC_Logo.png?raw=true)
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-![Coverage](build/reports/coverage.svg)
-[![DOI:10.2139/ssrn.5276153](http://img.shields.io/badge/DOI-10.2139/ssrn.5276153-0A3874.svg)](http://dx.doi.org/10.2139/ssrn.5276153)
+[![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://rwth-ebc.github.io/physXAI/)
+![Coverage](https://raw.githubusercontent.com/RWTH-EBC/physXAI/dc3f25cbff23c06eac5344978b431a2faf27aa1c/build/reports/coverage.svg)
+[![DOI:10.1016/j.buildenv.2025.113640](https://img.shields.io/badge/DOI-10.1016%2Fj.buildenv.2025.113640-227BC0)](https://doi.org/10.1016/j.buildenv.2025.113640)
 
 
-<div align="center">
-<img src="docs/physXAI.png" height="300">
+<div>
+<img src="https://github.com/RWTH-EBC/physXAI/blob/main/docs/physXAI.png?raw=true" height="300" alt="physXAI Logo">
 </div>
 
 # physXAI
@@ -19,28 +20,35 @@ The toolbox aims to integrate physical knowledge into machine learning models to
 If you have any questions regarding physXAI, feel free to contact us at ebc-tools@eonerc.rwth-aachen.de  
 
 ## Installation
-1. Create conda or virtual environment with Python 3.12:
-```
-conda create -n <name_of_environment> python=3.12 pip
-conda activate <name_of_environment>
-```
-2. Clone pyhsXAI git repo:
-```
-git clone https://github.com/RWTH-EBC/physXAI.git
-```
+1. Create virtual environment with Python 3.12 and activate it:
+	```
+	python -m venv physXAI
+	```
+	- **On Windows:**
+	  ```
+	  physXAI\Scripts\activate.bat
+	  ```
+	- **On Unix/Linux/macOS:**
+	  ```
+	  source physXAI/bin/activate
+	  ```
+2. Clone physXAI git repo:
+	```
+	git clone https://github.com/RWTH-EBC/physXAI.git
+	```
 3. Switch in project directory:
-```
-cd <path_to_repository>
-```
-4.
-A) To install physXAI as a user:
-```
-pip install .
-```
-B) To install physXAI as a developer:
-```
-pip install -e .[dev]
-```
+	```
+	cd <path_to_repository>
+	```
+4. A) To install physXAI as a user:
+	```
+	pip install .
+	```
+ 
+    B) To install physXAI as a developer:
+	```
+	pip install -e .[dev]
+	```
 
 ## Getting Started
 Executable and commented examples demonstrating the use of the physXAI Toolbox can be found in the `executables` directory. <br />
@@ -50,6 +58,7 @@ New executable scripts should be added to the `executables` directory.
 ## Current Model Types
 The physXAI currently focuses on physics-guided neural networks build with Keras and Tensorflow.
 Models in this repository are categorized into two main types:
+
 - Single-Step Models: Predicting one step ahead. Can be used recursivly in the MPC.
 	- Linear Regression (sicit-learn)
 	- Classical ANN
@@ -62,6 +71,7 @@ Models in this repository are categorized into two main types:
 
 ## Project Structure
 The project is organized into the following directories:
+
 - `executables`: Contains executable scripts and configuration files. This is the primary location for users to run and test models.
 	- The base example uses data from the BOPTEST 'Bestest Hydronic Heat Pump' test case: https://ibpsa.github.io/project1-boptest/testcases/ibpsa/testcases_ibpsa_bestest_hydronic_heat_pump/
 - `data`: Storage for input data, typically in `.csv` format. Datasets required for training and evaluating models should be placed here.
@@ -76,7 +86,8 @@ The project is organized into the following directories:
 	- `evaluation`: Modules for evaluating model performance using various metrics.
 	- `utils`: Utility functions and helper scripts used across different parts of the toolbox.
 - `docs`: Contains documentation for the project.
-- `Archive`: Used for archiving older versions of the code, data, or models to keep the main project structure clean.
+- `build`: Contains saved test reports.
+- `unittests`: Contains unittests for physXAI.
 
 ## How to contribute to the development
 
@@ -88,17 +99,17 @@ Furthermore, you are welcome to contribute via Pull Requests.
 
 To cite physXAI, please use the following paper:
 
-> Henkel, Patrick and Roß, Simon and Rätz, Martin and Müller, Dirk, Monotonic Physics-Constrained Neural Networks for Model Predictive Control of Building Energy Systems. Available at SSRN: https://ssrn.com/abstract=5276153 or http://dx.doi.org/10.2139/ssrn.5276153
+> Henkel, Patrick and Roß, Simon and Rätz, Martin and Müller, Dirk, Monotonic physics-constrained neural networks for model predictive control of building energy systems. Building and Environment, 2025, 285, 113640. https://doi.org/10.1016/j.buildenv.2025.113640
 
 ## Copyright and license
 This tool is released by RWTH Aachen University, E.ON Energy Research Center, Institute for Energy Efficient Buildings and Indoor Climate <br />
-and is licensed under the BSD 3 Clause License - see the [LICENSE](LICENSE) file for details.
+and is licensed under the BSD 3 Clause License - see the [LICENSE](https://github.com/RWTH-EBC/physXAI/blob/main/LICENSE) file for details.
 
 ## Acknowledgments
 
 We gratefully acknowledge the financial support by Federal Ministry for Economic Affairs and Climate Action (BMWK), promotional reference 03EN6022B.
 
-<img src="docs/BMWK_logo.png" alt="BMWK" width="200"/>
+<img src="https://github.com/RWTH-EBC/physXAI/blob/main/docs/BMWK_logo.png?raw=true" alt="BMWK" width="200"/>
 
 ## Contact
 Patrick Henkel <br />

@@ -59,7 +59,7 @@ class Metrics:
 
         return kpis
 
-    def get_metrics(self, nround: int = 2) -> (list[str], list[float]):
+    def get_metrics(self, nround: int = 2) -> tuple[list[str], list[float]]:
         """
           Returns a list of metric labels and their corresponding rounded values.
 
@@ -178,7 +178,7 @@ class MetricsMultiStep(Metrics):
         self.rmse_test_l = rmse_test_l
 
     @staticmethod
-    def evaluate_step(y_true: np.ndarray, y_pred: np.ndarray, step: int) -> (float, float, float):
+    def evaluate_step(y_true: np.ndarray, y_pred: np.ndarray, step: int) -> tuple[float, float, float]:
         """
         Calculates Mean Squared Error (MSE), Root Mean Squared Error (RMSE),
         and R-squared (R2) score for a specific step in multi-step predictions.

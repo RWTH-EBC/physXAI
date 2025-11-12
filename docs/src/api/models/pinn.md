@@ -1,0 +1,1 @@
+::: physXAI.models.ann.pinn.pinn_loss
