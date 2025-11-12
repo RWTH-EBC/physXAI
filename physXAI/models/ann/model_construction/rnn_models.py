@@ -302,6 +302,7 @@ def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
     dis_units = config['dis_units']
     dis_activation = config['dis_activation']
     init_dis = config['init_dis']
+    fully_connected = config['fully_connected']
 
     # Rescaling for output layer
     rescale_min = float(keras.ops.cast(keras.ops.min(td.y_train), dtype="float32").numpy())
@@ -321,7 +322,7 @@ def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
 
     def out_mrnn_model(inputs_df: np.ndarray, num_features: int, rnn_units: int, dis_units: int, num_outputs: int,
                     rescale_min: float, rescale_max: float, rnn_layer: str, dis_layer: str,
-                       activation: str,  monotonicity: list, dis_activation: str):
+                       activation: str,  monotonicity: list, dis_activation: str, fully_connected: bool):
         """
         Creates the main Keras model that processes an input sequence with an initial RNN state
         to produce predictions and the final RNN state.
@@ -341,6 +342,7 @@ def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
             monotonicity (dict[str, int]): Dictionary mapping feature names to monotonicity type
                              (-1 for decreasing, 0 for no constraint, 1 for increasing).
             dis_activation (str): The activation function to be used in the disturbance rnn.
+            fully_connected (bool): Whether the hidden states in the main RNN are fully connected with each other.
 
         Returns:
             keras.Model: A Keras model that takes [main_input_sequence, initial_state(s)]
@@ -366,9 +368,13 @@ def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
         # 1. Monotonic RNN layer
         if rnn_layer == "RNN":
             rnn_input_init = keras.Input(shape=(rnn_units,))
+            if fully_connected:
+                recurrent_kernal_constraint = keras.constraints.NonNeg()
+            else:
+                recurrent_kernal_constraint = DiagonalPosConstraint()
             rnn = keras.layers.SimpleRNN(rnn_units, return_state=True, return_sequences=True, activation=activation,
                                          kernel_constraint=kernal_constraint,
-                                         recurrent_constraint=DiagonalPosConstraint()) #DiagonalPosConstraint()
+                                         recurrent_constraint=recurrent_kernal_constraint)
         else:
             raise NotImplementedError(f'Not implemented {rnn_layer}')
 
@@ -410,7 +416,7 @@ def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
 
 
     o_model = out_mrnn_model(x_train.reshape(-1, num_features), num_features, rnn_units, dis_units, num_outputs,
-                        rescale_min, rescale_max, rnn_layer, dis_layer, activation, mono, dis_activation)
+                        rescale_min, rescale_max, rnn_layer, dis_layer, activation, mono, dis_activation, fully_connected)
 
     def init_mrnn_model(warmup: bool, warmup_width, num_warmup_features, out_steps, num_features, init_layer, rnn_layer, rnn_units, init_dis, dis_layer, dis_units, td):
 

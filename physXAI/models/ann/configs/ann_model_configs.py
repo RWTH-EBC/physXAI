@@ -95,6 +95,7 @@ class MonotonicRNNModelConstruction_config(RNNModelConstruction_config):
     dis_units: int = Field(32, gt=0)
     dis_activation: Optional[str] = 'tanh'
     init_dis: Optional[str] = 'Zero'
+    fully_connected: Optional[bool] = True
 
     @field_validator('monotonicity')
     def validate_monotonicity(cls, v):

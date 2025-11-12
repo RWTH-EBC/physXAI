@@ -852,7 +852,7 @@ class MonotonicRNNModel(RNNModel):
     def __init__(self, rnn_units: int = 32, rnn_layer: str = 'RNN', init_layer='LastOutput', epochs: int = 1000,
                  learning_rate: float = 0.001, early_stopping_epochs: Optional[int] = 100, random_seed: int = 42,
                  prior_layer: str = None, activation: str = 'tanh', monotonicity: dict[str, int] = None, init_dis: str='Zero',
-                 dis_layer: str = 'LSTM', dis_units: int = 16, dis_activation: str = 'tanh',  **kwargs):
+                 dis_layer: str = 'LSTM', dis_units: int = 16, dis_activation: str = 'tanh',  fully_connected: bool = True, **kwargs):
         """
         Initializes the RNNModel.
 
@@ -877,6 +877,7 @@ class MonotonicRNNModel(RNNModel):
             init_dis (str, optional): Type of layer  ('dense', 'RNN', 'LSTM', 'GRU', 'LastOutput', 'Zero')
                                                     used for initializing dis_layer state if warmup is used.
                                                     Defaults to Zero.
+            fully_connected (bool): Whether the hidden states in the main RNN are fully connected with each other.
 
         """
 
@@ -887,6 +888,7 @@ class MonotonicRNNModel(RNNModel):
         self.dis_units: int = dis_units
         self.dis_activation: str = dis_activation
         self.init_dis: str = init_dis
+        self.fully_connected: bool = fully_connected
 
         self.model_config = {
             'rnn_units': rnn_units,
@@ -898,7 +900,8 @@ class MonotonicRNNModel(RNNModel):
             'dis_layer': dis_layer,
             'dis_units': dis_units,
             'dis_activation': dis_activation,
-            'init_dis': init_dis
+            'init_dis': init_dis,
+            'fully_connected': fully_connected
         }
 
     def generate_model(self, **kwargs):
@@ -926,7 +929,8 @@ class MonotonicRNNModel(RNNModel):
             'dis_layer': self.dis_layer,
             'dis_units': self.dis_units,
             'dis_activation': self.dis_activation,
-            'init_dis': self.init_dis
+            'init_dis': self.init_dis,
+            'fully_connected': self.fully_connected
         })
         return config
 
