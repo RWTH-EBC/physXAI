@@ -185,7 +185,7 @@ class PreprocessingSingleStep(PreprocessingData):
             if self.ignore_nan:
                 df.dropna(inplace=True)
             else:
-                raise ValueError("Data Error: The TrainingData contains NaN values in intermediate rows.")
+                raise ValueError("Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended, set ignore_nan=True in PreprocessingSingleStep.")
 
         X = df[self.inputs]
         y = df[self.output].shift(-self.shift)
