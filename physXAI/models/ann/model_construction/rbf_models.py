@@ -35,29 +35,20 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
         n_neurons = [n_neurons] * n_layers
     else:
         assert len(n_neurons) == n_layers
-    n_featues = td.X_train_single.shape[1]
-
-    # Rescaling for output layer
-    # Custom rescaling
-    if 'rescale_scale' in config.keys() and config['rescale_scale'] is not None:
-        if 'rescale_offset' in config.keys() and config['rescale_offset'] is not None:
-            offset = config['rescale_offset']
-        else:
-            offset = 0
-        rescale_scale = config['rescale_scale']
-        rescale_min = offset
-        rescale_max = offset + rescale_scale
-    # Standard rescaling
+    if config['n_features'] is not None:
+        n_features = config['n_features']
     else:
-        rescale_min = float(td.y_train_single.min())
-        rescale_max = float(td.y_train_single.max())
+        n_features = td.X_train_single.shape[1]
 
     # Add input layer
-    input_layer = keras.layers.Input(shape=(n_featues,))
+    input_layer = keras.layers.Input(shape=(n_features,))
     # Add normalization layer
-    normalization = keras.layers.Normalization()
-    normalization.adapt(td.X_train_single)
-    x = normalization(input_layer)
+    if config['normalize']:
+        normalization = keras.layers.Normalization()
+        normalization.adapt(td.X_train_single)
+        x = normalization(input_layer)
+    else:
+        x = input_layer
 
     for i in range(0, n_layers):
         # For each layer add RBF
@@ -77,6 +68,22 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
 
     # Add rescaling
     if config['rescale_output']:
+
+        # Rescaling for output layer
+        # Custom rescaling
+        if 'rescale_scale' in config.keys() and config['rescale_scale'] is not None:
+            if 'rescale_offset' in config.keys() and config['rescale_offset'] is not None:
+                offset = config['rescale_offset']
+            else:
+                offset = 0
+            rescale_scale = config['rescale_scale']
+            rescale_min = offset
+            rescale_max = offset + rescale_scale
+        # Standard rescaling
+        else:
+            rescale_min = float(td.y_train_single.min())
+            rescale_max = float(td.y_train_single.max())
+
         x = keras.layers.Rescaling(scale=rescale_max - rescale_min, offset=rescale_min)(x)
 
     model = keras.Model(inputs=input_layer, outputs=x)
