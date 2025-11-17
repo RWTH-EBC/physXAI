@@ -535,7 +535,7 @@ def PCNNModelConstruction(config: dict, disturbance_ann, td: TrainingDataMultiSt
               rescale_min: float, rescale_max: float):
 
         # Input layer
-        inputs = keras.Input(shape=(None, num_features), name='RNN_input')
+        inputs = keras.Input(shape=(None, num_features))
 
         # Normalization layer
         normalization_layer = keras.layers.Normalization(name='RNN_normalization')
@@ -543,7 +543,7 @@ def PCNNModelConstruction(config: dict, disturbance_ann, td: TrainingDataMultiSt
         normalized_inputs = normalization_layer(inputs)
 
         #input_init = [keras.Input(shape=(rnn_units,)) for _ in range(2)]
-        input_init = keras.Input(shape=(2,), name='RNN_hidden_input')
+        input_init = keras.Input(shape=(2,))
 
         # Define the RNN layer using PCNNCell properly.
         rnn_cell_instance = PCNNCell(dis_ann=disturbance_ann_keras, dis_inputs=dis_inputs,
