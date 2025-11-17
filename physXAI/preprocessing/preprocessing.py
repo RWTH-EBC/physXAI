@@ -17,11 +17,11 @@ class PreprocessingData(ABC):
     Abstract Preprocessing Class
     """
 
-    def __init__(self, inputs: list[str], output: str or list[str], shift: int = 1,
+    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: int = 1,
                  time_step: Optional[Union[int, float]] = None,
-                 test_size: float = 0.15, val_size: float = 0.15, random_state: int = 42,
+                 test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
-                 csv_header: int = 0, csv_skiprows: Union[int, list[int]] = [],):
+                 csv_header: int = 0, csv_skiprows: Union[int, list[int]] = [], ignore_nan: bool = False):
         """
         Initializes the Preprocessing instance.
 
@@ -39,6 +39,7 @@ class PreprocessingData(ABC):
             csv_encoding (str): Encoding for csv data. Default is 'latin1'.
             csv_header (int): Row number of csv header. Default is 0.
             csv_skiprows (Union[int, list[int]]): Row numbers of skipped data in csv. Default is no skipping.
+            ignore_nan (bool): If True, rows with NaN values will be dropped. If False, an error is raised if NaNs are present. Default is False.
         """
         self.time_index_col = time_index_col
         self.csv_delimiter = csv_delimiter
@@ -59,6 +60,8 @@ class PreprocessingData(ABC):
         self.val_size: float = val_size
 
         self.random_state: int = random_state
+
+        self.ignore_nan: bool = ignore_nan
 
     def load_data(self, file_path: str) -> pd.DataFrame:
         """
@@ -124,11 +127,11 @@ class PreprocessingSingleStep(PreprocessingData):
     validation, and test sets.
     """
 
-    def __init__(self, inputs: list[str], output: str or list[str], shift: int = 1,
+    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: int = 1,
                  time_step: Optional[Union[int, float]] = None,
-                 test_size: float = 0.15, val_size: float = 0.15, random_state: int = 42,
+                 test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
-                 csv_header: int = 0, csv_skiprows: Union[int, list[int]] = [], **kwargs):
+                 csv_header: int = 0, csv_skiprows: Union[int, list[int]] = [], ignore_nan: bool = False, **kwargs):
         """
         Initializes the PreprocessingSingleStep instance.
 
@@ -146,12 +149,13 @@ class PreprocessingSingleStep(PreprocessingData):
             csv_encoding (str): Encoding for csv data. Default is 'latin1'.
             csv_header (int): Row number of csv header. Default is 0.
             csv_skiprows (Union[int, list[int]]): Row numbers of skipped data in csv. Default is no skipping.
+            ignore_nan (bool): If True, rows with NaN values will be dropped. If False, an error is raised if NaNs are present. Default is False.
         """
 
         super().__init__(inputs, output, shift, time_step, test_size, val_size, random_state, time_index_col,
-                         csv_delimiter, csv_encoding, csv_header, csv_skiprows)
+                         csv_delimiter, csv_encoding, csv_header, csv_skiprows, ignore_nan)
 
-    def process_data(self, df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+    def process_data(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
                 Processes the loaded DataFrame:
                 1. Applies feature constructions defined in `FeatureConstruction`.
@@ -178,7 +182,10 @@ class PreprocessingSingleStep(PreprocessingData):
         last_valid_index = non_nan_rows.iloc[::-1].idxmax() if non_nan_rows.any() else None
         df = df.loc[first_valid_index:last_valid_index]
         if df.isnull().values.any():
-            raise ValueError("Data Error: The TrainingData contains NaN values in intermediate rows.")
+            if self.ignore_nan:
+                df.dropna(inplace=True)
+            else:
+                raise ValueError("Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended, set ignore_nan=True in PreprocessingSingleStep.")
 
         X = df[self.inputs]
         y = df[self.output].shift(-self.shift)
@@ -262,9 +269,9 @@ class PreprocessingMultiStep (PreprocessingData):
     including optional warmup sequences.
     """
 
-    def __init__(self, inputs: list[str], output: str or list[str], label_width: int,  warmup_width: int, shift: int = 1,
+    def __init__(self, inputs: list[str], output: Union[str, list[str]], label_width: int,  warmup_width: int, shift: int = 1,
                  time_step: Optional[Union[int, float]] = None,
-                 test_size: float = 0.15, val_size: float = 0.15, random_state: int = 42,
+                 test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
                  csv_header: int = 0, csv_skiprows: Union[int, list[int]] = [],
                  overlapping_sequences: bool = True, batch_size=32, init_features: list[str] = None,**kwargs):

@@ -1,7 +1,7 @@
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Union
 
 from physXAI.utils.logging import create_full_path, get_full_path, Logger
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
@@ -188,8 +188,8 @@ class ClassicalANNModel(ANNModel):
     A classical (standard feed-forward) Artificial Neural Network model.
     """
 
-    def __init__(self, n_layers: int = 1, n_neurons: int or list[int] = 32,
-                 activation_function: str or list[str] = 'softplus', rescale_output: bool = True,
+    def __init__(self, n_layers: int = 1, n_neurons: Union[int, list[int]] = 32,
+                 activation_function: Union[str, list[str]] = 'softplus', rescale_output: bool = True,
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
                  early_stopping_epochs: Optional[int] = 100, random_seed: int = 42, **kwargs):
         """
@@ -212,8 +212,8 @@ class ClassicalANNModel(ANNModel):
 
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
         self.n_layers: int = n_layers
-        self.n_neurons: int or list[int] = n_neurons
-        self.activation_function: str or list[str] = activation_function
+        self.n_neurons: Union[int, list[int]] = n_neurons
+        self.activation_function: Union[str, list[str]] = activation_function
         self.rescale_output: bool = rescale_output
         if 'kernal_constraint' in kwargs:
             self.kernal_constraint: str = kwargs['kernal_constraint']
@@ -256,7 +256,7 @@ class LinANNModel(ANNModel):
     that models the residuals of the linear regression.
     """
 
-    def __init__(self, n_layers: int = 1, n_neurons: int or list[int] = 32, rescale_output: bool = True,
+    def __init__(self, n_layers: int = 1, n_neurons: Union[int, list[int]] = 32, rescale_output: bool = True,
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
                  early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
         """
@@ -275,7 +275,7 @@ class LinANNModel(ANNModel):
         """
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
         self.n_layers: int = n_layers
-        self.n_neurons: int or list[int] = n_neurons
+        self.n_neurons: Union[int, list[int]] = n_neurons
         self.rescale_output: bool = rescale_output
 
         self.model_config = {
@@ -320,7 +320,7 @@ class RBFModel(ANNModel):
     A Radial Basis Function (RBF) Network model.
     """
 
-    def __init__(self, n_layers: int = 1, n_neurons: int or list[int] = 32, rescale_output: bool = True,
+    def __init__(self, n_layers: int = 1, n_neurons: Union[int, list[int]] = 32, rescale_output: bool = True,
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
                  early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
         """
@@ -339,7 +339,7 @@ class RBFModel(ANNModel):
         """
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
         self.n_layers: int = n_layers
-        self.n_neurons: int or list[int] = n_neurons
+        self.n_neurons: Union[int, list[int]] = n_neurons
         self.rescale_output: bool = rescale_output
 
         self.model_config = {
@@ -375,8 +375,8 @@ class CMNNModel(ANNModel):
     Allows enforcing monotonicity constraints on input features.
     """
 
-    def __init__(self, n_layers: int = 1, n_neurons: int or list[int] = 32,
-                 activation_function: str or list[str] = 'softplus', rescale_output: bool = True,
+    def __init__(self, n_layers: int = 1, n_neurons: Union[int, list[int]] = 32,
+                 activation_function: Union[str, list[str]] = 'softplus', rescale_output: bool = True,
                  monotonies: dict[str, int] = None, activation_split: list[float] = None,
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
                  early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
@@ -401,8 +401,8 @@ class CMNNModel(ANNModel):
         """
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
         self.n_layers: int = n_layers
-        self.n_neurons: int or list[int] = n_neurons
-        self.activation_function: str or list[str] = activation_function
+        self.n_neurons: Union[int, list[int]] = n_neurons
+        self.activation_function: Union[str, list[str]] = activation_function
         self.rescale_output: bool = rescale_output
         self.monotonies: dict[str, int] = monotonies
         self.activation_split: list[float] = activation_split
@@ -446,8 +446,8 @@ class PINNModel(ANNModel):
     a custom multi-component loss function.
     """
 
-    def __init__(self, n_layers: int = 1, n_neurons: int or list[int] = 32,
-                 activation_function: str or list[str] = 'softplus', pinn_weights: list[float] = None,
+    def __init__(self, n_layers: int = 1, n_neurons: Union[int, list[int]] = 32,
+                 activation_function: Union[str, list[str]] = 'softplus', pinn_weights: list[float] = None,
                  rescale_output: bool = True, monotonies: dict[str, int] = None, activation_split: list[float] = None,
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
                  early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
@@ -474,8 +474,8 @@ class PINNModel(ANNModel):
         """
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
         self.n_layers: int = n_layers
-        self.n_neurons: int or list[int] = n_neurons
-        self.activation_function: str or list[str] = activation_function
+        self.n_neurons: Union[int, list[int]] = n_neurons
+        self.activation_function: Union[str, list[str]] = activation_function
         self.rescale_output: bool = rescale_output
         self.monotonies: dict[str, int] = monotonies
         self.activation_split: list[float] = activation_split

@@ -1,4 +1,5 @@
 import os
+from typing import Union
 import numpy as np
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
@@ -382,6 +383,165 @@ class RBFLayer(keras.Layer):
         initial_centers_list = config.pop("initial_centers", None)
         if initial_centers_list is not None:
             config["initial_centers"] = np.array(initial_centers_list)
+        return cls(**config)
+
+
+@keras.saving.register_keras_serializable(package='custom_layer', name='InputSliceLayer')
+class InputSliceLayer(keras.Layer):
+    """
+    A simple layer to select specific features from the last axis.
+    """
+
+    def __init__(self, feature_indices: Union[int, list[int]], **kwargs):
+        """
+        Initializes the layer.
+
+        Args:
+            feature_indices (int or list): The index or indices to select.
+                - If int (e.g., 1), selects the feature at that index and
+                  reduces the rank.
+                - If list (e.g., [1]), selects the feature(s) and
+                  keeps the rank.
+        """
+        super().__init__(**kwargs)
+        self.feature_indices = feature_indices
+
+    def call(self, inputs):
+        return keras.ops.take(inputs, self.feature_indices, axis=-1)
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            "feature_indices": self.feature_indices
+        })
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+    def compute_output_shape(self, input_shape):
+        output_shape = list(input_shape)
+
+        if isinstance(self.feature_indices, int):
+            output_shape.pop(-1)
+
+        elif isinstance(self.feature_indices, (list, tuple)):
+            output_shape[-1] = len(self.feature_indices)
+
+        return tuple(output_shape)
+
+
+@keras.saving.register_keras_serializable(package='custom_layer', name='ConstantLayer')
+class ConstantLayer(keras.Layer):
+    """
+    A layer that returns a constant tensor, broadcasted to the batch size.
+
+    This layer ignores its input and simply returns a tensor of a
+    pre-defined shape, initialized with a constant value.
+
+    The constant is created as a Keras weight, which can be
+    trainable or non-trainable.
+    """
+
+    def __init__(self, value=0.0, shape=(1,), trainable=False, weight_name: str = None, **kwargs):
+        """
+        Initializes the layer.
+
+        Args:
+            initial_value (float): The value to initialize the constant tensor with.
+            shape (tuple): The shape of the constant, *excluding* the batch
+                dimension. For a single number to be added, use (1,).
+            trainable (bool): Whether this constant is a learnable parameter.
+        """
+        super().__init__(trainable=trainable, **kwargs)
+        self.value = value
+        self.target_shape = tuple(shape)
+        self.weight_name = weight_name
+
+    def build(self, input_shape):
+        if self.value is not None:
+            init = keras.initializers.Constant(self.value)
+        else:
+            init = keras.initializers.glorot_uniform()
+        self.constant = self.add_weight(
+            shape=self.target_shape,
+            initializer=init,
+            trainable=self.trainable,
+            name=self.weight_name,
+        )
+
+    def call(self, inputs):
+        batch_size = keras.ops.shape(inputs)[0]
+
+        # Create the full target shape, including the batch dimension
+        # e.g., (batch_size,) + (1,) -> (batch_size, 1)
+        full_shape = (batch_size,) + self.target_shape
+
+        return keras.ops.broadcast_to(self.constant, full_shape)
+
+    def compute_output_shape(self, input_shape):
+        # The output shape is (batch_size,) + our target_shape
+        return (input_shape[0],) + self.target_shape
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            "value": self.value,
+            "shape": self.target_shape,
+        })
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+
+@keras.saving.register_keras_serializable(package='custom_layer', name='DivideLayer')
+class DivideLayer(keras.Layer):
+    """
+    A layer that divides two layers.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def call(self, inputs):
+        return keras.ops.divide(inputs[0], inputs[1])
+
+    def compute_output_shape(self, input_shape):
+        return input_shape[0]
+
+    def get_config(self):
+        config = super().get_config()
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+
+@keras.saving.register_keras_serializable(package='custom_layer', name='PowerLayer')
+class PowerLayer(keras.Layer):
+    """
+    A layer that computes the power of two layers.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def call(self, inputs):
+        return keras.ops.power(inputs[0], inputs[1])
+
+    def compute_output_shape(self, input_shape):
+        return input_shape[0]
+
+    def get_config(self):
+        config = super().get_config()
+        return config
+
+    @classmethod
+    def from_config(cls, config):
         return cls(**config)
 
 

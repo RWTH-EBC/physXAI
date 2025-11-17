@@ -271,7 +271,7 @@ class SingleStepModel(AbstractModel, ABC):
     @staticmethod
     def _evaluate_multi_inner_loop(model, X: np.ndarray, y: np.ndarray, X_columns: list[str],
                                    recursive_output_column: str, delta_prediction: bool = True) \
-            -> (np.ndarray, np.ndarray):
+            -> tuple[np.ndarray, np.ndarray]:
         true_vals = np.ndarray(shape=(y.shape[0], y.shape[1], 1), dtype=np.float64)
         preds = np.ndarray(shape=(X.shape[0], X.shape[1], 1), dtype=np.float64)
 
