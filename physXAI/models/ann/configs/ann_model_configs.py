@@ -91,7 +91,7 @@ class RNNModelConstruction_config(BaseModel):
 class MonotonicRNNModelConstruction_config(RNNModelConstruction_config):
 
     monotonicity: Optional[dict[str, int]] = None
-    dis_layer:  Optional[Literal["dense", "RNN", "GRU", "LSTM", "LastOutput", "Zero"]] = 'Zero'
+    dis_layer:  Optional[Literal["RNN", "GRU", "LSTM"]] = 'Zero'
     dis_units: int = Field(32, gt=0)
     dis_activation: Optional[str] = 'tanh'
     init_dis: Optional[str] = 'Zero'
