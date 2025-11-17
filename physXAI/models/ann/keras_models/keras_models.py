@@ -545,22 +545,6 @@ class PowerLayer(keras.Layer):
         return cls(**config)
 
 
-@keras.saving.register_keras_serializable(package='custom_layer', name='SliceFeatures')
-class SliceFeatures(keras.Layer):
-    def __init__(self, start, end, **kwargs):
-        super().__init__(**kwargs)
-        self.start = start
-        self.end = end
-
-    def call(self, inputs):
-        return inputs[..., self.start:self.end]
-
-    def get_config(self):
-        config = super().get_config()
-        config.update({"start": self.start, "end": self.end})
-        return config
-
-
 @keras.saving.register_keras_serializable(package='custom_constraint', name='DiagonalConstraint')
 class DiagonalPosConstraint(keras.constraints.Constraint):
     """Keep only the diagonal of a 2D weight matrix (intended for RNN recurrent kernels)."""
@@ -599,6 +583,7 @@ class DiagonalPosConstraint(keras.constraints.Constraint):
 
     def get_config(self):
         return {}
+
 
 @keras.saving.register_keras_serializable(package='custom_cell', name='PCNNCell')
 class PCNNCell(keras.Layer):

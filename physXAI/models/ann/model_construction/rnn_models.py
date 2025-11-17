@@ -2,7 +2,7 @@ import os
 import numpy as np
 from physXAI.preprocessing.training_data import TrainingDataMultiStep, copy_and_crop_td_multistep
 from physXAI.models.ann.configs.ann_model_configs import RNNModelConstruction_config, MonotonicRNNModelConstruction_config
-from physXAI.models.ann.keras_models.keras_models import NonNegPartial, SliceFeatures, DiagonalPosConstraint, PCNNCell
+from physXAI.models.ann.keras_models.keras_models import NonNegPartial, DiagonalPosConstraint, PCNNCell, InputSliceLayer
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
@@ -357,10 +357,11 @@ def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
         normalization_layer.adapt(inputs_df)
         normalized_inputs = normalization_layer(inputs)
 
-        slice_mono = SliceFeatures(0, len(monotonicity))
+        slice_mono = InputSliceLayer(list(range(0, len(monotonicity))))
         normalized_inputs_mono = slice_mono(normalized_inputs)
-        slice_dis = SliceFeatures(len(monotonicity), inputs.shape[2])
-        normalized_inputs_dis = slice_dis(inputs)
+
+        slice_dis = InputSliceLayer(list(range(len(monotonicity), num_features)))
+        normalized_inputs_dis = slice_dis(normalized_inputs)
 
         # Get kernal constraint
         kernal_constraint = NonNegPartial(monotonicity)
