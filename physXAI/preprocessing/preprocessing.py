@@ -12,6 +12,81 @@ import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 
+def convert_shift_to_dict(s: Union[int, str, dict], inputs: list[str]) -> dict:
+    """
+    Convert a given shift variable into a dictionary in which a shift is defined for every input
+
+    Args:
+        s (Union[int, str, dict]): Shift value. Either a single string or int which then will be applied to all the inputs or
+            a dictionary in which a different shift can be defined for each input. If the dictionary does not specify the
+            shift for all inputs, the shift for inputs not specified is set to 'previous' as default
+        inputs (list(str)): List of Input variables
+    """
+
+    def return_valid_shift(val: Union[int, str]):
+        """ check the validity of the given shift and return a string if val is int """
+        if val in ['current', 0]:
+            val = 'current'
+        elif val in ['previous', 1]:
+            val = 'previous'
+        elif val == 'mean_over_interval':
+            val = 'mean_over_interval'
+        else:
+            raise ValueError(
+                f"Value of shift not supported, value is: {val}. Shift must be 'current' (or 0 if s is int), "
+                f"'previous' (or 1 if s is int) or 'mean_over_interval'.")
+        return val
+
+    if isinstance(s, Union[int, str]):
+        d = {}
+        s = return_valid_shift(s)
+
+        # add shift for each input
+        for inp in inputs:
+            d.update({inp: s})
+        return d
+
+    elif isinstance(s, dict):
+        def get_lag(inputs: list[str], current_input: str) -> int:
+            """ get lag of current input """
+            count = 0
+            for inp in inputs:
+                spl = inp.split(current_input) # make sure it is the current input
+                if spl[0] == '' and spl[1] != '' and spl[1].split('_lag')[0] == '':
+                    count += 1
+            return count
+
+        # check if lags exist
+        d = {}
+        inputs_without_lags = {}
+        for inp in inputs:
+            # skip if current input is just the lag of another inp
+            if not inp.__contains__('_lag'):
+                inputs_without_lags.update({inp: get_lag(inputs, inp)})
+
+        for inp in inputs_without_lags.keys():
+            # if an input has a shift assigned already, the validity is checked
+            # otherwise 'previous' is assigned (default value)
+            if inp in s.keys():
+                d.update({inp: return_valid_shift(s[inp])})
+            else:
+                d.update({inp: 'previous'})
+
+            # all inputs with lags should have the same shift
+            if inputs_without_lags[inp] > 0: # if current input has lags
+                for i in range(inputs_without_lags[inp]):
+                    name = inp + '_lag' + str(i+1)
+
+                    # if a shift was already defined for this lag, check if it matches the shift of the original inp
+                    if name in s.keys():
+                        assert return_valid_shift(s[name]) == d[inp], \
+                            'Make sure that all lags of an input have the same shift'
+                    d.update({name: d[inp]})
+        return d
+    else:
+        raise TypeError(f'shift must be of type int, str or dict, is type {type(s)}')
+
+
 class PreprocessingData(ABC):
     """
     Abstract Preprocessing Class
