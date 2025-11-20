@@ -1,13 +1,14 @@
 import json
 import os
 import pathlib
+import unittest
 from unittest.mock import patch
 import keras
 import pytest
 ######################################################################################################################
 from physXAI.utils.logging import Logger, get_parent_working_directory
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep, PreprocessingMultiStep, \
-    PreprocessingData
+    PreprocessingData, convert_shift_to_dict
 from physXAI.preprocessing.constructed import Feature, FeatureConstruction, FeatureConstant
 from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
 from physXAI.models.models import LinearRegressionModel, AbstractModel
@@ -92,6 +93,72 @@ def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
     prep = PreprocessingMultiStep(inputs_tair, output_tair, 6, 6, init_features=['reaTZon_y'],
                                   overlapping_sequences=False, batch_size=1)
     prep.pipeline(file_path)
+
+class TestPreprocessingShiftConversion(unittest.TestCase):
+
+    inputs = ['reaTZon_y', 'reaTZon_y_lag1', 'reaTZon_y_lag2', 'weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaTDryBul_y_lag1',
+              'weaSta_reaWeaHDirNor_y', 'oveHeaPumY_u', 'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2']
+
+    # test case: int given for shift
+    def test_int(self):
+        shift = 0
+        res = convert_shift_to_dict(shift, self.inputs)
+        res_expected = {'reaTZon_y': 'current', 'reaTZon_y_lag1': 'current', 'reaTZon_y_lag2': 'current',
+                        'weaSta_reaWeaTDryBul_y': 'current', 'weaSta_reaWeaTDryBul_y_lag1': 'current',
+                        'weaSta_reaWeaHDirNor_y': 'current', 'oveHeaPumY_u': 'current', 'oveHeaPumY_u_lag1': 'current',
+                        'oveHeaPumY_u_lag2': 'current'}
+        assert res == res_expected
+
+    # test case: unsupported int given for shift
+    def test_unsupported_int(self):
+        shift = 2
+        with self.assertRaises(ValueError):
+            convert_shift_to_dict(shift, self.inputs)
+
+    # test case: str given for shift
+    def test_str(self):
+        shift = 'mean_over_interval'
+        res = convert_shift_to_dict(shift, self.inputs)
+        res_expected = {'reaTZon_y': 'mean_over_interval', 'reaTZon_y_lag1': 'mean_over_interval',
+                        'reaTZon_y_lag2': 'mean_over_interval', 'weaSta_reaWeaTDryBul_y': 'mean_over_interval',
+                        'weaSta_reaWeaTDryBul_y_lag1': 'mean_over_interval',
+                        'weaSta_reaWeaHDirNor_y': 'mean_over_interval', 'oveHeaPumY_u': 'mean_over_interval',
+                        'oveHeaPumY_u_lag1': 'mean_over_interval', 'oveHeaPumY_u_lag2': 'mean_over_interval'}
+        assert res == res_expected
+
+    # test case: unsupported str given for shift
+    def test_unsupported_str(self):
+        shift = 'test'
+        with self.assertRaises(ValueError):
+            convert_shift_to_dict(shift, self.inputs)
+
+    # test case: unsupported type given for shift
+    def test_unsupported_type(self):
+        shift = ['previous']
+        with self.assertRaises(TypeError):
+            convert_shift_to_dict(shift, self.inputs)
+
+    # test case: autocomplete incomplete dictionary given for shift
+    def test_autocomplete_incomplete_dict(self):
+        shift = {'reaTZon_y': 0, 'reaTZon_y_lag1': 0, 'weaSta_reaWeaTDryBul_y': 'mean_over_interval'}
+
+        # previous is default for all inputs that are not specified
+        res = convert_shift_to_dict(shift, self.inputs)
+        res_expected = {'reaTZon_y': 'current', 'reaTZon_y_lag1': 'current', 'reaTZon_y_lag2': 'current',
+                        'weaSta_reaWeaTDryBul_y': 'mean_over_interval',
+                        'weaSta_reaWeaTDryBul_y_lag1': 'mean_over_interval',
+                        'weaSta_reaWeaHDirNor_y': 'previous', 'oveHeaPumY_u': 'previous',
+                        'oveHeaPumY_u_lag1': 'previous',
+                        'oveHeaPumY_u_lag2': 'previous'}
+        assert len(res) == len(self.inputs)
+        assert res == res_expected
+
+    # test case: lags of the same input have mismatching shifts
+    def test_lag_with_mismatching_shifts(self):
+        shift = {'reaTZon_y': 0, 'reaTZon_y_lag1': 1, 'weaSta_reaWeaTDryBul_y': 'mean_over_interval'}
+        with self.assertRaises(AssertionError):
+            convert_shift_to_dict(shift, self.inputs)
+
 
 @pytest.fixture(scope='module')
 def p_hp_data(file_path, inputs_php, output_php):
