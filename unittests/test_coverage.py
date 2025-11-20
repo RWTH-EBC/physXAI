@@ -1,8 +1,8 @@
 import json
 import os
 import pathlib
-import unittest
 from unittest.mock import patch
+from unittest import TestCase
 import keras
 import pytest
 ######################################################################################################################
@@ -94,7 +94,7 @@ def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
                                   overlapping_sequences=False, batch_size=1)
     prep.pipeline(file_path)
 
-class TestPreprocessingShiftConversion(unittest.TestCase):
+class TestPreprocessingShiftConversion(TestCase):
 
     inputs = ['reaTZon_y', 'reaTZon_y_lag1', 'reaTZon_y_lag2', 'weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaTDryBul_y_lag1',
               'weaSta_reaWeaHDirNor_y', 'oveHeaPumY_u', 'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2']
