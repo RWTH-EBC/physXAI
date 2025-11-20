@@ -5,7 +5,7 @@ import operator
 import os
 from pathlib import Path
 from typing import Optional, Union
-
+from copy import deepcopy
 from physXAI.models.modular.modular_expression import ModularExpression
 from physXAI.models.ann.ann_design import ANNModel, CMNNModel, ClassicalANNModel
 from physXAI.models.models import register_model
@@ -98,6 +98,7 @@ class ModularModel(ModularExpression):
                 y = x.construct(input_layer, td)
                 inps.append(y)
             self.model.model_config['n_features'] = len(inps)
+            td = deepcopy(td)
             td.columns = [inp.name for inp in self.inputs]
             l = self.model.generate_model(td=td)(keras.layers.Concatenate()(inps))
             ModularExpression.models[self.name] = l
