@@ -45,7 +45,7 @@ def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
 
     # Rescaling for output layer
     rescale_mean = float(np.mean(td.y_train_single))
-    rescale_sigma = float(np.std(td.y_train_single))
+    rescale_sigma = float(np.std(td.y_train_single, ddof=1))
 
     # Build artificial neural network as Sequential
     model = keras.Sequential()
@@ -115,7 +115,7 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
 
     # Rescaling for output layer
     rescale_mean = float(np.mean(td.y_train_single))
-    rescale_sigma = float(np.std(td.y_train_single))
+    rescale_sigma = float(np.std(td.y_train_single, ddof=1))
 
     # Add input layer
     input_layer = keras.layers.Input(shape=(n_featues,))

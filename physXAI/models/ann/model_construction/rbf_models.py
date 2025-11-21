@@ -55,7 +55,7 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
     # Standard rescaling
     else:
         rescale_mean = float(np.mean(td.y_train_single))
-        rescale_sigma = float(np.std(td.y_train_single))
+        rescale_sigma = float(np.std(td.y_train_single, ddof=1))
 
     # Add input layer
     input_layer = keras.layers.Input(shape=(n_featues,))

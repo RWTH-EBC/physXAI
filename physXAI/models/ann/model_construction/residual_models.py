@@ -34,7 +34,7 @@ def LinResidualANNConstruction(config: dict, td: TrainingDataGeneric, lin_model:
 
     # Determine predictions of linear regression for rescaling
     y_train_pred = lin_model.predict(td.X_train_single)
-    config['rescale_sigma'] = float(np.std(td.y_train_single - y_train_pred))
+    config['rescale_sigma'] = float(np.std(td.y_train_single - y_train_pred, ddof=1))
     config['rescale_mean'] = float(np.mean(td.y_train_single - y_train_pred))
 
     # Add linear regression as dense keras layer
