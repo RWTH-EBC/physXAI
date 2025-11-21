@@ -34,6 +34,8 @@ class ClassicalANNConstruction_config(BaseModel):
 class RBFConstruction_config(ClassicalANNConstruction_config):
 
     random_state: int = 42
+    rescale_mean: Optional[float] = None
+    rescale_sigma: Optional[float] = None
 
 
 class CMNNModelConstruction_config(ClassicalANNConstruction_config):

@@ -40,12 +40,18 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
 
     # Rescaling for output layer
     # Custom rescaling
-    if 'rescale_scale' in config.keys() and config['rescale_scale'] is not None:
-        if 'rescale_offset' in config.keys() and config['rescale_offset'] is not None:
-            rescale_mean = config['rescale_offset']
+    if 'rescale_scale' in config.keys() or 'rescale_offset' in config.keys():
+        raise ValueError(
+            "The 'rescale_scale' and 'rescale_offset' parameters are deprecated. "
+            "Scaling has changed from min/max to standardization (z-score normalization using mean=0, std=1). "
+            "Please use 'rescale_mean' and 'rescale_sigma' instead."
+        )
+    if 'rescale_sigma' in config.keys() and config['rescale_sigma'] is not None:
+        if 'rescale_mean' in config.keys() and config['rescale_mean'] is not None:
+            rescale_mean = config['rescale_mean']
         else:
             rescale_mean = 0
-        rescale_sigma = config['rescale_scale']
+        rescale_sigma = config['rescale_sigma']
     # Standard rescaling
     else:
         rescale_mean = float(np.mean(td.y_train_single))
