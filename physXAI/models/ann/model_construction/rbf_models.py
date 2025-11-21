@@ -1,4 +1,5 @@
 import keras
+import numpy as np
 from sklearn.cluster import KMeans
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 from physXAI.models.ann.configs.ann_model_configs import RBFConstruction_config
@@ -41,16 +42,14 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
     # Custom rescaling
     if 'rescale_scale' in config.keys() and config['rescale_scale'] is not None:
         if 'rescale_offset' in config.keys() and config['rescale_offset'] is not None:
-            offset = config['rescale_offset']
+            rescale_mean = config['rescale_offset']
         else:
-            offset = 0
-        rescale_scale = config['rescale_scale']
-        rescale_min = offset
-        rescale_max = offset + rescale_scale
+            rescale_mean = 0
+        rescale_sigma = config['rescale_scale']
     # Standard rescaling
     else:
-        rescale_min = float(td.y_train_single.min())
-        rescale_max = float(td.y_train_single.max())
+        rescale_mean = float(np.mean(td.y_train_single))
+        rescale_sigma = float(np.std(td.y_train_single))
 
     # Add input layer
     input_layer = keras.layers.Input(shape=(n_featues,))
@@ -77,7 +76,7 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
 
     # Add rescaling
     if config['rescale_output']:
-        x = keras.layers.Rescaling(scale=rescale_max - rescale_min, offset=rescale_min)(x)
+        x = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(x)
 
     model = keras.Model(inputs=input_layer, outputs=x)
 

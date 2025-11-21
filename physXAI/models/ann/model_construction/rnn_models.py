@@ -48,15 +48,15 @@ def RNNModelConstruction(config: dict, td: TrainingDataMultiStep):
     rnn_layer = config['rnn_layer']
 
     # Rescaling for output layer
-    rescale_min = keras.ops.cast(keras.ops.min(td.y_train), dtype="float32")
-    rescale_max = keras.ops.cast(keras.ops.max(td.y_train), dtype="float32")
+    rescale_mean = keras.ops.cast(keras.ops.mean(td.y_train), dtype="float32")
+    rescale_sigma = keras.ops.cast(keras.ops.std(td.y_train), dtype="float32")
 
     # Input layer
     inputs = keras.Input(shape=(out_steps, num_features))
 
     # Output rnn model
     o_model = out_model(td.X_train[0].reshape(-1, num_features), num_features, rnn_layer, rnn_units,  num_outputs,
-                        rescale_min, rescale_max)
+                        rescale_mean, rescale_sigma)
 
     # Warmup
     if warmup:
@@ -175,7 +175,7 @@ def init_zeros(num_features: int, rnn_units: int, out_steps: int):
 
 
 def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_units: int, num_outputs: int,
-              rescale_min: float, rescale_max: float):
+              rescale_mean: float, rescale_sigma: float):
     """
     Creates the main Keras model that processes an input sequence with an initial RNN state
     to produce predictions and the final RNN state.
@@ -187,8 +187,8 @@ def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_unit
         rnn_layer (str): Type of RNN layer to use ('GRU', 'RNN', 'LSTM').
         rnn_units (int): Number of units in the RNN layer.
         num_outputs (int): Number of output features to predict at each time step.
-        rescale_min (float): Minimum value used by a Rescaling layer applied to the predictions.
-        rescale_max (float): Maximum value used by a Rescaling layer applied to the predictions.
+        rescale_mean (float): Mean value used by a Rescaling layer applied to the predictions.
+        rescale_sigma (float): Standard deviation used by a Rescaling layer applied to the predictions.
 
     Returns:
         keras.Model: A Keras model that takes [main_input_sequence, initial_state(s)]
@@ -223,7 +223,7 @@ def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_unit
     pred = dense(pred)
 
     # Rescaling layer
-    rescaling_layer = keras.layers.Rescaling(scale=rescale_max - rescale_min, offset=rescale_min)
+    rescaling_layer = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)
     pred = rescaling_layer(pred)
 
     return keras.Model([inputs, input_init], [pred, *state], name='out_model')
