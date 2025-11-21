@@ -187,8 +187,8 @@ def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_unit
         rnn_layer (str): Type of RNN layer to use ('GRU', 'RNN', 'LSTM').
         rnn_units (int): Number of units in the RNN layer.
         num_outputs (int): Number of output features to predict at each time step.
-        rescale_mean (float): Mean value used by a Rescaling layer applied to the predictions.
-        rescale_sigma (float): Standard deviation used by a Rescaling layer applied to the predictions.
+        rescale_mean (float): Mean value for denormalizing the model's normalized predictions back to the original scale (used as the offset in the Rescaling layer; inverse z-score transformation: value * sigma + mean).
+        rescale_sigma (float): Standard deviation for denormalizing the model's normalized predictions back to the original scale (used as the scale in the Rescaling layer; inverse z-score transformation: value * sigma + mean).
 
     Returns:
         keras.Model: A Keras model that takes [main_input_sequence, initial_state(s)]
