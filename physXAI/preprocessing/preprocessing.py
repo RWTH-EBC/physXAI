@@ -23,7 +23,7 @@ def convert_shift_to_dict(s: Union[int, str, dict], inputs: list[str]) -> dict:
         inputs (list(str)): List of Input variables
     """
 
-    def return_valid_shift(val: Union[int, str]):
+    def return_valid_shift(val: (int, str)):
         """ check the validity of the given shift and return a string if val is int """
         if val in ['current', 0]:
             val = 'current'
