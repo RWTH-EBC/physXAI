@@ -79,7 +79,7 @@ class ModularModel(ModularExpression):
     allowed_models = [ClassicalANNModel, CMNNModel, LinearRegressionModel]
     i = 0
 
-    def __init__(self, model: ANNModel, inputs: list[ModularExpression, FeatureBase], name: str = None, nominal_scale: float = None, nominal_offset: float = None):
+    def __init__(self, model: ANNModel, inputs: list[ModularExpression, FeatureBase], name: str = None, nominal_range: tuple[float, float] = None):
         if not any(isinstance(model, allowed) for allowed in self.allowed_models):
             raise NotImplementedError(f"Currently {type(model)} is not supported. Allowed models are: {self.allowed_models}")
 
@@ -95,18 +95,14 @@ class ModularModel(ModularExpression):
         })
         self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
 
-        if nominal_scale is not None and nominal_offset is None:
-            nominal_offset = 0.0
-        elif nominal_offset is not None and nominal_scale is None:
-            nominal_scale = 1.0
-        self.nominal_offset = nominal_offset
-        self.nominal_scale = nominal_scale
-
-        if self.nominal_scale is not None:
-            self.rescale_output = True
-        else:
+        if nominal_range is None:
             self.rescale_output = False
-
+        elif nominal_range is not None and len(nominal_range) is not 2:
+            raise ValueError(f"Modular Model: nominal_range must be a tuple of (min, max), but was {nominal_range}")
+        else:
+            self.rescale_output = True
+            self.nominal_mean = (nominal_range[1] + nominal_range[0]) / 2.0
+            self.nominal_sigma = (nominal_range[1] - nominal_range[0]) / 4.0  # Assuming 4 sigma covers the range
 
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
         if self.name in ModularExpression.models.keys():
@@ -125,7 +121,7 @@ class ModularModel(ModularExpression):
             else:
                 l = self.model.generate_model(td=td)(keras.layers.Concatenate()(inps))
             if self.rescale_output:
-                l = keras.layers.Rescaling(scale=self.nominal_scale, offset=self.nominal_offset)(l) 
+                l = keras.layers.Rescaling(scale=self.nominal_sigma, offset=self.nominal_mean)(l) 
             ModularExpression.models[self.name] = l
             return l    
 
@@ -161,24 +157,21 @@ class ModularExistingModel(ModularExpression):
 class ModularLinear(ModularExpression):
     i = 0
 
-    def __init__(self, inputs: list[ModularExpression, FeatureBase], name: str = None, nominal_scale: float = None, nominal_offset: float = None):
+    def __init__(self, inputs: list[ModularExpression, FeatureBase], name: str = None, nominal_range: tuple[float, float] = None):
         if name is None:
             name = f"ModularLinear_{ModularLinear.i}"
             ModularLinear.i += 1
         super().__init__(name)
         self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
 
-        if nominal_scale is not None and nominal_offset is None:
-            nominal_offset = 0.0
-        elif nominal_offset is not None and nominal_scale is None:
-            nominal_scale = 1.0
-        self.nominal_offset = nominal_offset
-        self.nominal_scale = nominal_scale
-
-        if self.nominal_scale is not None:
-            self.rescale_output = True
-        else:
+        if nominal_range is None:
             self.rescale_output = False
+        elif nominal_range is not None and len(nominal_range) is not 2:
+            raise ValueError(f"Modular Model: nominal_range must be a tuple of (min, max), but was {nominal_range}")
+        else:
+            self.rescale_output = True
+            self.nominal_mean = (nominal_range[1] + nominal_range[0]) / 2.0
+            self.nominal_sigma = (nominal_range[1] - nominal_range[0]) / 4.0  # Assuming 4 sigma covers the range
         
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
         if self.name in ModularExpression.models.keys():
@@ -190,7 +183,7 @@ class ModularLinear(ModularExpression):
                 inps.append(y)
             l = keras.layers.Dense(units=1, activation='linear')(keras.layers.Concatenate()(inps))
             if self.rescale_output:
-                l = keras.layers.Rescaling(scale=self.nominal_scale, offset=self.nominal_offset)(l) 
+                l = keras.layers.Rescaling(scale=self.nominal_sigma, offset=self.nominal_mean)(l) 
             ModularExpression.models[self.name] = l
             return l
 
@@ -198,7 +191,7 @@ class ModularLinear(ModularExpression):
 class ModularPolynomial(ModularExpression):
     i = 0
 
-    def __init__(self, inputs: list[ModularExpression, FeatureBase], degree: int = 2, interaction_degree: int = 1, name: str = None, nominal_scale: float = None, nominal_offset: float = None):
+    def __init__(self, inputs: list[ModularExpression, FeatureBase], degree: int = 2, interaction_degree: int = 1, name: str = None, nominal_range: tuple[float, float] = None):
         if name is None:
             name = f"ModularPolynomial_{ModularPolynomial.i}"
             ModularPolynomial.i += 1
@@ -209,17 +202,14 @@ class ModularPolynomial(ModularExpression):
         self.interaction_degree = interaction_degree
         self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
 
-        if nominal_scale is not None and nominal_offset is None:
-            nominal_offset = 0.0
-        elif nominal_offset is not None and nominal_scale is None:
-            nominal_scale = 1.0
-        self.nominal_offset = nominal_offset
-        self.nominal_scale = nominal_scale
-
-        if self.nominal_scale is not None:
-            self.rescale_output = True
-        else:
+        if nominal_range is None:
             self.rescale_output = False
+        elif nominal_range is not None and len(nominal_range) is not 2:
+            raise ValueError(f"Modular Model: nominal_range must be a tuple of (min, max), but was {nominal_range}")
+        else:
+            self.rescale_output = True
+            self.nominal_mean = (nominal_range[1] + nominal_range[0]) / 2.0
+            self.nominal_sigma = (nominal_range[1] - nominal_range[0]) / 4.0  # Assuming 4 sigma covers the range
 
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
         if self.name in ModularExpression.models.keys():
@@ -241,7 +231,7 @@ class ModularPolynomial(ModularExpression):
 
             l = keras.layers.Dense(units=1, activation='linear')(keras.layers.Concatenate()(new_features))
             if self.rescale_output:
-                l = keras.layers.Rescaling(scale=self.nominal_scale, offset=self.nominal_offset)(l) 
+                l = keras.layers.Rescaling(scale=self.nominal_sigma, offset=self.nominal_mean)(l) 
             ModularExpression.models[self.name] = l
             return l
         
@@ -267,3 +257,20 @@ class ModularAverage(ModularExpression):
             l = keras.layers.Average()(inps)
             ModularExpression.models[self.name] = l
             return l
+        
+
+class ModularNormalization(ModularExpression):
+    i = 0
+
+    def __init__(self, input: ModularExpression, name: str = None):
+        if name is None:
+            name = f"ModularNormalization_{ModularNormalization.i}"
+            ModularNormalization.i += 1
+        super().__init__(name)
+        self.inputs = input
+
+    def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
+        inp = self.inputs.construct(input_layer, td)
+        normalization = keras.layers.BatchNormalization()
+        l = normalization(inp)
+        return l
