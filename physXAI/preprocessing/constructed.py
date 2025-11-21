@@ -535,6 +535,12 @@ class FeatureConstruction:
     inputs = list[str]()
 
     @staticmethod
+    def reset():
+        """Clears all registered features and input names."""
+        FeatureConstruction.features = list[FeatureBase]()
+        FeatureConstruction.inputs = list[str]()
+
+    @staticmethod
     def append(f: FeatureBase):
         """
         Adds a feature object to the list of managed features.

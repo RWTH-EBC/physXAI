@@ -18,6 +18,13 @@ class ModularExpression(ABC):
     def __init__(self, name: str):
         self.name = name
 
+    @staticmethod
+    def reset():
+        ModularExpression.feature_list = dict()
+        ModularExpression.feature_list_normalized = dict()
+        ModularExpression.trainable_parameters = dict()
+        ModularExpression.models = dict()
+
     @abstractmethod
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
         pass
