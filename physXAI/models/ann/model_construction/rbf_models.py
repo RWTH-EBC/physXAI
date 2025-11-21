@@ -1,4 +1,5 @@
 import keras
+import numpy as np
 from sklearn.cluster import KMeans
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 from physXAI.models.ann.configs.ann_model_configs import RBFConstruction_config
@@ -71,20 +72,24 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
 
         # Rescaling for output layer
         # Custom rescaling
-        if 'rescale_scale' in config.keys() and config['rescale_scale'] is not None:
-            if 'rescale_offset' in config.keys() and config['rescale_offset'] is not None:
-                offset = config['rescale_offset']
+        if 'rescale_scale' in config.keys() or 'rescale_offset' in config.keys():
+            raise ValueError(
+                "The 'rescale_scale' and 'rescale_offset' parameters are deprecated. "
+                "Scaling has changed from min/max to standardization (z-score normalization using mean=0, std=1). "
+                "Please use 'rescale_mean' and 'rescale_sigma' instead."
+            )
+        if 'rescale_sigma' in config.keys() and config['rescale_sigma'] is not None:
+            if 'rescale_mean' in config.keys() and config['rescale_mean'] is not None:
+                rescale_mean = config['rescale_mean']
             else:
-                offset = 0
-            rescale_scale = config['rescale_scale']
-            rescale_min = offset
-            rescale_max = offset + rescale_scale
+                rescale_mean = 0
+            rescale_sigma = config['rescale_sigma']
         # Standard rescaling
         else:
-            rescale_min = float(td.y_train_single.min())
-            rescale_max = float(td.y_train_single.max())
+            rescale_mean = float(np.mean(td.y_train_single))
+            rescale_sigma = float(np.std(td.y_train_single, ddof=1))
 
-        x = keras.layers.Rescaling(scale=rescale_max - rescale_min, offset=rescale_min)(x)
+        x = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(x)
 
     model = keras.Model(inputs=input_layer, outputs=x)
 

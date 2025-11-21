@@ -36,6 +36,12 @@ class ClassicalANNConstruction_config(BaseModel):
 class RBFConstruction_config(ClassicalANNConstruction_config):
 
     random_state: int = 42
+    rescale_mean: Optional[float] = Field(
+        None, description="Mean value for z-score normalization of outputs"
+    )
+    rescale_sigma: Optional[float] = Field(
+        None, description="Standard deviation for z-score normalization of outputs"
+    )
 
 
 class CMNNModelConstruction_config(ClassicalANNConstruction_config):

@@ -1,4 +1,5 @@
 import os
+import numpy as np
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 from physXAI.models.ann.configs.ann_model_configs import (ClassicalANNConstruction_config,
                                                                  CMNNModelConstruction_config)
@@ -64,9 +65,9 @@ def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
     # Add rescaling
     if config['rescale_output']:
         # Rescaling for output layer
-        rescale_min = float(td.y_train_single.min())
-        rescale_max = float(td.y_train_single.max())
-        model.add(keras.layers.Rescaling(scale=rescale_max - rescale_min, offset=rescale_min))
+        rescale_mean = float(np.mean(td.y_train_single))
+        rescale_sigma = float(np.std(td.y_train_single, ddof=1))
+        model.add(keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean))
 
     model.summary()
 
@@ -173,9 +174,9 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
     # Add rescaling
     if config['rescale_output']:
         # Rescaling for output layer
-        rescale_min = float(td.y_train_single.min())
-        rescale_max = float(td.y_train_single.max())
-        x = keras.layers.Rescaling(scale=rescale_max - rescale_min, offset=rescale_min)(x)
+        rescale_mean = float(np.mean(td.y_train_single))
+        rescale_sigma = float(np.std(td.y_train_single, ddof=1))
+        x = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(x)
 
     # # Add min / max constraints
     # min_value = config['min_value']
