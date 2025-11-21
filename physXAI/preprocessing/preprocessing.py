@@ -1,8 +1,9 @@
 import os
 from abc import ABC, abstractmethod
-from typing import Optional, Union
+from typing import Optional, Union, Iterable
 import numpy as np
 import pandas as pd
+import itertools
 from sklearn.model_selection import train_test_split
 from physXAI.preprocessing.constructed import FeatureConstruction
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
@@ -14,12 +15,13 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 def convert_shift_to_dict(s: Union[int, str, dict], inputs: list[str]) -> dict:
     """
-    Convert a given shift variable into a dictionary in which a shift is defined for every input
+    Convert a given shift variable (int, str) into a dictionary in which a shift is defined for every input.
+    If a dictionary is given as shift, check entries and autocomplete dict if necessary.
 
     Args:
         s (Union[int, str, dict]): Shift value. Either a single string or int which then will be applied to all the inputs or
             a dictionary in which a different shift can be defined for each input. If the dictionary does not specify the
-            shift for all inputs, the shift for inputs not specified is set to 'previous' as default
+            shift for all inputs, the shift for inputs not specified is set to 'previous' as default (autocomplete)
         inputs (list(str)): List of Input variables
     """
 
@@ -92,7 +94,7 @@ class PreprocessingData(ABC):
     Abstract Preprocessing Class
     """
 
-    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: int = 1,
+    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: Union[int, str, dict] = 'previous',
                  time_step: Optional[Union[int, float]] = None,
                  test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
@@ -103,7 +105,7 @@ class PreprocessingData(ABC):
         Args:
             inputs (List[str]): List of column names to be used as input features.
             output (Union[str, List[str]]): Column name(s) for the target variable(s).
-            shift (int): The number of time steps to shift the target variable for forecasting.
+            shift (int): The number of time steps to shift the target variable for forecasting.  # TODO: update docstring
                          A shift of one means predicting the next time step.
             time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
             test_size (float): Proportion of the dataset to allocate to the test set.
@@ -126,7 +128,7 @@ class PreprocessingData(ABC):
         if isinstance(output, str):
             output = [output]
         self.output: list[str] = output
-        self.shift: int = shift
+        self.shift: dict = convert_shift_to_dict(shift, inputs)
         self.time_step = time_step
 
         # Training, validation and test size should be equal to 1
@@ -202,7 +204,7 @@ class PreprocessingSingleStep(PreprocessingData):
     validation, and test sets.
     """
 
-    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: int = 1,
+    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: Union[int, str, dict] = 'previous',
                  time_step: Optional[Union[int, float]] = None,
                  test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
@@ -213,7 +215,7 @@ class PreprocessingSingleStep(PreprocessingData):
         Args:
             inputs (List[str]): List of column names to be used as input features.
             output (Union[str, List[str]]): Column name(s) for the target variable(s).
-            shift (int): The number of time steps to shift the target variable for forecasting.
+            shift (int): The number of time steps to shift the target variable for forecasting. # TODO: update doc dring
                          A shift of one means predicting the next time step.
             time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
             test_size (float): Proportion of the dataset to allocate to the test set.
@@ -257,16 +259,51 @@ class PreprocessingSingleStep(PreprocessingData):
         last_valid_index = non_nan_rows.iloc[::-1].idxmax() if non_nan_rows.any() else None
         df = df.loc[first_valid_index:last_valid_index]
         if df.isnull().values.any():
-            if self.ignore_nan:
+            if self.ignore_nan:  # TODO: restructure this
                 df.dropna(inplace=True)
             else:
-                raise ValueError("Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended, set ignore_nan=True in PreprocessingSingleStep.")
+                pass  # raise ValueError("Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended, set ignore_nan=True in PreprocessingSingleStep.")
 
         X = df[self.inputs]
-        y = df[self.output].shift(-self.shift)
-        if self.shift > 0:  # pragma: no cover
-            y = y.iloc[:-self.shift]
-            X = X.iloc[:-self.shift]
+        y = df[self.output]
+
+        assert len(self.inputs) == len(self.shift.keys()), (f"Something went wrong, number of inputs ({len(self.inputs)})"
+                                                            f" doesn't match number of inputs defined in shift ({len(self.shift.keys())})")
+
+        if all('current' == self.shift[k] for k in self.shift.keys()):
+            pass  # nothing to do here
+        elif all('previous' == self.shift[k] for k in self.shift.keys()):
+            X = X.shift(1)
+            y = y.iloc[1:]
+            X = X.iloc[1:]
+        elif all('mean_over_interval' == self.shift[k] for k in self.shift.keys()):
+
+            # output interval is target grid
+            y.dropna(inplace=True)
+
+            def pairwise(iterable: Iterable):
+                "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+                a, b = itertools.tee(iterable)
+                next(b, None)
+                return zip(a, b)
+
+            original_grid = np.array(X.index)
+            results = []
+            for i, j in pairwise(y.index):
+                slicer = np.logical_and(original_grid >= i, original_grid < j)
+                d = {'Index': j}
+                for inp in self.inputs:
+                    d[inp] = X[inp][slicer].mean()
+                results.append(d)
+
+            # length of X and Y have to be synchronized
+            y = y.iloc[1:]
+            X = pd.DataFrame(results).set_index('Index')
+
+        else:  # different inputs have different shift
+            pass
+
+        # y = df[self.output].shift(-self.shift)
 
         return X, y
 
