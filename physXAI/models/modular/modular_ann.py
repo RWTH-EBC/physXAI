@@ -6,9 +6,11 @@ import os
 from pathlib import Path
 from typing import Optional, Union
 from copy import deepcopy
+
+import numpy as np
 from physXAI.models.modular.modular_expression import ModularExpression
 from physXAI.models.ann.ann_design import ANNModel, CMNNModel, ClassicalANNModel
-from physXAI.models.models import register_model
+from physXAI.models.models import LinearRegressionModel, register_model
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 from physXAI.preprocessing.constructed import FeatureBase
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -26,7 +28,7 @@ class ModularANN(ANNModel):
 
     def __init__(self, architecture: ModularExpression, batch_size: int = 32, epochs: int = 1000,
                  learning_rate: float = 0.001, early_stopping_epochs: Optional[int] = 100,
-                 random_seed: int = 42, **kwargs):
+                 random_seed: int = 42, rescale_output: bool = False, **kwargs):
         """
         Initializes the ModularANN.
 
@@ -38,10 +40,13 @@ class ModularANN(ANNModel):
             early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
                                          If None, early stopping is disabled.
             random_seed (int): Seed for random number generators to ensure reproducibility.
+            rescale_output (bool): Whether to rescale the output to output scale.
         """
 
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
         self.architecture: ModularExpression = architecture
+
+        self.rescale_output = rescale_output
 
         self.model_config.update({})
 
@@ -54,6 +59,10 @@ class ModularANN(ANNModel):
         n_features = td.X_train_single.shape[1]
         input_layer = keras.layers.Input(shape=(n_features,))
         x = self.architecture.construct(input_layer, td)
+        if self.rescale_output:
+            rescale_mean = float(np.mean(td.y_train_single))
+            rescale_sigma = float(np.std(td.y_train_single, ddof=1))
+            x = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(x)
         model = keras.models.Model(inputs=input_layer, outputs=x)
         model.summary()
         return model
@@ -67,10 +76,10 @@ class ModularANN(ANNModel):
 
 class ModularModel(ModularExpression):
 
-    allowed_models = [ClassicalANNModel, CMNNModel]
+    allowed_models = [ClassicalANNModel, CMNNModel, LinearRegressionModel]
     i = 0
 
-    def __init__(self, model: ANNModel, inputs: list[ModularExpression, FeatureBase], rescale_output: bool = False, name: str = None):
+    def __init__(self, model: ANNModel, inputs: list[ModularExpression, FeatureBase], name: str = None, nominal_scale: float = None, nominal_offset: float = None):
         if not any(isinstance(model, allowed) for allowed in self.allowed_models):
             raise NotImplementedError(f"Currently {type(model)} is not supported. Allowed models are: {self.allowed_models}")
 
@@ -80,14 +89,24 @@ class ModularModel(ModularExpression):
 
         super().__init__(name)
         self.model = model
-        self.rescale_output = rescale_output
-        if rescale_output:
-            warning("Using rescale_output=True in ModularANN should only be done if model output is training data output.")
         self.model.model_config.update({
             "normalize": False,
-            "rescale_output": rescale_output
+            "rescale_output": False
         })
         self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
+
+        if nominal_scale is not None and nominal_offset is None:
+            nominal_offset = 0.0
+        elif nominal_offset is not None and nominal_scale is None:
+            nominal_scale = 1.0
+        self.nominal_offset = nominal_offset
+        self.nominal_scale = nominal_scale
+
+        if self.nominal_scale is not None:
+            self.rescale_output = True
+        else:
+            self.rescale_output = False
+
 
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
         if self.name in ModularExpression.models.keys():
@@ -100,7 +119,13 @@ class ModularModel(ModularExpression):
             self.model.model_config['n_features'] = len(inps)
             td = deepcopy(td)
             td.columns = [inp.name for inp in self.inputs]
-            l = self.model.generate_model(td=td)(keras.layers.Concatenate()(inps))
+            if isinstance(self.model, LinearRegressionModel):
+                lr = ModularLinear(inputs=self.inputs, name=self.name + "_linear").construct(input_layer, td)
+                l = lr(keras.layers.Concatenate()(inps))
+            else:
+                l = self.model.generate_model(td=td)(keras.layers.Concatenate()(inps))
+            if self.rescale_output:
+                l = keras.layers.Rescaling(scale=self.nominal_scale, offset=self.nominal_offset)(l) 
             ModularExpression.models[self.name] = l
             return l    
 
@@ -136,12 +161,24 @@ class ModularExistingModel(ModularExpression):
 class ModularLinear(ModularExpression):
     i = 0
 
-    def __init__(self, inputs: list[ModularExpression, FeatureBase], name: str = None):
+    def __init__(self, inputs: list[ModularExpression, FeatureBase], name: str = None, nominal_scale: float = None, nominal_offset: float = None):
         if name is None:
             name = f"ModularLinear_{ModularLinear.i}"
             ModularLinear.i += 1
         super().__init__(name)
         self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
+
+        if nominal_scale is not None and nominal_offset is None:
+            nominal_offset = 0.0
+        elif nominal_offset is not None and nominal_scale is None:
+            nominal_scale = 1.0
+        self.nominal_offset = nominal_offset
+        self.nominal_scale = nominal_scale
+
+        if self.nominal_scale is not None:
+            self.rescale_output = True
+        else:
+            self.rescale_output = False
         
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
         if self.name in ModularExpression.models.keys():
@@ -152,6 +189,8 @@ class ModularLinear(ModularExpression):
                 y = x.construct(input_layer, td)
                 inps.append(y)
             l = keras.layers.Dense(units=1, activation='linear')(keras.layers.Concatenate()(inps))
+            if self.rescale_output:
+                l = keras.layers.Rescaling(scale=self.nominal_scale, offset=self.nominal_offset)(l) 
             ModularExpression.models[self.name] = l
             return l
 
@@ -159,7 +198,7 @@ class ModularLinear(ModularExpression):
 class ModularPolynomial(ModularExpression):
     i = 0
 
-    def __init__(self, inputs: list[ModularExpression, FeatureBase], degree: int = 2, interaction_degree: int = 1, name: str = None):
+    def __init__(self, inputs: list[ModularExpression, FeatureBase], degree: int = 2, interaction_degree: int = 1, name: str = None, nominal_scale: float = None, nominal_offset: float = None):
         if name is None:
             name = f"ModularPolynomial_{ModularPolynomial.i}"
             ModularPolynomial.i += 1
@@ -169,6 +208,18 @@ class ModularPolynomial(ModularExpression):
         self.degree = degree
         self.interaction_degree = interaction_degree
         self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
+
+        if nominal_scale is not None and nominal_offset is None:
+            nominal_offset = 0.0
+        elif nominal_offset is not None and nominal_scale is None:
+            nominal_scale = 1.0
+        self.nominal_offset = nominal_offset
+        self.nominal_scale = nominal_scale
+
+        if self.nominal_scale is not None:
+            self.rescale_output = True
+        else:
+            self.rescale_output = False
 
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
         if self.name in ModularExpression.models.keys():
@@ -189,6 +240,8 @@ class ModularPolynomial(ModularExpression):
                     new_features.append(interaction_term)
 
             l = keras.layers.Dense(units=1, activation='linear')(keras.layers.Concatenate()(new_features))
+            if self.rescale_output:
+                l = keras.layers.Rescaling(scale=self.nominal_scale, offset=self.nominal_offset)(l) 
             ModularExpression.models[self.name] = l
             return l
         
