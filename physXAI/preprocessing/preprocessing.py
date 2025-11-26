@@ -265,7 +265,12 @@ class PreprocessingSingleStep(PreprocessingData):
                 pass  # raise ValueError("Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended, set ignore_nan=True in PreprocessingSingleStep.")
 
         X = df[self.inputs]
-        y = df[self.output]
+        y = df[self.output].copy()
+
+        # check if current inputs match inputs (keys) in shift dictionary and update shift if necessary
+        # required for recursive feature selection since inputs change after initialization of Preprocessing object
+        if (len(self.inputs) != len(self.shift.keys())) or not all(inp in self.shift.keys() for inp in self.inputs):
+            self.shift = convert_shift_to_dict(self.shift, self.inputs)
 
         assert len(self.inputs) == len(self.shift.keys()), (f"Something went wrong, number of inputs ({len(self.inputs)})"
                                                             f" doesn't match number of inputs defined in shift ({len(self.shift.keys())})")
