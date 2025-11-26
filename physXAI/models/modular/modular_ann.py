@@ -97,7 +97,7 @@ class ModularModel(ModularExpression):
 
         if nominal_range is None:
             self.rescale_output = False
-        elif nominal_range is not None and len(nominal_range) is not 2:
+        elif nominal_range is not None and len(nominal_range) != 2:
             raise ValueError(f"Modular Model: nominal_range must be a tuple of (min, max), but was {nominal_range}")
         else:
             self.rescale_output = True
@@ -166,7 +166,7 @@ class ModularLinear(ModularExpression):
 
         if nominal_range is None:
             self.rescale_output = False
-        elif nominal_range is not None and len(nominal_range) is not 2:
+        elif nominal_range is not None and len(nominal_range) != 2:
             raise ValueError(f"Modular Model: nominal_range must be a tuple of (min, max), but was {nominal_range}")
         else:
             self.rescale_output = True
@@ -204,7 +204,7 @@ class ModularPolynomial(ModularExpression):
 
         if nominal_range is None:
             self.rescale_output = False
-        elif nominal_range is not None and len(nominal_range) is not 2:
+        elif nominal_range is not None and len(nominal_range) != 2:
             raise ValueError(f"Modular Model: nominal_range must be a tuple of (min, max), but was {nominal_range}")
         else:
             self.rescale_output = True
