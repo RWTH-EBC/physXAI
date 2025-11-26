@@ -555,7 +555,7 @@ class FeatureConstruction:
         return None
 
     @staticmethod
-    def process(df: DataFrame):
+    def process(df: DataFrame, feature_names: list[str] = None):
         """
         Processes the input DataFrame by applying all registered feature transformations in order.
         Each feature's `process` method is called, which typically adds a new column to `df`
@@ -563,10 +563,16 @@ class FeatureConstruction:
 
         Args:
             df (DataFrame): The DataFrame to process and add features to.
+            feature_names (list[str]): optional parameter to only process those features given in feature_names
         """
 
-        for f in FeatureConstruction.features:
-            f.process(df)
+        if not feature_names:
+            for f in FeatureConstruction.features:
+                f.process(df)
+        else:
+            for f in FeatureConstruction.features:
+                if f.feature in feature_names:
+                    f.process(df)
 
     @staticmethod
     def get_config() -> list:
