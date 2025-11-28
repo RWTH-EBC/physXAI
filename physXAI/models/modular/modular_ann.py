@@ -65,6 +65,8 @@ class ModularANN(ANNModel):
             x = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(x)
         model = keras.models.Model(inputs=input_layer, outputs=x)
         model.summary()
+
+        ModularExpression.reset()
         return model
 
     def get_config(self) -> dict:
