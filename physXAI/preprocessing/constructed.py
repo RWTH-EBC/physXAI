@@ -566,7 +566,7 @@ class FeatureConstruction:
             feature_names (list[str]): optional parameter to only process those features given in feature_names
         """
 
-        if not feature_names:
+        if feature_names is None:
             for f in FeatureConstruction.features:
                 f.process(df)
         else:
