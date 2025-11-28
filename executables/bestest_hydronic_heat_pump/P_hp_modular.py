@@ -27,10 +27,9 @@ td = prep.pipeline(file_path)
 """Example usages of modular models"""
 y = ModularModel(
     model=ClassicalANNModel(),
-    inputs=[oveHeaPumY_u.input() / func_logistic.input(), func_logistic.input() ** 2, TDryBul.input(), TZon.input()],
-    rescale_output=True
+    inputs=[oveHeaPumY_u.input() / func_logistic.input(), func_logistic.input() ** 2, TDryBul.input(), TZon.input()]
 )
-m = ModularANN(architecture=y)
+m = ModularANN(architecture=y, rescale_output=True)
 
 # Training pipeline
 model = m.pipeline(td)
