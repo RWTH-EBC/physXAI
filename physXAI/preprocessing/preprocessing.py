@@ -263,7 +263,7 @@ class PreprocessingSingleStep(PreprocessingData):
         # extract the names of lagged inputs
         lagged_inputs = []
         for f in FeatureConstruction.features:
-            if isinstance(f, FeatureLag):
+            if isinstance(f, FeatureLag) and (f.feature in (self.inputs + self.output)):
                 lagged_inputs.append(f.feature) # name of the feature
 
         inputs_without_lags = [inp for inp in self.inputs if inp not in lagged_inputs]
@@ -271,7 +271,7 @@ class PreprocessingSingleStep(PreprocessingData):
         # Applies feature constructions defined in `FeatureConstruction`.
         # Only apply for those features that are not lags since lags must be constructed after sampling the data
         # according to the given time step
-        FeatureConstruction.process(df, feature_names=inputs_without_lags)
+        FeatureConstruction.process(df, feature_names=inputs_without_lags + [out for out in self.output if out not in inputs_without_lags])
 
         df = df[inputs_without_lags + [out for out in self.output if out not in inputs_without_lags]]
 
