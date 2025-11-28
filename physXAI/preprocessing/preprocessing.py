@@ -1,10 +1,11 @@
 import os
 from abc import ABC, abstractmethod
-from typing import Optional, Union
+from typing import Optional, Union, Iterable
 import numpy as np
 import pandas as pd
+import itertools
 from sklearn.model_selection import train_test_split
-from physXAI.preprocessing.constructed import FeatureConstruction
+from physXAI.preprocessing.constructed import FeatureConstruction, FeatureLag
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
 from physXAI.utils.logging import get_full_path
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -12,12 +13,88 @@ import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 
+def convert_shift_to_dict(s: Union[int, str, dict], inputs: list[str]) -> dict:
+    """
+    Convert a given shift variable (int, str) into a dictionary in which a shift is defined for every input.
+    If a dictionary is given as shift, check entries and autocomplete dict if necessary.
+
+    Args:
+        s (Union[int, str, dict]): Shift value. Either a single string or int which then will be applied to all the inputs or
+            a dictionary in which a different shift can be defined for each input. If the dictionary does not specify the
+            shift for all inputs, the shift for inputs not specified is set to 'previous' as default (autocomplete)
+        inputs (list(str)): List of Input variables
+    """
+
+    def return_valid_shift(val: Union[int, str]):
+        """ check the validity of the given shift and return a string if val is int """
+        if val in ['current', 0]:
+            val = 'current'
+        elif val in ['previous', 1]:
+            val = 'previous'
+        elif val == 'mean_over_interval':
+            val = 'mean_over_interval'
+        else:
+            raise ValueError(
+                f"Value of shift not supported, value is: {val}. Shift must be 'current' (or 0 if s is int), "
+                f"'previous' (or 1 if s is int) or 'mean_over_interval'.")
+        return val
+
+    if isinstance(s, (int, str)):
+        d = {}
+        s = return_valid_shift(s)
+
+        # add shift for each input
+        for inp in inputs:
+            d.update({inp: s})
+        return d
+
+    elif isinstance(s, dict):
+        def get_lag(inputs: list[str], current_input: str) -> int:
+            """ get lag of current input """
+            count = 0
+            for inp in inputs:
+                spl = inp.split(current_input) # make sure it is the current input
+                if spl[0] == '' and spl[1] != '' and spl[1].split('_lag')[0] == '':
+                    count += 1
+            return count
+
+        # check if lags exist
+        d = {}
+        inputs_without_lags = {}
+        for inp in inputs:
+            # skip if current input is just the lag of another inp
+            if not inp.__contains__('_lag'):
+                inputs_without_lags.update({inp: get_lag(inputs, inp)})
+
+        for inp in inputs_without_lags.keys():
+            # if an input has a shift assigned already, the validity is checked
+            # otherwise 'previous' is assigned (default value)
+            if inp in s.keys():
+                d.update({inp: return_valid_shift(s[inp])})
+            else:
+                d.update({inp: 'previous'})
+
+            # all inputs with lags should have the same shift
+            if inputs_without_lags[inp] > 0: # if current input has lags
+                for i in range(inputs_without_lags[inp]):
+                    name = inp + '_lag' + str(i+1)
+
+                    # if a shift was already defined for this lag, check if it matches the shift of the original inp
+                    if name in s.keys():
+                        assert return_valid_shift(s[name]) == d[inp], \
+                            'Make sure that all lags of an input have the same shift'
+                    d.update({name: d[inp]})
+        return d
+    else:
+        raise TypeError(f'shift must be of type int, str or dict, is type {type(s)}')
+
+
 class PreprocessingData(ABC):
     """
     Abstract Preprocessing Class
     """
 
-    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: int = 1,
+    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: Union[int, str, dict] = 'previous',
                  time_step: Optional[Union[int, float]] = None,
                  test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
@@ -28,7 +105,7 @@ class PreprocessingData(ABC):
         Args:
             inputs (List[str]): List of column names to be used as input features.
             output (Union[str, List[str]]): Column name(s) for the target variable(s).
-            shift (int): The number of time steps to shift the target variable for forecasting.
+            shift (int): The number of time steps to shift the target variable for forecasting.  # TODO: update docstring
                          A shift of one means predicting the next time step.
             time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
             test_size (float): Proportion of the dataset to allocate to the test set.
@@ -51,7 +128,7 @@ class PreprocessingData(ABC):
         if isinstance(output, str):
             output = [output]
         self.output: list[str] = output
-        self.shift: int = shift
+        self.shift: dict = convert_shift_to_dict(shift, inputs)
         self.time_step = time_step
 
         # Training, validation and test size should be equal to 1
@@ -91,9 +168,12 @@ class PreprocessingData(ABC):
         else:
             assert self.time_step % time_step == 0, (f"Value Error: Given time step {self.time_step} is not a multiple "
                                                      f"of data time step: {time_step}.")
-            filtering = (df.index - df.index[0]) % self.time_step == 0
-            df = df[filtering]
 
+        return df
+
+    def filter_df_according_to_timestep(self, df: pd.DataFrame):
+        filtering = (df.index - df.index[0]) % self.time_step == 0
+        df = df[filtering]
         return df
 
     @abstractmethod
@@ -127,7 +207,7 @@ class PreprocessingSingleStep(PreprocessingData):
     validation, and test sets.
     """
 
-    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: int = 1,
+    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: Union[int, str, dict] = 'previous',
                  time_step: Optional[Union[int, float]] = None,
                  test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
@@ -138,7 +218,7 @@ class PreprocessingSingleStep(PreprocessingData):
         Args:
             inputs (List[str]): List of column names to be used as input features.
             output (Union[str, List[str]]): Column name(s) for the target variable(s).
-            shift (int): The number of time steps to shift the target variable for forecasting.
+            shift (int): The number of time steps to shift the target variable for forecasting. # TODO: update doc dring
                          A shift of one means predicting the next time step.
             time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
             test_size (float): Proportion of the dataset to allocate to the test set.
@@ -171,27 +251,131 @@ class PreprocessingSingleStep(PreprocessingData):
                                                        and target (y) DataFrames.
         """
 
+        # check if current inputs match inputs (keys) in shift dictionary and update shift if necessary
+        # required for recursive feature selection since inputs change after initialization of Preprocessing object
+        if (len(self.inputs) != len(self.shift.keys())) or not all(inp in self.shift.keys() for inp in self.inputs):
+            self.shift = convert_shift_to_dict(self.shift, self.inputs)
+
+        assert len(self.inputs) == len(self.shift.keys()), (
+            f"Something went wrong, number of inputs ({len(self.inputs)})"
+            f" doesn't match number of inputs defined in shift ({len(self.shift.keys())})")
+
+        # extract the names of lagged inputs
+        lagged_inputs = []
+        for f in FeatureConstruction.features:
+            if isinstance(f, FeatureLag) and (f.feature in (self.inputs + self.output)):
+                lagged_inputs.append(f.feature) # name of the feature
+
+        inputs_without_lags = [inp for inp in self.inputs if inp not in lagged_inputs]
+
         # Applies feature constructions defined in `FeatureConstruction`.
-        FeatureConstruction.process(df)
+        # Only apply for those features that are not lags since lags must be constructed after sampling the data
+        # according to the given time step
+        FeatureConstruction.process(df, feature_names=inputs_without_lags + [out for out in self.output if out not in inputs_without_lags])
 
-        df = df[self.inputs + [out for out in self.output if out not in self.inputs]]
+        df = df[inputs_without_lags + [out for out in self.output if out not in inputs_without_lags]]
 
-        # Nan handling
+        # Nan handling in first and last rows
         non_nan_rows = df.notna().all(axis=1)
         first_valid_index = non_nan_rows.idxmax() if non_nan_rows.any() else None
         last_valid_index = non_nan_rows.iloc[::-1].idxmax() if non_nan_rows.any() else None
         df = df.loc[first_valid_index:last_valid_index]
-        if df.isnull().values.any():
-            if self.ignore_nan:
-                df.dropna(inplace=True)
-            else:
-                raise ValueError("Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended, set ignore_nan=True in PreprocessingSingleStep.")
 
-        X = df[self.inputs]
-        y = df[self.output].shift(-self.shift)
-        if self.shift > 0:  # pragma: no cover
-            y = y.iloc[:-self.shift]
-            X = X.iloc[:-self.shift]
+        def get_mean_over_interval(y: pd.DataFrame, x: pd.DataFrame, inputs: list[str]):
+            def pairwise(iterable: Iterable):
+                "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+                a, b = itertools.tee(iterable)
+                next(b, None)
+                return zip(a, b)
+
+            original_grid = np.array(x.index)
+            results = []
+            for i, j in pairwise(y.index): # output interval is target grid
+                slicer = np.logical_and(original_grid >= i, original_grid < j)
+                d = {'Index': j}
+                for inp in inputs:
+                    d[inp] = x[inp][slicer].mean()
+                results.append(d)
+
+            x = pd.DataFrame(results).set_index('Index')
+
+            return x
+
+        # output is independent of shift -> filter / sample according to time step already
+        y = df[self.output].copy()
+        y = self.filter_df_according_to_timestep(y)
+
+        X = df[inputs_without_lags].copy()
+
+        if all('current' == self.shift[k] for k in inputs_without_lags):
+            # filter / sample data
+            X = self.filter_df_according_to_timestep(X)
+            # nothing more to do here
+        elif all('previous' == self.shift[k] for k in inputs_without_lags):
+            # filter / sample data
+            X = self.filter_df_according_to_timestep(X)
+
+            # shift data by 1 and shorten DataFrames accordingly
+            X = X.shift(1)
+            y = y.iloc[1:]
+            X = X.iloc[1:]
+        elif all('mean_over_interval' == self.shift[k] for k in inputs_without_lags):
+            X = get_mean_over_interval(y, X, inputs_without_lags)
+            # synchronize length between X and y
+            y = y.iloc[1:]
+
+        else:  # different inputs have different shifts
+            res = []
+            for inp in inputs_without_lags:
+                # only process inputs with shift method mean_over_interval first since X cannot be filtered / sampled
+                # to the actual required time steps until the intermediate values were taken into the mean
+                if self.shift[inp] == 'mean_over_interval':
+                    res.append(get_mean_over_interval(y, X[[inp]], [inp]))
+
+            # filter / sample X according to required time step
+            X = self.filter_df_according_to_timestep(X)
+            # process inputs with shift methods 'current' and 'previous'
+            for inp in inputs_without_lags:
+                _x = X[[inp]]
+                if self.shift[inp] == 'current':
+                    # no transformation needed
+                    res.append(_x)
+                elif self.shift[inp] == 'previous':
+                    # shift by 1
+                    _x = _x.shift(1)
+                    _x = _x.iloc[1:]
+                    res.append(_x)
+                elif self.shift[inp] == 'mean_over_interval':
+                    continue
+                else:
+                    raise NotImplementedError(f"Shift method '{self.shift[inp]}' not implemented.")
+
+            X = pd.concat(res, axis=1)
+
+            # Shift methods 'previous' and 'mean_over_interval' reduce available data points by 1.
+            # Therefore, length of X and y have to be synchronized
+            if 'previous' in self.shift.values() or 'mean_over_interval' in self.shift.values():
+                y = y.iloc[1:]
+                X = X.sort_index(ascending=True)
+                X = X.iloc[1:]
+
+        res_df = pd.concat([X, y], axis=1)
+
+        if res_df.isnull().values.any():
+            if self.ignore_nan:
+                res_df.dropna(inplace=True)
+            else:
+                raise ValueError(
+                    "Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended, set ignore_nan=True in PreprocessingSingleStep.")
+
+        # Applies feature constructions defined in `FeatureConstruction` to the lagged inputs
+        FeatureConstruction.process(res_df, feature_names=lagged_inputs)
+
+        # drop NaNs occurring due to creation of lags
+        res_df.dropna(inplace=True)
+
+        X = res_df[self.inputs]
+        y = res_df[self.output]
 
         return X, y
 
@@ -351,6 +535,9 @@ class PreprocessingMultiStep (PreprocessingData):
         Returns:
             TrainingDataMultiStep: Container with tf.data.Dataset objects.
         """
+
+        # filter data
+        df = self.filter_df_according_to_timestep(df)
 
         # Applies feature constructions defined in `FeatureConstruction`.
         FeatureConstruction.process(df)
