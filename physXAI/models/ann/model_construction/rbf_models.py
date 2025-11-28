@@ -36,33 +36,20 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
         n_neurons = [n_neurons] * n_layers
     else:
         assert len(n_neurons) == n_layers
-    n_featues = td.X_train_single.shape[1]
-
-    # Rescaling for output layer
-    # Custom rescaling
-    if 'rescale_scale' in config.keys() or 'rescale_offset' in config.keys():
-        raise ValueError(
-            "The 'rescale_scale' and 'rescale_offset' parameters are deprecated. "
-            "Scaling has changed from min/max to standardization (z-score normalization using mean=0, std=1). "
-            "Please use 'rescale_mean' and 'rescale_sigma' instead."
-        )
-    if 'rescale_sigma' in config.keys() and config['rescale_sigma'] is not None:
-        if 'rescale_mean' in config.keys() and config['rescale_mean'] is not None:
-            rescale_mean = config['rescale_mean']
-        else:
-            rescale_mean = 0
-        rescale_sigma = config['rescale_sigma']
-    # Standard rescaling
+    if config['n_features'] is not None:
+        n_features = config['n_features']
     else:
-        rescale_mean = float(np.mean(td.y_train_single))
-        rescale_sigma = float(np.std(td.y_train_single, ddof=1))
+        n_features = td.X_train_single.shape[1]
 
     # Add input layer
-    input_layer = keras.layers.Input(shape=(n_featues,))
+    input_layer = keras.layers.Input(shape=(n_features,))
     # Add normalization layer
-    normalization = keras.layers.Normalization()
-    normalization.adapt(td.X_train_single)
-    x = normalization(input_layer)
+    if config['normalize']:
+        normalization = keras.layers.Normalization()
+        normalization.adapt(td.X_train_single)
+        x = normalization(input_layer)
+    else:
+        x = input_layer
 
     for i in range(0, n_layers):
         # For each layer add RBF
@@ -82,6 +69,26 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
 
     # Add rescaling
     if config['rescale_output']:
+
+        # Rescaling for output layer
+        # Custom rescaling
+        if 'rescale_scale' in config.keys() or 'rescale_offset' in config.keys():
+            raise ValueError(
+                "The 'rescale_scale' and 'rescale_offset' parameters are deprecated. "
+                "Scaling has changed from min/max to standardization (z-score normalization using mean=0, std=1). "
+                "Please use 'rescale_mean' and 'rescale_sigma' instead."
+            )
+        if 'rescale_sigma' in config.keys() and config['rescale_sigma'] is not None:
+            if 'rescale_mean' in config.keys() and config['rescale_mean'] is not None:
+                rescale_mean = config['rescale_mean']
+            else:
+                rescale_mean = 0
+            rescale_sigma = config['rescale_sigma']
+        # Standard rescaling
+        else:
+            rescale_mean = float(np.mean(td.y_train_single))
+            rescale_sigma = float(np.std(td.y_train_single, ddof=1))
+
         x = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(x)
 
     model = keras.Model(inputs=input_layer, outputs=x)

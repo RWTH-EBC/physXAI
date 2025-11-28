@@ -1,3 +1,4 @@
+from logging import warning
 import os
 import time
 from abc import ABC, abstractmethod
@@ -46,6 +47,9 @@ class ANNModel(SingleStepModel, ABC):
         self.early_stopping_epochs: Optional[int] = early_stopping_epochs
         self.random_seed: int = random_seed
         keras.utils.set_random_seed(random_seed)
+
+        self.model_config = dict()
+
 
     @abstractmethod
     def generate_model(self, **kwargs):
@@ -216,12 +220,12 @@ class ClassicalANNModel(ANNModel):
         self.activation_function: Union[str, list[str]] = activation_function
         self.rescale_output: bool = rescale_output
 
-        self.model_config = {
+        self.model_config.update({
             "n_layers": self.n_layers,
             "n_neurons": self.n_neurons,
             "activation_function": self.activation_function,
             "rescale_output": self.rescale_output,
-        }
+        })
 
     def generate_model(self, **kwargs):
         """
@@ -272,12 +276,12 @@ class LinANNModel(ANNModel):
         self.n_neurons: Union[int, list[int]] = n_neurons
         self.rescale_output: bool = rescale_output
 
-        self.model_config = {
+        self.model_config.update({
             "n_layers": self.n_layers,
             "n_neurons": self.n_neurons,
             "rescale_output": self.rescale_output,
             "random_state": random_seed
-        }
+        })
 
     def generate_model(self, **kwargs):
         """
@@ -336,12 +340,12 @@ class RBFModel(ANNModel):
         self.n_neurons: Union[int, list[int]] = n_neurons
         self.rescale_output: bool = rescale_output
 
-        self.model_config = {
+        self.model_config.update({
             "n_layers": self.n_layers,
             "n_neurons": self.n_neurons,
             "rescale_output": self.rescale_output,
             "random_state": random_seed
-        }
+        })
 
     def generate_model(self, **kwargs):
         """
@@ -401,14 +405,14 @@ class CMNNModel(ANNModel):
         self.monotonies: dict[str, int] = monotonies
         self.activation_split: list[float] = activation_split
 
-        self.model_config = {
+        self.model_config.update({
             "n_layers": self.n_layers,
             "n_neurons": self.n_neurons,
             "activation_function": self.activation_function,
             "rescale_output": self.rescale_output,
             "monotonicities": self.monotonies,
             "activation_split": activation_split,
-        }
+        })
 
     def generate_model(self, **kwargs):
         """
@@ -476,14 +480,14 @@ class PINNModel(ANNModel):
 
         self.pinn_weights: list[float] = pinn_weights
 
-        self.model_config = {
+        self.model_config.update({
             "n_layers": self.n_layers,
             "n_neurons": self.n_neurons,
             "activation_function": self.activation_function,
             "rescale_output": self.rescale_output,
             "monotonicities": self.monotonies,
             "activation_split": activation_split,
-        }
+        })
 
         # Create pinn loss based on standard losses
         self.pinn_loss = multi_y_loss(keras.losses.MeanSquaredError(name='MSE'), self.pinn_weights, 'mse')
@@ -607,7 +611,6 @@ class PINNModel(ANNModel):
             "activation_split": self.activation_split
         })
         return config
-
 
 @register_model
 class RNNModel(MultiStepModel):
