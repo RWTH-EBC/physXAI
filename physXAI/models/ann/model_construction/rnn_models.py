@@ -359,11 +359,13 @@ def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
         normalization_layer.adapt(inputs_df)
         normalized_inputs = normalization_layer(inputs)
 
-        slice_mono = InputSliceLayer(list(range(0, len(monotonicity))))
-        normalized_inputs_mono = slice_mono(normalized_inputs)
-
-        slice_dis = InputSliceLayer(list(range(len(monotonicity), num_features)))
-        normalized_inputs_dis = slice_dis(normalized_inputs)
+        if dis_layer != None:
+            slice_mono = InputSliceLayer(list(range(0, len(monotonicity))))
+            normalized_inputs_mono = slice_mono(normalized_inputs)
+            slice_dis = InputSliceLayer(list(range(len(monotonicity), num_features)))
+            normalized_inputs_dis = slice_dis(normalized_inputs)
+        else:
+            normalized_inputs_mono = normalized_inputs
 
         # Get kernal constraint
         kernal_constraint = NonNegPartial(monotonicity)
@@ -391,32 +393,38 @@ def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
         # 2. Disturbance layer
         if dis_layer == "LSTM":
             dis_input_init = [keras.Input(shape=(dis_units,)) for _ in range(2)]
-            dis = keras.layers.LSTM(dis_units, return_state=True, return_sequences=True)
+            dis = keras.layers.LSTM(dis_units, activation=dis_activation, return_state=True, return_sequences=True)
             pred_dis, *state_dis = dis(normalized_inputs_dis, initial_state=dis_input_init)
             dense_dis = keras.layers.Dense(num_outputs)
             pred_dis = dense_dis(pred_dis)
         elif dis_layer == 'GRU':
             dis_input_init = keras.Input(shape=(dis_units,))
-            dis = keras.layers.GRU(dis_units, return_state=True, return_sequences=True)
+            dis = keras.layers.GRU(dis_units, activation=dis_activation, return_state=True, return_sequences=True)
             pred_dis, *state_dis = dis(normalized_inputs_dis, initial_state=dis_input_init)
             dense_dis = keras.layers.Dense(num_outputs)
             pred_dis = dense_dis(pred_dis)
         elif dis_layer == 'RNN':
             dis_input_init = keras.Input(shape=(dis_units,))
-            dis = keras.layers.SimpleRNN(dis_units, return_state=True, return_sequences=True)
+            dis = keras.layers.SimpleRNN(dis_units, activation=dis_activation, return_state=True, return_sequences=True)
             pred_dis, *state_dis = dis(normalized_inputs_dis, initial_state=dis_input_init)
             dense_dis = keras.layers.Dense(num_outputs)
             pred_dis = dense_dis(pred_dis)
 
         # add up to get the prediction
-        pred = keras.layers.Add()([pred_mono, pred_dis])
+        if dis_layer != None:
+            pred = keras.layers.Add()([pred_mono, pred_dis])
+        else:
+            pred = pred_mono
 
         # Rescaling layer
         rescaling_layer = keras.layers.Rescaling(scale=rescale_max - rescale_min, offset=rescale_min)
         pred = rescaling_layer(pred)
 
         # construct the keras model
-        mrnn_model = keras.Model([inputs, rnn_input_init, dis_input_init], [pred, *state_mono, *state_dis], name='out_model')
+        if dis_layer != None:
+            mrnn_model = keras.Model([inputs, rnn_input_init, dis_input_init], [pred, *state_mono, *state_dis], name='out_model')
+        else:
+            mrnn_model = keras.Model([inputs, rnn_input_init], [pred, *state_mono], name='out_model')
 
         return mrnn_model
 
@@ -434,15 +442,18 @@ def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
             int_model_mono = init_model(td.X_train[1].reshape(-1, num_warmup_features), warmup_width, num_warmup_features,
                                    init_layer, rnn_layer, rnn_units, 'init_model_mono')
             state_mono = int_model_mono(initial_value_layer)
-            if init_dis == 'Zero':
-                int_model_dis = init_zeros(num_warmup_features, dis_units, out_steps, dis_layer)
-                cropped_inputs = keras.layers.Cropping1D(cropping=(0, warmup_width - 1))(initial_value_layer)
-                state_dis = int_model_dis(cropped_inputs)
+            if dis_layer != None:
+                if init_dis == 'Zero':
+                    int_model_dis = init_zeros(num_warmup_features, dis_units, out_steps, dis_layer)
+                    cropped_inputs = keras.layers.Cropping1D(cropping=(0, warmup_width - 1))(initial_value_layer)
+                    state_dis = int_model_dis(cropped_inputs)
+                else:
+                    int_model_dis = init_model(td.X_train[1].reshape(-1, num_warmup_features), warmup_width, num_warmup_features,
+                                               init_dis, dis_layer, dis_units, 'init_model_dis')
+                    state_dis = int_model_dis(initial_value_layer)
+                model = keras.Model([initial_value_layer], [state_mono, state_dis], name='init_model')
             else:
-                int_model_dis = init_model(td.X_train[1].reshape(-1, num_warmup_features), warmup_width, num_warmup_features,
-                                           init_dis, dis_layer, dis_units, 'init_model_dis')
-                state_dis = int_model_dis(initial_value_layer)
-            model = keras.Model([initial_value_layer], [state_mono, state_dis], name='init_model')
+                model = keras.Model([initial_value_layer], [state_mono], name='init_model')
 
         # No warmup
         else:
@@ -450,21 +461,32 @@ def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
             int_model_mono = init_zeros(num_features, rnn_units, out_steps, rnn_layer)
             cropped_inputs = keras.layers.Cropping1D(cropping=(0, out_steps - 1))(inputs)
             state_mono = [int_model_mono(cropped_inputs)]
-            int_model_dis = init_zeros(num_features, dis_units, out_steps, dis_layer)
-            cropped_inputs = keras.layers.Cropping1D(cropping=(0, out_steps - 1))(inputs)
-            state_dis = int_model_dis(cropped_inputs)
-            model = keras.Model([inputs], [state_mono, state_dis], name='init_model')
+            if dis_layer != None:
+                int_model_dis = init_zeros(num_features, dis_units, out_steps, dis_layer)
+                cropped_inputs = keras.layers.Cropping1D(cropping=(0, out_steps - 1))(inputs)
+                state_dis = int_model_dis(cropped_inputs)
+                model = keras.Model([inputs], [state_mono, state_dis])
+            else:
+                model = keras.Model([inputs], [*state_mono])
 
         return initial_value_layer, model
 
     initial_value_layer, i_model = init_mrnn_model(warmup, warmup_width, num_warmup_features, out_steps, num_features, init_layer, rnn_layer, rnn_units, init_dis, dis_layer, dis_units, td)
-    if warmup:
-        state_mono, state_dis = i_model([initial_value_layer])
+    if dis_layer != None:
+        if warmup:
+            state_mono, state_dis = i_model([initial_value_layer])
+        else:
+            state_mono, state_dis = i_model([inputs])
     else:
-        state_mono, state_dis = i_model([inputs])
-
+        if warmup:
+            state_mono = i_model([initial_value_layer])
+        else:
+            state_mono = i_model([inputs])
     # Get output predictions
-    prediction, *_ = o_model([inputs, *state_mono, state_dis])
+    if dis_layer != None:
+        prediction, *_ = o_model([inputs, *state_mono, state_dis])
+    else:
+        prediction, *_ = o_model([inputs, *state_mono])
 
     # Reshape output
     outputs = keras.layers.Reshape((out_steps, num_outputs))(prediction)
