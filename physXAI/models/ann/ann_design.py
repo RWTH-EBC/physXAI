@@ -833,6 +833,10 @@ class PCNNModel(RNNModel):
 
     def get_config(self) -> dict:
         config = super().get_config()
+        # remove configs that is only relevant for RNN but not for PCNN
+        for key in ['rnn_units', 'rnn_layer', 'init_layer', 'prior_layer', 'activation']:
+            config.pop(key, None)
+        # add PCNN relevant configs
         config.update({
             'disturbance_inputs': self.model_config['dis_inputs'],
             'disturbance_ann': self.disturbance_ann.get_config(),
