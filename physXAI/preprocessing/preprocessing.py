@@ -109,8 +109,19 @@ class PreprocessingData(ABC):
         Args:
             inputs (List[str]): List of column names to be used as input features.
             output (Union[str, List[str]]): Column name(s) for the target variable(s).
-            shift (int): The number of time steps to shift the target variable for forecasting.  # TODO: update docstring
-                         A shift of one means predicting the next time step.
+            shift (Union[int, str, dict]): Time step of the input data used to predict the output.
+                - If a single int or str is given, it applies to all inputs.
+                - If a dict is provided, it can specify different shifts for individual inputs.
+                - If not all inputs are specified in the dict, unspecified inputs will use a default value (autocomplete).
+                Examples:
+                    - shift = 0 or shift = 'current': Current time step will be used for prediction.
+                    - shift = 1 or shift = 'previous': Previous values will be used for prediction.
+                    - shift = 'mean_over_interval': Mean between current and previous time step will be used.
+                    - shift = {
+                        'inp_1': 1,
+                        'inp_2': 'mean_over_interval',
+                        '_default': 0,  # current time step will be used for all inputs not specified in the dict
+                    }
             time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
             test_size (float): Proportion of the dataset to allocate to the test set.
             val_size (float): Proportion of the dataset to allocate to the validation set.
@@ -229,8 +240,19 @@ class PreprocessingSingleStep(PreprocessingData):
         Args:
             inputs (List[str]): List of column names to be used as input features.
             output (Union[str, List[str]]): Column name(s) for the target variable(s).
-            shift (int): The number of time steps to shift the target variable for forecasting. # TODO: update doc dring
-                         A shift of one means predicting the next time step.
+            shift (Union[int, str, dict]): Time step of the input data used to predict the output.
+                - If a single int or str is given, it applies to all inputs.
+                - If a dict is provided, it can specify different shifts for individual inputs.
+                - If not all inputs are specified in the dict, unspecified inputs will use a default value (autocomplete).
+                Examples:
+                    - shift = 0 or shift = 'current': Current time step will be used for prediction.
+                    - shift = 1 or shift = 'previous': Previous values will be used for prediction.
+                    - shift = 'mean_over_interval': Mean between current and previous time step will be used.
+                    - shift = {
+                        'inp_1': 1,
+                        'inp_2': 'mean_over_interval',
+                        '_default': 0,  # current time step will be used for all inputs not specified in the dict
+                    }
             time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
             test_size (float): Proportion of the dataset to allocate to the test set.
             val_size (float): Proportion of the dataset to allocate to the validation set.
