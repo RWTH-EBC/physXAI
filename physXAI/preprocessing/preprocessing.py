@@ -121,6 +121,7 @@ class PreprocessingData(ABC):
                         'inp_1': 1,
                         'inp_2': 'mean_over_interval',
                         '_default': 0,  # current time step will be used for all inputs not specified in the dict
+                        # If no custom default value is given in dict, 'previous' will be used as default
                     }
             time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
             test_size (float): Proportion of the dataset to allocate to the test set.
@@ -252,6 +253,7 @@ class PreprocessingSingleStep(PreprocessingData):
                         'inp_1': 1,
                         'inp_2': 'mean_over_interval',
                         '_default': 0,  # current time step will be used for all inputs not specified in the dict
+                        # If no custom default value is given in dict, 'previous' will be used as default
                     }
             time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
             test_size (float): Proportion of the dataset to allocate to the test set.
@@ -274,7 +276,7 @@ class PreprocessingSingleStep(PreprocessingData):
                 1. Applies feature constructions defined in `FeatureConstruction`.
                 2. Selects relevant input and output columns.
                 3. Handles missing values by dropping rows.
-                4. Shifts the target variable(s) `y` for forecasting.
+                4. Applies the shift on each input variable.
 
                 Args:
                     df (pd.DataFrame): The input DataFrame.
@@ -314,7 +316,8 @@ class PreprocessingSingleStep(PreprocessingData):
         last_valid_index = non_nan_rows.iloc[::-1].idxmax() if non_nan_rows.any() else None
         df = df.loc[first_valid_index:last_valid_index]
 
-        def get_mean_over_interval(y: pd.DataFrame, x: pd.DataFrame, inputs: list[str]):
+        def get_mean_over_interval(y: pd.DataFrame, x: pd.DataFrame):
+            """return mean values of x on target sampling (index of y)"""
             def pairwise(iterable: Iterable):
                 "s -> (s0,s1), (s1,s2), (s2, s3), ..."
                 a, b = itertools.tee(iterable)
@@ -326,7 +329,7 @@ class PreprocessingSingleStep(PreprocessingData):
             for i, j in pairwise(y.index): # output interval is target grid
                 slicer = np.logical_and(original_grid >= i, original_grid < j)
                 d = {'Index': j}
-                for inp in inputs:
+                for inp in x.columns:
                     d[inp] = x[inp][slicer].mean()
                 results.append(d)
 
@@ -353,7 +356,7 @@ class PreprocessingSingleStep(PreprocessingData):
             y = y.iloc[1:]
             X = X.iloc[1:]
         elif all('mean_over_interval' == self.shift[k] for k in inputs_without_lags):
-            X = get_mean_over_interval(y, X, inputs_without_lags)
+            X = get_mean_over_interval(y, X)
             # synchronize length between X and y
             y = y.iloc[1:]
 
@@ -363,7 +366,7 @@ class PreprocessingSingleStep(PreprocessingData):
                 # only process inputs with shift method mean_over_interval first since X cannot be filtered / sampled
                 # to the actual required time steps until the intermediate values were taken into the mean
                 if self.shift[inp] == 'mean_over_interval':
-                    res.append(get_mean_over_interval(y, X[[inp]], [inp]))
+                    res.append(get_mean_over_interval(y, X[[inp]]))
 
             # filter / sample X according to required time step
             X = self.filter_df_according_to_timestep(X)
@@ -386,7 +389,7 @@ class PreprocessingSingleStep(PreprocessingData):
             X = pd.concat(res, axis=1)
 
             # Shift methods 'previous' and 'mean_over_interval' reduce available data points by 1.
-            # Therefore, length of X and y have to be synchronized
+            # Therefore, lengths of X and y have to be synchronized
             if 'previous' in self.shift.values() or 'mean_over_interval' in self.shift.values():
                 y = y.iloc[1:]
                 X = X.sort_index(ascending=True)

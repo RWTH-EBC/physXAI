@@ -38,6 +38,11 @@ def inputs_tair():
     return ['reaTZon_y', 'weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u', 'oveHeaPumY_u_lag1']
 
 @pytest.fixture(scope='module')
+def inputs_tair_extended():
+    return ['reaTZon_y', 'reaTZon_y_lag1', 'reaTZon_y_lag2', 'weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaTDryBul_y_lag1',
+              'weaSta_reaWeaHDirNor_y', 'oveHeaPumY_u', 'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2']
+
+@pytest.fixture(scope='module')
 def output_php():
     return 'reaPHeaPum_y'
 
@@ -226,6 +231,32 @@ def tair_data_total(file_path, inputs_tair, output_tair):
                                   overlapping_sequences=False, batch_size=1)
     td = prep.pipeline(file_path)
     return prep, td
+
+def test_shifting(file_path, inputs_tair_extended, output_tair):
+    # Setup up logger for saving
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
+
+    # Create lags
+    x1 = Feature('reaTZon_y')
+    x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
+    x2 = Feature('weaSta_reaWeaTDryBul_y')
+    x2.lag(1)  # weaSta_reaWeaTDryBul_y_lag1
+    x3 = Feature('oveHeaPumY_u')
+    x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
+
+    shift = {
+        'reaTZon_y': 'previous',  # for all lags of reaTZon_y, the shift will be set automatically
+        'weaSta_reaWeaHDirNor_y': 'mean_over_interval',
+        '_default': 0,
+    }
+
+    # Create & process Training data
+    prep = PreprocessingSingleStep(inputs_tair_extended, output_tair, shift=shift, time_step=4)
+    td = prep.pipeline(file_path)
+
+    # Build & train Classical ANN
+    m = ClassicalANNModel(epochs=100)
+    model = m.pipeline(td)
 
 def test_model_linReg(inputs_php, output_php, file_path):
     # Setup up logger for saving
