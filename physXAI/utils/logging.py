@@ -183,6 +183,8 @@ class Logger:
                 with open(path, "w") as f:
                     json.dump(constructed_config, f, indent=4)
 
+            FeatureConstruction.reset()
+
         if model is not None:
             try:
                 model_dict = model.get_config()
