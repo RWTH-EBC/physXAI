@@ -13,7 +13,7 @@ import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 
-def convert_shift_to_dict(s: Union[int, str, dict], inputs: list[str]) -> dict:
+def convert_shift_to_dict(s: Union[int, str, dict], inputs: list[str], custom_default: Union[int, str] = None) -> dict:
     """
     Convert a given shift variable (int, str) into a dictionary in which a shift is defined for every input.
     If a dictionary is given as shift, check entries and autocomplete dict if necessary.
@@ -21,8 +21,9 @@ def convert_shift_to_dict(s: Union[int, str, dict], inputs: list[str]) -> dict:
     Args:
         s (Union[int, str, dict]): Shift value. Either a single string or int which then will be applied to all the inputs or
             a dictionary in which a different shift can be defined for each input. If the dictionary does not specify the
-            shift for all inputs, the shift for inputs not specified is set to 'previous' as default (autocomplete)
+            shift for all inputs, the shift for inputs not specified is set to the default value (autocomplete)
         inputs (list(str)): List of Input variables
+        custom_default (Union[int, str]): if no custom default is specified, 'previous' is used as default shift
     """
 
     def return_valid_shift(val: Union[int, str]):
@@ -38,6 +39,9 @@ def convert_shift_to_dict(s: Union[int, str, dict], inputs: list[str]) -> dict:
                 f"Value of shift not supported, value is: {val}. Shift must be 'current' (or 0 if s is int), "
                 f"'previous' (or 1 if s is int) or 'mean_over_interval'.")
         return val
+
+    # set custom default or - if no custom default is specified - use 'previous' as default
+    default = 'previous' if custom_default is None else return_valid_shift(custom_default)
 
     if isinstance(s, (int, str)):
         d = {}
@@ -68,11 +72,11 @@ def convert_shift_to_dict(s: Union[int, str, dict], inputs: list[str]) -> dict:
 
         for inp in inputs_without_lags.keys():
             # if an input has a shift assigned already, the validity is checked
-            # otherwise 'previous' is assigned (default value)
+            # otherwise default value is assigned
             if inp in s.keys():
                 d.update({inp: return_valid_shift(s[inp])})
             else:
-                d.update({inp: 'previous'})
+                d.update({inp: default})
 
             # all inputs with lags should have the same shift
             if inputs_without_lags[inp] > 0: # if current input has lags
@@ -128,7 +132,14 @@ class PreprocessingData(ABC):
         if isinstance(output, str):
             output = [output]
         self.output: list[str] = output
-        self.shift: dict = convert_shift_to_dict(shift, inputs)
+
+        if isinstance(shift, dict) and '_default' in shift.keys():
+            self.shift_default = shift['_default']
+            shift.__delitem__('_default')
+        else:
+            self.shift_default = None
+        self.shift: dict = convert_shift_to_dict(shift, inputs, custom_default=self.shift_default)
+
         self.time_step = time_step
 
         # Training, validation and test size should be equal to 1
@@ -254,7 +265,7 @@ class PreprocessingSingleStep(PreprocessingData):
         # check if current inputs match inputs (keys) in shift dictionary and update shift if necessary
         # required for recursive feature selection since inputs change after initialization of Preprocessing object
         if (len(self.inputs) != len(self.shift.keys())) or not all(inp in self.shift.keys() for inp in self.inputs):
-            self.shift = convert_shift_to_dict(self.shift, self.inputs)
+            self.shift = convert_shift_to_dict(self.shift, self.inputs, custom_default=self.shift_default)
 
         assert len(self.inputs) == len(self.shift.keys()), (
             f"Something went wrong, number of inputs ({len(self.inputs)})"

@@ -153,6 +153,21 @@ class TestPreprocessingShiftConversion(TestCase):
         assert len(res) == len(self.inputs)
         assert res == res_expected
 
+    # test case: autocomplete incomplete dictionary given for shift with custom default
+    def test_autocomplete_incomplete_dict_with_custom_default(self):
+        shift = {'reaTZon_y': 1, 'reaTZon_y_lag1': 1, 'weaSta_reaWeaTDryBul_y': 'mean_over_interval'}
+
+        # previous is default for all inputs that are not specified
+        res = convert_shift_to_dict(shift, self.inputs, custom_default=0)
+        res_expected = {'reaTZon_y': 'previous', 'reaTZon_y_lag1': 'previous', 'reaTZon_y_lag2': 'previous',
+                        'weaSta_reaWeaTDryBul_y': 'mean_over_interval',
+                        'weaSta_reaWeaTDryBul_y_lag1': 'mean_over_interval',
+                        'weaSta_reaWeaHDirNor_y': 'current', 'oveHeaPumY_u': 'current',
+                        'oveHeaPumY_u_lag1': 'current',
+                        'oveHeaPumY_u_lag2': 'current'}
+        assert len(res) == len(self.inputs)
+        assert res == res_expected
+
     # test case: lags of the same input have mismatching shifts
     def test_lag_with_mismatching_shifts(self):
         shift = {'reaTZon_y': 0, 'reaTZon_y_lag1': 1, 'weaSta_reaWeaTDryBul_y': 'mean_over_interval'}
