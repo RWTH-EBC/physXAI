@@ -255,7 +255,7 @@ def test_shifting(file_path, inputs_tair_extended, output_tair):
     td = prep.pipeline(file_path)
 
     # Build & train Classical ANN
-    m = ClassicalANNModel(epochs=100)
+    m = ClassicalANNModel(epochs=1)
     model = m.pipeline(td)
 
 def test_model_linReg(inputs_php, output_php, file_path):

@@ -62,7 +62,7 @@ prep = PreprocessingSingleStep(inputs, output, shift=shift, time_step=4)
 td = prep.pipeline(file_path)
 
 # Classical ANN
-m = ClassicalANNModel(epochs=500)
+m = ClassicalANNModel(epochs=50)
 
 # Training pipeline
 model = m.pipeline(td)
