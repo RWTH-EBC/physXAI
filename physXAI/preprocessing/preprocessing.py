@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import itertools
 from sklearn.model_selection import train_test_split
-from physXAI.preprocessing.constructed import FeatureConstruction, FeatureLag
+from physXAI.preprocessing.constructed import FeatureConstruction, FeatureBase
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
 from physXAI.utils.logging import get_full_path
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -194,7 +194,7 @@ class PreprocessingData(ABC):
 
         return df
 
-    def filter_df_according_to_timestep(self, df: pd.DataFrame):
+    def sample_df_according_to_timestep(self, df: pd.DataFrame):
         filtering = (df.index - df.index[0]) % self.time_step == 0
         df = df[filtering]
         return df
@@ -276,7 +276,7 @@ class PreprocessingSingleStep(PreprocessingData):
                 1. Applies feature constructions defined in `FeatureConstruction`.
                 2. Selects relevant input and output columns.
                 3. Handles missing values by dropping rows.
-                4. Applies the shift on each input variable.
+                4. Applies the defined sampling method on each input variable.
 
                 Args:
                     df (pd.DataFrame): The input DataFrame.
@@ -285,15 +285,6 @@ class PreprocessingSingleStep(PreprocessingData):
                     Tuple[pd.DataFrame, pd.DataFrame]: A tuple containing the processed features (X)
                                                        and target (y) DataFrames.
         """
-
-        # check if current inputs match inputs (keys) in shift dictionary and update shift if necessary
-        # required for recursive feature selection since inputs change after initialization of Preprocessing object
-        if (len(self.inputs) != len(self.shift.keys())) or not all(inp in self.shift.keys() for inp in self.inputs):
-            self.shift = convert_shift_to_dict(self.shift, self.inputs, custom_default=self.shift_default)
-
-        assert len(self.inputs) == len(self.shift.keys()), (
-            f"Something went wrong, number of inputs ({len(self.inputs)})"
-            f" doesn't match number of inputs defined in shift ({len(self.shift.keys())})")
 
         # extract the names of all features in inputs and outputs that are based on lagged features
         lag_based_features = FeatureConstruction.get_features_including_lagged_features(self.inputs + self.output)
@@ -304,6 +295,7 @@ class PreprocessingSingleStep(PreprocessingData):
         # Only apply for those features that are not lags since lags must be constructed after sampling the data
         # according to the given time step
         FeatureConstruction.process(df, feature_names=inputs_without_lags + [out for out in self.output if out not in inputs_without_lags])
+        features_without_lags: list[FeatureBase] = [FeatureConstruction.get_feature(inp) for inp in inputs_without_lags]
 
         df = df[inputs_without_lags + [out for out in self.output if out not in inputs_without_lags]]
 
@@ -334,60 +326,63 @@ class PreprocessingSingleStep(PreprocessingData):
 
             return x
 
-        # output is independent of shift -> filter / sample according to time step already
+        # output is independent of sampling of inputs -> sample according to time step already
         y = df[self.output].copy()
-        y = self.filter_df_according_to_timestep(y)
+        y = self.sample_df_according_to_timestep(y)
 
         X = df[inputs_without_lags].copy()
 
-        if all('current' == self.shift[k] for k in inputs_without_lags):
+        if all('current' == f.sampling_method for f in features_without_lags):
             # filter / sample data
-            X = self.filter_df_according_to_timestep(X)
+            X = self.sample_df_according_to_timestep(X)
             # nothing more to do here
-        elif all('previous' == self.shift[k] for k in inputs_without_lags):
+        elif all('previous' == f.sampling_method for f in features_without_lags):
             # filter / sample data
-            X = self.filter_df_according_to_timestep(X)
+            X = self.sample_df_according_to_timestep(X)
 
             # shift data by 1 and shorten DataFrames accordingly
             X = X.shift(1)
             y = y.iloc[1:]
             X = X.iloc[1:]
-        elif all('mean_over_interval' == self.shift[k] for k in inputs_without_lags):
+        elif all('mean_over_interval' == f.sampling_method for f in features_without_lags):
             X = get_mean_over_interval(y, X)
             # synchronize length between X and y
             y = y.iloc[1:]
 
-        else:  # different inputs have different shifts
+        else:  # different inputs have different sampling methods
             res = []
-            for inp in inputs_without_lags:
-                # only process inputs with shift method mean_over_interval first since X cannot be filtered / sampled
+            previous_or_mean_in_sampling_methods = False
+            for f in features_without_lags:
+                # only process inputs with sampling method mean_over_interval first since X cannot be sampled
                 # to the actual required time steps until the intermediate values were taken into the mean
-                if self.shift[inp] == 'mean_over_interval':
-                    res.append(get_mean_over_interval(y, X[[inp]]))
+                if f.sampling_method == 'mean_over_interval':
+                    res.append(get_mean_over_interval(y, X[[f.feature]]))
+                    previous_or_mean_in_sampling_methods = True
 
-            # filter / sample X according to required time step
-            X = self.filter_df_according_to_timestep(X)
-            # process inputs with shift methods 'current' and 'previous'
-            for inp in inputs_without_lags:
-                _x = X[[inp]]
-                if self.shift[inp] == 'current':
+            # sample X according to required time step
+            X = self.sample_df_according_to_timestep(X)
+            # process inputs with sampling methods 'current' and 'previous'
+            for f in features_without_lags:
+                _x = X[[f.feature]]
+                if f.sampling_method == 'current':
                     # no transformation needed
                     res.append(_x)
-                elif self.shift[inp] == 'previous':
+                elif f.sampling_method == 'previous':
                     # shift by 1
                     _x = _x.shift(1)
                     _x = _x.iloc[1:]
                     res.append(_x)
-                elif self.shift[inp] == 'mean_over_interval':
+                    previous_or_mean_in_sampling_methods = True
+                elif f.sampling_method == 'mean_over_interval':
                     continue
                 else:
-                    raise NotImplementedError(f"Shift method '{self.shift[inp]}' not implemented.")
+                    raise NotImplementedError(f"Sampling method '{f.sampling_method}' not implemented.")
 
             X = pd.concat(res, axis=1)
 
-            # Shift methods 'previous' and 'mean_over_interval' reduce available data points by 1.
+            # Sampling methods 'previous' and 'mean_over_interval' reduce available data points by 1.
             # Therefore, lengths of X and y have to be synchronized
-            if 'previous' in self.shift.values() or 'mean_over_interval' in self.shift.values():
+            if previous_or_mean_in_sampling_methods:
                 y = y.iloc[1:]
                 X = X.sort_index(ascending=True)
                 X = X.iloc[1:]
@@ -399,7 +394,8 @@ class PreprocessingSingleStep(PreprocessingData):
                 res_df.dropna(inplace=True)
             else:
                 raise ValueError(
-                    "Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended, set ignore_nan=True in PreprocessingSingleStep.")
+                    "Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended, set "
+                    "ignore_nan=True in PreprocessingSingleStep.")
 
         # Applies feature constructions defined in `FeatureConstruction` to the lagged inputs
         FeatureConstruction.process(res_df, feature_names=lag_based_features)
@@ -570,7 +566,7 @@ class PreprocessingMultiStep (PreprocessingData):
         """
 
         # filter data
-        df = self.filter_df_according_to_timestep(df)
+        df = self.sample_df_according_to_timestep(df)
 
         # Applies feature constructions defined in `FeatureConstruction`.
         FeatureConstruction.process(df)
