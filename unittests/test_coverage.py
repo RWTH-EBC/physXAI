@@ -2,12 +2,13 @@ import json
 import os
 import pathlib
 from unittest.mock import patch
+from unittest import TestCase
 import keras
 import pytest
 ######################################################################################################################
 from physXAI.utils.logging import Logger, get_parent_working_directory
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep, PreprocessingMultiStep, \
-    PreprocessingData
+    PreprocessingData, convert_shift_to_dict
 from physXAI.preprocessing.constructed import Feature, FeatureConstruction, FeatureConstant
 from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
 from physXAI.models.models import LinearRegressionModel, AbstractModel
@@ -35,6 +36,11 @@ def inputs_php():
 @pytest.fixture(scope='module')
 def inputs_tair():
     return ['reaTZon_y', 'weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u', 'oveHeaPumY_u_lag1']
+
+@pytest.fixture(scope='module')
+def inputs_tair_extended():
+    return ['reaTZon_y', 'reaTZon_y_lag1', 'reaTZon_y_lag2', 'weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaTDryBul_y_lag1',
+              'weaSta_reaWeaHDirNor_y', 'oveHeaPumY_u', 'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2']
 
 @pytest.fixture(scope='module')
 def output_php():
@@ -93,6 +99,87 @@ def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
                                   overlapping_sequences=False, batch_size=1)
     prep.pipeline(file_path)
 
+class TestPreprocessingShiftConversion(TestCase):
+
+    inputs = ['reaTZon_y', 'reaTZon_y_lag1', 'reaTZon_y_lag2', 'weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaTDryBul_y_lag1',
+              'weaSta_reaWeaHDirNor_y', 'oveHeaPumY_u', 'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2']
+
+    # test case: int given for shift
+    def test_int(self):
+        shift = 0
+        res = convert_shift_to_dict(shift, self.inputs)
+        res_expected = {'reaTZon_y': 'current', 'reaTZon_y_lag1': 'current', 'reaTZon_y_lag2': 'current',
+                        'weaSta_reaWeaTDryBul_y': 'current', 'weaSta_reaWeaTDryBul_y_lag1': 'current',
+                        'weaSta_reaWeaHDirNor_y': 'current', 'oveHeaPumY_u': 'current', 'oveHeaPumY_u_lag1': 'current',
+                        'oveHeaPumY_u_lag2': 'current'}
+        assert res == res_expected
+
+    # test case: unsupported int given for shift
+    def test_unsupported_int(self):
+        shift = 2
+        with self.assertRaises(ValueError):
+            convert_shift_to_dict(shift, self.inputs)
+
+    # test case: str given for shift
+    def test_str(self):
+        shift = 'mean_over_interval'
+        res = convert_shift_to_dict(shift, self.inputs)
+        res_expected = {'reaTZon_y': 'mean_over_interval', 'reaTZon_y_lag1': 'mean_over_interval',
+                        'reaTZon_y_lag2': 'mean_over_interval', 'weaSta_reaWeaTDryBul_y': 'mean_over_interval',
+                        'weaSta_reaWeaTDryBul_y_lag1': 'mean_over_interval',
+                        'weaSta_reaWeaHDirNor_y': 'mean_over_interval', 'oveHeaPumY_u': 'mean_over_interval',
+                        'oveHeaPumY_u_lag1': 'mean_over_interval', 'oveHeaPumY_u_lag2': 'mean_over_interval'}
+        assert res == res_expected
+
+    # test case: unsupported str given for shift
+    def test_unsupported_str(self):
+        shift = 'test'
+        with self.assertRaises(ValueError):
+            convert_shift_to_dict(shift, self.inputs)
+
+    # test case: unsupported type given for shift
+    def test_unsupported_type(self):
+        shift = ['previous']
+        with self.assertRaises(TypeError):
+            convert_shift_to_dict(shift, self.inputs)
+
+    # test case: autocomplete incomplete dictionary given for shift
+    def test_autocomplete_incomplete_dict(self):
+        shift = {'reaTZon_y': 0, 'reaTZon_y_lag1': 0, 'weaSta_reaWeaTDryBul_y': 'mean_over_interval'}
+
+        # previous is default for all inputs that are not specified
+        res = convert_shift_to_dict(shift, self.inputs)
+        res_expected = {'reaTZon_y': 'current', 'reaTZon_y_lag1': 'current', 'reaTZon_y_lag2': 'current',
+                        'weaSta_reaWeaTDryBul_y': 'mean_over_interval',
+                        'weaSta_reaWeaTDryBul_y_lag1': 'mean_over_interval',
+                        'weaSta_reaWeaHDirNor_y': 'previous', 'oveHeaPumY_u': 'previous',
+                        'oveHeaPumY_u_lag1': 'previous',
+                        'oveHeaPumY_u_lag2': 'previous'}
+        assert len(res) == len(self.inputs)
+        assert res == res_expected
+
+    # test case: autocomplete incomplete dictionary given for shift with custom default
+    def test_autocomplete_incomplete_dict_with_custom_default(self):
+        shift = {'reaTZon_y': 1, 'reaTZon_y_lag1': 1, 'weaSta_reaWeaTDryBul_y': 'mean_over_interval'}
+
+        # previous is default for all inputs that are not specified
+        res = convert_shift_to_dict(shift, self.inputs, custom_default=0)
+        res_expected = {'reaTZon_y': 'previous', 'reaTZon_y_lag1': 'previous', 'reaTZon_y_lag2': 'previous',
+                        'weaSta_reaWeaTDryBul_y': 'mean_over_interval',
+                        'weaSta_reaWeaTDryBul_y_lag1': 'mean_over_interval',
+                        'weaSta_reaWeaHDirNor_y': 'current', 'oveHeaPumY_u': 'current',
+                        'oveHeaPumY_u_lag1': 'current',
+                        'oveHeaPumY_u_lag2': 'current'}
+        assert len(res) == len(self.inputs)
+        assert res == res_expected
+
+    # test case: lags of the same input have mismatching shifts
+    def test_lag_with_mismatching_shifts(self):
+        shift = {'reaTZon_y': 0, 'reaTZon_y_lag1': 1, 'weaSta_reaWeaTDryBul_y': 'mean_over_interval'}
+        with self.assertRaises(AssertionError):
+            convert_shift_to_dict(shift, self.inputs)
+
+
 @pytest.fixture(scope='module')
 def p_hp_data(file_path, inputs_php, output_php):
     # Setup up logger for saving
@@ -144,6 +231,32 @@ def tair_data_total(file_path, inputs_tair, output_tair):
                                   overlapping_sequences=False, batch_size=1)
     td = prep.pipeline(file_path)
     return prep, td
+
+def test_shifting(file_path, inputs_tair_extended, output_tair):
+    # Setup up logger for saving
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
+
+    # Create lags
+    x1 = Feature('reaTZon_y')
+    x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
+    x2 = Feature('weaSta_reaWeaTDryBul_y')
+    x2.lag(1)  # weaSta_reaWeaTDryBul_y_lag1
+    x3 = Feature('oveHeaPumY_u')
+    x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
+
+    shift = {
+        'reaTZon_y': 'previous',  # for all lags of reaTZon_y, the shift will be set automatically
+        'weaSta_reaWeaHDirNor_y': 'mean_over_interval',
+        '_default': 0,
+    }
+
+    # Create & process Training data
+    prep = PreprocessingSingleStep(inputs_tair_extended, output_tair, shift=shift, time_step=4)
+    td = prep.pipeline(file_path)
+
+    # Build & train Classical ANN
+    m = ClassicalANNModel(epochs=1)
+    model = m.pipeline(td)
 
 def test_model_linReg(inputs_php, output_php, file_path):
     # Setup up logger for saving

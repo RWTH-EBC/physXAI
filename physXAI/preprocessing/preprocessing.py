@@ -1,10 +1,11 @@
 import os
 from abc import ABC, abstractmethod
-from typing import Optional, Union
+from typing import Optional, Union, Iterable
 import numpy as np
 import pandas as pd
+import itertools
 from sklearn.model_selection import train_test_split
-from physXAI.preprocessing.constructed import FeatureConstruction
+from physXAI.preprocessing.constructed import FeatureConstruction, FeatureBase
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
 from physXAI.utils.logging import get_full_path
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -12,12 +13,92 @@ import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 
+def convert_shift_to_dict(s: Union[int, str, dict], inputs: list[str], custom_default: Union[int, str] = None) -> dict:
+    """
+    Convert a given shift variable (int, str) into a dictionary in which a shift is defined for every input.
+    If a dictionary is given as shift, check entries and autocomplete dict if necessary.
+
+    Args:
+        s (Union[int, str, dict]): Shift value. Either a single string or int which then will be applied to all the inputs or
+            a dictionary in which a different shift can be defined for each input. If the dictionary does not specify the
+            shift for all inputs, the shift for inputs not specified is set to the default value (autocomplete)
+        inputs (list(str)): List of Input variables
+        custom_default (Union[int, str]): if no custom default is specified, 'previous' is used as default shift
+    """
+
+    def return_valid_shift(val: Union[int, str]):
+        """ check the validity of the given shift and return a string if val is int """
+        if val in ['current', 0]:
+            val = 'current'
+        elif val in ['previous', 1]:
+            val = 'previous'
+        elif val == 'mean_over_interval':
+            val = 'mean_over_interval'
+        else:
+            raise ValueError(
+                f"Value of shift not supported, value is: {val}. Shift must be 'current' (or 0 if s is int), "
+                f"'previous' (or 1 if s is int) or 'mean_over_interval'.")
+        return val
+
+    # set custom default or - if no custom default is specified - use 'previous' as default
+    default = 'previous' if custom_default is None else return_valid_shift(custom_default)
+
+    if isinstance(s, (int, str)):
+        d = {}
+        s = return_valid_shift(s)
+
+        # add shift for each input
+        for inp in inputs:
+            d.update({inp: s})
+        return d
+
+    elif isinstance(s, dict):
+        def get_lag(inputs: list[str], current_input: str) -> int:
+            """ get lag of current input """
+            count = 0
+            for inp in inputs:
+                spl = inp.split(current_input) # make sure it is the current input
+                if spl[0] == '' and spl[1] != '' and spl[1].split('_lag')[0] == '':
+                    count += 1
+            return count
+
+        # check if lags exist
+        d = {}
+        inputs_without_lags = {}
+        for inp in inputs:
+            # skip if current input is just the lag of another inp
+            if not inp.__contains__('_lag'):
+                inputs_without_lags.update({inp: get_lag(inputs, inp)})
+
+        for inp in inputs_without_lags.keys():
+            # if an input has a shift assigned already, the validity is checked
+            # otherwise default value is assigned
+            if inp in s.keys():
+                d.update({inp: return_valid_shift(s[inp])})
+            else:
+                d.update({inp: default})
+
+            # all inputs with lags should have the same shift
+            if inputs_without_lags[inp] > 0: # if current input has lags
+                for i in range(inputs_without_lags[inp]):
+                    name = inp + '_lag' + str(i+1)
+
+                    # if a shift was already defined for this lag, check if it matches the shift of the original inp
+                    if name in s.keys():
+                        assert return_valid_shift(s[name]) == d[inp], \
+                            'Make sure that all lags of an input have the same shift'
+                    d.update({name: d[inp]})
+        return d
+    else:
+        raise TypeError(f'shift must be of type int, str or dict, is type {type(s)}')
+
+
 class PreprocessingData(ABC):
     """
     Abstract Preprocessing Class
     """
 
-    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: int = 1,
+    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: Union[int, str, dict] = 'previous',
                  time_step: Optional[Union[int, float]] = None,
                  test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
@@ -28,8 +109,20 @@ class PreprocessingData(ABC):
         Args:
             inputs (List[str]): List of column names to be used as input features.
             output (Union[str, List[str]]): Column name(s) for the target variable(s).
-            shift (int): The number of time steps to shift the target variable for forecasting.
-                         A shift of one means predicting the next time step.
+            shift (Union[int, str, dict]): Time step of the input data used to predict the output.
+                - If a single int or str is given, it applies to all inputs.
+                - If a dict is provided, it can specify different shifts for individual inputs.
+                - If not all inputs are specified in the dict, unspecified inputs will use a default value (autocomplete).
+                Examples:
+                    - shift = 0 or shift = 'current': Current time step will be used for prediction.
+                    - shift = 1 or shift = 'previous': Previous values will be used for prediction.
+                    - shift = 'mean_over_interval': Mean between current and previous time step will be used.
+                    - shift = {
+                        'inp_1': 1,
+                        'inp_2': 'mean_over_interval',
+                        '_default': 0,  # current time step will be used for all inputs not specified in the dict
+                        # If no custom default value is given in dict, 'previous' will be used as default
+                    }
             time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
             test_size (float): Proportion of the dataset to allocate to the test set.
             val_size (float): Proportion of the dataset to allocate to the validation set.
@@ -51,7 +144,14 @@ class PreprocessingData(ABC):
         if isinstance(output, str):
             output = [output]
         self.output: list[str] = output
-        self.shift: int = shift
+
+        if isinstance(shift, dict) and '_default' in shift.keys():
+            self.shift_default = shift['_default']
+            shift.__delitem__('_default')
+        else:
+            self.shift_default = None
+        self.shift: dict = convert_shift_to_dict(shift, inputs, custom_default=self.shift_default)
+
         self.time_step = time_step
 
         # Training, validation and test size should be equal to 1
@@ -91,9 +191,12 @@ class PreprocessingData(ABC):
         else:
             assert self.time_step % time_step == 0, (f"Value Error: Given time step {self.time_step} is not a multiple "
                                                      f"of data time step: {time_step}.")
-            filtering = (df.index - df.index[0]) % self.time_step == 0
-            df = df[filtering]
 
+        return df
+
+    def sample_df_according_to_timestep(self, df: pd.DataFrame):
+        filtering = (df.index - df.index[0]) % self.time_step == 0
+        df = df[filtering]
         return df
 
     @abstractmethod
@@ -127,7 +230,7 @@ class PreprocessingSingleStep(PreprocessingData):
     validation, and test sets.
     """
 
-    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: int = 1,
+    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: Union[int, str, dict] = 'previous',
                  time_step: Optional[Union[int, float]] = None,
                  test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
@@ -138,8 +241,20 @@ class PreprocessingSingleStep(PreprocessingData):
         Args:
             inputs (List[str]): List of column names to be used as input features.
             output (Union[str, List[str]]): Column name(s) for the target variable(s).
-            shift (int): The number of time steps to shift the target variable for forecasting.
-                         A shift of one means predicting the next time step.
+            shift (Union[int, str, dict]): Time step of the input data used to predict the output.
+                - If a single int or str is given, it applies to all inputs.
+                - If a dict is provided, it can specify different shifts for individual inputs.
+                - If not all inputs are specified in the dict, unspecified inputs will use a default value (autocomplete).
+                Examples:
+                    - shift = 0 or shift = 'current': Current time step will be used for prediction.
+                    - shift = 1 or shift = 'previous': Previous values will be used for prediction.
+                    - shift = 'mean_over_interval': Mean between current and previous time step will be used.
+                    - shift = {
+                        'inp_1': 1,
+                        'inp_2': 'mean_over_interval',
+                        '_default': 0,  # current time step will be used for all inputs not specified in the dict
+                        # If no custom default value is given in dict, 'previous' will be used as default
+                    }
             time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
             test_size (float): Proportion of the dataset to allocate to the test set.
             val_size (float): Proportion of the dataset to allocate to the validation set.
@@ -161,7 +276,7 @@ class PreprocessingSingleStep(PreprocessingData):
                 1. Applies feature constructions defined in `FeatureConstruction`.
                 2. Selects relevant input and output columns.
                 3. Handles missing values by dropping rows.
-                4. Shifts the target variable(s) `y` for forecasting.
+                4. Applies the defined sampling method on each input variable.
 
                 Args:
                     df (pd.DataFrame): The input DataFrame.
@@ -171,27 +286,125 @@ class PreprocessingSingleStep(PreprocessingData):
                                                        and target (y) DataFrames.
         """
 
+        # extract the names of all features in inputs and outputs that are based on lagged features
+        lag_based_features = FeatureConstruction.get_features_including_lagged_features(self.inputs + self.output)
+
+        inputs_without_lags = [inp for inp in self.inputs if inp not in lag_based_features]
+
         # Applies feature constructions defined in `FeatureConstruction`.
-        FeatureConstruction.process(df)
+        # Only apply for those features that are not lags since lags must be constructed after sampling the data
+        # according to the given time step
+        FeatureConstruction.process(df, feature_names=inputs_without_lags + [out for out in self.output if out not in inputs_without_lags])
+        features_without_lags: list[FeatureBase] = [FeatureConstruction.get_feature(inp) for inp in inputs_without_lags]
 
-        df = df[self.inputs + [out for out in self.output if out not in self.inputs]]
+        df = df[inputs_without_lags + [out for out in self.output if out not in inputs_without_lags]]
 
-        # Nan handling
+        # Nan handling in first and last rows
         non_nan_rows = df.notna().all(axis=1)
         first_valid_index = non_nan_rows.idxmax() if non_nan_rows.any() else None
         last_valid_index = non_nan_rows.iloc[::-1].idxmax() if non_nan_rows.any() else None
         df = df.loc[first_valid_index:last_valid_index]
-        if df.isnull().values.any():
-            if self.ignore_nan:
-                df.dropna(inplace=True)
-            else:
-                raise ValueError("Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended, set ignore_nan=True in PreprocessingSingleStep.")
 
-        X = df[self.inputs]
-        y = df[self.output].shift(-self.shift)
-        if self.shift > 0:  # pragma: no cover
-            y = y.iloc[:-self.shift]
-            X = X.iloc[:-self.shift]
+        def get_mean_over_interval(y: pd.DataFrame, x: pd.DataFrame):
+            """return mean values of x on target sampling (index of y)"""
+            def pairwise(iterable: Iterable):
+                "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+                a, b = itertools.tee(iterable)
+                next(b, None)
+                return zip(a, b)
+
+            original_grid = np.array(x.index)
+            results = []
+            for i, j in pairwise(y.index): # output interval is target grid
+                slicer = np.logical_and(original_grid >= i, original_grid < j)
+                d = {'Index': j}
+                for inp in x.columns:
+                    d[inp] = x[inp][slicer].mean()
+                results.append(d)
+
+            x = pd.DataFrame(results).set_index('Index')
+
+            return x
+
+        # output is independent of sampling of inputs -> sample according to time step already
+        y = df[self.output].copy()
+        y = self.sample_df_according_to_timestep(y)
+
+        X = df[inputs_without_lags].copy()
+
+        if all('current' == f.sampling_method for f in features_without_lags):
+            # filter / sample data
+            X = self.sample_df_according_to_timestep(X)
+            # nothing more to do here
+        elif all('previous' == f.sampling_method for f in features_without_lags):
+            # filter / sample data
+            X = self.sample_df_according_to_timestep(X)
+
+            # shift data by 1 and shorten DataFrames accordingly
+            X = X.shift(1)
+            y = y.iloc[1:]
+            X = X.iloc[1:]
+        elif all('mean_over_interval' == f.sampling_method for f in features_without_lags):
+            X = get_mean_over_interval(y, X)
+            # synchronize length between X and y
+            y = y.iloc[1:]
+
+        else:  # different inputs have different sampling methods
+            res = []
+            previous_or_mean_in_sampling_methods = False
+            for f in features_without_lags:
+                # only process inputs with sampling method mean_over_interval first since X cannot be sampled
+                # to the actual required time steps until the intermediate values were taken into the mean
+                if f.sampling_method == 'mean_over_interval':
+                    res.append(get_mean_over_interval(y, X[[f.feature]]))
+                    previous_or_mean_in_sampling_methods = True
+
+            # sample X according to required time step
+            X = self.sample_df_according_to_timestep(X)
+            # process inputs with sampling methods 'current' and 'previous'
+            for f in features_without_lags:
+                _x = X[[f.feature]]
+                if f.sampling_method == 'current':
+                    # no transformation needed
+                    res.append(_x)
+                elif f.sampling_method == 'previous':
+                    # shift by 1
+                    _x = _x.shift(1)
+                    _x = _x.iloc[1:]
+                    res.append(_x)
+                    previous_or_mean_in_sampling_methods = True
+                elif f.sampling_method == 'mean_over_interval':
+                    continue
+                else:
+                    raise NotImplementedError(f"Sampling method '{f.sampling_method}' not implemented.")
+
+            X = pd.concat(res, axis=1)
+
+            # Sampling methods 'previous' and 'mean_over_interval' reduce available data points by 1.
+            # Therefore, lengths of X and y have to be synchronized
+            if previous_or_mean_in_sampling_methods:
+                y = y.iloc[1:]
+                X = X.sort_index(ascending=True)
+                X = X.iloc[1:]
+
+        res_df = pd.concat([X, y], axis=1)
+
+        if res_df.isnull().values.any():
+            if self.ignore_nan:
+                res_df.dropna(inplace=True)
+            else:
+                raise ValueError(
+                    "Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended, set "
+                    "ignore_nan=True in PreprocessingSingleStep.")
+
+        # Applies feature constructions defined in `FeatureConstruction` to the lagged inputs
+        FeatureConstruction.process(res_df, feature_names=lag_based_features)
+
+        # drop NaNs occurring due to creation of lags
+        res_df.dropna(inplace=True)
+
+        X = res_df[self.inputs]
+        y = res_df[self.output]
 
         return X, y
 
@@ -351,6 +564,9 @@ class PreprocessingMultiStep (PreprocessingData):
         Returns:
             TrainingDataMultiStep: Container with tf.data.Dataset objects.
         """
+
+        # filter data
+        df = self.sample_df_according_to_timestep(df)
 
         # Applies feature constructions defined in `FeatureConstruction`.
         FeatureConstruction.process(df)
