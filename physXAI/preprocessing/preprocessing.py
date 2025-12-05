@@ -295,13 +295,10 @@ class PreprocessingSingleStep(PreprocessingData):
             f"Something went wrong, number of inputs ({len(self.inputs)})"
             f" doesn't match number of inputs defined in shift ({len(self.shift.keys())})")
 
-        # extract the names of lagged inputs
-        lagged_inputs = []
-        for f in FeatureConstruction.features:
-            if isinstance(f, FeatureLag) and (f.feature in (self.inputs + self.output)):
-                lagged_inputs.append(f.feature) # name of the feature
+        # extract the names of all features in inputs and outputs that are based on lagged features
+        lag_based_features = FeatureConstruction.get_features_including_lagged_features(self.inputs + self.output)
 
-        inputs_without_lags = [inp for inp in self.inputs if inp not in lagged_inputs]
+        inputs_without_lags = [inp for inp in self.inputs if inp not in lag_based_features]
 
         # Applies feature constructions defined in `FeatureConstruction`.
         # Only apply for those features that are not lags since lags must be constructed after sampling the data
@@ -405,7 +402,7 @@ class PreprocessingSingleStep(PreprocessingData):
                     "Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended, set ignore_nan=True in PreprocessingSingleStep.")
 
         # Applies feature constructions defined in `FeatureConstruction` to the lagged inputs
-        FeatureConstruction.process(res_df, feature_names=lagged_inputs)
+        FeatureConstruction.process(res_df, feature_names=lag_based_features)
 
         # drop NaNs occurring due to creation of lags
         res_df.dropna(inplace=True)

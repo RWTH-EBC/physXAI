@@ -560,6 +560,47 @@ class FeatureConstruction:
         return None
 
     @staticmethod
+    def get_features_including_lagged_features(l: list[str] = None) -> list[str]:
+        """
+        returns a list of the names of all FeatureLag and FeatureTwo where at least one feature is a FeatureLag
+        - within the given list or
+        - of all constructed features if list is None
+
+        Args:
+            l (list[str]): list of feature names to search in
+
+        Returns:
+            list[str]: the list of lag-based features
+        """
+
+        # if no list is given, search in all features
+        if not l:
+            l = FeatureConstruction.features
+
+        def recursive_search(feature):
+            """Recursively checks for lagged features"""
+            if isinstance(feature, FeatureLag):
+                return True
+
+            elif isinstance(feature, FeatureTwo):
+                # Check both sub-features recursively
+                return recursive_search(feature.feature1) or recursive_search(feature.feature2)
+
+            return False
+
+        res = list()
+        for f in FeatureConstruction.features:
+            if isinstance(f, FeatureLag) and (f.feature in l):
+                res.append(f.feature)  # name of the feature
+
+            elif isinstance(f, FeatureTwo) and (f.feature in l):
+                # Use recursive search to check for nested lagged features
+                if recursive_search(f.feature1) or recursive_search(f.feature2):
+                    res.append(f.feature)
+
+        return res
+
+    @staticmethod
     def process(df: DataFrame, feature_names: list[str] = None):
         """
         Processes the input DataFrame by applying all registered feature transformations in order.
