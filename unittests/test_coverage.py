@@ -85,6 +85,8 @@ def test_preprocessing(monkeypatch, file_path, inputs_php, output_php):
     prep = PreprocessingSingleStep(inputs_php, output_php)
     prep.pipeline(file_path)
 
+    FeatureConstruction.reset()
+
 def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
 
@@ -99,6 +101,8 @@ def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
     prep = PreprocessingMultiStep(inputs_tair, output_tair, 6, 6, init_features=['reaTZon_y'],
                                   overlapping_sequences=False, batch_size=1)
     prep.pipeline(file_path)
+
+    FeatureConstruction.reset()
 
 class TestPreprocessingShiftConversion(TestCase):
 
@@ -270,6 +274,8 @@ def test_sampling_methods(file_path, inputs_tair_extended, output_tair):
     assert FeatureConstruction.get_feature('weaSta_reaWeaHDirNor_y').sampling_method == 'mean_over_interval'
     assert FeatureConstruction.get_feature('test_feature_two').sampling_method == 'mean_over_interval'
     assert e.sampling_method == 'previous'
+
+    FeatureConstruction.reset()
 
 def test_model_linReg(inputs_php, output_php, file_path):
     # Setup up logger for saving
