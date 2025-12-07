@@ -246,10 +246,10 @@ class FeatureLag(FeatureBase):
             sampling_method = FeatureConstruction.get_feature(f).sampling_method
 
         if 'sampling_method' in kwargs.keys():
-            assert kwargs['sampling_method'] == sampling_method, (f'lags must have the same sampling method as their '
-                                                                  f'base feature. Sampling method of base feature is '
-                                                                  f'{sampling_method} but for lag '
-                                                                  f'{kwargs['sampling_method']} was given')
+            assert kwargs['sampling_method'] == sampling_method, (
+                f"lags must have the same sampling method as their base feature. Sampling method of base feature is"
+                f" {sampling_method} but for lag {kwargs['sampling_method']} was given as sampling method."
+            )
             kwargs.__delitem__('sampling_method')  # constructor must not get more than one arg with the same key
 
         super().__init__(name, sampling_method=sampling_method, **kwargs)
