@@ -331,13 +331,13 @@ class PreprocessingSingleStep(PreprocessingData):
 
         else:  # different inputs have different sampling methods
             res = []
-            previous_or_mean_in_sampling_methods = False
+            previous_or_mean_in_sampling_methods = []
             for f in features_without_lags:
                 # only process inputs with sampling method mean_over_interval first since X cannot be sampled
                 # to the actual required time steps until the intermediate values were taken into the mean
                 if f.sampling_method == 'mean_over_interval':
                     res.append(get_mean_over_interval(y, X[[f.feature]]))
-                    previous_or_mean_in_sampling_methods = True
+                    previous_or_mean_in_sampling_methods.append(True)
 
             # sample X according to required time step
             X = self.sample_df_according_to_timestep(X)
@@ -347,25 +347,28 @@ class PreprocessingSingleStep(PreprocessingData):
                 if f.sampling_method == 'current':
                     # no transformation needed
                     res.append(_x)
+                    previous_or_mean_in_sampling_methods.append(False)
                 elif f.sampling_method == 'previous':
                     # shift by 1
                     _x = _x.shift(1)
                     _x = _x.iloc[1:]
                     res.append(_x)
-                    previous_or_mean_in_sampling_methods = True
+                    previous_or_mean_in_sampling_methods.append(True)
                 elif f.sampling_method == 'mean_over_interval':
                     continue
                 else:
                     raise NotImplementedError(f"Sampling method '{f.sampling_method}' not implemented.")
 
             X = pd.concat(res, axis=1)
+            X = X.sort_index(ascending=True)
 
             # Sampling methods 'previous' and 'mean_over_interval' reduce available data points by 1.
             # Therefore, lengths of X and y have to be synchronized
-            if previous_or_mean_in_sampling_methods:
+            if any(previous_or_mean_in_sampling_methods):
                 y = y.iloc[1:]
-                X = X.sort_index(ascending=True)
-                X = X.iloc[1:]
+                # if at least one of the features uses 'current' as sampling method, shorten X
+                if not all(previous_or_mean_in_sampling_methods):
+                    X = X.iloc[1:]
 
         res_df = pd.concat([X, y], axis=1)
 
