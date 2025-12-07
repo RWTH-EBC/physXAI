@@ -98,7 +98,7 @@ class PreprocessingData(ABC):
     Abstract Preprocessing Class
     """
 
-    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: Union[int, str, dict] = 'previous',
+    def __init__(self, inputs: list[Union[str, FeatureBase]], output: Union[str, list[str]], shift: Union[int, str, dict] = 'previous',
                  time_step: Optional[Union[int, float]] = None,
                  test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
@@ -107,7 +107,7 @@ class PreprocessingData(ABC):
         Initializes the Preprocessing instance.
 
         Args:
-            inputs (List[str]): List of column names to be used as input features.
+            inputs (List[Union[str, FeatureBase]]): List of column names or Features to be used as input features.
             output (Union[str, List[str]]): Column name(s) for the target variable(s).
             shift (Union[int, str, dict]): Time step of the input data used to predict the output.
                 - If a single int or str is given, it applies to all inputs.
@@ -140,7 +140,7 @@ class PreprocessingData(ABC):
         self.csv_header = csv_header
         self.csv_skiprows = csv_skiprows
 
-        self.inputs: list[str] = inputs
+        self.inputs: list[str] = FeatureConstruction.process_inputs(inputs)
         if isinstance(output, str):
             output = [output]
         self.output: list[str] = output
@@ -230,7 +230,7 @@ class PreprocessingSingleStep(PreprocessingData):
     validation, and test sets.
     """
 
-    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: Union[int, str, dict] = 'previous',
+    def __init__(self, inputs: list[Union[str, FeatureBase]], output: Union[str, list[str]], shift: Union[int, str, dict] = 'previous',
                  time_step: Optional[Union[int, float]] = None,
                  test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
@@ -239,7 +239,7 @@ class PreprocessingSingleStep(PreprocessingData):
         Initializes the PreprocessingSingleStep instance.
 
         Args:
-            inputs (List[str]): List of column names to be used as input features.
+            inputs (List[Union[str, FeatureBase]]): List of column names or Features to be used as input features.
             output (Union[str, List[str]]): Column name(s) for the target variable(s).
             shift (Union[int, str, dict]): Time step of the input data used to predict the output.
                 - If a single int or str is given, it applies to all inputs.
@@ -492,7 +492,7 @@ class PreprocessingMultiStep (PreprocessingData):
         Initializes the PreprocessingMultiStep instance.
 
         Args:
-            inputs (List[str]): Column names for input features to the main RNN.
+           inputs (List[Union[str, FeatureBase]]): List of column names or Features that are input features to the main RNN.
             output (Union[str, List[str]]): Column name(s) for target variable(s).
             label_width (int): Number of time steps in the output (label) sequence.
             warmup_width (int): Number of time steps in the warmup sequence (for RNN state initialization).

@@ -675,6 +675,33 @@ class FeatureConstruction:
         return res
 
     @staticmethod
+    def process_inputs(inputs: list[Union[str, FeatureBase]]) -> list[str]:
+        """
+        Creates a Feature for all inputs that are not yet created as features
+
+        Args:
+             inputs (list(Union[str, FeatureBase])): List of column names or Features to be used as input features.
+
+        Returns:
+            list[str]: list of column names of all input features
+        """
+
+        input_str = list()
+
+        for inp in inputs:
+            if isinstance(inp, FeatureBase):
+                input_str.append(inp.feature)  # get name of feature (which is used as column name)
+            elif isinstance(inp, str):
+                input_str.append(inp)
+                # check if a Feature with the given name (inp) was already created, otherwise create it
+                if not any(inp == f.feature for f in FeatureConstruction.features):
+                    Feature(name=inp)
+            else:
+                raise TypeError(f"Only inputs with types 'str' or 'FeatureBase' allowed, got type {type(inp)} instead")
+
+        return input_str
+
+    @staticmethod
     def process(df: DataFrame, feature_names: list[str] = None):
         """
         Processes the input DataFrame by applying all registered feature transformations in order.
