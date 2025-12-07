@@ -98,31 +98,17 @@ class PreprocessingData(ABC):
     Abstract Preprocessing Class
     """
 
-    def __init__(self, inputs: list[Union[str, FeatureBase]], output: Union[str, list[str]], shift: Union[int, str, dict] = 'previous',
+    def __init__(self, inputs: list[Union[str, FeatureBase]], output: Union[str, list[str]],
                  time_step: Optional[Union[int, float]] = None,
                  test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
-                 csv_header: int = 0, csv_skiprows: Union[int, list[int]] = [], ignore_nan: bool = False):
+                 csv_header: int = 0, csv_skiprows: Union[int, list[int]] = [], ignore_nan: bool = False, **kwargs):
         """
         Initializes the Preprocessing instance.
 
         Args:
             inputs (List[Union[str, FeatureBase]]): List of column names or Features to be used as input features.
             output (Union[str, List[str]]): Column name(s) for the target variable(s).
-            shift (Union[int, str, dict]): Time step of the input data used to predict the output.
-                - If a single int or str is given, it applies to all inputs.
-                - If a dict is provided, it can specify different shifts for individual inputs.
-                - If not all inputs are specified in the dict, unspecified inputs will use a default value (autocomplete).
-                Examples:
-                    - shift = 0 or shift = 'current': Current time step will be used for prediction.
-                    - shift = 1 or shift = 'previous': Previous values will be used for prediction.
-                    - shift = 'mean_over_interval': Mean between current and previous time step will be used.
-                    - shift = {
-                        'inp_1': 1,
-                        'inp_2': 'mean_over_interval',
-                        '_default': 0,  # current time step will be used for all inputs not specified in the dict
-                        # If no custom default value is given in dict, 'previous' will be used as default
-                    }
             time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
             test_size (float): Proportion of the dataset to allocate to the test set.
             val_size (float): Proportion of the dataset to allocate to the validation set.
@@ -144,13 +130,6 @@ class PreprocessingData(ABC):
         if isinstance(output, str):
             output = [output]
         self.output: list[str] = output
-
-        if isinstance(shift, dict) and '_default' in shift.keys():
-            self.shift_default = shift['_default']
-            shift.__delitem__('_default')
-        else:
-            self.shift_default = None
-        self.shift: dict = convert_shift_to_dict(shift, inputs, custom_default=self.shift_default)
 
         self.time_step = time_step
 
@@ -230,7 +209,7 @@ class PreprocessingSingleStep(PreprocessingData):
     validation, and test sets.
     """
 
-    def __init__(self, inputs: list[Union[str, FeatureBase]], output: Union[str, list[str]], shift: Union[int, str, dict] = 'previous',
+    def __init__(self, inputs: list[Union[str, FeatureBase]], output: Union[str, list[str]],
                  time_step: Optional[Union[int, float]] = None,
                  test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
@@ -241,20 +220,6 @@ class PreprocessingSingleStep(PreprocessingData):
         Args:
             inputs (List[Union[str, FeatureBase]]): List of column names or Features to be used as input features.
             output (Union[str, List[str]]): Column name(s) for the target variable(s).
-            shift (Union[int, str, dict]): Time step of the input data used to predict the output.
-                - If a single int or str is given, it applies to all inputs.
-                - If a dict is provided, it can specify different shifts for individual inputs.
-                - If not all inputs are specified in the dict, unspecified inputs will use a default value (autocomplete).
-                Examples:
-                    - shift = 0 or shift = 'current': Current time step will be used for prediction.
-                    - shift = 1 or shift = 'previous': Previous values will be used for prediction.
-                    - shift = 'mean_over_interval': Mean between current and previous time step will be used.
-                    - shift = {
-                        'inp_1': 1,
-                        'inp_2': 'mean_over_interval',
-                        '_default': 0,  # current time step will be used for all inputs not specified in the dict
-                        # If no custom default value is given in dict, 'previous' will be used as default
-                    }
             time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
             test_size (float): Proportion of the dataset to allocate to the test set.
             val_size (float): Proportion of the dataset to allocate to the validation set.
@@ -267,8 +232,23 @@ class PreprocessingSingleStep(PreprocessingData):
             ignore_nan (bool): If True, rows with NaN values will be dropped. If False, an error is raised if NaNs are present. Default is False.
         """
 
-        super().__init__(inputs, output, shift, time_step, test_size, val_size, random_state, time_index_col,
-                         csv_delimiter, csv_encoding, csv_header, csv_skiprows, ignore_nan)
+        if 'shift' in kwargs.keys():
+            DeprecationWarning(
+                "shift parameter is deprecated for SingleStep models and replaced by sampling_method, an attribute of "
+                "each Feature. This allows specifying individual 'shifts' for each Feature / input. A default sampling"
+                "method can be specified via FeatureConstruction.set_default_sampling_method(<your default sampling>)."
+            )
+            DeprecationWarning(
+                f"shift parameter was given as shift={kwargs['shift']}. Setting FeatureConstruction.set_default_"
+                f"sampling_method(shift) and override possible individual sampling methods of all Features. If this is"
+                f"not intended, remove shift parameter when initializing PreprocessingSingleStep object!"
+            )
+            FeatureConstruction.set_default_sampling_method(kwargs['shift'])
+            for f in FeatureConstruction.features:
+                f.sampling_method = kwargs['shift']
+
+        super().__init__(inputs, output, time_step, test_size, val_size, random_state, time_index_col,
+                         csv_delimiter, csv_encoding, csv_header, csv_skiprows, ignore_nan, **kwargs)
 
     def process_data(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
@@ -462,7 +442,6 @@ class PreprocessingSingleStep(PreprocessingData):
             '__class_name__': self.__class__.__name__,
             'inputs': self.inputs,
             'output': self.output,
-            'shift': self.shift,
             'test_size': self.test_size,
             'val_size': self.val_size,
             'random_state': self.random_state,
@@ -475,7 +454,7 @@ class PreprocessingSingleStep(PreprocessingData):
         return cls(**config)
 
 
-class PreprocessingMultiStep (PreprocessingData):
+class PreprocessingMultiStep(PreprocessingData):
     """
     Handles preprocessing for multi-step forecasting models, typically RNNs.
     This involves creating windowed datasets suitable for sequence models,
@@ -487,7 +466,7 @@ class PreprocessingMultiStep (PreprocessingData):
                  test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
                  time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
                  csv_header: int = 0, csv_skiprows: Union[int, list[int]] = [],
-                 overlapping_sequences: bool = True, batch_size=32, init_features: list[str] = None,**kwargs):
+                 overlapping_sequences: bool = True, batch_size=32, init_features: list[str] = None, **kwargs):
         """
         Initializes the PreprocessingMultiStep instance.
 
@@ -514,7 +493,7 @@ class PreprocessingMultiStep (PreprocessingData):
                                                  If None and warmup_width > 0, defaults to `inputs`.
                                                  If None and warmup_width <= 0, defaults to empty list.
         """
-        super().__init__(inputs, output, shift, time_step, test_size, val_size, random_state, time_index_col,
+        super().__init__(inputs, output, time_step, test_size, val_size, random_state, time_index_col,
                          csv_delimiter, csv_encoding, csv_header, csv_skiprows)
 
         self.overlapping_sequences = overlapping_sequences

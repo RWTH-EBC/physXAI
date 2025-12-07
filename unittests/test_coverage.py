@@ -9,7 +9,7 @@ import pytest
 from physXAI.utils.logging import Logger, get_parent_working_directory
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep, PreprocessingMultiStep, \
     PreprocessingData, convert_shift_to_dict
-from physXAI.preprocessing.constructed import Feature, FeatureConstruction, FeatureConstant
+from physXAI.preprocessing.constructed import Feature, FeatureConstruction, FeatureConstant, FeatureExp
 from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
 from physXAI.models.models import LinearRegressionModel, AbstractModel
 from physXAI.models.ann.ann_design import ClassicalANNModel, CMNNModel, LinANNModel, PINNModel, RNNModel, \
@@ -40,7 +40,8 @@ def inputs_tair():
 @pytest.fixture(scope='module')
 def inputs_tair_extended():
     return ['reaTZon_y', 'reaTZon_y_lag1', 'reaTZon_y_lag2', 'weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaTDryBul_y_lag1',
-              'weaSta_reaWeaHDirNor_y', 'oveHeaPumY_u', 'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2']
+            Feature('weaSta_reaWeaHDirNor_y', sampling_method='mean_over_interval'), 'oveHeaPumY_u',
+            'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2']
 
 @pytest.fixture(scope='module')
 def output_php():
@@ -232,31 +233,43 @@ def tair_data_total(file_path, inputs_tair, output_tair):
     td = prep.pipeline(file_path)
     return prep, td
 
-def test_shifting(file_path, inputs_tair_extended, output_tair):
+def test_sampling_methods(file_path, inputs_tair_extended, output_tair):
     # Setup up logger for saving
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
 
+    FeatureConstruction.set_default_sampling_method(0)
+
     # Create lags
-    x1 = Feature('reaTZon_y')
-    x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
+    x1 = Feature('reaTZon_y', sampling_method='previous')
+    lx1 = x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
     x2 = Feature('weaSta_reaWeaTDryBul_y')
-    x2.lag(1)  # weaSta_reaWeaTDryBul_y_lag1
+    lx2 = x2.lag(1)  # weaSta_reaWeaTDryBul_y_lag1
     x3 = Feature('oveHeaPumY_u')
     x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
 
-    shift = {
-        'reaTZon_y': 'previous',  # for all lags of reaTZon_y, the shift will be set automatically
-        'weaSta_reaWeaHDirNor_y': 'mean_over_interval',
-        '_default': 0,
-    }
+    # dummy Features
+    y = x1 + lx1[0]
+    z = y + x1
+    z.rename('test_feature_two')
+    z.sampling_method = 'mean_over_interval'
+    e = FeatureExp(x1-273.15, 'exp', sampling_method=1) # reduce x1 by 273.15, otherwise values are too high
+
+    inputs_tair_extended.extend([z, e])
 
     # Create & process Training data
-    prep = PreprocessingSingleStep(inputs_tair_extended, output_tair, shift=shift, time_step=4)
+    prep = PreprocessingSingleStep(inputs_tair_extended, output_tair, time_step=4)
     td = prep.pipeline(file_path)
 
     # Build & train Classical ANN
     m = ClassicalANNModel(epochs=1)
     model = m.pipeline(td)
+
+    # check correct sampling_method specification
+    assert x1.sampling_method == 'previous' and lx1[1].sampling_method == 'previous'
+    assert x2.sampling_method == 'current' and lx2.sampling_method == 'current'
+    assert FeatureConstruction.get_feature('weaSta_reaWeaHDirNor_y').sampling_method == 'mean_over_interval'
+    assert FeatureConstruction.get_feature('test_feature_two').sampling_method == 'mean_over_interval'
+    assert e.sampling_method == 'previous'
 
 def test_model_linReg(inputs_php, output_php, file_path):
     # Setup up logger for saving
