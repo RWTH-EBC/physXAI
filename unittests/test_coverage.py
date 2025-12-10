@@ -8,13 +8,12 @@ import pytest
 ######################################################################################################################
 from physXAI.utils.logging import Logger, get_parent_working_directory
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep, PreprocessingMultiStep, \
-    PreprocessingData, convert_shift_to_dict
-from physXAI.preprocessing.constructed import Feature, FeatureConstruction, FeatureConstant, FeatureExp
+    PreprocessingData
+from physXAI.preprocessing.constructed import Feature, FeatureConstruction, FeatureConstant, FeatureExp, FeatureLag
 from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
 from physXAI.models.models import LinearRegressionModel, AbstractModel
 from physXAI.models.ann.ann_design import ClassicalANNModel, CMNNModel, LinANNModel, PINNModel, RNNModel, \
     RBFModel
-
 
 base_path = os.path.join(pathlib.Path(__file__).resolve().parent.parent, 'stored_data')
 
@@ -25,17 +24,21 @@ def disable_plotly_show():
     with patch('plotly.graph_objects.Figure.show'):
         yield
 
+
 @pytest.fixture(scope='module')
 def file_path():
     return os.path.join(pathlib.Path(__file__).resolve().parent.parent, "data/bestest_hydronic_heat_pump/pid_data.csv")
+
 
 @pytest.fixture(scope='module')
 def inputs_php():
     return ['oveHeaPumY_u', 'Func(logistic)', 'weaSta_reaWeaTDryBul_y', 'reaTZon_y']
 
+
 @pytest.fixture(scope='module')
 def inputs_tair():
     return ['reaTZon_y', 'weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u', 'oveHeaPumY_u_lag1']
+
 
 @pytest.fixture(scope='module')
 def inputs_tair_extended():
@@ -47,12 +50,15 @@ def inputs_tair_extended():
 def output_php():
     return 'reaPHeaPum_y'
 
+
 @pytest.fixture(scope='module')
 def output_tair():
     return 'Change(T_zone)'
 
+
 def test_path_setup():
     get_parent_working_directory()
+
 
 def test_preprocessing(monkeypatch, file_path, inputs_php, output_php):
     monkeypatch.setattr('builtins.input', lambda _: "Y")
@@ -87,6 +93,7 @@ def test_preprocessing(monkeypatch, file_path, inputs_php, output_php):
 
     FeatureConstruction.reset()
 
+
 def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
 
@@ -104,85 +111,112 @@ def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
 
     FeatureConstruction.reset()
 
-class TestPreprocessingShiftConversion(TestCase):
 
-    inputs = ['reaTZon_y', 'reaTZon_y_lag1', 'reaTZon_y_lag2', 'weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaTDryBul_y_lag1',
-              'weaSta_reaWeaHDirNor_y', 'oveHeaPumY_u', 'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2']
+class TestSamplingMethodsFaults(TestCase):
 
-    # test case: int given for shift
-    def test_int(self):
-        shift = 0
-        res = convert_shift_to_dict(shift, self.inputs)
-        res_expected = {'reaTZon_y': 'current', 'reaTZon_y_lag1': 'current', 'reaTZon_y_lag2': 'current',
-                        'weaSta_reaWeaTDryBul_y': 'current', 'weaSta_reaWeaTDryBul_y_lag1': 'current',
-                        'weaSta_reaWeaHDirNor_y': 'current', 'oveHeaPumY_u': 'current', 'oveHeaPumY_u_lag1': 'current',
-                        'oveHeaPumY_u_lag2': 'current'}
-        assert res == res_expected
-
-    # test case: unsupported int given for shift
-    def test_unsupported_int(self):
-        shift = 2
-        with self.assertRaises(ValueError):
-            convert_shift_to_dict(shift, self.inputs)
-
-    # test case: str given for shift
-    def test_str(self):
-        shift = 'mean_over_interval'
-        res = convert_shift_to_dict(shift, self.inputs)
-        res_expected = {'reaTZon_y': 'mean_over_interval', 'reaTZon_y_lag1': 'mean_over_interval',
-                        'reaTZon_y_lag2': 'mean_over_interval', 'weaSta_reaWeaTDryBul_y': 'mean_over_interval',
-                        'weaSta_reaWeaTDryBul_y_lag1': 'mean_over_interval',
-                        'weaSta_reaWeaHDirNor_y': 'mean_over_interval', 'oveHeaPumY_u': 'mean_over_interval',
-                        'oveHeaPumY_u_lag1': 'mean_over_interval', 'oveHeaPumY_u_lag2': 'mean_over_interval'}
-        assert res == res_expected
-
-    # test case: unsupported str given for shift
+    # test case: unsupported str given as sampling method
     def test_unsupported_str(self):
-        shift = 'test'
         with self.assertRaises(ValueError):
-            convert_shift_to_dict(shift, self.inputs)
+            FeatureConstruction.set_default_sampling_method('test')
 
-    # test case: unsupported type given for shift
+    # test case: unsupported type given for sampling method
     def test_unsupported_type(self):
-        shift = ['previous']
         with self.assertRaises(TypeError):
-            convert_shift_to_dict(shift, self.inputs)
+            FeatureConstruction.set_default_sampling_method(['current'])
 
-    # test case: autocomplete incomplete dictionary given for shift
-    def test_autocomplete_incomplete_dict(self):
-        shift = {'reaTZon_y': 0, 'reaTZon_y_lag1': 0, 'weaSta_reaWeaTDryBul_y': 'mean_over_interval'}
-
-        # previous is default for all inputs that are not specified
-        res = convert_shift_to_dict(shift, self.inputs)
-        res_expected = {'reaTZon_y': 'current', 'reaTZon_y_lag1': 'current', 'reaTZon_y_lag2': 'current',
-                        'weaSta_reaWeaTDryBul_y': 'mean_over_interval',
-                        'weaSta_reaWeaTDryBul_y_lag1': 'mean_over_interval',
-                        'weaSta_reaWeaHDirNor_y': 'previous', 'oveHeaPumY_u': 'previous',
-                        'oveHeaPumY_u_lag1': 'previous',
-                        'oveHeaPumY_u_lag2': 'previous'}
-        assert len(res) == len(self.inputs)
-        assert res == res_expected
-
-    # test case: autocomplete incomplete dictionary given for shift with custom default
-    def test_autocomplete_incomplete_dict_with_custom_default(self):
-        shift = {'reaTZon_y': 1, 'reaTZon_y_lag1': 1, 'weaSta_reaWeaTDryBul_y': 'mean_over_interval'}
-
-        # previous is default for all inputs that are not specified
-        res = convert_shift_to_dict(shift, self.inputs, custom_default=0)
-        res_expected = {'reaTZon_y': 'previous', 'reaTZon_y_lag1': 'previous', 'reaTZon_y_lag2': 'previous',
-                        'weaSta_reaWeaTDryBul_y': 'mean_over_interval',
-                        'weaSta_reaWeaTDryBul_y_lag1': 'mean_over_interval',
-                        'weaSta_reaWeaHDirNor_y': 'current', 'oveHeaPumY_u': 'current',
-                        'oveHeaPumY_u_lag1': 'current',
-                        'oveHeaPumY_u_lag2': 'current'}
-        assert len(res) == len(self.inputs)
-        assert res == res_expected
-
-    # test case: lags of the same input have mismatching shifts
+    # test case: lags of the same input have mismatching sampling methods
     def test_lag_with_mismatching_shifts(self):
-        shift = {'reaTZon_y': 0, 'reaTZon_y_lag1': 1, 'weaSta_reaWeaTDryBul_y': 'mean_over_interval'}
+
+        x = Feature('test', sampling_method='current')
         with self.assertRaises(AssertionError):
-            convert_shift_to_dict(shift, self.inputs)
+            FeatureLag(x, lag=1, sampling_method='previous')
+        FeatureConstruction.reset()
+
+
+def test_sampling_method_use_default(file_path, inputs_tair, output_tair):
+    """test case: use default sampling when no default is specified by user"""
+
+    # when not overriding default sampling method, 'previous' is used
+
+    x = Feature('oveHeaPumY_u')
+    x.lag(1)
+
+    # Create & process Training data
+    prep = PreprocessingSingleStep(inputs_tair, output_tair)
+    td = prep.pipeline(file_path)
+
+    assert len(inputs_tair) == len(FeatureConstruction.features)
+
+    for inp in inputs_tair:
+        f = FeatureConstruction.get_feature(inp)
+        assert f.sampling_method == 'previous'
+
+    FeatureConstruction.reset()
+
+
+def test_sampling_method_str(file_path, inputs_tair, output_tair):
+    """test case: set default using str (setting default with int is done in test_different_sampling_methods)"""
+
+    FeatureConstruction.set_default_sampling_method('mean_over_interval')
+
+    x = Feature('oveHeaPumY_u')
+    x.lag(1)
+
+    # Create & process Training data
+    prep = PreprocessingSingleStep(inputs_tair, output_tair, time_step=4)
+    td = prep.pipeline(file_path)
+
+    assert len(inputs_tair) == len(FeatureConstruction.features)
+
+    for inp in inputs_tair:
+        f = FeatureConstruction.get_feature(inp)
+        assert f.sampling_method == 'mean_over_interval'
+
+    FeatureConstruction.reset()
+
+
+def test_different_sampling_methods(file_path, inputs_tair_extended, output_tair):
+    """test case: different sampling methods given"""
+
+    # Setup up logger for saving
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
+
+    # set default
+    FeatureConstruction.set_default_sampling_method(0)
+
+    # Create lags
+    x1 = Feature('reaTZon_y', sampling_method='previous')
+    lx1 = x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
+    x2 = Feature('weaSta_reaWeaTDryBul_y')
+    lx2 = x2.lag(1)  # weaSta_reaWeaTDryBul_y_lag1
+    x3 = Feature('oveHeaPumY_u')
+    x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
+
+    # dummy Features
+    y = x1 + lx1[0]
+    z = y + x1
+    z.rename('test_feature_two')
+    z.sampling_method = 'mean_over_interval'
+    e = FeatureExp(x1 - 273.15, 'exp', sampling_method=1)  # reduce x1 by 273.15, otherwise values are too high
+
+    inputs_tair_extended.extend([z, e])
+
+    # Create & process Training data
+    prep = PreprocessingSingleStep(inputs_tair_extended, output_tair, time_step=4)
+    td = prep.pipeline(file_path)
+
+    # Build & train Classical ANN
+    m = ClassicalANNModel(epochs=1)
+    model = m.pipeline(td)
+
+    # check correct sampling_method specification
+    assert x1.sampling_method == 'previous' and lx1[1].sampling_method == 'previous'
+    assert x2.sampling_method == 'current' and lx2.sampling_method == 'current'
+    assert FeatureConstruction.get_feature('weaSta_reaWeaHDirNor_y').sampling_method == 'mean_over_interval'
+    assert FeatureConstruction.get_feature('test_feature_two').sampling_method == 'mean_over_interval'
+    assert e.sampling_method == 'previous'
+
+    FeatureConstruction.reset()
 
 
 @pytest.fixture(scope='module')
@@ -193,6 +227,7 @@ def p_hp_data(file_path, inputs_php, output_php):
     prep = PreprocessingSingleStep(inputs_php, output_php)
     td = prep.pipeline(file_path)
     return prep, td
+
 
 @pytest.fixture(scope='module')
 def tair_data_delta(file_path, inputs_tair, output_tair):
@@ -207,6 +242,7 @@ def tair_data_delta(file_path, inputs_tair, output_tair):
                                   overlapping_sequences=False, batch_size=1)
     td = prep.pipeline(file_path)
     return prep, td
+
 
 @pytest.fixture(scope='module')
 def tair_data_noval(file_path, inputs_tair, output_tair):
@@ -237,45 +273,6 @@ def tair_data_total(file_path, inputs_tair, output_tair):
     td = prep.pipeline(file_path)
     return prep, td
 
-def test_sampling_methods(file_path, inputs_tair_extended, output_tair):
-    # Setup up logger for saving
-    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
-
-    FeatureConstruction.set_default_sampling_method(0)
-
-    # Create lags
-    x1 = Feature('reaTZon_y', sampling_method='previous')
-    lx1 = x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
-    x2 = Feature('weaSta_reaWeaTDryBul_y')
-    lx2 = x2.lag(1)  # weaSta_reaWeaTDryBul_y_lag1
-    x3 = Feature('oveHeaPumY_u')
-    x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
-
-    # dummy Features
-    y = x1 + lx1[0]
-    z = y + x1
-    z.rename('test_feature_two')
-    z.sampling_method = 'mean_over_interval'
-    e = FeatureExp(x1-273.15, 'exp', sampling_method=1) # reduce x1 by 273.15, otherwise values are too high
-
-    inputs_tair_extended.extend([z, e])
-
-    # Create & process Training data
-    prep = PreprocessingSingleStep(inputs_tair_extended, output_tair, time_step=4)
-    td = prep.pipeline(file_path)
-
-    # Build & train Classical ANN
-    m = ClassicalANNModel(epochs=1)
-    model = m.pipeline(td)
-
-    # check correct sampling_method specification
-    assert x1.sampling_method == 'previous' and lx1[1].sampling_method == 'previous'
-    assert x2.sampling_method == 'current' and lx2.sampling_method == 'current'
-    assert FeatureConstruction.get_feature('weaSta_reaWeaHDirNor_y').sampling_method == 'mean_over_interval'
-    assert FeatureConstruction.get_feature('test_feature_two').sampling_method == 'mean_over_interval'
-    assert e.sampling_method == 'previous'
-
-    FeatureConstruction.reset()
 
 def test_model_linReg(inputs_php, output_php, file_path):
     # Setup up logger for saving
@@ -292,6 +289,7 @@ def test_model_linReg(inputs_php, output_php, file_path):
     # Log setup
     Logger.log_setup(prep, m, save_name_model='model_linReg.json')
     Logger.save_training_data(td, path=os.path.join(Logger._logger, 'training_data2'))
+
 
 def test_model_ann(p_hp_data, inputs_php, output_php, file_path):
     # Setup up logger for saving
@@ -310,6 +308,7 @@ def test_model_ann(p_hp_data, inputs_php, output_php, file_path):
     # Log setup
     Logger.log_setup(None, m)
     Logger.save_training_data(td)
+
 
 def test_model_cmnn(p_hp_data, inputs_php, output_php, file_path):
     # Setup up logger for saving
@@ -349,6 +348,7 @@ def test_model_cmnn(p_hp_data, inputs_php, output_php, file_path):
     Logger.log_setup(prep, m)
     Logger.save_training_data(td)
 
+
 def test_model_linANN(p_hp_data, inputs_php, output_php, file_path):
     # Setup up logger for saving
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
@@ -373,6 +373,7 @@ def test_model_linANN(p_hp_data, inputs_php, output_php, file_path):
     # Log setup
     Logger.log_setup(prep, m)
     Logger.save_training_data(td)
+
 
 def test_model_pinn(inputs_php, output_php, file_path):
     # Setup up logger for saving
@@ -405,6 +406,7 @@ def test_model_pinn(inputs_php, output_php, file_path):
     # Log setup
     Logger.log_setup(prep, m)
     Logger.save_training_data(td)
+
 
 def test_models_rnn(file_path):
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
@@ -441,6 +443,7 @@ def test_models_rnn(file_path):
     m = RNNModel(epochs=1, rnn_layer='RNN', early_stopping_epochs=None)
     m.pipeline(td, save_model=False, plot=False)
 
+
 def test_read_setup():
 
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
@@ -476,6 +479,7 @@ def test_read_setup():
         config_model = json.load(f)
     AbstractModel.model_from_config(config_model)
 
+
 def test_feature_selection(monkeypatch, p_hp_data, file_path):
     # Setup up logger for saving
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
@@ -490,6 +494,7 @@ def test_feature_selection(monkeypatch, p_hp_data, file_path):
     monkeypatch.setattr('builtins.input', lambda _: "")
     recursive_feature_elimination_pipeline(file_path, prep, m, ascending_lag_order=True,
                                            fixed_inputs=['weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u'])
+
 
 def test_feature_selection_multi(monkeypatch, tair_data_delta, tair_data_noval ,tair_data_total, file_path):
     # Setup up logger for saving

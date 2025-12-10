@@ -6,6 +6,10 @@ from pandas import DataFrame, Series
 
 def _return_valid_sampling_method(v: Union[int, str]):
     """ check the validity of the given sampling method and return a string if val is int """
+
+    if not isinstance(v, (int, str)):
+        raise TypeError(f'Type of sampling method not supported. Type is {type(v)}, must be int or str.')
+
     if v in ['current', 0]:
         return 'current'
     elif v in ['previous', 1]:
@@ -604,6 +608,7 @@ class FeatureConstruction:
     def reset():
         """Clears all registered features and input names."""
         FeatureConstruction.features = list[FeatureBase]()
+        FeatureConstruction.set_default_sampling_method('previous')
 
     @staticmethod
     def append(f: FeatureBase):
