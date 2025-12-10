@@ -165,7 +165,7 @@ class PreprocessingSingleStep(PreprocessingData):
             )
             FeatureConstruction.set_default_sampling_method(kwargs['shift'])
             for f in FeatureConstruction.features:
-                f.sampling_method = kwargs['shift']
+                f.set_sampling_method(kwargs['shift'])
 
         super().__init__(inputs, output, time_step, test_size, val_size, random_state, time_index_col,
                          csv_delimiter, csv_encoding, csv_header, csv_skiprows, ignore_nan, **kwargs)
@@ -232,11 +232,11 @@ class PreprocessingSingleStep(PreprocessingData):
 
         X = df[inputs_without_lags].copy()
 
-        if all('current' == f.sampling_method for f in features_without_lags):
+        if all('current' == f.get_sampling_method() for f in features_without_lags):
             # filter / sample data
             X = self.sample_df_according_to_timestep(X)
             # nothing more to do here
-        elif all('previous' == f.sampling_method for f in features_without_lags):
+        elif all('previous' == f.get_sampling_method() for f in features_without_lags):
             # filter / sample data
             X = self.sample_df_according_to_timestep(X)
 
@@ -244,7 +244,7 @@ class PreprocessingSingleStep(PreprocessingData):
             X = X.shift(1)
             y = y.iloc[1:]
             X = X.iloc[1:]
-        elif all('mean_over_interval' == f.sampling_method for f in features_without_lags):
+        elif all('mean_over_interval' == f.get_sampling_method() for f in features_without_lags):
             X = get_mean_over_interval(y, X)
             # synchronize length between X and y
             y = y.iloc[1:]
@@ -255,7 +255,7 @@ class PreprocessingSingleStep(PreprocessingData):
             for f in features_without_lags:
                 # only process inputs with sampling method mean_over_interval first since X cannot be sampled
                 # to the actual required time steps until the intermediate values were taken into the mean
-                if f.sampling_method == 'mean_over_interval':
+                if f.get_sampling_method() == 'mean_over_interval':
                     res.append(get_mean_over_interval(y, X[[f.feature]]))
                     previous_or_mean_in_sampling_methods.append(True)
 
@@ -264,20 +264,20 @@ class PreprocessingSingleStep(PreprocessingData):
             # process inputs with sampling methods 'current' and 'previous'
             for f in features_without_lags:
                 _x = X[[f.feature]]
-                if f.sampling_method == 'current':
+                if f.get_sampling_method() == 'current':
                     # no transformation needed
                     res.append(_x)
                     previous_or_mean_in_sampling_methods.append(False)
-                elif f.sampling_method == 'previous':
+                elif f.get_sampling_method() == 'previous':
                     # shift by 1
                     _x = _x.shift(1)
                     _x = _x.iloc[1:]
                     res.append(_x)
                     previous_or_mean_in_sampling_methods.append(True)
-                elif f.sampling_method == 'mean_over_interval':
+                elif f.get_sampling_method() == 'mean_over_interval':
                     continue
                 else:
-                    raise NotImplementedError(f"Sampling method '{f.sampling_method}' not implemented.")
+                    raise NotImplementedError(f"Sampling method '{f.get_sampling_method()}' not implemented.")
 
             X = pd.concat(res, axis=1)
             X = X.sort_index(ascending=True)

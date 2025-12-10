@@ -125,7 +125,7 @@ class TestSamplingMethodsFaults(TestCase):
             FeatureConstruction.set_default_sampling_method(['current'])
 
     # test case: lags of the same input have mismatching sampling methods
-    def test_lag_with_mismatching_shifts(self):
+    def test_lag_with_mismatching_sampling_methods(self):
 
         x = Feature('test', sampling_method='current')
         with self.assertRaises(AssertionError):
@@ -149,7 +149,7 @@ def test_sampling_method_use_default(file_path, inputs_tair, output_tair):
 
     for inp in inputs_tair:
         f = FeatureConstruction.get_feature(inp)
-        assert f.sampling_method == 'previous'
+        assert f.get_sampling_method() == 'previous'
 
     FeatureConstruction.reset()
 
@@ -170,16 +170,13 @@ def test_sampling_method_str(file_path, inputs_tair, output_tair):
 
     for inp in inputs_tair:
         f = FeatureConstruction.get_feature(inp)
-        assert f.sampling_method == 'mean_over_interval'
+        assert f.get_sampling_method() == 'mean_over_interval'
 
     FeatureConstruction.reset()
 
 
 def test_different_sampling_methods(file_path, inputs_tair_extended, output_tair):
     """test case: different sampling methods given"""
-
-    # Setup up logger for saving
-    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
 
     # set default
     FeatureConstruction.set_default_sampling_method(0)
@@ -196,7 +193,7 @@ def test_different_sampling_methods(file_path, inputs_tair_extended, output_tair
     y = x1 + lx1[0]
     z = y + x1
     z.rename('test_feature_two')
-    z.sampling_method = 'mean_over_interval'
+    z.set_sampling_method('mean_over_interval')
     e = FeatureExp(x1 - 273.15, 'exp', sampling_method=1)  # reduce x1 by 273.15, otherwise values are too high
 
     inputs_tair_extended.extend([z, e])
@@ -210,11 +207,11 @@ def test_different_sampling_methods(file_path, inputs_tair_extended, output_tair
     model = m.pipeline(td)
 
     # check correct sampling_method specification
-    assert x1.sampling_method == 'previous' and lx1[1].sampling_method == 'previous'
-    assert x2.sampling_method == 'current' and lx2.sampling_method == 'current'
-    assert FeatureConstruction.get_feature('weaSta_reaWeaHDirNor_y').sampling_method == 'mean_over_interval'
-    assert FeatureConstruction.get_feature('test_feature_two').sampling_method == 'mean_over_interval'
-    assert e.sampling_method == 'previous'
+    assert x1.get_sampling_method() == 'previous' and lx1[1].get_sampling_method() == 'previous'
+    assert x2.get_sampling_method() == 'current' and lx2.get_sampling_method() == 'current'
+    assert FeatureConstruction.get_feature('weaSta_reaWeaHDirNor_y').get_sampling_method() == 'mean_over_interval'
+    assert FeatureConstruction.get_feature('test_feature_two').get_sampling_method() == 'mean_over_interval'
+    assert e.get_sampling_method() == 'previous'
 
     FeatureConstruction.reset()
 
@@ -308,6 +305,51 @@ def test_model_ann(p_hp_data, inputs_php, output_php, file_path):
     # Log setup
     Logger.log_setup(None, m)
     Logger.save_training_data(td)
+
+
+def test_deprecated_shift(p_hp_data, inputs_php, output_php, file_path):
+
+    # Setup up logger for saving
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
+
+    # Create & process Training data
+    prep = PreprocessingSingleStep(inputs_php, output_php, shift=0)  # deprecated shift given in preprocessing
+    td = prep.pipeline(file_path)
+
+    m = ClassicalANNModel(epochs=1, n_neurons=[4, 4], n_layers=2, activation_function=['softplus', 'softplus'],
+                          early_stopping_epochs=None, rescale_output=False)
+    m.pipeline(td)
+
+    m.epochs = 1
+    m.online_pipeline(td, os.path.join(Logger._logger, 'model.keras'))
+
+    assert FeatureConstruction.get_default_sampling_method() == 'current'
+    FeatureConstruction.set_default_sampling_method('previous')  # reset default sampling
+
+    # from config
+    config_prep = {
+        "__class_name__": "PreprocessingSingleStep",
+        "inputs": [
+            "oveHeaPumY_u",
+            "Func(logistic)",
+            "weaSta_reaWeaTDryBul_y",
+            "reaTZon_y"
+        ],
+        "output": [
+            "reaPHeaPum_y"
+        ],
+        "shift": 0,  # deprecated shift
+        "test_size": 0.1,
+        "val_size": 0.1,
+        "random_state": 42,
+        "time_step": 1.0,
+    }
+
+    a = PreprocessingData.from_config(config_prep)
+    assert isinstance(a, PreprocessingSingleStep)
+    assert FeatureConstruction.get_default_sampling_method() == 'current'
+
+    FeatureConstruction.reset()
 
 
 def test_model_cmnn(p_hp_data, inputs_php, output_php, file_path):

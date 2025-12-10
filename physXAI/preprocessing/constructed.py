@@ -44,17 +44,17 @@ class FeatureBase(ABC):
         """
 
         self.feature: str = name
-        self.sampling_method = sampling_method
+        self._sampling_method = None
+        self.set_sampling_method(sampling_method)
 
         # Automatically registers the newly created feature instance with the FeatureConstruction manager
         FeatureConstruction.append(self)
 
-    @property
-    def sampling_method(self):
+    def get_sampling_method(self) -> str:
+        """returns the Features sampling method"""
         return self._sampling_method
 
-    @sampling_method.setter
-    def sampling_method(self, val: Union[str, int] = None):
+    def set_sampling_method(self, val: Union[str, int] = None):
         """
         Sets the feature's sampling method. If None is given, FeatureConstruction._default_sampling_method is used
         Available methods:
@@ -162,7 +162,7 @@ class FeatureBase(ABC):
         return {
             'class_name': self.__class__.__name__,
             'name': self.feature,
-            'sampling_method': self.sampling_method,
+            'sampling_method': self.get_sampling_method(),
         }
 
     @classmethod
@@ -240,14 +240,14 @@ class FeatureLag(FeatureBase):
                 name = f.feature + f'_lag{lag}'
 
             # lags must have the same sampling_method as their base feature
-            sampling_method = f.sampling_method
+            sampling_method = f.get_sampling_method()
         else:
             self.origf: str = f
             if name is None:
                 name = f + f'_lag{lag}'
 
             # lags must have the same sampling_method as their base feature
-            sampling_method = FeatureConstruction.get_feature(f).sampling_method
+            sampling_method = FeatureConstruction.get_feature(f).get_sampling_method()
 
         if 'sampling_method' in kwargs.keys():
             assert kwargs['sampling_method'] == sampling_method, (
