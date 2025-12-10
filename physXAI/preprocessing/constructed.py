@@ -36,7 +36,7 @@ class FeatureBase(ABC):
         Args:
             name (str): The name of the feature. This will be the column name in the DataFrame.
             sampling_method (Union[str, int]): Time step of the input data used to predict the output.
-                - if None: FeatureConstruction._default_sampling_method is used
+                - if None: Feature._default_sampling_method is used
                 - if 'current' or 0: Current time step will be used for prediction.
                 - if 'previous' or 1: Previous time step will be used for prediction.
                 - if 'mean_over_interval': Mean between current and previous time step will be used.
@@ -56,7 +56,7 @@ class FeatureBase(ABC):
 
     def set_sampling_method(self, val: Union[str, int] = None):
         """
-        Sets the feature's sampling method. If None is given, FeatureConstruction._default_sampling_method is used
+        Sets the feature's sampling method. If None is given, Feature._default_sampling_method is used
         Available methods:
         - 'current' or 0: Current time step will be used for prediction.
         - 'previous' or 1: Previous time step will be used for prediction.
@@ -64,7 +64,7 @@ class FeatureBase(ABC):
         """
 
         if val is None:
-            self._sampling_method = FeatureConstruction.get_default_sampling_method()
+            self._sampling_method = Feature.get_default_sampling_method()
         else:
             self._sampling_method = _return_valid_sampling_method(val)
 
@@ -213,7 +213,22 @@ class Feature(FeatureBase):
     Represents a basic feature that is assumed to exist directly in the input DataFrame.
     Its `process` method simply retrieves the column by its name.
     """
-    pass
+
+    _default_sampling_method = 'previous'
+
+    @classmethod
+    def get_default_sampling_method(cls):
+        return Feature._default_sampling_method
+
+    @classmethod
+    def set_default_sampling_method(cls, val: Union[str, int]):
+        """
+        Sets the default sampling method for all features that do not have a custom sampling method. Available methods:
+        - 'current' or 0: Current time step will be used for prediction.
+        - 'previous' or 1: Previous time step will be used for prediction.
+        - 'mean_over_interval': Mean between current and previous time step will be used.
+        """
+        Feature._default_sampling_method = _return_valid_sampling_method(val)
 
 
 @register_feature
@@ -591,10 +606,6 @@ class FeatureConstruction:
     _default_sampling_method = 'previous'
 
     @staticmethod
-    def get_default_sampling_method():
-        return FeatureConstruction._default_sampling_method
-
-    @staticmethod
     def set_default_sampling_method(val: Union[str, int]):
         """
         Sets the default sampling method for all features that do not have a custom sampling method. Available methods:
@@ -606,9 +617,9 @@ class FeatureConstruction:
 
     @staticmethod
     def reset():
-        """Clears all registered features and input names."""
+        """Clears all registered features and input names. Furthermore, resets the default sampling method"""
         FeatureConstruction.features = list[FeatureBase]()
-        FeatureConstruction.set_default_sampling_method('previous')
+        Feature.set_default_sampling_method('previous')
 
     @staticmethod
     def append(f: FeatureBase):

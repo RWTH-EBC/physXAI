@@ -117,12 +117,12 @@ class TestSamplingMethodsFaults(TestCase):
     # test case: unsupported str given as sampling method
     def test_unsupported_str(self):
         with self.assertRaises(ValueError):
-            FeatureConstruction.set_default_sampling_method('test')
+            Feature.set_default_sampling_method('test')
 
     # test case: unsupported type given for sampling method
     def test_unsupported_type(self):
         with self.assertRaises(TypeError):
-            FeatureConstruction.set_default_sampling_method(['current'])
+            Feature.set_default_sampling_method(['current'])
 
     # test case: lags of the same input have mismatching sampling methods
     def test_lag_with_mismatching_sampling_methods(self):
@@ -157,7 +157,7 @@ def test_sampling_method_use_default(file_path, inputs_tair, output_tair):
 def test_sampling_method_str(file_path, inputs_tair, output_tair):
     """test case: set default using str (setting default with int is done in test_different_sampling_methods)"""
 
-    FeatureConstruction.set_default_sampling_method('mean_over_interval')
+    Feature.set_default_sampling_method('mean_over_interval')
 
     x = Feature('oveHeaPumY_u')
     x.lag(1)
@@ -179,7 +179,7 @@ def test_different_sampling_methods(file_path, inputs_tair_extended, output_tair
     """test case: different sampling methods given"""
 
     # set default
-    FeatureConstruction.set_default_sampling_method(0)
+    Feature.set_default_sampling_method(0)
 
     # Create lags
     x1 = Feature('reaTZon_y', sampling_method='previous')
@@ -323,8 +323,8 @@ def test_deprecated_shift(p_hp_data, inputs_php, output_php, file_path):
     m.epochs = 1
     m.online_pipeline(td, os.path.join(Logger._logger, 'model.keras'))
 
-    assert FeatureConstruction.get_default_sampling_method() == 'current'
-    FeatureConstruction.set_default_sampling_method('previous')  # reset default sampling
+    assert Feature.get_default_sampling_method() == 'current'
+    Feature.set_default_sampling_method('previous')  # reset default sampling
 
     # from config
     config_prep = {
@@ -347,7 +347,7 @@ def test_deprecated_shift(p_hp_data, inputs_php, output_php, file_path):
 
     a = PreprocessingData.from_config(config_prep)
     assert isinstance(a, PreprocessingSingleStep)
-    assert FeatureConstruction.get_default_sampling_method() == 'current'
+    assert Feature.get_default_sampling_method() == 'current'
 
     FeatureConstruction.reset()
 

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import itertools
 from sklearn.model_selection import train_test_split
-from physXAI.preprocessing.constructed import FeatureConstruction, FeatureBase
+from physXAI.preprocessing.constructed import FeatureConstruction, FeatureBase, Feature
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
 from physXAI.utils.logging import get_full_path
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -167,14 +167,14 @@ class PreprocessingSingleStep(PreprocessingData):
             DeprecationWarning(
                 "shift parameter is deprecated for SingleStep models and replaced by sampling_method, an attribute of "
                 "each Feature. This allows specifying individual 'shifts' for each Feature / input. A default sampling"
-                "method can be specified via FeatureConstruction.set_default_sampling_method(<your default sampling>)."
+                "method can be specified via Feature.set_default_sampling_method(<your default sampling>)."
             )
             DeprecationWarning(
-                f"shift parameter was given as shift={kwargs['shift']}. Setting FeatureConstruction.set_default_"
-                f"sampling_method(shift) and override possible individual sampling methods of all Features. If this is"
+                f"shift parameter was given as shift={kwargs['shift']}. Setting Feature.set_default_sampling_method"
+                f"(shift) and overriding possible individual sampling methods of all Features. If this is"
                 f"not intended, remove shift parameter when initializing PreprocessingSingleStep object!"
             )
-            FeatureConstruction.set_default_sampling_method(kwargs['shift'])
+            Feature.set_default_sampling_method(kwargs['shift'])
             for f in FeatureConstruction.features:
                 f.set_sampling_method(kwargs['shift'])
 

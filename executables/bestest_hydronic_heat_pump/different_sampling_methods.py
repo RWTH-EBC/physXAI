@@ -1,6 +1,6 @@
 from physXAI.models.ann.ann_design import ClassicalANNModel
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
-from physXAI.preprocessing.constructed import Feature, FeatureConstruction, FeatureExp
+from physXAI.preprocessing.constructed import Feature, FeatureExp
 from physXAI.utils.logging import Logger
 
 """
@@ -10,15 +10,15 @@ When creating a Feature (or any subclass of FeatureBase like FeatureLag, Feature
 specified.
 
 sampling_method (Union[str, int]): Time step of the input data used to predict the output.
-    - if None: FeatureConstruction.get_default_sampling_method() is used
+    - if None: Feature.get_default_sampling_method() is used
     - if 'current' or 0: Current time step will be used for prediction.
     - if 'previous' or 1: Previous time step will be used for prediction.
     - if 'mean_over_interval': Mean between current and previous time step will be used.
     
-    Specify default sampling method using FeatureConstruction.set_default_sampling_method(<your default sampling>).
+    Specify default sampling method using Feature.set_default_sampling_method(<your default sampling>).
     If no default sampling method is specified by the user, 'previous' is used as default.
 """
-FeatureConstruction.set_default_sampling_method(0)
+Feature.set_default_sampling_method(0)
 
 # Setup up logger for saving
 Logger.setup_logger(folder_name='different_sampling_methods_ann', override=True)
