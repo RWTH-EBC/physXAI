@@ -2,18 +2,18 @@ import json
 import os
 import pathlib
 from unittest.mock import patch
+from unittest import TestCase
 import keras
 import pytest
 ######################################################################################################################
 from physXAI.utils.logging import Logger, get_parent_working_directory
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep, PreprocessingMultiStep, \
     PreprocessingData
-from physXAI.preprocessing.constructed import Feature, FeatureConstruction, FeatureConstant
+from physXAI.preprocessing.constructed import Feature, FeatureConstruction, FeatureConstant, FeatureExp, FeatureLag
 from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
 from physXAI.models.models import LinearRegressionModel, AbstractModel
 from physXAI.models.ann.ann_design import ClassicalANNModel, CMNNModel, LinANNModel, PINNModel, RNNModel, \
     RBFModel
-
 
 base_path = os.path.join(pathlib.Path(__file__).resolve().parent.parent, 'stored_data')
 
@@ -24,28 +24,41 @@ def disable_plotly_show():
     with patch('plotly.graph_objects.Figure.show'):
         yield
 
+
 @pytest.fixture(scope='module')
 def file_path():
     return os.path.join(pathlib.Path(__file__).resolve().parent.parent, "data/bestest_hydronic_heat_pump/pid_data.csv")
+
 
 @pytest.fixture(scope='module')
 def inputs_php():
     return ['oveHeaPumY_u', 'Func(logistic)', 'weaSta_reaWeaTDryBul_y', 'reaTZon_y']
 
+
 @pytest.fixture(scope='module')
 def inputs_tair():
     return ['reaTZon_y', 'weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u', 'oveHeaPumY_u_lag1']
+
+
+@pytest.fixture(scope='module')
+def inputs_tair_extended():
+    return ['reaTZon_y', 'reaTZon_y_lag1', 'reaTZon_y_lag2', 'weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaTDryBul_y_lag1',
+            Feature('weaSta_reaWeaHDirNor_y', sampling_method='mean_over_interval'), 'oveHeaPumY_u',
+            'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2']
 
 @pytest.fixture(scope='module')
 def output_php():
     return 'reaPHeaPum_y'
 
+
 @pytest.fixture(scope='module')
 def output_tair():
     return 'Change(T_zone)'
 
+
 def test_path_setup():
     get_parent_working_directory()
+
 
 def test_preprocessing(monkeypatch, file_path, inputs_php, output_php):
     monkeypatch.setattr('builtins.input', lambda _: "Y")
@@ -78,6 +91,9 @@ def test_preprocessing(monkeypatch, file_path, inputs_php, output_php):
     prep = PreprocessingSingleStep(inputs_php, output_php)
     prep.pipeline(file_path)
 
+    FeatureConstruction.reset()
+
+
 def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
 
@@ -93,6 +109,113 @@ def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
                                   overlapping_sequences=False, batch_size=1)
     prep.pipeline(file_path)
 
+    FeatureConstruction.reset()
+
+
+class TestSamplingMethodsFaults(TestCase):
+
+    # test case: unsupported str given as sampling method
+    def test_unsupported_str(self):
+        with self.assertRaises(ValueError):
+            Feature.set_default_sampling_method('test')
+
+    # test case: unsupported type given for sampling method
+    def test_unsupported_type(self):
+        with self.assertRaises(TypeError):
+            Feature.set_default_sampling_method(['current'])
+
+    # test case: lags of the same input have mismatching sampling methods
+    def test_lag_with_mismatching_sampling_methods(self):
+
+        x = Feature('test', sampling_method='current')
+        with self.assertRaises(AssertionError):
+            FeatureLag(x, lag=1, sampling_method='previous')
+        FeatureConstruction.reset()
+
+
+def test_sampling_method_use_default(file_path, inputs_tair, output_tair):
+    """test case: use default sampling when no default is specified by user"""
+
+    # when not overriding default sampling method, 'previous' is used
+
+    x = Feature('oveHeaPumY_u')
+    x.lag(1)
+
+    # Create & process Training data
+    prep = PreprocessingSingleStep(inputs_tair, output_tair)
+    td = prep.pipeline(file_path)
+
+    assert len(inputs_tair) == len(FeatureConstruction.features)
+
+    for inp in inputs_tair:
+        f = FeatureConstruction.get_feature(inp)
+        assert f.get_sampling_method() == 'previous'
+
+    FeatureConstruction.reset()
+
+
+def test_sampling_method_str(file_path, inputs_tair, output_tair):
+    """test case: set default using str (setting default with int is done in test_different_sampling_methods)"""
+
+    Feature.set_default_sampling_method('mean_over_interval')
+
+    x = Feature('oveHeaPumY_u')
+    x.lag(1)
+
+    # Create & process Training data
+    prep = PreprocessingSingleStep(inputs_tair, output_tair, time_step=4)
+    td = prep.pipeline(file_path)
+
+    assert len(inputs_tair) == len(FeatureConstruction.features)
+
+    for inp in inputs_tair:
+        f = FeatureConstruction.get_feature(inp)
+        assert f.get_sampling_method() == 'mean_over_interval'
+
+    FeatureConstruction.reset()
+
+
+def test_different_sampling_methods(file_path, inputs_tair_extended, output_tair):
+    """test case: different sampling methods given"""
+
+    # set default
+    Feature.set_default_sampling_method(0)
+
+    # Create lags
+    x1 = Feature('reaTZon_y', sampling_method='previous')
+    lx1 = x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
+    x2 = Feature('weaSta_reaWeaTDryBul_y')
+    lx2 = x2.lag(1)  # weaSta_reaWeaTDryBul_y_lag1
+    x3 = Feature('oveHeaPumY_u')
+    x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
+
+    # dummy Features
+    y = x1 + lx1[0]
+    z = y + x1
+    z.rename('test_feature_two')
+    z.set_sampling_method('mean_over_interval')
+    e = FeatureExp(x1 - 273.15, 'exp', sampling_method=1)  # reduce x1 by 273.15, otherwise values are too high
+
+    inputs_tair_extended.extend([z, e])
+
+    # Create & process Training data
+    prep = PreprocessingSingleStep(inputs_tair_extended, output_tair, time_step=4)
+    td = prep.pipeline(file_path)
+
+    # Build & train Classical ANN
+    m = ClassicalANNModel(epochs=1)
+    model = m.pipeline(td)
+
+    # check correct sampling_method specification
+    assert x1.get_sampling_method() == 'previous' and lx1[1].get_sampling_method() == 'previous'
+    assert x2.get_sampling_method() == 'current' and lx2.get_sampling_method() == 'current'
+    assert FeatureConstruction.get_feature('weaSta_reaWeaHDirNor_y').get_sampling_method() == 'mean_over_interval'
+    assert FeatureConstruction.get_feature('test_feature_two').get_sampling_method() == 'mean_over_interval'
+    assert e.get_sampling_method() == 'previous'
+
+    FeatureConstruction.reset()
+
+
 @pytest.fixture(scope='module')
 def p_hp_data(file_path, inputs_php, output_php):
     # Setup up logger for saving
@@ -101,6 +224,7 @@ def p_hp_data(file_path, inputs_php, output_php):
     prep = PreprocessingSingleStep(inputs_php, output_php)
     td = prep.pipeline(file_path)
     return prep, td
+
 
 @pytest.fixture(scope='module')
 def tair_data_delta(file_path, inputs_tair, output_tair):
@@ -115,6 +239,7 @@ def tair_data_delta(file_path, inputs_tair, output_tair):
                                   overlapping_sequences=False, batch_size=1)
     td = prep.pipeline(file_path)
     return prep, td
+
 
 @pytest.fixture(scope='module')
 def tair_data_noval(file_path, inputs_tair, output_tair):
@@ -145,6 +270,7 @@ def tair_data_total(file_path, inputs_tair, output_tair):
     td = prep.pipeline(file_path)
     return prep, td
 
+
 def test_model_linReg(inputs_php, output_php, file_path):
     # Setup up logger for saving
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
@@ -160,6 +286,7 @@ def test_model_linReg(inputs_php, output_php, file_path):
     # Log setup
     Logger.log_setup(prep, m, save_name_model='model_linReg.json')
     Logger.save_training_data(td, path=os.path.join(Logger._logger, 'training_data2'))
+
 
 def test_model_ann(p_hp_data, inputs_php, output_php, file_path):
     # Setup up logger for saving
@@ -178,6 +305,52 @@ def test_model_ann(p_hp_data, inputs_php, output_php, file_path):
     # Log setup
     Logger.log_setup(None, m)
     Logger.save_training_data(td)
+
+
+def test_deprecated_shift(p_hp_data, inputs_php, output_php, file_path):
+
+    # Setup up logger for saving
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
+
+    # Create & process Training data
+    prep = PreprocessingSingleStep(inputs_php, output_php, shift=0)  # deprecated shift given in preprocessing
+    td = prep.pipeline(file_path)
+
+    m = ClassicalANNModel(epochs=1, n_neurons=[4, 4], n_layers=2, activation_function=['softplus', 'softplus'],
+                          early_stopping_epochs=None, rescale_output=False)
+    m.pipeline(td)
+
+    m.epochs = 1
+    m.online_pipeline(td, os.path.join(Logger._logger, 'model.keras'))
+
+    assert Feature.get_default_sampling_method() == 'current'
+    Feature.set_default_sampling_method('previous')  # reset default sampling
+
+    # from config
+    config_prep = {
+        "__class_name__": "PreprocessingSingleStep",
+        "inputs": [
+            "oveHeaPumY_u",
+            "Func(logistic)",
+            "weaSta_reaWeaTDryBul_y",
+            "reaTZon_y"
+        ],
+        "output": [
+            "reaPHeaPum_y"
+        ],
+        "shift": 0,  # deprecated shift
+        "test_size": 0.1,
+        "val_size": 0.1,
+        "random_state": 42,
+        "time_step": 1.0,
+    }
+
+    a = PreprocessingData.from_config(config_prep)
+    assert isinstance(a, PreprocessingSingleStep)
+    assert Feature.get_default_sampling_method() == 'current'
+
+    FeatureConstruction.reset()
+
 
 def test_model_cmnn(p_hp_data, inputs_php, output_php, file_path):
     # Setup up logger for saving
@@ -217,6 +390,7 @@ def test_model_cmnn(p_hp_data, inputs_php, output_php, file_path):
     Logger.log_setup(prep, m)
     Logger.save_training_data(td)
 
+
 def test_model_linANN(p_hp_data, inputs_php, output_php, file_path):
     # Setup up logger for saving
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
@@ -241,6 +415,7 @@ def test_model_linANN(p_hp_data, inputs_php, output_php, file_path):
     # Log setup
     Logger.log_setup(prep, m)
     Logger.save_training_data(td)
+
 
 def test_model_pinn(inputs_php, output_php, file_path):
     # Setup up logger for saving
@@ -274,6 +449,7 @@ def test_model_pinn(inputs_php, output_php, file_path):
     Logger.log_setup(prep, m)
     Logger.save_training_data(td)
 
+
 def test_models_rnn(file_path):
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
 
@@ -286,7 +462,7 @@ def test_models_rnn(file_path):
 
     m = RNNModel(epochs=1, rnn_layer='LSTM', init_layer='dense')
     m.pipeline(td, os.path.join(Logger._logger, 'model2.keras'))
-    Logger.log_setup(td, m, 'preprocessing_config2.json',
+    Logger.log_setup(prep, m, 'preprocessing_config2.json',
                      save_name_constructed='constructed_config2.json')
     Logger.save_training_data(td)
 
@@ -309,6 +485,7 @@ def test_models_rnn(file_path):
     m = RNNModel(epochs=1, rnn_layer='RNN', early_stopping_epochs=None)
     m.pipeline(td, save_model=False, plot=False)
 
+
 def test_read_setup():
 
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
@@ -318,13 +495,15 @@ def test_read_setup():
     path = os.path.join(Logger._logger, save_name_preprocessing)
     with open(path, "r") as f:
         config_prep = json.load(f)
-    PreprocessingData.from_config(config_prep)
+    a = PreprocessingData.from_config(config_prep)
+    assert isinstance(a, PreprocessingSingleStep)
 
     save_name_preprocessing = 'preprocessing_config2.json'
     path = os.path.join(Logger._logger, save_name_preprocessing)
     with open(path, "r") as f:
         config_prep = json.load(f)
-    PreprocessingData.from_config(config_prep)
+    b = PreprocessingData.from_config(config_prep)
+    assert isinstance(b, PreprocessingMultiStep)
 
     save_name_constructed = Logger.save_name_constructed
     path = os.path.join(Logger._logger, save_name_constructed)
@@ -344,6 +523,7 @@ def test_read_setup():
         config_model = json.load(f)
     AbstractModel.model_from_config(config_model)
 
+
 def test_feature_selection(monkeypatch, p_hp_data, file_path):
     # Setup up logger for saving
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
@@ -358,6 +538,7 @@ def test_feature_selection(monkeypatch, p_hp_data, file_path):
     monkeypatch.setattr('builtins.input', lambda _: "")
     recursive_feature_elimination_pipeline(file_path, prep, m, ascending_lag_order=True,
                                            fixed_inputs=['weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u'])
+
 
 def test_feature_selection_multi(monkeypatch, tair_data_delta, tair_data_noval ,tair_data_total, file_path):
     # Setup up logger for saving

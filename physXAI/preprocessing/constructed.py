@@ -4,6 +4,24 @@ import numpy as np
 from pandas import DataFrame, Series
 
 
+def _return_valid_sampling_method(v: Union[int, str]):
+    """ check the validity of the given sampling method and return a string if val is int """
+
+    if not isinstance(v, (int, str)):
+        raise TypeError(f'Type of sampling method not supported. Type is {type(v)}, must be int or str.')
+
+    if v in ['current', 0]:
+        return 'current'
+    elif v in ['previous', 1]:
+        return 'previous'
+    elif v == 'mean_over_interval':
+        return 'mean_over_interval'
+    else:
+        raise ValueError(
+            f"Value of sampling method not supported, value is: {v}. Sampling method must be 'current' "
+            f"(or 0 if s is int), 'previous' (or 1 if s is int) or 'mean_over_interval'.")
+
+
 class FeatureBase(ABC):
     """
     Abstract Base Class for all feature engineering components.
@@ -11,19 +29,44 @@ class FeatureBase(ABC):
     in a Pandas DataFrame. It supports arithmetic operations to combine features.
     """
 
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name: str, sampling_method: Union[str, int] = None, **kwargs):
         """
         Initializes a FeatureBase instance.
 
         Args:
             name (str): The name of the feature. This will be the column name in the DataFrame.
+            sampling_method (Union[str, int]): Time step of the input data used to predict the output.
+                - if None: Feature._default_sampling_method is used
+                - if 'current' or 0: Current time step will be used for prediction.
+                - if 'previous' or 1: Previous time step will be used for prediction.
+                - if 'mean_over_interval': Mean between current and previous time step will be used.
             **kwargs: Catches any additional keyword arguments.
         """
 
         self.feature: str = name
+        self._sampling_method = None
+        self.set_sampling_method(sampling_method)
 
         # Automatically registers the newly created feature instance with the FeatureConstruction manager
         FeatureConstruction.append(self)
+
+    def get_sampling_method(self) -> str:
+        """returns the Features sampling method"""
+        return self._sampling_method
+
+    def set_sampling_method(self, val: Union[str, int] = None):
+        """
+        Sets the feature's sampling method. If None is given, Feature._default_sampling_method is used
+        Available methods:
+        - 'current' or 0: Current time step will be used for prediction.
+        - 'previous' or 1: Previous time step will be used for prediction.
+        - 'mean_over_interval': Mean between current and previous time step will be used.
+        """
+
+        if val is None:
+            self._sampling_method = Feature.get_default_sampling_method()
+        else:
+            self._sampling_method = _return_valid_sampling_method(val)
 
     def rename(self, name: str):
         """
@@ -103,7 +146,8 @@ class FeatureBase(ABC):
                                 FeatureLag object for the specified lag_value.
 
            Returns:
-               FeatureLag or List[FeatureLag]: A single lagged feature or a list of lagged features.
+               FeatureLag or List[FeatureLag]: A single lagged feature or a list of lagged features, each with the same
+                                                sampling method as their corresponding base feature.
         """
 
         if previous and lag > 1:
@@ -115,8 +159,11 @@ class FeatureBase(ABC):
             return FeatureLag(self, lag)
 
     def get_config(self) -> dict:
-        return {'class_name': self.__class__.__name__,
-                'name': self.feature}
+        return {
+            'class_name': self.__class__.__name__,
+            'name': self.feature,
+            'sampling_method': self.get_sampling_method(),
+        }
 
     @classmethod
     def from_config(cls, config: dict) -> 'FeatureBase':
@@ -166,7 +213,22 @@ class Feature(FeatureBase):
     Represents a basic feature that is assumed to exist directly in the input DataFrame.
     Its `process` method simply retrieves the column by its name.
     """
-    pass
+
+    _default_sampling_method = 'previous'
+
+    @classmethod
+    def get_default_sampling_method(cls):
+        return Feature._default_sampling_method
+
+    @classmethod
+    def set_default_sampling_method(cls, val: Union[str, int]):
+        """
+        Sets the default sampling method for all features that do not have a custom sampling method. Available methods:
+        - 'current' or 0: Current time step will be used for prediction.
+        - 'previous' or 1: Previous time step will be used for prediction.
+        - 'mean_over_interval': Mean between current and previous time step will be used.
+        """
+        Feature._default_sampling_method = _return_valid_sampling_method(val)
 
 
 @register_feature
@@ -189,11 +251,27 @@ class FeatureLag(FeatureBase):
         """
         if isinstance(f, FeatureBase):
             self.origf: str = f.feature
+            if name is None:
+                name = f.feature + f'_lag{lag}'
+
+            # lags must have the same sampling_method as their base feature
+            sampling_method = f.get_sampling_method()
         else:
             self.origf: str = f
-        if name is None:
-            name = f.feature + f'_lag{lag}'
-        super().__init__(name)
+            if name is None:
+                name = f + f'_lag{lag}'
+
+            # lags must have the same sampling_method as their base feature
+            sampling_method = FeatureConstruction.get_feature(f).get_sampling_method()
+
+        if 'sampling_method' in kwargs.keys():
+            assert kwargs['sampling_method'] == sampling_method, (
+                f"lags must have the same sampling method as their base feature. Sampling method of base feature is"
+                f" {sampling_method} but for lag {kwargs['sampling_method']} was given as sampling method."
+            )
+            kwargs.__delitem__('sampling_method')  # constructor must not get more than one arg with the same key
+
+        super().__init__(name, sampling_method=sampling_method, **kwargs)
         self.lag: int = lag
 
     def process(self, df: DataFrame) -> Series:
@@ -236,7 +314,7 @@ class FeatureTwo(FeatureBase, ABC):
             f2n = str(feature2)
         if name is None:
             name = self.name(f1n, f2n)
-        super().__init__(name)
+        super().__init__(name, **kwargs)
         self.feature1 = feature1
         self.feature2 = feature2
 
@@ -414,7 +492,7 @@ class FeatureExp(FeatureBase):
         self.f1: FeatureBase = f1
         if name is None:
             name = 'exp(' + f1.feature + ')'
-        super().__init__(name)
+        super().__init__(name, **kwargs)
 
     def process(self, df: DataFrame) -> Series:
         if self.feature not in df.columns:
@@ -444,7 +522,7 @@ class FeatureSin(FeatureBase):
         self.f1: FeatureBase = f1
         if name is None:
             name = 'sin(' + f1.feature + ')'
-        super().__init__(name)
+        super().__init__(name, **kwargs)
 
     def process(self, df: DataFrame) -> Series:
         if self.feature not in df.columns:
@@ -474,7 +552,7 @@ class FeatureCos(FeatureBase):
         self.f1: FeatureBase = f1
         if name is None:
             name = 'cos(' + f1.feature + ')'
-        super().__init__(name)
+        super().__init__(name, **kwargs)
 
     def process(self, df: DataFrame) -> Series:
         if self.feature not in df.columns:
@@ -504,7 +582,7 @@ class FeatureConstant(FeatureBase):
 
     def __init__(self, c: float, name: str, **kwargs):
         self.c = c
-        super().__init__(name)
+        super().__init__(name, **kwargs)
 
     def process(self, df: DataFrame) -> Series:
         if self.feature not in df.columns:
@@ -525,11 +603,23 @@ class FeatureConstruction:
     """
 
     features = list[FeatureBase]()
+    _default_sampling_method = 'previous'
+
+    @staticmethod
+    def set_default_sampling_method(val: Union[str, int]):
+        """
+        Sets the default sampling method for all features that do not have a custom sampling method. Available methods:
+        - 'current' or 0: Current time step will be used for prediction.
+        - 'previous' or 1: Previous time step will be used for prediction.
+        - 'mean_over_interval': Mean between current and previous time step will be used.
+        """
+        FeatureConstruction._default_sampling_method = _return_valid_sampling_method(val)
 
     @staticmethod
     def reset():
-        """Clears all registered features and input names."""
+        """Clears all registered features and input names. Furthermore, resets the default sampling method"""
         FeatureConstruction.features = list[FeatureBase]()
+        Feature.set_default_sampling_method('previous')
 
     @staticmethod
     def append(f: FeatureBase):
@@ -560,7 +650,75 @@ class FeatureConstruction:
         return None
 
     @staticmethod
-    def process(df: DataFrame):
+    def get_features_including_lagged_features(l: list[str] = None) -> list[str]:
+        """
+        returns a list of the names of all FeatureLag and FeatureTwo where at least one feature is a FeatureLag
+        - within the given list or
+        - of all constructed features if list is None
+
+        Args:
+            l (list[str]): list of feature names to search in
+
+        Returns:
+            list[str]: the list of lag-based features
+        """
+
+        # if no list is given, search in all features
+        if not l:
+            l = FeatureConstruction.features
+
+        def recursive_search(feature):
+            """Recursively checks for lagged features"""
+            if isinstance(feature, FeatureLag):
+                return True
+
+            elif isinstance(feature, FeatureTwo):
+                # Check both sub-features recursively
+                return recursive_search(feature.feature1) or recursive_search(feature.feature2)
+
+            return False
+
+        res = list()
+        for f in FeatureConstruction.features:
+            if isinstance(f, FeatureLag) and (f.feature in l):
+                res.append(f.feature)  # name of the feature
+
+            elif isinstance(f, FeatureTwo) and (f.feature in l):
+                # Use recursive search to check for nested lagged features
+                if recursive_search(f.feature1) or recursive_search(f.feature2):
+                    res.append(f.feature)
+
+        return res
+
+    @staticmethod
+    def process_inputs(inputs: list[Union[str, FeatureBase]]) -> list[str]:
+        """
+        Creates a Feature for all inputs that are not yet created as features
+
+        Args:
+             inputs (list(Union[str, FeatureBase])): List of column names or Features to be used as input features.
+
+        Returns:
+            list[str]: list of column names of all input features
+        """
+
+        input_str = list()
+
+        for inp in inputs:
+            if isinstance(inp, FeatureBase):
+                input_str.append(inp.feature)  # get name of feature (which is used as column name)
+            elif isinstance(inp, str):
+                input_str.append(inp)
+                # check if a Feature with the given name (inp) was already created, otherwise create it
+                if not any(inp == f.feature for f in FeatureConstruction.features):
+                    Feature(name=inp)
+            else:
+                raise TypeError(f"Only inputs with types 'str' or 'FeatureBase' allowed, got type {type(inp)} instead")
+
+        return input_str
+
+    @staticmethod
+    def process(df: DataFrame, feature_names: list[str] = None):
         """
         Processes the input DataFrame by applying all registered feature transformations in order.
         Each feature's `process` method is called, which typically adds a new column to `df`
@@ -568,10 +726,16 @@ class FeatureConstruction:
 
         Args:
             df (DataFrame): The DataFrame to process and add features to.
+            feature_names (list[str]): optional parameter to only process those features given in feature_names
         """
 
-        for f in FeatureConstruction.features:
-            f.process(df)
+        if feature_names is None:
+            for f in FeatureConstruction.features:
+                f.process(df)
+        else:
+            for f in FeatureConstruction.features:
+                if f.feature in feature_names:
+                    f.process(df)
 
     @staticmethod
     def get_config() -> list:
