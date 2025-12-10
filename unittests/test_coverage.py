@@ -462,7 +462,7 @@ def test_models_rnn(file_path):
 
     m = RNNModel(epochs=1, rnn_layer='LSTM', init_layer='dense')
     m.pipeline(td, os.path.join(Logger._logger, 'model2.keras'))
-    Logger.log_setup(td, m, 'preprocessing_config2.json',
+    Logger.log_setup(prep, m, 'preprocessing_config2.json',
                      save_name_constructed='constructed_config2.json')
     Logger.save_training_data(td)
 
@@ -495,13 +495,15 @@ def test_read_setup():
     path = os.path.join(Logger._logger, save_name_preprocessing)
     with open(path, "r") as f:
         config_prep = json.load(f)
-    PreprocessingData.from_config(config_prep)
+    a = PreprocessingData.from_config(config_prep)
+    assert isinstance(a, PreprocessingSingleStep)
 
     save_name_preprocessing = 'preprocessing_config2.json'
     path = os.path.join(Logger._logger, save_name_preprocessing)
     with open(path, "r") as f:
         config_prep = json.load(f)
-    PreprocessingData.from_config(config_prep)
+    b = PreprocessingData.from_config(config_prep)
+    assert isinstance(b, PreprocessingMultiStep)
 
     save_name_constructed = Logger.save_name_constructed
     path = os.path.join(Logger._logger, save_name_constructed)

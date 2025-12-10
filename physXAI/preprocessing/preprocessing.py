@@ -118,7 +118,18 @@ class PreprocessingData(ABC):
     @classmethod
     @abstractmethod
     def from_config(cls, config: dict) -> 'PreprocessingData':
-        pass
+
+        if "__class_name__" in config.keys():
+            if config["__class_name__"] == 'PreprocessingSingleStep':
+                return PreprocessingSingleStep.from_config(config)
+            elif config["__class_name__"] == 'PreprocessingMultiStep':
+                return PreprocessingMultiStep.from_config(config)
+            else:
+                raise ValueError(
+                    f"config does not contain a valid '__class_name__'. config['__class_name__'] is "
+                    f"{config["__class_name__"]} but only 'PreprocessingSingleStep' or 'PreprocessingMultiStep' allowed.")
+        else:
+            raise ValueError("No valid config given. config does not contain key '__class_name__'")
 
 
 class PreprocessingSingleStep(PreprocessingData):
