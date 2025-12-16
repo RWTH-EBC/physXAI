@@ -710,7 +710,7 @@ class RNNModel(MultiStepModel):
         start_time = time.perf_counter()
 
         # Create tf.data.Dataset for better performance
-		# Only .prefetch() is needed here because batching and shuffling are already applied
+        # Only .prefetch() is needed here because batching and shuffling are already applied
         # during preprocessing (see PreprocessingMultiStep._make_dataset). This is different
         # from the single-step version, which may require the full pipeline (cache, shuffle, batch).
         train_ds = td.train_ds.prefetch(buffer_size=tf.data.AUTOTUNE)  # 1. Prepare next batch in background
