@@ -4,6 +4,7 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+import tensorflow as tf
 from physXAI.preprocessing.constructed import FeatureConstruction
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
 from physXAI.utils.logging import get_full_path
@@ -267,7 +268,12 @@ class PreprocessingMultiStep (PreprocessingData):
     Handles preprocessing for multi-step forecasting models, typically RNNs.
     This involves creating windowed datasets suitable for sequence models,
     including optional warmup sequences.
+
+    Implements a 'Randomized Stratified Block Splitting' strategy to ensure:
+    1. No Data Leakage (windows never cross split boundaries).
+    2. Representative Validation/Test sets (covering different seasons/operating points).
     """
+    min_window_block_factor: float = 4.0  # Minimum factor of window size to determine block size
 
     def __init__(self, inputs: list[str], output: Union[str, list[str]], label_width: int,  warmup_width: int, shift: int = 1,
                  time_step: Optional[Union[int, float]] = None,
@@ -367,10 +373,11 @@ class PreprocessingMultiStep (PreprocessingData):
         train_ds, val_ds, test_ds = self._make_dataset(df)
 
         # Split data
-        train_ds = train_ds.map(lambda x: self._split_window(x))
+        train_ds = train_ds.map(lambda x: self._split_window(x), num_parallel_calls=tf.data.AUTOTUNE)
         if val_ds is not None:
-            val_ds = val_ds.map(lambda x: self._split_window(x))
-        test_ds = test_ds.map(lambda x: self._split_window(x))
+            val_ds = val_ds.map(lambda x: self._split_window(x), num_parallel_calls=tf.data.AUTOTUNE)
+        if test_ds is not None:
+            test_ds = test_ds.map(lambda x: self._split_window(x), num_parallel_calls=tf.data.AUTOTUNE)
 
         return TrainingDataMultiStep(train_ds, val_ds, test_ds, self.inputs, self.output, self.init_features)
 
@@ -418,10 +425,59 @@ class PreprocessingMultiStep (PreprocessingData):
         else:
             return inputs, labels
 
-    def _make_dataset(self, df: pd.DataFrame):
+    # def _make_dataset(self, df: pd.DataFrame):
+    #     """
+    #     Creates windowed tf.data.Dataset objects for training, validation, and testing
+    #     from the input DataFrame.
+
+    #     Args:
+    #         df (pd.DataFrame): The processed DataFrame containing all necessary features.
+
+    #     Returns:
+    #         Tuple[tf.data.Dataset, Optional[tf.data.Dataset], tf.data.Dataset]:
+    #             Train, validation (or None), and test datasets.
+    #     """
+
+    #     data = np.array(df, dtype=np.float32)
+
+    #     if self.overlapping_sequences:
+    #         sequence_stride = 1
+    #     else:
+    #         sequence_stride = self.label_width
+
+    #     # et a batch of sequences
+    #     ds = keras.utils.timeseries_dataset_from_array(
+    #         data=data,
+    #         targets=None,
+    #         sequence_length=self.total_window_size,
+    #         sequence_stride=sequence_stride,
+    #         shuffle=True,
+    #         batch_size=self.batch_size)
+
+    #     # Split the dataset into training and temporary batch_dataset
+    #     total_batches = len(ds)
+    #     train_batches = int(total_batches * (1 - self.val_size - self.test_size))
+    #     train_ds = ds.take(train_batches)
+    #     temp_ds = ds.skip(train_batches)
+
+    #     # Split the dataset into validation and test batch_dataset
+    #     val_ratio_temp = self.val_size / (self.val_size + self.test_size)
+    #     total_batches = len(temp_ds)
+    #     train_batches = int(total_batches * val_ratio_temp)
+    #     val_ds = temp_ds.take(train_batches)
+    #     test_ds = temp_ds.skip(train_batches)
+
+    #     if len(val_ds) == 0:
+    #         val_ds = None
+
+    #     return train_ds, val_ds, test_ds
+
+    def _make_dataset(self, df: pd.DataFrame) -> tuple[tf.data.Dataset, Optional[tf.data.Dataset], tf.data.Dataset]:
         """
         Creates windowed tf.data.Dataset objects for training, validation, and testing
         from the input DataFrame.
+
+        Divides the time series into blocks and assigns them randomly (but stratified) to Train/Val/Test.
 
         Args:
             df (pd.DataFrame): The processed DataFrame containing all necessary features.
@@ -433,37 +489,119 @@ class PreprocessingMultiStep (PreprocessingData):
 
         data = np.array(df, dtype=np.float32)
 
-        if self.overlapping_sequences:
-            sequence_stride = 1
-        else:
-            sequence_stride = self.label_width
+        indices_train, indices_val, indices_test = self._get_stratified_block_indices(total_length=len(data), 
+                                                                                      min_block_factor=PreprocessingMultiStep.min_window_block_factor)
 
-        # et a batch of sequences
-        ds = keras.utils.timeseries_dataset_from_array(
-            data=data,
-            targets=None,
-            sequence_length=self.total_window_size,
-            sequence_stride=sequence_stride,
-            shuffle=True,
-            batch_size=self.batch_size)
-
-        # Split the dataset into training and temporary batch_dataset
-        total_batches = len(ds)
-        train_batches = int(total_batches * (1 - self.val_size - self.test_size))
-        train_ds = ds.take(train_batches)
-        temp_ds = ds.skip(train_batches)
-
-        # Split the dataset into validation and test batch_dataset
-        val_ratio_temp = self.val_size / (self.val_size + self.test_size)
-        total_batches = len(temp_ds)
-        train_batches = int(total_batches * val_ratio_temp)
-        val_ds = temp_ds.take(train_batches)
-        test_ds = temp_ds.skip(train_batches)
-
-        if len(val_ds) == 0:
-            val_ds = None
+        train_ds = self._create_subset_from_indices(data, indices_train, shuffle_windows=True)
+        val_ds = self._create_subset_from_indices(data, indices_val, shuffle_windows=False)
+        test_ds = self._create_subset_from_indices(data, indices_test, shuffle_windows=False)
 
         return train_ds, val_ds, test_ds
+    
+
+    def _get_stratified_block_indices(self, total_length: int, min_block_factor: float = 4.0) -> tuple[list[tuple[int, int]], list[tuple[int, int]], list[tuple[int, int]]]:
+        """
+        Calculates start and end indices for blocks based on split ratios.
+        
+        Logic:
+        1. Determine maximum number of blocks where block_size > window_size * factor.
+        2. Shuffle block IDs randomly (seeded).
+        3. Assign IDs to Train/Val/Test based on ratios.
+        4. Sort IDs back chronologically within sets to ensure monotonicity in time.
+        """
+
+        target_efficiency_size = int(self.total_window_size * min_block_factor)
+        
+        limit_val = int(total_length * self.val_size) if self.val_size > 0 else total_length
+        limit_test = int(total_length * self.test_size) if self.test_size > 0 else total_length
+        
+        calculated_block_size = min(target_efficiency_size, limit_val, limit_test)
+        
+        final_block_size = max(calculated_block_size, self.total_window_size)
+        
+        if final_block_size > total_length:
+             print("Warnung: Daten kürzer als ein einziges Window. Alles wird Training.")
+             return [(0, total_length)], [], []
+
+        n_blocks = total_length // final_block_size
+        
+        real_block_size = total_length // n_blocks
+        
+        block_ids = np.arange(n_blocks)
+        np.random.shuffle(block_ids)
+
+        n_test = int(n_blocks * self.test_size)
+        if n_test == 0 and self.test_size > 0 and n_blocks >= 2: n_test = 1
+            
+        n_val = int(n_blocks * self.val_size)
+        if n_val == 0 and self.val_size > 0 and (n_blocks - n_test) >= 2: n_val = 1
+
+        test_ids = block_ids[:n_test]
+        val_ids = block_ids[n_test : n_test + n_val]
+        train_ids = block_ids[n_test + n_val:]
+       
+        def ids_to_merged_ranges(ids):
+            if len(ids) == 0: return []
+            sorted_ids = sorted(ids) 
+            merged = []
+            
+            s_block = sorted_ids[0]
+            e_block = sorted_ids[0]
+            
+            for i in range(1, len(sorted_ids)):
+                bid = sorted_ids[i]
+                if bid == e_block + 1:
+                    e_block = bid
+                else:
+                    s_idx = s_block * real_block_size
+                    e_idx = total_length if e_block == n_blocks - 1 else (e_block + 1) * real_block_size
+                    merged.append((s_idx, e_idx))
+                    s_block = bid
+                    e_block = bid
+            
+            s_idx = s_block * real_block_size
+            e_idx = total_length if e_block == n_blocks - 1 else (e_block + 1) * real_block_size
+            merged.append((s_idx, e_idx))
+            return merged
+
+        return ids_to_merged_ranges(train_ids), ids_to_merged_ranges(val_ids), ids_to_merged_ranges(test_ids)
+    
+
+    def _create_subset_from_indices(self, data: np.ndarray, index_ranges: list[tuple[int, int]], shuffle_windows: bool) -> Optional[tf.data.Dataset]:
+        """
+        Creates a concatenated tf.data.Dataset from a list of (Start, End) tuples.
+        """
+        if not index_ranges:
+            return None
+            
+        datasets = []
+        sequence_stride = 1 if self.overlapping_sequences else self.label_width
+        
+        for start, end in index_ranges:
+            if (end - start) < self.total_window_size:
+                continue
+                
+            block_data = data[start:end]
+            
+            ds = keras.utils.timeseries_dataset_from_array(
+                data=block_data,
+                targets=None,
+                sequence_length=self.total_window_size,
+                sequence_stride=sequence_stride,
+                shuffle=shuffle_windows, 
+                batch_size=self.batch_size
+            )
+            datasets.append(ds)
+            
+        if not datasets:
+            return None
+            
+        full_ds = datasets[0]
+        for ds in datasets[1:]:
+            full_ds = full_ds.concatenate(ds)
+            
+        return full_ds
+    
 
     def pipeline(self, file_path: str) -> TrainingDataMultiStep:
         """
