@@ -713,6 +713,9 @@ class RNNModel(MultiStepModel):
         train_ds = td.train_ds
         train_ds = (
             train_ds
+            # Only .prefetch() is needed here because batching and shuffling are already applied
+            # during preprocessing (see PreprocessingMultiStep._make_dataset). This is different
+            # from the single-step version, which may require the full pipeline (cache, shuffle, batch).
             .prefetch(buffer_size=tf.data.AUTOTUNE) # 1. Prepare next batch in background
         )
         val_ds = td.val_ds
