@@ -90,10 +90,10 @@ class ANNModel(SingleStepModel, ABC):
         train_ds = tf.data.Dataset.from_tensor_slices((td.X_train_single, td.y_train_single))
         train_ds = (
             train_ds
-            .cache()                                            # 1. Cache first so data is not reloaded
-            .shuffle(buffer_size=td.X_train_single.shape[0])    # 2. Shuffle randomly every epoch
-            .batch(self.batch_size)                             # 3. Group into batches
-            .prefetch(buffer_size=tf.data.AUTOTUNE)             # 4. Prepare next batch in background
+            .cache()                                                        # 1. Cache first so data is not reloaded, may need to be removed for large datasets
+            .shuffle(buffer_size=min(10000, td.X_train_single.shape[0]))    # 2. Shuffle randomly every epoch
+            .batch(self.batch_size)                                         # 3. Group into batches
+            .prefetch(buffer_size=tf.data.AUTOTUNE)                         # 4. Prepare next batch in background
         )
 
         # Check for validation data
@@ -101,7 +101,7 @@ class ANNModel(SingleStepModel, ABC):
             val_ds = tf.data.Dataset.from_tensor_slices((td.X_val_single, td.y_val_single))
             val_ds = (
                 val_ds
-                .cache()                                        # 1. Cache first so data is not reloaded
+                .cache()                                        # 1. Cache first so data is not reloaded, may need to be removed for large datasets
                 .batch(self.batch_size)                         # 2. Group into batches
                 .prefetch(buffer_size=tf.data.AUTOTUNE)         # 3. Prepare next batch in background
             )
