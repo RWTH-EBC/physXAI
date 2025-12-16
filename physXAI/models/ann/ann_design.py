@@ -102,8 +102,8 @@ class ANNModel(SingleStepModel, ABC):
             val_ds = (
                 val_ds
                 .cache()                                        # 1. Cache first so data is not reloaded, may need to be removed for large datasets
-                .batch(self.batch_size)                         # 1. Group into batches
-                .prefetch(buffer_size=tf.data.AUTOTUNE)         # 2. Prepare next batch in background
+                .batch(self.batch_size)                         # 2. Group into batches
+                .prefetch(buffer_size=tf.data.AUTOTUNE)         # 3. Prepare next batch in background
             )
         else:
             val_ds = None
