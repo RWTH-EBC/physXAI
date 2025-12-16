@@ -715,9 +715,6 @@ class RNNModel(MultiStepModel):
         # from the single-step version, which may require the full pipeline (cache, shuffle, batch).
         train_ds = td.train_ds.prefetch(buffer_size=tf.data.AUTOTUNE)  # 1. Prepare next batch in background
 
-
-
-
         val_ds = td.val_ds
         if val_ds is not None:
             val_ds = val_ds.prefetch(buffer_size=tf.data.AUTOTUNE)  # 1. Prepare next batch in background
