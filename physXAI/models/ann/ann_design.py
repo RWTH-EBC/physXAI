@@ -710,17 +710,14 @@ class RNNModel(MultiStepModel):
         start_time = time.perf_counter()
 
         # Create tf.data.Dataset for better performance
-        train_ds = td.train_ds
-        train_ds = (
-            train_ds
-            .prefetch(buffer_size=tf.data.AUTOTUNE) # 1. Prepare next batch in background
-        )
+        train_ds = td.train_ds.prefetch(buffer_size=tf.data.AUTOTUNE)  # 1. Prepare next batch in background
+
+
+
+
         val_ds = td.val_ds
         if val_ds is not None:
-            val_ds = (
-                val_ds
-                .prefetch(buffer_size=tf.data.AUTOTUNE) # 1. Prepare next batch in background
-            )
+            val_ds = val_ds.prefetch(buffer_size=tf.data.AUTOTUNE)  # 1. Prepare next batch in background
         training_history = model.fit(train_ds, validation_data=val_ds, epochs=self.epochs, callbacks=callbacks)
         stop_time = time.perf_counter()
 
