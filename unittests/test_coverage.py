@@ -195,7 +195,7 @@ def test_different_sampling_methods(file_path, inputs_tair_extended):
 
     # output
     change_tair = x1 - lx1[0]
-    change_tair.rename('Change(t_air)')
+    change_tair.rename('Change(T_air)')
 
     # Create & process Training data
     prep = PreprocessingSingleStep(inputs_tair_extended, [change_tair], time_step=4)
@@ -209,7 +209,7 @@ def test_different_sampling_methods(file_path, inputs_tair_extended):
     assert x1.get_sampling_method() == 'previous' and lx1[1].get_sampling_method() == 'previous'
     assert x2.get_sampling_method() == 'current' and lx2.get_sampling_method() == 'current'
     assert FeatureConstruction.get_feature('weaSta_reaWeaHDirNor_y').get_sampling_method() == 'mean_over_interval'
-    assert FeatureConstruction.get_feature('test_feature_two').get_sampling_method() == 'current'
+    assert FeatureConstruction.get_feature('test_feature_two').get_sampling_method() == 'previous'
     assert e.get_sampling_method() == 'previous'
     assert change_tair.get_sampling_method() == '_'
 
@@ -485,6 +485,8 @@ def test_models_rnn(file_path):
     m = RNNModel(epochs=1, rnn_layer='RNN', early_stopping_epochs=None)
     m.pipeline(td, save_model=False, plot=False)
 
+    FeatureConstruction.reset()
+
 
 def test_read_setup():
 
@@ -497,6 +499,7 @@ def test_read_setup():
         config_prep = json.load(f)
     a = PreprocessingData.from_config(config_prep)
     assert isinstance(a, PreprocessingSingleStep)
+    FeatureConstruction.reset()
 
     save_name_preprocessing = 'preprocessing_config2.json'
     path = os.path.join(Logger._logger, save_name_preprocessing)
@@ -504,12 +507,14 @@ def test_read_setup():
         config_prep = json.load(f)
     b = PreprocessingData.from_config(config_prep)
     assert isinstance(b, PreprocessingMultiStep)
+    FeatureConstruction.reset()
 
     save_name_constructed = Logger.save_name_constructed
     path = os.path.join(Logger._logger, save_name_constructed)
     with open(path, "r") as f:
         config_constructed = json.load(f)
     FeatureConstruction.from_config(config_constructed)
+    FeatureConstruction.reset()
 
     save_name_model = Logger.save_name_model_config
     path = os.path.join(Logger._logger, save_name_model)
@@ -570,5 +575,6 @@ def test_feature_selection_multi(monkeypatch, tair_data_delta, tair_data_noval ,
     m = ClassicalANNModel(epochs=1, n_neurons=4)
     recursive_feature_elimination_pipeline(file_path, prep2, m, use_multi_step_error=False)
     m.pipeline(td2, save_model=False, plot=False)
-    Logger.log_setup(prep, None)
+    Logger.log_setup(prep, None, save_name_preprocessing='preprocessing_feature-selection-multi.json',
+                     save_name_constructed='constructed_config_feature-selection-multi.json')
     Logger.save_training_data(td, path=os.path.join(Logger._logger, 'training_data2.json'))

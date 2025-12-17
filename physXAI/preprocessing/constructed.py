@@ -204,6 +204,8 @@ def feature_from_config(item_conf: dict) -> 'FeatureBase':
     """
     class_name = item_conf['class_name']
     feature_class = CONSTRUCTED_CLASS_REGISTRY[class_name]
+    if 'sampling_method' in item_conf.keys() and item_conf['sampling_method'] == '_':
+        item_conf['ignore_sampling_for_output'] = True
     f1f = feature_class.from_config(item_conf)
     return f1f
 
@@ -232,6 +234,52 @@ class Feature(FeatureBase):
         Feature._default_sampling_method = _return_valid_sampling_method(val)
 
 
+def get_sampling_from_base(base_features: Union[FeatureBase, list[FeatureBase]], **kwargs) -> [str, list]:
+    """
+    Returns the appropriate sampling_method for a constructed feature based on its base feature(s)
+
+    Args:
+         base_features (Union[FeatureBase, list[FeatureBase]]): single base feature or list of max. two base features
+         **kwargs: additional keyword arguments. If sampling_method is given in kwargs as well, its validity is checked
+
+    Returns:
+        sampling_method (str): sampling method
+        kwargs: kwargs which does not contain the key 'sampling_method' (anymore)
+    """
+
+    if not isinstance(base_features, list):
+        base_features = [base_features]
+
+    assert len(base_features) <= 2, f'Expected a maximum of two features, got {len(base_features)} instead'
+
+    sampling = []
+    for f in base_features:
+        if isinstance(f, FeatureBase):
+            sampling.append(f.get_sampling_method())
+        elif isinstance(f, (int, float)):  # FeatureTwo can be built with int or float values
+            continue
+        else:
+            raise ValueError(f"Expected type [FeatureBase, int, float], got type {type(f)} instead")
+
+    if len(sampling) > 1:
+        assert len(set(sampling)) == 1, f'Sampling methods of base feature are not equal, got {sampling}'
+
+    sampling_method = sampling[0]
+
+    if 'sampling_method' in kwargs.keys():
+        if 'ignore_sampling_for_output' in kwargs.keys() and kwargs['ignore_sampling_for_output']:
+            # necessary for feature construction from config
+            sampling_method = '_'
+        else:
+            assert _return_valid_sampling_method(kwargs['sampling_method']) == sampling_method, (
+                f"Constructed features must have the same sampling method as their base feature(s). Sampling method of "
+                f"base feature(s) is {sampling_method} but {kwargs['sampling_method']} was given as sampling method."
+            )
+        kwargs.__delitem__('sampling_method')  # constructor must not get more than one arg with the same key
+
+    return sampling_method, kwargs
+
+
 @register_feature
 class FeatureLag(FeatureBase):
     """
@@ -254,23 +302,13 @@ class FeatureLag(FeatureBase):
             self.origf: str = f.feature
             if name is None:
                 name = f.feature + f'_lag{lag}'
-
-            # lags must have the same sampling_method as their base feature
-            sampling_method = f.get_sampling_method()
         else:
             self.origf: str = f
             if name is None:
                 name = f + f'_lag{lag}'
 
-            # lags must have the same sampling_method as their base feature
-            sampling_method = FeatureConstruction.get_feature(f).get_sampling_method()
-
-        if 'sampling_method' in kwargs.keys():
-            assert kwargs['sampling_method'] == sampling_method, (
-                f"lags must have the same sampling method as their base feature. Sampling method of base feature is"
-                f" {sampling_method} but for lag {kwargs['sampling_method']} was given as sampling method."
-            )
-            kwargs.__delitem__('sampling_method')  # constructor must not get more than one arg with the same key
+        # lags must have the same sampling_method as their base feature
+        sampling_method, kwargs = get_sampling_from_base(FeatureConstruction.get_feature(self.origf), **kwargs)
 
         super().__init__(name, sampling_method=sampling_method, **kwargs)
         self.lag: int = lag
@@ -292,8 +330,8 @@ class FeatureTwo(FeatureBase, ABC):
     Examples: FeatureAdd (f1 + f2), FeatureSub (f1 - f2).
     """
 
-    def __init__(self, feature1: Union[FeatureBase, int, float], feature2: Union[FeatureBase, int, float], name: str = None,
-                 **kwargs):
+    def __init__(self, feature1: Union[FeatureBase, int, float], feature2: Union[FeatureBase, int, float],
+                 name: str = None, **kwargs):
         """
         Initializes a FeatureTwo instance.
 
@@ -315,7 +353,10 @@ class FeatureTwo(FeatureBase, ABC):
             f2n = str(feature2)
         if name is None:
             name = self.name(f1n, f2n)
-        super().__init__(name, **kwargs)
+
+        # constructed features must have the same sampling_method as their base features
+        sampling_method, kwargs = get_sampling_from_base([feature1, feature2], **kwargs)
+        super().__init__(name, sampling_method=sampling_method, **kwargs)
         self.feature1 = feature1
         self.feature2 = feature2
 
@@ -493,7 +534,9 @@ class FeatureExp(FeatureBase):
         self.f1: FeatureBase = f1
         if name is None:
             name = 'exp(' + f1.feature + ')'
-        super().__init__(name, **kwargs)
+        # constructed features must have the same sampling_method as their base features
+        sampling_method, kwargs = get_sampling_from_base(f1, **kwargs)
+        super().__init__(name, sampling_method=sampling_method, **kwargs)
 
     def process(self, df: DataFrame) -> Series:
         if self.feature not in df.columns:
@@ -523,7 +566,9 @@ class FeatureSin(FeatureBase):
         self.f1: FeatureBase = f1
         if name is None:
             name = 'sin(' + f1.feature + ')'
-        super().__init__(name, **kwargs)
+        # constructed features must have the same sampling_method as their base features
+        sampling_method, kwargs = get_sampling_from_base(f1, **kwargs)
+        super().__init__(name, sampling_method=sampling_method, **kwargs)
 
     def process(self, df: DataFrame) -> Series:
         if self.feature not in df.columns:
@@ -553,7 +598,9 @@ class FeatureCos(FeatureBase):
         self.f1: FeatureBase = f1
         if name is None:
             name = 'cos(' + f1.feature + ')'
-        super().__init__(name, **kwargs)
+        # constructed features must have the same sampling_method as their base features
+        sampling_method, kwargs = get_sampling_from_base(f1, **kwargs)
+        super().__init__(name, sampling_method=sampling_method, **kwargs)
 
     def process(self, df: DataFrame) -> Series:
         if self.feature not in df.columns:
@@ -583,6 +630,8 @@ class FeatureConstant(FeatureBase):
 
     def __init__(self, c: float, name: str, **kwargs):
         self.c = c
+        if 'sampling_method' in kwargs.keys():
+            UserWarning(f"Using 'sampling_method' for {self.__class__} does not have any effect.")
         super().__init__(name, **kwargs)
 
     def process(self, df: DataFrame) -> Series:
