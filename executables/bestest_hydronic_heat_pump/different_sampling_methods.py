@@ -31,7 +31,7 @@ inputs = ['reaTZon_y', 'reaTZon_y_lag1', 'reaTZon_y_lag2', 'weaSta_reaWeaTDryBul
           Feature('weaSta_reaWeaHDirNor_y', sampling_method='mean_over_interval'), 'oveHeaPumY_u',
           'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2']
 # Output feature
-output = 'Change(T_zone)'
+output = ['Change(t_air)']
 
 """ 
 The constructed features are automatically added to the data via 'physXAI.preprocessing.constructed.py' 
@@ -53,8 +53,10 @@ x3.lag(2)
 y = x1 + lx1[0]
 z = y + x1
 z.rename('example_feature_two')
-z.set_sampling_method('mean_over_interval')
 e = FeatureExp(x1-273.15, 'exp', sampling_method=1)  # reduce x1 by 273.15, otherwise values are too high
+
+change_tair = x1 - lx1[0]
+change_tair.rename('Change(t_air)')
 
 # add dummy features to inputs
 inputs.extend([z, e])

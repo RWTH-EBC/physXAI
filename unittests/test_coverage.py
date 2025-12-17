@@ -145,8 +145,6 @@ def test_sampling_method_use_default(file_path, inputs_tair, output_tair):
     prep = PreprocessingSingleStep(inputs_tair, output_tair)
     td = prep.pipeline(file_path)
 
-    assert len(inputs_tair) == len(FeatureConstruction.features)
-
     for inp in inputs_tair:
         f = FeatureConstruction.get_feature(inp)
         assert f.get_sampling_method() == 'previous'
@@ -166,8 +164,6 @@ def test_sampling_method_str(file_path, inputs_tair, output_tair):
     prep = PreprocessingSingleStep(inputs_tair, output_tair, time_step=4)
     td = prep.pipeline(file_path)
 
-    assert len(inputs_tair) == len(FeatureConstruction.features)
-
     for inp in inputs_tair:
         f = FeatureConstruction.get_feature(inp)
         assert f.get_sampling_method() == 'mean_over_interval'
@@ -175,7 +171,7 @@ def test_sampling_method_str(file_path, inputs_tair, output_tair):
     FeatureConstruction.reset()
 
 
-def test_different_sampling_methods(file_path, inputs_tair_extended, output_tair):
+def test_different_sampling_methods(file_path, inputs_tair_extended):
     """test case: different sampling methods given"""
 
     # set default
@@ -193,13 +189,16 @@ def test_different_sampling_methods(file_path, inputs_tair_extended, output_tair
     y = x1 + lx1[0]
     z = y + x1
     z.rename('test_feature_two')
-    z.set_sampling_method('mean_over_interval')
     e = FeatureExp(x1 - 273.15, 'exp', sampling_method=1)  # reduce x1 by 273.15, otherwise values are too high
 
     inputs_tair_extended.extend([z, e])
 
+    # output
+    change_tair = x1 - lx1[0]
+    change_tair.rename('Change(t_air)')
+
     # Create & process Training data
-    prep = PreprocessingSingleStep(inputs_tair_extended, output_tair, time_step=4)
+    prep = PreprocessingSingleStep(inputs_tair_extended, [change_tair], time_step=4)
     td = prep.pipeline(file_path)
 
     # Build & train Classical ANN
@@ -210,8 +209,9 @@ def test_different_sampling_methods(file_path, inputs_tair_extended, output_tair
     assert x1.get_sampling_method() == 'previous' and lx1[1].get_sampling_method() == 'previous'
     assert x2.get_sampling_method() == 'current' and lx2.get_sampling_method() == 'current'
     assert FeatureConstruction.get_feature('weaSta_reaWeaHDirNor_y').get_sampling_method() == 'mean_over_interval'
-    assert FeatureConstruction.get_feature('test_feature_two').get_sampling_method() == 'mean_over_interval'
+    assert FeatureConstruction.get_feature('test_feature_two').get_sampling_method() == 'current'
     assert e.get_sampling_method() == 'previous'
+    assert change_tair.get_sampling_method() == '_'
 
     FeatureConstruction.reset()
 

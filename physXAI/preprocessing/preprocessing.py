@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import itertools
 from sklearn.model_selection import train_test_split
-from physXAI.preprocessing.constructed import FeatureConstruction, FeatureBase, Feature
+from physXAI.preprocessing.constructed import FeatureConstruction, FeatureBase, Feature, FeatureTwo
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
 from physXAI.utils.logging import get_full_path
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -46,10 +46,11 @@ class PreprocessingData(ABC):
         self.csv_header = csv_header
         self.csv_skiprows = csv_skiprows
 
-        self.inputs: list[str] = FeatureConstruction.process_inputs(inputs)
+        self.inputs: list[str] = FeatureConstruction.create_features(inputs)
         if isinstance(output, str):
             output = [output]
-        self.output: list[str] = output
+        # outputs shouldn't have any sampling method
+        self.output: list[str] = FeatureConstruction.create_features(output, no_sampling_method=True)
 
         self.time_step = time_step
 
@@ -197,18 +198,18 @@ class PreprocessingSingleStep(PreprocessingData):
                                                        and target (y) DataFrames.
         """
 
-        # extract the names of all features in inputs and outputs that are based on lagged features
-        lag_based_features = FeatureConstruction.get_features_including_lagged_features(self.inputs + self.output)
+        # extract the names of all constructed features
+        constructed_input_features = FeatureConstruction.get_constructed_features(self.inputs)
+        constructed_output_features = FeatureConstruction.get_constructed_features(self.output)
 
-        inputs_without_lags = [inp for inp in self.inputs if inp not in lag_based_features]
+        # Only apply sampling method to those features which are not constructed features
+        # but which data is taken directly from the data frame
+        inputs_without_constructed = [inp for inp in self.inputs if inp not in constructed_input_features]
+        output_without_constructed = [out for out in self.output if out not in constructed_output_features]
 
-        # Applies feature constructions defined in `FeatureConstruction`.
-        # Only apply for those features that are not lags since lags must be constructed after sampling the data
-        # according to the given time step
-        FeatureConstruction.process(df, feature_names=inputs_without_lags + [out for out in self.output if out not in inputs_without_lags])
-        features_without_lags: list[FeatureBase] = [FeatureConstruction.get_feature(inp) for inp in inputs_without_lags]
+        features_without_constructed: list[FeatureBase] = [FeatureConstruction.get_feature(inp) for inp in inputs_without_constructed]
 
-        df = df[inputs_without_lags + [out for out in self.output if out not in inputs_without_lags]]
+        df = df[inputs_without_constructed + output_without_constructed]
 
         # Nan handling in first and last rows
         non_nan_rows = df.notna().all(axis=1)
@@ -216,103 +217,93 @@ class PreprocessingSingleStep(PreprocessingData):
         last_valid_index = non_nan_rows.iloc[::-1].idxmax() if non_nan_rows.any() else None
         df = df.loc[first_valid_index:last_valid_index]
 
-        def get_mean_over_interval(y: pd.DataFrame, x: pd.DataFrame):
-            """return mean values of x on target sampling (index of y)"""
-            def pairwise(iterable: Iterable):
-                "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-                a, b = itertools.tee(iterable)
-                next(b, None)
-                return zip(a, b)
+        # sample input data; different inputs can have different sampling methods
+        res = []
+        previous_or_mean_in_sampling_methods = []
+        X = df[inputs_without_constructed].copy()
+        target_grid = self.sample_df_according_to_timestep(df).index
+        for f in features_without_constructed:
+            # only process inputs with sampling method mean_over_interval first since X cannot be sampled
+            # to the actual required time steps until the intermediate values were taken into the mean
+            if f.get_sampling_method() == 'mean_over_interval':
+                res.append(get_mean_over_interval(X[[f.feature]], target_grid))
+                previous_or_mean_in_sampling_methods.append(True)
 
-            original_grid = np.array(x.index)
-            results = []
-            for i, j in pairwise(y.index): # output interval is target grid
-                slicer = np.logical_and(original_grid >= i, original_grid < j)
-                d = {'Index': j}
-                for inp in x.columns:
-                    d[inp] = x[inp][slicer].mean()
-                results.append(d)
+        # sample X according to required time step
+        X = self.sample_df_according_to_timestep(X)
+        # process inputs with sampling methods 'current' and 'previous'
+        for f in features_without_constructed:
+            _x = X[[f.feature]]
+            if f.get_sampling_method() == 'current':
+                # no transformation needed
+                res.append(_x)
+                previous_or_mean_in_sampling_methods.append(False)
+            elif f.get_sampling_method() == 'previous':
+                # shift by 1
+                _x = _x.shift(1)
+                _x = _x.iloc[1:]
+                res.append(_x)
+                previous_or_mean_in_sampling_methods.append(True)
+            elif f.get_sampling_method() == 'mean_over_interval':
+                continue
+            else:
+                raise NotImplementedError(f"Sampling method '{f.get_sampling_method()}' not implemented.")
+        # concatenate sampled input data
+        X = pd.concat(res, axis=1)
+        X = X.sort_index(ascending=True)
 
-            x = pd.DataFrame(results).set_index('Index')
+        # Sampling methods 'previous' and 'mean_over_interval' reduce available data points by 1.
+        if any(previous_or_mean_in_sampling_methods):
+            # if at least one of the features uses 'current' as sampling method, shorten X
+            if not all(previous_or_mean_in_sampling_methods):
+                X = X.iloc[1:]
 
-            return x
-
-        # output is independent of sampling of inputs -> sample according to time step already
-        y = df[self.output].copy()
-        y = self.sample_df_according_to_timestep(y)
-
-        X = df[inputs_without_lags].copy()
-
-        if all('current' == f.get_sampling_method() for f in features_without_lags):
-            # filter / sample data
-            X = self.sample_df_according_to_timestep(X)
-            # nothing more to do here
-        elif all('previous' == f.get_sampling_method() for f in features_without_lags):
-            # filter / sample data
-            X = self.sample_df_according_to_timestep(X)
-
-            # shift data by 1 and shorten DataFrames accordingly
-            X = X.shift(1)
-            y = y.iloc[1:]
-            X = X.iloc[1:]
-        elif all('mean_over_interval' == f.get_sampling_method() for f in features_without_lags):
-            X = get_mean_over_interval(y, X)
-            # synchronize length between X and y
-            y = y.iloc[1:]
-
-        else:  # different inputs have different sampling methods
-            res = []
-            previous_or_mean_in_sampling_methods = []
-            for f in features_without_lags:
-                # only process inputs with sampling method mean_over_interval first since X cannot be sampled
-                # to the actual required time steps until the intermediate values were taken into the mean
-                if f.get_sampling_method() == 'mean_over_interval':
-                    res.append(get_mean_over_interval(y, X[[f.feature]]))
-                    previous_or_mean_in_sampling_methods.append(True)
-
-            # sample X according to required time step
-            X = self.sample_df_according_to_timestep(X)
-            # process inputs with sampling methods 'current' and 'previous'
-            for f in features_without_lags:
-                _x = X[[f.feature]]
-                if f.get_sampling_method() == 'current':
-                    # no transformation needed
-                    res.append(_x)
-                    previous_or_mean_in_sampling_methods.append(False)
-                elif f.get_sampling_method() == 'previous':
-                    # shift by 1
-                    _x = _x.shift(1)
-                    _x = _x.iloc[1:]
-                    res.append(_x)
-                    previous_or_mean_in_sampling_methods.append(True)
-                elif f.get_sampling_method() == 'mean_over_interval':
-                    continue
-                else:
-                    raise NotImplementedError(f"Sampling method '{f.get_sampling_method()}' not implemented.")
-
-            X = pd.concat(res, axis=1)
-            X = X.sort_index(ascending=True)
-
-            # Sampling methods 'previous' and 'mean_over_interval' reduce available data points by 1.
-            # Therefore, lengths of X and y have to be synchronized
-            if any(previous_or_mean_in_sampling_methods):
-                y = y.iloc[1:]
-                # if at least one of the features uses 'current' as sampling method, shorten X
-                if not all(previous_or_mean_in_sampling_methods):
-                    X = X.iloc[1:]
-
-        res_df = pd.concat([X, y], axis=1)
-
-        if res_df.isnull().values.any():
+        if X.isnull().values.any():
             if self.ignore_nan:
-                res_df.dropna(inplace=True)
+                X.dropna(inplace=True)
             else:
                 raise ValueError(
                     "Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended, set "
                     "ignore_nan=True in PreprocessingSingleStep.")
 
-        # Applies feature constructions defined in `FeatureConstruction` to the lagged inputs
-        FeatureConstruction.process(res_df, feature_names=lag_based_features)
+        # sample output data
+        if len(output_without_constructed) != 0:  # at least one non-constructed output feature
+            y = df[output_without_constructed].copy()
+            y = self.sample_df_according_to_timestep(y)
+            # Sampling methods 'previous' and 'mean_over_interval' reduce available data points by 1.
+            # synchronize length of X and y
+            if any(previous_or_mean_in_sampling_methods):
+                y = y.iloc[1:]
+            if y.isnull().values.any():
+                if self.ignore_nan:
+                    y.dropna(inplace=True)
+                else:
+                    raise ValueError(
+                        "Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended,"
+                        "set ignore_nan=True in PreprocessingSingleStep.")
+
+            res_df = pd.concat([X, y], axis=1)
+
+        else:  # only constructed outputs
+            res_df = X
+
+        # Applies feature constructions defined in `FeatureConstruction`
+        FeatureConstruction.process(res_df, feature_names=constructed_input_features + constructed_output_features)
+
+        # assume constructed outputs solely base on features with sampling current or sampling previous / mean_over_interval
+
+        if any(previous_or_mean_in_sampling_methods):
+            methods = ['previous', 'mean_over_interval']
+            # if constructed output features are based on input features with sampling previous or mean_over_interval,
+            # the constructed output has to be shifted to invert the shift of the input features
+            for out in constructed_output_features:
+                out_feature = FeatureConstruction.get_feature(out)
+                if isinstance(out_feature, FeatureTwo):
+                    if out_feature.feature1.get_sampling_method() in methods or out_feature.feature2.get_sampling_method() in methods:
+                        res_df[out_feature.feature] = res_df[out_feature.feature].shift(-1)  # shift
+                else: # constructed feature that doesn't consist of two features
+                    if out_feature.f1.get_sampling_method() in methods:
+                        res_df[out_feature.feature] = res_df[out_feature.feature].shift(-1)  # shift
 
         # drop NaNs occurring due to creation of lags
         res_df.dropna(inplace=True)
@@ -386,6 +377,28 @@ class PreprocessingSingleStep(PreprocessingData):
     @classmethod
     def from_config(cls, config: dict) -> 'PreprocessingSingleStep':
         return cls(**config)
+
+
+def get_mean_over_interval(x: pd.DataFrame, target_grid: pd.DataFrame.index) -> pd.DataFrame:
+    """samples and returns x on target grid taking the mean over the interval (between the grid indices)"""
+    def pairwise(iterable: Iterable):
+        "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+        a, b = itertools.tee(iterable)
+        next(b, None)
+        return zip(a, b)
+
+    original_grid = np.array(x.index)
+    results = []
+    for i, j in pairwise(target_grid):
+        slicer = np.logical_and(original_grid >= i, original_grid < j)
+        d = {'Index': j}
+        for inp in x.columns:
+            d[inp] = x[inp][slicer].mean()
+        results.append(d)
+
+    x = pd.DataFrame(results).set_index('Index')
+
+    return x
 
 
 class PreprocessingMultiStep(PreprocessingData):

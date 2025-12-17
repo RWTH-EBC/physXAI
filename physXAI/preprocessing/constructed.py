@@ -14,12 +14,13 @@ def _return_valid_sampling_method(v: Union[int, str]):
         return 'current'
     elif v in ['previous', 1]:
         return 'previous'
-    elif v == 'mean_over_interval':
-        return 'mean_over_interval'
+    elif v in ['mean_over_interval', '_']:
+        return v
     else:
         raise ValueError(
             f"Value of sampling method not supported, value is: {v}. Sampling method must be 'current' "
-            f"(or 0 if s is int), 'previous' (or 1 if s is int) or 'mean_over_interval'.")
+            f"(or 0 if sampling_method is int), 'previous' (or 1 if sampling_method is int) or 'mean_over_interval'. "
+            f"In case of deactivated sampling (for outputs), sampling_method must be '_'.")
 
 
 class FeatureBase(ABC):
@@ -680,12 +681,39 @@ class FeatureConstruction:
         return res
 
     @staticmethod
-    def process_inputs(inputs: list[Union[str, FeatureBase]]) -> list[str]:
+    def get_constructed_features(l: list[str] = None) -> list[str]:
+        """
+        returns a list of the names of all constructed features (features that have a type other than 'Feature')
+        - within the given list or
+        - of all constructed features if list is None
+
+        Args:
+            l (list[str]): list of feature names to search in
+
+        Returns:
+            list[str]: the list of the names of the constructed features
+        """
+
+        # if no list is given, search in all features
+        if not l:
+            l = FeatureConstruction.features
+
+        res = list()
+        for f in FeatureConstruction.features:
+            if not isinstance(f, Feature) and (f.feature in l):
+                res.append(f.feature)  # name of the feature
+
+        return res
+
+    @staticmethod
+    def create_features(inputs: list[Union[str, FeatureBase]], no_sampling_method: bool = False) -> list[str]:
         """
         Creates a Feature for all inputs that are not yet created as features
 
         Args:
              inputs (list(Union[str, FeatureBase])): List of column names or Features to be used as input features.
+             no_sampling_method (bool): deactivate sampling_method for outputs, default = False.
+                                        If deactivated, sampling_method will be set to '_'
 
         Returns:
             list[str]: list of column names of all input features
@@ -696,11 +724,15 @@ class FeatureConstruction:
         for inp in inputs:
             if isinstance(inp, FeatureBase):
                 input_str.append(inp.feature)  # get name of feature (which is used as column name)
+                if no_sampling_method:
+                    inp.set_sampling_method('_')
             elif isinstance(inp, str):
                 input_str.append(inp)
                 # check if a Feature with the given name (inp) was already created, otherwise create it
                 if not any(inp == f.feature for f in FeatureConstruction.features):
                     Feature(name=inp)
+                if no_sampling_method:
+                    FeatureConstruction.get_feature(inp).set_sampling_method('_')
             else:
                 raise TypeError(f"Only inputs with types 'str' or 'FeatureBase' allowed, got type {type(inp)} instead")
 
