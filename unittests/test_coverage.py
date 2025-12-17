@@ -529,12 +529,13 @@ def test_read_setup():
     AbstractModel.model_from_config(config_model)
 
 
-def test_feature_selection(monkeypatch, p_hp_data, file_path):
+def test_feature_selection(monkeypatch, inputs_php, output_php, file_path):
     # Setup up logger for saving
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
     monkeypatch.setattr('builtins.input', lambda _: "2")
 
-    prep = p_hp_data[0]
+    # Create Training data
+    prep = PreprocessingSingleStep(inputs_php, output_php)
 
     m = LinearRegressionModel()
 
