@@ -1,4 +1,6 @@
 import os
+
+import numpy as np
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 from physXAI.models.ann.configs.ann_model_configs import (ClassicalANNConstruction_config,
                                                                  CMNNModelConstruction_config)
@@ -47,8 +49,8 @@ def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
         assert len(activation_function) == n_layers
 
     # Rescaling for output layer
-    rescale_min = float(td.y_train_single.min())
-    rescale_max = float(td.y_train_single.max())
+    rescale_mean = float(np.mean(td.y_train_single))
+    rescale_sigma = float(np.std(td.y_train_single, ddof=1))
 
     # Build artificial neural network as Sequential
     model = keras.Sequential()
@@ -68,7 +70,7 @@ def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
     model.add(keras.layers.Dense(1, activation='linear', kernel_constraint=k_con))
     # Add rescaling
     if config['rescale_output']:
-        model.add(keras.layers.Rescaling(scale=rescale_max - rescale_min, offset=rescale_min))
+        model.add(keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean))
 
     model.summary()
 
@@ -117,8 +119,8 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
         monotonicities = [0 if name not in mono.keys() else mono[name] for name in td.columns]
 
     # Rescaling for output layer
-    rescale_min = float(td.y_train_single.min())
-    rescale_max = float(td.y_train_single.max())
+    rescale_mean = float(np.mean(td.y_train_single))
+    rescale_sigma = float(np.std(td.y_train_single, ddof=1))
 
     # Add input layer
     input_layer = keras.layers.Input(shape=(n_featues,))
@@ -172,7 +174,7 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
 
     # Add rescaling
     if config['rescale_output']:
-        x = keras.layers.Rescaling(scale=rescale_max - rescale_min, offset=rescale_min)(x)
+        x = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(x)
 
     # # Add min / max constraints
     # min_value = config['min_value']
