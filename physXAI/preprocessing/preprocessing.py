@@ -1,12 +1,13 @@
 import os
 from abc import ABC, abstractmethod
-from typing import Optional, Union, Iterable
+from typing import Optional, Union
 import numpy as np
 import pandas as pd
-import itertools
+import warnings
 from sklearn.model_selection import train_test_split
 from physXAI.preprocessing.constructed import FeatureConstruction, FeatureBase, Feature, FeatureTwo
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
+from physXAI.preprocessing.sampling import Sampling
 from physXAI.utils.logging import get_full_path
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
@@ -94,11 +95,6 @@ class PreprocessingData(ABC):
 
         return df
 
-    def sample_df_according_to_timestep(self, df: pd.DataFrame):
-        filtering = (df.index - df.index[0]) % self.time_step == 0
-        df = df[filtering]
-        return df
-
     @abstractmethod
     def pipeline(self, file_path: str) -> TrainingDataGeneric:
         """
@@ -165,16 +161,14 @@ class PreprocessingSingleStep(PreprocessingData):
         """
 
         if 'shift' in kwargs.keys():
-            DeprecationWarning(
-                "shift parameter is deprecated for SingleStep models and replaced by sampling_method, an attribute of "
-                "each Feature. This allows specifying individual 'shifts' for each Feature / input. A default sampling"
-                "method can be specified via Feature.set_default_sampling_method(<your default sampling>)."
-            )
-            DeprecationWarning(
-                f"shift parameter was given as shift={kwargs['shift']}. Setting Feature.set_default_sampling_method"
-                f"(shift) and overriding possible individual sampling methods of all Features. If this is"
-                f"not intended, remove shift parameter when initializing PreprocessingSingleStep object!"
-            )
+            warnings.warn("shift parameter is deprecated for SingleStep models and replaced by sampling_method,"
+                          "an attribute of each Feature. This allows specifying individual 'shifts' for each Feature / "
+                          "input. A default sampling method can be specified via "
+                          "Feature.set_default_sampling_method(<your default sampling>).", DeprecationWarning)
+            warnings.warn(f"shift parameter was given as shift={kwargs['shift']}. Setting"
+                          f"Feature.set_default_sampling_method(shift) and overriding possible individual sampling "
+                          f"methods of all Features. If this is not intended, remove shift parameter when initializing"
+                          f" PreprocessingSingleStep object!", DeprecationWarning)
             Feature.set_default_sampling_method(kwargs['shift'])
             for f in FeatureConstruction.features:
                 f.set_sampling_method(kwargs['shift'])
@@ -185,10 +179,11 @@ class PreprocessingSingleStep(PreprocessingData):
     def process_data(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
                 Processes the loaded DataFrame:
-                1. Applies feature constructions defined in `FeatureConstruction`.
-                2. Selects relevant input and output columns.
-                3. Handles missing values by dropping rows.
-                4. Applies the defined sampling method on each input variable.
+
+                1. Selects relevant input and output columns.
+                2. Handles missing values by dropping rows.
+                3. Applies the defined sampling method on each (unconstructed) input variable.
+                4. Applies feature constructions defined in `FeatureConstruction`.
 
                 Args:
                     df (pd.DataFrame): The input DataFrame.
@@ -199,15 +194,13 @@ class PreprocessingSingleStep(PreprocessingData):
         """
 
         # extract the names of all constructed features
-        constructed_input_features = FeatureConstruction.get_constructed_features(self.inputs)
-        constructed_output_features = FeatureConstruction.get_constructed_features(self.output)
+        constructed_inputs = FeatureConstruction.get_constructed_features(self.inputs)
+        constructed_outputs = FeatureConstruction.get_constructed_features(self.output)
 
         # Only apply sampling method to those features which are not constructed features
-        # but which data is taken directly from the data frame
-        inputs_without_constructed = [inp for inp in self.inputs if inp not in constructed_input_features]
-        output_without_constructed = [out for out in self.output if out not in constructed_output_features]
-
-        features_without_constructed: list[FeatureBase] = [FeatureConstruction.get_feature(inp) for inp in inputs_without_constructed]
+        # but whose data is taken directly from the data frame
+        inputs_without_constructed = [inp for inp in self.inputs if inp not in constructed_inputs]
+        output_without_constructed = [out for out in self.output if out not in constructed_outputs]
 
         df = df[inputs_without_constructed + output_without_constructed]
 
@@ -217,95 +210,25 @@ class PreprocessingSingleStep(PreprocessingData):
         last_valid_index = non_nan_rows.iloc[::-1].idxmax() if non_nan_rows.any() else None
         df = df.loc[first_valid_index:last_valid_index]
 
-        # sample input data; different inputs can have different sampling methods
-        res = []
-        previous_or_mean_in_sampling_methods = []
-        X = df[inputs_without_constructed].copy()
-        target_grid = self.sample_df_according_to_timestep(df).index
-        for f in features_without_constructed:
-            # only process inputs with sampling method mean_over_interval first since X cannot be sampled
-            # to the actual required time steps until the intermediate values were taken into the mean
-            if f.get_sampling_method() == 'mean_over_interval':
-                res.append(get_mean_over_interval(X[[f.feature]], target_grid))
-                previous_or_mean_in_sampling_methods.append(True)
-
-        # sample X according to required time step
-        X = self.sample_df_according_to_timestep(X)
-        # process inputs with sampling methods 'current' and 'previous'
-        for f in features_without_constructed:
-            _x = X[[f.feature]]
-            if f.get_sampling_method() == 'current':
-                # no transformation needed
-                res.append(_x)
-                previous_or_mean_in_sampling_methods.append(False)
-            elif f.get_sampling_method() == 'previous':
-                # shift by 1
-                _x = _x.shift(1)
-                _x = _x.iloc[1:]
-                res.append(_x)
-                previous_or_mean_in_sampling_methods.append(True)
-            elif f.get_sampling_method() == 'mean_over_interval':
-                continue
-            else:
-                raise NotImplementedError(f"Sampling method '{f.get_sampling_method()}' not implemented.")
-        # concatenate sampled input data
-        X = pd.concat(res, axis=1)
-        X = X.sort_index(ascending=True)
-
-        # Sampling methods 'previous' and 'mean_over_interval' reduce available data points by 1.
-        if any(previous_or_mean_in_sampling_methods):
-            # if at least one of the features uses 'current' as sampling method, shorten X
-            if not all(previous_or_mean_in_sampling_methods):
-                X = X.iloc[1:]
-
-        if X.isnull().values.any():
-            if self.ignore_nan:
-                X.dropna(inplace=True)
-            else:
-                raise ValueError(
-                    "Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended, set "
-                    "ignore_nan=True in PreprocessingSingleStep.")
+        sampler = Sampling(inputs_without_constructed, output_without_constructed, self.time_step, self.ignore_nan)
+        # sample input data
+        X = sampler.sample_unconstructed_inputs(df)
 
         # sample output data
         if len(output_without_constructed) != 0:  # at least one non-constructed output feature
-            y = df[output_without_constructed].copy()
-            y = self.sample_df_according_to_timestep(y)
-            # Sampling methods 'previous' and 'mean_over_interval' reduce available data points by 1.
-            # synchronize length of X and y
-            if any(previous_or_mean_in_sampling_methods):
-                y = y.iloc[1:]
-            if y.isnull().values.any():
-                if self.ignore_nan:
-                    y.dropna(inplace=True)
-                else:
-                    raise ValueError(
-                        "Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended,"
-                        "set ignore_nan=True in PreprocessingSingleStep.")
-
+            y = sampler.sample_unconstructed_outputs(df)
             res_df = pd.concat([X, y], axis=1)
-
         else:  # only constructed outputs
             res_df = X
 
         # Applies feature constructions defined in `FeatureConstruction`
-        FeatureConstruction.process(res_df, feature_names=constructed_input_features + constructed_output_features)
+        FeatureConstruction.process(res_df, feature_names=constructed_inputs + constructed_outputs)
 
-        # assume constructed outputs solely base on features with sampling current or sampling previous / mean_over_interval
+        if len(constructed_outputs) != 0:
+            # correct shifting of constructed outputs if any
+            res_df = sampler.sample_constructed_outputs(res_df, constructed_outputs)
 
-        if any(previous_or_mean_in_sampling_methods):
-            methods = ['previous', 'mean_over_interval']
-            # if constructed output features are based on input features with sampling previous or mean_over_interval,
-            # the constructed output has to be shifted to invert the shift of the input features
-            for out in constructed_output_features:
-                out_feature = FeatureConstruction.get_feature(out)
-                if isinstance(out_feature, FeatureTwo):
-                    if out_feature.feature1.get_sampling_method() in methods or out_feature.feature2.get_sampling_method() in methods:
-                        res_df[out_feature.feature] = res_df[out_feature.feature].shift(-1)  # shift
-                else: # constructed feature that doesn't consist of two features
-                    if out_feature.f1.get_sampling_method() in methods:
-                        res_df[out_feature.feature] = res_df[out_feature.feature].shift(-1)  # shift
-
-        # drop NaNs occurring due to creation of lags
+        # drop NaNs occurring due to creation of lags (constructed feature)
         res_df.dropna(inplace=True)
 
         X = res_df[self.inputs]
@@ -377,28 +300,6 @@ class PreprocessingSingleStep(PreprocessingData):
     @classmethod
     def from_config(cls, config: dict) -> 'PreprocessingSingleStep':
         return cls(**config)
-
-
-def get_mean_over_interval(x: pd.DataFrame, target_grid: pd.DataFrame.index) -> pd.DataFrame:
-    """samples and returns x on target grid taking the mean over the interval (between the grid indices)"""
-    def pairwise(iterable: Iterable):
-        "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-        a, b = itertools.tee(iterable)
-        next(b, None)
-        return zip(a, b)
-
-    original_grid = np.array(x.index)
-    results = []
-    for i, j in pairwise(target_grid):
-        slicer = np.logical_and(original_grid >= i, original_grid < j)
-        d = {'Index': j}
-        for inp in x.columns:
-            d[inp] = x[inp][slicer].mean()
-        results.append(d)
-
-    x = pd.DataFrame(results).set_index('Index')
-
-    return x
 
 
 class PreprocessingMultiStep(PreprocessingData):
@@ -492,7 +393,8 @@ class PreprocessingMultiStep(PreprocessingData):
         """
 
         # filter data
-        df = self.sample_df_according_to_timestep(df)
+        sampler = Sampling(unconstructed_inputs=[], unconstructed_outputs=[], time_step=self.time_step)
+        df = sampler.sample_df_according_to_timestep(df)
 
         # Applies feature constructions defined in `FeatureConstruction`.
         FeatureConstruction.process(df)

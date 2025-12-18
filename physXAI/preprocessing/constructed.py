@@ -2,25 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Type, Union
 import numpy as np
 from pandas import DataFrame, Series
-
-
-def _return_valid_sampling_method(v: Union[int, str]):
-    """ check the validity of the given sampling method and return a string if val is int """
-
-    if not isinstance(v, (int, str)):
-        raise TypeError(f'Type of sampling method not supported. Type is {type(v)}, must be int or str.')
-
-    if v in ['current', 0]:
-        return 'current'
-    elif v in ['previous', 1]:
-        return 'previous'
-    elif v in ['mean_over_interval', '_']:
-        return v
-    else:
-        raise ValueError(
-            f"Value of sampling method not supported, value is: {v}. Sampling method must be 'current' "
-            f"(or 0 if sampling_method is int), 'previous' (or 1 if sampling_method is int) or 'mean_over_interval'. "
-            f"In case of deactivated sampling (for outputs), sampling_method must be '_'.")
+import warnings
+from physXAI.preprocessing.sampling import _return_valid_sampling_method
 
 
 class FeatureBase(ABC):
@@ -234,7 +217,7 @@ class Feature(FeatureBase):
         Feature._default_sampling_method = _return_valid_sampling_method(val)
 
 
-def get_sampling_from_base(base_features: Union[FeatureBase, list[FeatureBase]], **kwargs) -> [str, list]:
+def get_sampling_from_base_feature(base_features: Union[FeatureBase, list[FeatureBase]], **kwargs) -> [str, list]:
     """
     Returns the appropriate sampling_method for a constructed feature based on its base feature(s)
 
@@ -308,7 +291,7 @@ class FeatureLag(FeatureBase):
                 name = f + f'_lag{lag}'
 
         # lags must have the same sampling_method as their base feature
-        sampling_method, kwargs = get_sampling_from_base(FeatureConstruction.get_feature(self.origf), **kwargs)
+        sampling_method, kwargs = get_sampling_from_base_feature(FeatureConstruction.get_feature(self.origf), **kwargs)
 
         super().__init__(name, sampling_method=sampling_method, **kwargs)
         self.lag: int = lag
@@ -355,7 +338,7 @@ class FeatureTwo(FeatureBase, ABC):
             name = self.name(f1n, f2n)
 
         # constructed features must have the same sampling_method as their base features
-        sampling_method, kwargs = get_sampling_from_base([feature1, feature2], **kwargs)
+        sampling_method, kwargs = get_sampling_from_base_feature([feature1, feature2], **kwargs)
         super().__init__(name, sampling_method=sampling_method, **kwargs)
         self.feature1 = feature1
         self.feature2 = feature2
@@ -535,7 +518,7 @@ class FeatureExp(FeatureBase):
         if name is None:
             name = 'exp(' + f1.feature + ')'
         # constructed features must have the same sampling_method as their base features
-        sampling_method, kwargs = get_sampling_from_base(f1, **kwargs)
+        sampling_method, kwargs = get_sampling_from_base_feature(f1, **kwargs)
         super().__init__(name, sampling_method=sampling_method, **kwargs)
 
     def process(self, df: DataFrame) -> Series:
@@ -567,7 +550,7 @@ class FeatureSin(FeatureBase):
         if name is None:
             name = 'sin(' + f1.feature + ')'
         # constructed features must have the same sampling_method as their base features
-        sampling_method, kwargs = get_sampling_from_base(f1, **kwargs)
+        sampling_method, kwargs = get_sampling_from_base_feature(f1, **kwargs)
         super().__init__(name, sampling_method=sampling_method, **kwargs)
 
     def process(self, df: DataFrame) -> Series:
@@ -599,7 +582,7 @@ class FeatureCos(FeatureBase):
         if name is None:
             name = 'cos(' + f1.feature + ')'
         # constructed features must have the same sampling_method as their base features
-        sampling_method, kwargs = get_sampling_from_base(f1, **kwargs)
+        sampling_method, kwargs = get_sampling_from_base_feature(f1, **kwargs)
         super().__init__(name, sampling_method=sampling_method, **kwargs)
 
     def process(self, df: DataFrame) -> Series:
@@ -631,7 +614,8 @@ class FeatureConstant(FeatureBase):
     def __init__(self, c: float, name: str, **kwargs):
         self.c = c
         if 'sampling_method' in kwargs.keys():
-            UserWarning(f"Using 'sampling_method' for {self.__class__} does not have any effect.")
+            warnings.warn(f"Using 'sampling_method' for {self.__class__.__name__} does not have any effect.",
+                          UserWarning)
         super().__init__(name, **kwargs)
 
     def process(self, df: DataFrame) -> Series:

@@ -213,6 +213,8 @@ def test_different_sampling_methods(file_path, inputs_tair_extended):
     assert e.get_sampling_method() == 'previous'
     assert change_tair.get_sampling_method() == '_'
 
+    with pytest.warns(UserWarning):
+        c = FeatureConstant(c=100, name='test_const', sampling_method=1)
     FeatureConstruction.reset()
 
 
@@ -313,7 +315,8 @@ def test_deprecated_shift(p_hp_data, inputs_php, output_php, file_path):
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
 
     # Create & process Training data
-    prep = PreprocessingSingleStep(inputs_php, output_php, shift=0)  # deprecated shift given in preprocessing
+    with pytest.warns(DeprecationWarning):
+        prep = PreprocessingSingleStep(inputs_php, output_php, shift=0)  # deprecated shift given in preprocessing
     td = prep.pipeline(file_path)
 
     m = ClassicalANNModel(epochs=1, n_neurons=[4, 4], n_layers=2, activation_function=['softplus', 'softplus'],
@@ -344,8 +347,8 @@ def test_deprecated_shift(p_hp_data, inputs_php, output_php, file_path):
         "random_state": 42,
         "time_step": 1.0,
     }
-
-    a = PreprocessingData.from_config(config_prep)
+    with pytest.warns(DeprecationWarning):
+        a = PreprocessingData.from_config(config_prep)
     assert isinstance(a, PreprocessingSingleStep)
     assert Feature.get_default_sampling_method() == 'current'
 
