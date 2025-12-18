@@ -52,8 +52,8 @@ def RNNModelConstruction(config: dict, td: TrainingDataMultiStep):
     activation = config['activation']
 
     # Rescaling for output layer
-    rescale_mean = keras.ops.cast(keras.ops.mean(td.y_train), dtype="float32")
-    rescale_sigma = keras.ops.cast(keras.ops.std(td.y_train), dtype="float32")
+    rescale_mean = float(keras.ops.cast(keras.ops.mean(td.y_train), dtype="float32").numpy())
+    rescale_sigma = float(keras.ops.cast(keras.ops.std(td.y_train), dtype="float32").numpy())
 
     # Input layer
     inputs = keras.Input(shape=(out_steps, num_features))
