@@ -1,9 +1,31 @@
 import keras
 import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.neighbors import NearestNeighbors
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 from physXAI.models.ann.configs.ann_model_configs import RBFConstruction_config
 from physXAI.models.ann.keras_models.keras_models import RBFLayer
+
+
+def gamma_init(centers, overlap=0.05):
+    """Initialize gamma parameter for RBF layer based on centers and desired overlap.
+
+    Args:
+        centers (np.ndarray): Array of shape (n_centers, n_features) representing the RBF centers.
+        overlap (float): Desired overlap factor between RBFs. Higher values lead to more overlap.
+    """
+    nbrs = NearestNeighbors(n_neighbors=2).fit(centers)
+    distances, _ = nbrs.kneighbors(centers)
+    dist_sq = distances[:, 1] ** 2
+    avg_dist_sq = np.median(dist_sq)
+
+    if avg_dist_sq == 0:
+        return 1.0 # Fallback
+    
+    gamma = -np.log(overlap) / avg_dist_sq
+    print(f"Calculated Gamma: {gamma}")
+    return gamma
+    
 
 
 def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
@@ -29,13 +51,10 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
     config = RBFConstruction_config.model_validate(config).model_dump()
 
     # Get config
-    n_layers = config['n_layers']
     n_neurons = config['n_neurons']
     # If n_neurons is a single integer, replicate it for all layers
-    if isinstance(n_neurons, int):
-        n_neurons = [n_neurons] * n_layers
-    else:
-        assert len(n_neurons) == n_layers
+    if isinstance(n_neurons, list):
+        n_neurons = n_neurons[0]
     if config['n_features'] is not None:
         n_features = config['n_features']
     else:
@@ -51,43 +70,37 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
     else:
         x = input_layer
 
-    for i in range(0, n_layers):
-        # For each layer add RBF
-
-        # Determine initial rbf centers
-        if i == 0:
-            # Apply KMeans Clustering for rbf centers
-            kmeans = KMeans(n_clusters=n_neurons[i], random_state=config['random_state'], n_init='auto')
-            kmeans.fit(normalization(td.X_train_single))
-            initial_centers_kmeans = kmeans.cluster_centers_
-            x = RBFLayer(n_neurons[i], initial_centers=initial_centers_kmeans, gamma=1)(x)
-        else:
-            x = RBFLayer(n_neurons[i], gamma=1)(x)
+    kmeans = KMeans(n_clusters=n_neurons, random_state=config['random_state'], n_init='auto')
+    kmeans.fit(normalization(td.X_train_single).numpy())
+    initial_centers_kmeans = kmeans.cluster_centers_
+    
+    x = RBFLayer(n_neurons, 
+                 initial_centers=initial_centers_kmeans, 
+                 gamma=gamma_init(initial_centers_kmeans, overlap=0.5),
+                 learnable_centers=False,
+                 learnable_gamma=False)(x)
 
     # Add output layer
-    x = keras.layers.Dense(1, activation='linear')(x)
+    x = keras.layers.Dense(1, activation='linear', use_bias=False)(x)
 
     # Add rescaling
     if config['rescale_output']:
 
         # Rescaling for output layer
         # Custom rescaling
-        if 'rescale_scale' in config.keys() or 'rescale_offset' in config.keys():
-            raise ValueError(
-                "The 'rescale_scale' and 'rescale_offset' parameters are deprecated. "
-                "Scaling has changed from min/max to standardization (z-score normalization using mean=0, std=1). "
-                "Please use 'rescale_mean' and 'rescale_sigma' instead."
-            )
-        if 'rescale_sigma' in config.keys() and config['rescale_sigma'] is not None:
-            if 'rescale_mean' in config.keys() and config['rescale_mean'] is not None:
-                rescale_mean = config['rescale_mean']
-            else:
-                rescale_mean = 0
+        # --- Sigma (Scale) ---
+        if 'rescale_sigma' in config and config['rescale_sigma'] is not None:
             rescale_sigma = config['rescale_sigma']
-        # Standard rescaling
+        else:
+            # Auto-calculate from data
+            rescale_sigma = float(np.std(td.y_train_single, ddof=1))
+        # --- Mean (Offset) ---
+        # CASE A: Residual Mode -> Config must provide 0.0
+        # CASE B: Direct Prediction -> Config is None, calculate from data
+        if 'rescale_mean' in config and config['rescale_mean'] is not None:
+            rescale_mean = config['rescale_mean']
         else:
             rescale_mean = float(np.mean(td.y_train_single))
-            rescale_sigma = float(np.std(td.y_train_single, ddof=1))
 
         x = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(x)
 

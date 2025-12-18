@@ -35,6 +35,7 @@ class ClassicalANNConstruction_config(BaseModel):
 
 class RBFConstruction_config(ClassicalANNConstruction_config):
 
+    n_layers: int = Field(..., ge=1, le=1)
     random_state: int = 42
     rescale_mean: Optional[float] = Field(
         None, description="Mean value for z-score normalization of outputs"
