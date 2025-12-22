@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Type, Union
+from typing import Optional, Type, Union
 import numpy as np
 from pandas import DataFrame, Series
 import warnings
-from physXAI.preprocessing.sampling import _return_valid_sampling_method
+from physXAI.preprocessing.sampling import return_valid_sampling_method
 
 
 class FeatureBase(ABC):
@@ -13,13 +13,13 @@ class FeatureBase(ABC):
     in a Pandas DataFrame. It supports arithmetic operations to combine features.
     """
 
-    def __init__(self, name: str, sampling_method: Union[str, int] = None, **kwargs):
+    def __init__(self, name: str, sampling_method: Optional[Union[str, int]] = None, **kwargs):
         """
         Initializes a FeatureBase instance.
 
         Args:
             name (str): The name of the feature. This will be the column name in the DataFrame.
-            sampling_method (Union[str, int]): Time step of the input data used to predict the output.
+            sampling_method (Optional[Union[str, int]]): Time step of the input data used to predict the output.
                 - if None: Feature._default_sampling_method is used
                 - if 'current' or 0: Current time step will be used for prediction.
                 - if 'previous' or 1: Previous time step will be used for prediction.
@@ -50,7 +50,7 @@ class FeatureBase(ABC):
         if val is None:
             self._sampling_method = Feature.get_default_sampling_method()
         else:
-            self._sampling_method = _return_valid_sampling_method(val)
+            self._sampling_method = return_valid_sampling_method(val)
 
     def rename(self, name: str):
         """
@@ -214,7 +214,7 @@ class Feature(FeatureBase):
         - 'previous' or 1: Previous time step will be used for prediction.
         - 'mean_over_interval': Mean between current and previous time step will be used.
         """
-        Feature._default_sampling_method = _return_valid_sampling_method(val)
+        Feature._default_sampling_method = return_valid_sampling_method(val)
 
 
 def get_sampling_from_base_feature(base_features: Union[FeatureBase, list[FeatureBase]], **kwargs) -> [str, list]:
@@ -254,7 +254,7 @@ def get_sampling_from_base_feature(base_features: Union[FeatureBase, list[Featur
             # necessary for feature construction from config
             sampling_method = '_'
         else:
-            assert _return_valid_sampling_method(kwargs['sampling_method']) == sampling_method, (
+            assert return_valid_sampling_method(kwargs['sampling_method']) == sampling_method, (
                 f"Constructed features must have the same sampling method as their base feature(s). Sampling method of "
                 f"base feature(s) is {sampling_method} but {kwargs['sampling_method']} was given as sampling method."
             )

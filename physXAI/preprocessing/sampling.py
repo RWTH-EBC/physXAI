@@ -4,7 +4,7 @@ import numpy as np
 import itertools
 
 
-def _return_valid_sampling_method(v: Union[int, str]):
+def return_valid_sampling_method(v: Union[int, str]):
     """ check the validity of the given sampling method and return a string if value is int """
 
     if not isinstance(v, (int, str)):
