@@ -8,6 +8,7 @@ from typing import Optional, Union
 from copy import deepcopy
 
 import numpy as np
+from physXAI.models.ann.keras_models.keras_models import NonNegPartial
 from physXAI.models.modular.modular_expression import ModularExpression
 from physXAI.models.ann.ann_design import ANNModel, CMNNModel, ClassicalANNModel
 from physXAI.models.models import LinearRegressionModel, register_model
@@ -184,6 +185,46 @@ class ModularLinear(ModularExpression):
                 y = x.construct(input_layer, td)
                 inps.append(y)
             l = keras.layers.Dense(units=1, activation='linear')(keras.layers.Concatenate()(inps))
+            if self.rescale_output:
+                l = keras.layers.Rescaling(scale=self.nominal_sigma, offset=self.nominal_mean)(l) 
+            ModularExpression.models[self.name] = l
+            return l
+        
+
+class ModularMonotoneLinear(ModularExpression):
+    i = 0
+
+    def __init__(self, inputs: list[Union[ModularExpression, FeatureBase]], name: str = None, monotonicities: Optional[dict[str, int]] = None, nominal_range: tuple[float, float] = None):
+        if name is None:
+            name = f"ModularMonotoneLinear_{ModularLinear.i}"
+            ModularLinear.i += 1
+        super().__init__(name)
+        self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
+
+        if monotonicities is None:
+            monotonicities = [0] * len(self.inputs)
+        else:
+            monotonicities = [0 if inp.name not in monotonicities.keys() else monotonicities[inp.name] for inp in self.inputs]
+        self.monotonicities = monotonicities
+
+        if nominal_range is None:
+            self.rescale_output = False
+        elif nominal_range is not None and len(nominal_range) != 2:
+            raise ValueError(f"Modular Model: nominal_range must be a tuple of (min, max), but was {nominal_range}")
+        else:
+            self.rescale_output = True
+            self.nominal_mean = (nominal_range[1] + nominal_range[0]) / 2.0
+            self.nominal_sigma = (nominal_range[1] - nominal_range[0]) / 4.0  # Assuming 4 sigma covers the range
+        
+    def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
+        if self.name in ModularExpression.models.keys():
+            return ModularExpression.models[self.name]
+        else:
+            inps = list()
+            for x in self.inputs:
+                y = x.construct(input_layer, td)
+                inps.append(y)
+            l = keras.layers.Dense(units=1, activation='linear', kernel_constraint=NonNegPartial(self.monotonicities))(keras.layers.Concatenate()(inps))
             if self.rescale_output:
                 l = keras.layers.Rescaling(scale=self.nominal_sigma, offset=self.nominal_mean)(l) 
             ModularExpression.models[self.name] = l
