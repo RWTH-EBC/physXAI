@@ -219,7 +219,10 @@ class Feature(FeatureBase):
 
 def get_sampling_from_base_feature(base_features: Union[FeatureBase, list[FeatureBase]], **kwargs) -> [str, list]:
     """
-    Returns the appropriate sampling_method for a constructed feature based on its base feature(s)
+    Returns the appropriate sampling_method for a constructed feature based on its base feature(s). A constructed
+    feature must be built from features with sampling methods that apply the same time shift. Therefore, constructed
+    features can either base on features which have solely the sampling method 'current' (no time shift applied) or on
+    features which have one of the sampling methods ['previous','mean_over_interval'] (time shift of one unit applied).
 
     Args:
          base_features (Union[FeatureBase, list[FeatureBase]]): single base feature or list of max. two base features
@@ -244,20 +247,31 @@ def get_sampling_from_base_feature(base_features: Union[FeatureBase, list[Featur
         else:
             raise ValueError(f"Expected type [FeatureBase, int, float], got type {type(f)} instead")
 
-    if len(sampling) > 1:
-        assert len(set(sampling)) == 1, f'Sampling methods of base feature are not equal, got {sampling}'
+    sampling = list(set(sampling))
 
-    sampling_method = sampling[0]
+    if len(sampling) == 1:
+        sampling_method = sampling[0]
+    else:
+        if 'current' in sampling:  # 'current' together with other sampling methods
+            raise ValueError(f"Sampling method(s) of base feature(s) are not equal 'current', got sampling method(s): {sampling}")
+        else:  # 'previous' together with 'mean_over_interval'
+            sampling_method = 'mean_over_interval'
 
     if 'sampling_method' in kwargs.keys():
         if 'ignore_sampling_for_output' in kwargs.keys() and kwargs['ignore_sampling_for_output']:
             # necessary for feature construction from config
             sampling_method = '_'
         else:
-            assert return_valid_sampling_method(kwargs['sampling_method']) == sampling_method, (
-                f"Constructed features must have the same sampling method as their base feature(s). Sampling method of "
-                f"base feature(s) is {sampling_method} but {kwargs['sampling_method']} was given as sampling method."
-            )
+            message = (f"Constructed features must be built from features with sampling methods that apply the same "
+                       f"time shift. Therefore, constructed features can either base on features which have solely the "
+                       f"sampling method 'current' (no time shift applied) or on features which have one of the sampling"
+                       f" methods ['previous','mean_over_interval'] (time shift of one unit applied).\n"
+                       f"Sampling method of base feature(s) is '{sampling_method}' but in kwargs "
+                       f"'{return_valid_sampling_method(kwargs['sampling_method'])}' was given as sampling method.")
+            if sampling_method == 'current':
+                assert return_valid_sampling_method(kwargs['sampling_method']) == sampling_method, message
+            else:
+                assert return_valid_sampling_method(kwargs['sampling_method']) in ['previous', 'mean_over_interval'], message
         kwargs.__delitem__('sampling_method')  # constructor must not get more than one arg with the same key
 
     return sampling_method, kwargs

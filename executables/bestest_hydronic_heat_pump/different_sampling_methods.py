@@ -53,7 +53,7 @@ x3.lag(2)
 y = x1 + lx1[0]
 z = y + x1
 z.rename('example_feature_two')  # since z is a constructed feature based on x1, its sampling_method will be previous
-e = FeatureExp(x1-273.15, 'exp', sampling_method=1)  # reduce x1 by 273.15, otherwise values are too high
+e = FeatureExp(x1-273.15, 'exp')  # reduce x1 by 273.15, otherwise values are too high
 inputs.extend([z, e])  # add dummy features to inputs
 
 # construct output

@@ -127,9 +127,15 @@ class TestSamplingMethodsFaults(TestCase):
     # test case: lags of the same input have mismatching sampling methods
     def test_lag_with_mismatching_sampling_methods(self):
 
-        x = Feature('test', sampling_method='current')
+        # allowed
+        x = Feature('test_correct', sampling_method='mean_over_interval')
+        x2 = FeatureLag(x, lag=2, sampling_method='mean_over_interval')
+        e = FeatureExp(x, sampling_method='previous')
+
+        # not allowed
+        y = Feature('test_fault', sampling_method='current')
         with self.assertRaises(AssertionError):
-            FeatureLag(x, lag=1, sampling_method='previous')
+            FeatureLag(y, lag=1, sampling_method='previous')
         FeatureConstruction.reset()
 
 
