@@ -283,7 +283,7 @@ class SingleStepModel(AbstractModel, ABC):
                 current_val = X[b, 0, index]
                 current_true_val = current_val
                 for t in range(X.shape[1]):
-                    pred = float(model.predict(X[b, t, :].reshape(1, -1)))
+                    pred = model.predict(X[b, t, :].reshape(1, -1)).item()
                     if delta_prediction:
                         current_val += pred
                         current_true_val += y[b, t, 0]
