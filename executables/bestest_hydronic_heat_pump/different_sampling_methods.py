@@ -7,7 +7,7 @@ from physXAI.utils.logging import Logger
 This script demonstrates the usage of different sampling methods. It is not physically meaningful.
 
 When creating a Feature, a sampling method can be specified.
-For constructed features, no sampling method is necessary. It is assigned based on their corresponding base feature(s)
+For constructed features, no sampling method is necessary. It is assigned based on their corresponding base feature(s).
 
 sampling_method (Union[str, int]): Time step of the input data used to predict the output.
     - if None: Feature.get_default_sampling_method() is used
@@ -17,7 +17,12 @@ sampling_method (Union[str, int]): Time step of the input data used to predict t
     
     Specify default sampling method using Feature.set_default_sampling_method(<your default sampling>).
     If no default sampling method is specified by the user, 'previous' is used as default.
+
+Constructed features must be built from features with sampling methods that apply the same time shift. Therefore, 
+constructed features can either base on features which have solely the sampling method 'current' (no time shift applied)
+or on features which have one of the sampling methods ['previous','mean_over_interval'] (time shift of one unit applied).
 """
+
 Feature.set_default_sampling_method(0)
 
 # Setup up logger for saving
@@ -46,7 +51,7 @@ x2 = Feature('weaSta_reaWeaTDryBul_y')
 lx2 = x2.lag(1)
 
 # create lag of oveHeaPumY_u: oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
-x3 = Feature('oveHeaPumY_u')
+x3 = Feature('oveHeaPumY_u', sampling_method='mean_over_interval')
 x3.lag(2)
 
 # dummy Features
@@ -54,7 +59,12 @@ y = x1 + lx1[0]
 z = y + x1
 z.rename('example_feature_two')  # since z is a constructed feature based on x1, its sampling_method will be previous
 e = FeatureExp(x1-273.15, 'exp')  # reduce x1 by 273.15, otherwise values are too high
-inputs.extend([z, e])  # add dummy features to inputs
+
+# x1 and x3 have sampling methods 'previous' and 'mean_over_interval'.
+# Since both of them apply a time shift of one, they can be combined in constructed features
+a = x1 + x3
+
+inputs.extend([z, e, a])  # add dummy features to inputs
 
 # construct output
 change_tair = x1 - lx1[0]

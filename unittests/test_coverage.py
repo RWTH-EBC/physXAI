@@ -132,6 +132,9 @@ class TestSamplingMethodsFaults(TestCase):
         x2 = FeatureLag(x, lag=2, sampling_method='mean_over_interval')
         e = FeatureExp(x, sampling_method='previous')
 
+        with pytest.warns(UserWarning):
+            c = FeatureConstant(c=100, name='test_const', sampling_method=1)
+
         # not allowed
         y = Feature('test_fault', sampling_method='current')
         with self.assertRaises(AssertionError):
@@ -188,7 +191,7 @@ def test_different_sampling_methods(file_path, inputs_tair_extended):
     lx1 = x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
     x2 = Feature('weaSta_reaWeaTDryBul_y')
     lx2 = x2.lag(1)  # weaSta_reaWeaTDryBul_y_lag1
-    x3 = Feature('oveHeaPumY_u')
+    x3 = Feature('oveHeaPumY_u', sampling_method='mean_over_interval')
     x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
 
     # dummy Features
@@ -197,7 +200,12 @@ def test_different_sampling_methods(file_path, inputs_tair_extended):
     z.rename('test_feature_two')
     e = FeatureExp(x1 - 273.15, 'exp', sampling_method=1)  # reduce x1 by 273.15, otherwise values are too high
 
-    inputs_tair_extended.extend([z, e])
+    # x1 and x3 have sampling methods 'previous' and 'mean_over_interval'.
+    # Since both of them apply a time shift of one, they can be combined in constructed features
+    a = x1 + x3
+    a.rename('test_add')
+
+    inputs_tair_extended.extend([z, e, a])
 
     # output
     change_tair = x1 - lx1[0]
@@ -216,11 +224,10 @@ def test_different_sampling_methods(file_path, inputs_tair_extended):
     assert x2.get_sampling_method() == 'current' and lx2.get_sampling_method() == 'current'
     assert FeatureConstruction.get_feature('weaSta_reaWeaHDirNor_y').get_sampling_method() == 'mean_over_interval'
     assert FeatureConstruction.get_feature('test_feature_two').get_sampling_method() == 'previous'
+    assert FeatureConstruction.get_feature('test_add').get_sampling_method() == 'mean_over_interval'
     assert e.get_sampling_method() == 'previous'
     assert change_tair.get_sampling_method() == '_'
 
-    with pytest.warns(UserWarning):
-        c = FeatureConstant(c=100, name='test_const', sampling_method=1)
     FeatureConstruction.reset()
 
 
