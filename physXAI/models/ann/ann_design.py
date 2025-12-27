@@ -817,7 +817,7 @@ class PCNNModel(RNNModel):
       Inherits from MultiStepModel.
       """
 
-    def __init__(self, dis_ann: ANNModel, dis_inputs: int, non_lin_ann: ANNModel = None, non_lin_inputs: int = None,
+    def __init__(self, dis_ann: ANNModel, dis_inputs: int, non_lin_ann: ANNModel = None, non_lin_inputs: int = 0,
                  epochs: int = 1000, learning_rate: float = 0.001, early_stopping_epochs: int = 100,
                  random_seed: int = 42, **kwargs):
         """

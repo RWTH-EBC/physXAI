@@ -525,7 +525,7 @@ def PCNNModelConstruction(config: dict, disturbance_ann, td: TrainingDataMultiSt
     disturbance_ann_keras = disturbance_ann.generate_model(td=cropped_dis_td)
 
     non_lin_inputs = config['non_lin_inputs']
-    if non_lin_inputs is not None:
+    if non_lin_inputs != 0:
         assert non_lin_ann is not None, ("If non-linear inputs are given for the linear modul, an additional ANN has to"
                                          "be given as well to capture the non-linear dynamics appropriately")
         cropped_non_lin_td = copy_and_crop_td_multistep(td, -non_lin_inputs)
