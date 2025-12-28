@@ -9,11 +9,12 @@ from copy import deepcopy
 
 import numpy as np
 from physXAI.models.ann.keras_models.keras_models import NonNegPartial
-from physXAI.models.modular.modular_expression import ModularExpression
-from physXAI.models.ann.ann_design import ANNModel, CMNNModel, ClassicalANNModel
+from physXAI.models.modular.modular_expression import ModularExpression, register_modular_expression
+from physXAI.models.ann.ann_design import SingleStepModel, ANNModel, CMNNModel, ClassicalANNModel
 from physXAI.models.models import LinearRegressionModel, register_model
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 from physXAI.preprocessing.constructed import FeatureBase
+from physXAI.utils.logging import Logger
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 from keras import Sequential
@@ -74,11 +75,14 @@ class ModularANN(ANNModel):
 
     def get_config(self) -> dict:
         config = super().get_config()
-        config.update({}) # TODO: save architecture and rescale_output?
-        warning("ModularANN currently does not save architecture config.")
+        config.update({
+            'architecture': self.architecture.name,
+            'rescale_output': self.rescale_output,
+        })
         return config
 
 
+@register_modular_expression
 class ModularModel(ModularExpression):
 
     allowed_models = [ClassicalANNModel, CMNNModel, LinearRegressionModel]
@@ -131,25 +135,49 @@ class ModularModel(ModularExpression):
             ModularExpression.models[self.name] = l
             return l
 
-    def get_config(self) -> dict:
-        c = super().get_config()
+    def _get_config(self) -> dict:
+        c = super()._get_config()
         c.update({
-            # TODO: 'model': self.model???
+            'model': self.model.get_config(),
             'inputs': [inp.name for inp in self.inputs],
             'nominal_range': self._nominal_range,
         })
         return c
 
+    @classmethod
+    def _from_config(cls, config: dict) -> 'ModularModel':
+        """
+        Creates a ModularModel instance from a configuration dictionary.
+        Handles reconstruction of model (ANNModel).
 
+        Args:
+            config (dict): Configuration dictionary. Must contain configuration for model as well.
+
+        Returns:
+            ModularModel: An instance of the specific ModularModel subclass.
+        """
+
+        assert isinstance(config['model'], dict), (f"config must contain the configuration (dict) for the model but #"
+                                                   f"config['model'] is {config['model']}]")
+        m = SingleStepModel.from_config(config['model'])
+        config['model'] = m
+        
+        return cls(**config)
+
+
+@register_modular_expression
 class ModularExistingModel(ModularExpression):
 
     def __init__(self, model: Union[Sequential, Functional, str, Path], original_inputs: list[ModularExpression, FeatureBase], trainable: bool, name: str = None):
+        if isinstance(model, str) or isinstance(model, Path):
+            self.model_path = model
+            model = keras.models.load_model(model)
+        self.model = model
+
         if name is None:
             name = model.name + '_existing'
         super().__init__(name)
-        if isinstance(model, str) or isinstance(model, Path):
-            model = keras.models.load_model(model)
-        self.model = model
+
         self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in original_inputs]
         self.model.trainable = trainable
         if not trainable:
@@ -168,16 +196,23 @@ class ModularExistingModel(ModularExpression):
             ModularExpression.models[self.name] = l
             return l
 
-    def get_config(self) -> dict:
-        c = super().get_config()
+    def _get_config(self) -> dict:
+        c = super()._get_config()
+
+        # if model wasn't loaded from path originally, save it and store path
+        if not hasattr(self, 'model_path'):
+            self.model_path = Logger.get_model_savepath(save_name_model=self.model.name)
+            self.model.save(self.model_path)
+
         c.update({
-            # TODO: model ???
+            'model': self.model_path,
             'original_inputs': [inp.name for inp in self.inputs],
             'trainable': self.model.trainable
         })
         return c
 
 
+@register_modular_expression
 class ModularLinear(ModularExpression):
     i = 0
 
@@ -212,8 +247,8 @@ class ModularLinear(ModularExpression):
             ModularExpression.models[self.name] = l
             return l
 
-    def get_config(self) -> dict:
-        c = super().get_config()
+    def _get_config(self) -> dict:
+        c = super()._get_config()
         c.update({
             'inputs': [inp.name for inp in self.inputs],
             'nominal_range': self._nominal_range,
@@ -221,6 +256,7 @@ class ModularLinear(ModularExpression):
         return c
 
 
+@register_modular_expression
 class ModularMonotoneLinear(ModularExpression):
     i = 0
 
@@ -261,8 +297,8 @@ class ModularMonotoneLinear(ModularExpression):
             ModularExpression.models[self.name] = l
             return l
 
-    def get_config(self) -> dict:
-        c = super().get_config()
+    def _get_config(self) -> dict:
+        c = super()._get_config()
         c.update({
             'inputs': [inp.name for inp in self.inputs],
             'nominal_range': self._nominal_range,
@@ -271,6 +307,7 @@ class ModularMonotoneLinear(ModularExpression):
         return c
 
 
+@register_modular_expression
 class ModularPolynomial(ModularExpression):
     i = 0
 
@@ -319,8 +356,8 @@ class ModularPolynomial(ModularExpression):
             ModularExpression.models[self.name] = l
             return l
 
-    def get_config(self) -> dict:
-        c = super().get_config()
+    def _get_config(self) -> dict:
+        c = super()._get_config()
         c.update({
             'inputs': [inp.name for inp in self.inputs],
             'degree': self.degree,
@@ -330,6 +367,7 @@ class ModularPolynomial(ModularExpression):
         return c
 
 
+@register_modular_expression
 class ModularAverage(ModularExpression):
     i = 0
 
@@ -352,14 +390,15 @@ class ModularAverage(ModularExpression):
             ModularExpression.models[self.name] = l
             return l
 
-    def get_config(self) -> dict:
-        c = super().get_config()
+    def _get_config(self) -> dict:
+        c = super()._get_config()
         c.update({
             'inputs': [inp.name for inp in self.inputs],
         })
         return c
 
 
+@register_modular_expression
 class ModularNormalization(ModularExpression):
     i = 0
 
@@ -376,8 +415,8 @@ class ModularNormalization(ModularExpression):
         l = normalization(inp)
         return l
 
-    def get_config(self) -> dict:
-        c = super().get_config()
+    def _get_config(self) -> dict:
+        c = super()._get_config()
         c.update({
             'input': self.inputs.name,
         })

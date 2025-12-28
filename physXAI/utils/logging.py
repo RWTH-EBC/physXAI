@@ -232,10 +232,19 @@ class Logger:
              pickle.dump(training_data, f)
 
     @staticmethod
-    def get_model_savepath():
+    def get_model_savepath(save_name_model: str = None) -> str:
+        """
+        returns the path the model is saved to
+
+        Args:
+             save_name_model (str): optional name the model is saved with (string without .keras),
+                                    default: Logger.save_name_model
+        """
         if Logger._logger is None:
             Logger.setup_logger()
+        if save_name_model is None:
+            save_name_model = Logger.save_name_model
 
-        p = os.path.join(Logger._logger, Logger.save_name_model)
+        p = os.path.join(Logger._logger, save_name_model)
 
         return p
