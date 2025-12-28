@@ -49,7 +49,9 @@ class ModularANN(ANNModel):
 
         self.rescale_output = rescale_output
 
-        self.model_config.update({})
+        self.model_config.update({
+            'rescale_output': rescale_output,  # the rest of the parameters are passed on to super
+        })
 
     def generate_model(self, **kwargs):
         """
@@ -72,7 +74,7 @@ class ModularANN(ANNModel):
 
     def get_config(self) -> dict:
         config = super().get_config()
-        config.update({})
+        config.update({}) # TODO: save architecture and rescale_output?
         warning("ModularANN currently does not save architecture config.")
         return config
 
@@ -97,6 +99,7 @@ class ModularModel(ModularExpression):
             "rescale_output": False
         })
         self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
+        self._nominal_range = nominal_range
 
         if nominal_range is None:
             self.rescale_output = False
@@ -126,7 +129,16 @@ class ModularModel(ModularExpression):
             if self.rescale_output:
                 l = keras.layers.Rescaling(scale=self.nominal_sigma, offset=self.nominal_mean)(l) 
             ModularExpression.models[self.name] = l
-            return l    
+            return l
+
+    def get_config(self) -> dict:
+        c = super().get_config()
+        c.update({
+            # TODO: 'model': self.model???
+            'inputs': [inp.name for inp in self.inputs],
+            'nominal_range': self._nominal_range,
+        })
+        return c
 
 
 class ModularExistingModel(ModularExpression):
@@ -156,6 +168,15 @@ class ModularExistingModel(ModularExpression):
             ModularExpression.models[self.name] = l
             return l
 
+    def get_config(self) -> dict:
+        c = super().get_config()
+        c.update({
+            # TODO: model ???
+            'original_inputs': [inp.name for inp in self.inputs],
+            'trainable': self.model.trainable
+        })
+        return c
+
 
 class ModularLinear(ModularExpression):
     i = 0
@@ -166,6 +187,7 @@ class ModularLinear(ModularExpression):
             ModularLinear.i += 1
         super().__init__(name)
         self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
+        self._nominal_range = nominal_range
 
         if nominal_range is None:
             self.rescale_output = False
@@ -189,7 +211,15 @@ class ModularLinear(ModularExpression):
                 l = keras.layers.Rescaling(scale=self.nominal_sigma, offset=self.nominal_mean)(l) 
             ModularExpression.models[self.name] = l
             return l
-        
+
+    def get_config(self) -> dict:
+        c = super().get_config()
+        c.update({
+            'inputs': [inp.name for inp in self.inputs],
+            'nominal_range': self._nominal_range,
+        })
+        return c
+
 
 class ModularMonotoneLinear(ModularExpression):
     i = 0
@@ -200,6 +230,7 @@ class ModularMonotoneLinear(ModularExpression):
             ModularLinear.i += 1
         super().__init__(name)
         self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
+        self._nominal_range = nominal_range
 
         if monotonicities is None:
             monotonicities = [0] * len(self.inputs)
@@ -230,6 +261,15 @@ class ModularMonotoneLinear(ModularExpression):
             ModularExpression.models[self.name] = l
             return l
 
+    def get_config(self) -> dict:
+        c = super().get_config()
+        c.update({
+            'inputs': [inp.name for inp in self.inputs],
+            'nominal_range': self._nominal_range,
+            'monotonicities': self.monotonicities,
+        })
+        return c
+
 
 class ModularPolynomial(ModularExpression):
     i = 0
@@ -244,6 +284,7 @@ class ModularPolynomial(ModularExpression):
         self.degree = degree
         self.interaction_degree = interaction_degree
         self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
+        self._nominal_range = nominal_range
 
         if nominal_range is None:
             self.rescale_output = False
@@ -277,7 +318,17 @@ class ModularPolynomial(ModularExpression):
                 l = keras.layers.Rescaling(scale=self.nominal_sigma, offset=self.nominal_mean)(l) 
             ModularExpression.models[self.name] = l
             return l
-        
+
+    def get_config(self) -> dict:
+        c = super().get_config()
+        c.update({
+            'inputs': [inp.name for inp in self.inputs],
+            'degree': self.degree,
+            'interaction:degree': self.interaction_degree,
+            'nominal_range': self._nominal_range,
+        })
+        return c
+
 
 class ModularAverage(ModularExpression):
     i = 0
@@ -300,7 +351,14 @@ class ModularAverage(ModularExpression):
             l = keras.layers.Average()(inps)
             ModularExpression.models[self.name] = l
             return l
-        
+
+    def get_config(self) -> dict:
+        c = super().get_config()
+        c.update({
+            'inputs': [inp.name for inp in self.inputs],
+        })
+        return c
+
 
 class ModularNormalization(ModularExpression):
     i = 0
@@ -317,3 +375,10 @@ class ModularNormalization(ModularExpression):
         normalization = keras.layers.BatchNormalization()
         l = normalization(inp)
         return l
+
+    def get_config(self) -> dict:
+        c = super().get_config()
+        c.update({
+            'input': self.inputs.name,
+        })
+        return c

@@ -59,6 +59,13 @@ class ModularExpression(ABC):
     def rename(self, name: str):
         self.name = name
 
+    def get_config(self) -> dict:
+        c = {
+            'class_name': self.__class__.__name__,
+            'name': self.name,
+        }
+        return c
+
 
 def get_name(feature: Union[ModularExpression, int, float]) -> str:
     if isinstance(feature, ModularExpression):
@@ -90,6 +97,13 @@ class ModularFeature(ModularExpression):
 
             return x
 
+    def get_config(self) -> dict:
+        c = super().get_config()
+        c.update({
+            'normalize': self.normalize,
+        })
+        return c
+
 
 class ModularTrainable(ModularExpression):
 
@@ -110,6 +124,14 @@ class ModularTrainable(ModularExpression):
             l = ConstantLayer(trainable=self.trainable, weight_name=self.name, value=self.initial_value)(input_layer)
             ModularExpression.trainable_parameters[self.name] = l
             return l
+
+    def get_config(self) -> dict:
+        c = super().get_config()
+        c.update({
+            'initial_value': self.initial_value,
+            'trainable': self.trainable,
+        })
+        return c
 
 
 class ModularTwo(ModularExpression, ABC):
@@ -135,6 +157,22 @@ class ModularTwo(ModularExpression, ABC):
     @abstractmethod
     def _construct(self, layer1: keras.layers.Layer, layer2: keras.layers.Layer) -> keras.layers.Layer:
         pass
+
+    def get_config(self) -> dict:
+        c = super().get_config()
+        if isinstance(self.feature1, ModularExpression):
+            f1n = self.feature1.name
+        else:
+            f1n = self.feature1
+        if isinstance(self.feature2, ModularExpression):
+            f2n = self.feature2.name
+        else:
+            f2n = self.feature2
+        c.update({
+            'feature1': f1n,
+            'feature2': f2n,
+        })
+        return c
 
 
 class ModularAdd(ModularTwo):
