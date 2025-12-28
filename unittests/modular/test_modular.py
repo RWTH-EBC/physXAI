@@ -13,7 +13,7 @@ import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 
-def generate_sample_csv(output_path: str = "data/sample_data.csv", num_rows: int = 1200, num_features: int = 4, seed: int = 42, value_range: tuple = (-100, 100)):
+def test_generate_sample_csv(output_path: str = "data/sample_data.csv", num_rows: int = 1200, num_features: int = 4, seed: int = 42, value_range: tuple = (-100, 100)):
     np.random.seed(seed)
     
     columns = [f"x{i}" for i in range(1, num_features + 1)]
@@ -37,7 +37,7 @@ def generate_sample_csv(output_path: str = "data/sample_data.csv", num_rows: int
     print(f"Sample CSV file generated at: {output_path}")
 
 
-def generate_sample_model(random_seed: int = 42, training_data_path: str = "data/sample_data.csv"):
+def test_generate_sample_model(random_seed: int = 42, training_data_path: str = "data/sample_data.csv"):
     Logger.setup_logger(base_path=os.path.abspath('models'), folder_name='001', override=True)
 
     inputs = [f"x{i}" for i in range(1, 4)]
@@ -52,7 +52,7 @@ def generate_sample_model(random_seed: int = 42, training_data_path: str = "data
 
     # TODO: Flatten, BatchNorm, Cropping1D, Reshape, RBF
 
-    m1 = ModularModel(ClassicalANNModel(random_seed=random_seed), inputs=features, rescale_output=True)
+    m1 = ModularModel(ClassicalANNModel(random_seed=random_seed), inputs=features)
     m2 = ModularTrainable(initial_value=0.5)
     mX = ModularTrainable(initial_value=5)
     mY = ModularTrainable(initial_value=0.5)
@@ -81,5 +81,5 @@ def generate_sample_model(random_seed: int = 42, training_data_path: str = "data
 
 
 if __name__ == "__main__":
-    generate_sample_csv()
-    generate_sample_model()
+    test_generate_sample_model()
+    test_generate_sample_model()
