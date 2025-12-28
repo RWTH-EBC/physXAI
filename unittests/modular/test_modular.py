@@ -12,6 +12,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
+base_path = os.path.join(Path(__file__).resolve().parent.parent.parent, 'stored_data')
+
 
 def test_generate_sample_csv(output_path: str = "data/sample_data.csv", num_rows: int = 1200, num_features: int = 4, seed: int = 42, value_range: tuple = (-100, 100)):
     np.random.seed(seed)
@@ -38,7 +40,7 @@ def test_generate_sample_csv(output_path: str = "data/sample_data.csv", num_rows
 
 
 def test_generate_sample_model(random_seed: int = 42, training_data_path: str = "data/sample_data.csv"):
-    Logger.setup_logger(base_path=os.path.abspath('models'), folder_name='001', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_modular', override=True)
 
     inputs = [f"x{i}" for i in range(1, 4)]
     output = "x4"
@@ -74,10 +76,7 @@ def test_generate_sample_model(random_seed: int = 42, training_data_path: str = 
         m8
     ])
     m = ModularANN(architecture=out, epochs=1000, random_seed=random_seed)
-    model = m.pipeline(td, plot=False, save_model=False)
-
-    os.makedirs('models', exist_ok=True)
-    model.save('models/model.keras')
+    model = m.pipeline(td, plot=False, save_model=True)
 
     FeatureConstruction.reset()
 
