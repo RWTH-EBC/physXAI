@@ -6,7 +6,7 @@ from physXAI.models.modular.modular_expression import ModularTrainable
 from physXAI.models.ann.ann_design import ClassicalANNModel
 from physXAI.models.modular.modular_ann import ModularANN, ModularAverage, ModularLinear, ModularModel
 from physXAI.utils.logging import Logger
-from physXAI.preprocessing.constructed import Feature
+from physXAI.preprocessing.constructed import Feature, FeatureConstruction
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
@@ -78,6 +78,8 @@ def test_generate_sample_model(random_seed: int = 42, training_data_path: str = 
 
     os.makedirs('models', exist_ok=True)
     model.save('models/model.keras')
+
+    FeatureConstruction.reset()
 
 
 if __name__ == "__main__":
