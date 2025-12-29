@@ -59,6 +59,9 @@ class ModularExpression(ABC):
     def __pow__(self, other):
         return ModularPow(self, other)
     
+    def __rpow__(self, other):
+        return ModularPow(other, self)
+    
     def rename(self, name: str):
         self.name = name
 
