@@ -151,6 +151,7 @@ def modular_expression_from_config(item_conf: dict, config: list[dict]) -> 'Modu
     """
     class_name = item_conf['class_name']
     modular_expression_class = CONSTRUCTED_CLASS_REGISTRY[class_name]
+    item_conf.__delitem__('class_name')
     f1f = modular_expression_class._from_config(item_conf, config)
     return f1f
 

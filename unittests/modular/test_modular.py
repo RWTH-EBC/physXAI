@@ -1,15 +1,17 @@
 import os
 import numpy as np
 import pandas as pd
+import json
+import copy
 from pathlib import Path
-from physXAI.models.modular.modular_expression import ModularTrainable
+from physXAI.models.modular.modular_expression import ModularTrainable, ModularExpression
 from physXAI.models.ann.ann_design import ClassicalANNModel
 from physXAI.models.modular.modular_ann import ModularANN, ModularAverage, ModularLinear, ModularModel
 from physXAI.utils.logging import Logger
-from physXAI.preprocessing.constructed import Feature, FeatureConstruction
+from physXAI.preprocessing.constructed import Feature
+from physXAI.models.models import AbstractModel
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 base_path = os.path.join(Path(__file__).resolve().parent.parent.parent, 'stored_data')
@@ -75,12 +77,63 @@ def test_generate_sample_model(random_seed: int = 42, training_data_path: str = 
         m7,
         m8
     ])
-    m = ModularANN(architecture=out, epochs=1000, random_seed=random_seed)
-    model = m.pipeline(td, plot=False, save_model=True)
+    m = ModularANN(architecture=out, epochs=50, random_seed=random_seed)
+    model = m.pipeline(td, plot=True, save_model=True)
 
-    FeatureConstruction.reset()
+    Logger.log_setup(preprocessing=prep, model=m)
+
+
+def test_read_setup(training_data_path: str = "data/sample_data.csv"):
+    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_modular', override=True)
+
+    # Read setup
+    save_name_preprocessing = Logger.save_name_preprocessing
+    path = os.path.join(Logger._logger, save_name_preprocessing)
+    with open(path, "r") as f:
+        config_prep = json.load(f)
+    prep = PreprocessingSingleStep.from_config(config_prep)
+
+    save_name_modular_expression = Logger.save_name_modular_expression_config
+    path = os.path.join(Logger._logger, save_name_modular_expression)
+    with open(path, "r") as f:
+        modular_expression_config = json.load(f)
+    stored_config = copy.deepcopy(modular_expression_config)
+    ModularExpression.from_config(modular_expression_config)
+    assert check_lists_equal(stored_config, ModularExpression.get_config())
+
+    save_name_model = Logger.save_name_model_config
+    path = os.path.join(Logger._logger, save_name_model)
+    with open(path, "r") as f:
+        config_model = json.load(f)
+    stored_config = copy.deepcopy(config_model)
+    m = AbstractModel.model_from_config(config_model)
+    assert check_lists_equal(stored_config, m.get_config())
+
+    td = prep.pipeline(training_data_path)
+    model = m.pipeline(td, plot=True, save_model=True)
+
+
+def check_lists_equal(list1, list2):
+    """Check if all elements in list1 exist and are equal to those in list2."""
+
+    def make_hashable(d):
+        """Convert dictionary values to hashable types."""
+        if isinstance(d, dict):
+            return frozenset((k, make_hashable(v)) for k, v in d.items())
+        elif isinstance(d, list):
+            return tuple(make_hashable(i) for i in d)
+        elif hasattr(d, '__dict__'):  # Check if it's an object with attributes
+            return frozenset((key, make_hashable(value)) for key, value in d.__dict__.items())
+        else:
+            return d  # Return as is if it's already hashable
+
+    set1 = {make_hashable(d) for d in list1}
+    set2 = {make_hashable(d) for d in list2}
+
+    return set1 == set2
 
 
 if __name__ == "__main__":
     test_generate_sample_model()
     test_generate_sample_model()
+    test_read_setup()

@@ -11,8 +11,8 @@ import numpy as np
 from physXAI.models.ann.keras_models.keras_models import NonNegPartial
 from physXAI.models.modular.modular_expression import (ModularExpression, register_modular_expression,
                                                        get_modular_expressions_by_name)
-from physXAI.models.ann.ann_design import SingleStepModel, ANNModel, CMNNModel, ClassicalANNModel
-from physXAI.models.models import LinearRegressionModel, register_model
+from physXAI.models.ann.ann_design import ANNModel, CMNNModel, ClassicalANNModel
+from physXAI.models.models import AbstractModel, LinearRegressionModel, register_model
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 from physXAI.preprocessing.constructed import FeatureBase
 from physXAI.utils.logging import Logger
@@ -71,7 +71,6 @@ class ModularANN(ANNModel):
         model = keras.models.Model(inputs=input_layer, outputs=x)
         model.summary()
 
-        ModularExpression.reset()
         return model
 
     def get_config(self) -> dict:
@@ -87,7 +86,7 @@ class ModularANN(ANNModel):
 
         a = ModularExpression.get_existing_modular_expression(config['architecture'])
         assert a is not None, (f"ModularExpression {config['architecture']} not found, make sure to construct required "
-                               f"modular expressions before constructing {cls.__class__.__name__}.")
+                               f"modular expressions before constructing {cls.__name__}.")
         config['architecture'] = a
 
         return cls(**config)
@@ -185,7 +184,7 @@ class ModularModel(ModularAbstractModel):
             return l
 
     def _get_config(self) -> dict:
-        c = ModularExpression._get_config(self)
+        c = super()._get_config()
         c.update({
             'model': self.model.get_config(),
             'nominal_range': self._nominal_range,
@@ -208,7 +207,7 @@ class ModularModel(ModularAbstractModel):
 
         assert isinstance(item_config['model'], dict), (f"config must contain the configuration (dict) for the model "
                                                         f"but config['model'] is {item_config['model']}]")
-        m = SingleStepModel.from_config(item_config['model'])
+        m = AbstractModel.model_from_config(item_config['model'])
         item_config['model'] = m
 
         item_config['inputs'] = get_modular_expressions_by_name(item_config['inputs'], config)
