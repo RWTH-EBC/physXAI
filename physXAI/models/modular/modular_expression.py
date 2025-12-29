@@ -70,8 +70,8 @@ class ModularExpression(ABC):
         return c
 
     @classmethod
-    def _from_config(cls, config: dict) -> 'ModularExpression':
-        return cls(**config)
+    def _from_config(cls, item_config: dict, config: list[dict]) -> 'ModularExpression':
+        return cls(**item_config)
 
     @staticmethod
     def get_config() -> list:
@@ -84,11 +84,25 @@ class ModularExpression(ABC):
         return item_configs
 
     @staticmethod
-    def from_config():
-        pass  # TODO
+    def from_config(config: list):
+        """
+        Reconstructs the modular expression engineering pipeline from a list of configuration dictionaries.
+        Clears any existing modular expressions and populates `ModularExpression.modular_expression_list` with
+        newly created modular expression objects based on the provided configurations.
+
+        Args:
+            config (List[dict]): A list where each dictionary is the configuration
+                                    for a single modular expression object.
+        """
+
+        ModularExpression.reset()
+        for item_conf in config:
+            f = ModularExpression.get_existing_modular_expression(item_conf['name'])
+            if f is None:
+                modular_expression_from_config(item_conf, config)
 
     @staticmethod
-    def get_modular_expression(name: str) -> Union['ModularExpression', None]:
+    def get_existing_modular_expression(name: str) -> Union['ModularExpression', None]:
         """
         Retrieves a modular expression object by its name from the managed list.
 
@@ -117,13 +131,14 @@ def get_name(feature: Union[ModularExpression, int, float]) -> str:
 CONSTRUCTED_CLASS_REGISTRY: dict[str, Type['ModularExpression']] = dict()
 
 
-def modular_expression_from_config(item_conf: dict) -> 'ModularExpression':
+def modular_expression_from_config(item_conf: dict, config: list[dict]) -> 'ModularExpression':
     """
     Factory function to create a modular expression object from its configuration dictionary.
 
     Args:
         item_conf (dict): The configuration dictionary for a single modular expression.
                           Must contain 'class_name' and other necessary parameters.
+        config (list[dict]): The list with the configuration dictionaries of all modular expressions
 
     Returns:
         ModularExpression: An instance of the appropriate modular expression subclass.
@@ -133,8 +148,39 @@ def modular_expression_from_config(item_conf: dict) -> 'ModularExpression':
     """
     class_name = item_conf['class_name']
     modular_expression_class = CONSTRUCTED_CLASS_REGISTRY[class_name]
-    f1f = modular_expression_class.from_config(item_conf)
+    f1f = modular_expression_class._from_config(item_conf, config)
     return f1f
+
+
+def get_modular_expressions_by_name(names: Union[str, list[str]], config: list[dict]) -> list[ModularExpression]:
+    """
+    Retrieves modular expressions by their names if they have already been constructed,
+    otherwise constructs the modular expression objects based on the given configuration.
+
+    Args:
+        names (Union[str, list[str]]): single name (str) or list of names of the modular expressions to retrieve
+        config (list[dict]): The list with the configuration dictionaries of all modular expressions
+
+    Returns:
+        ModularExpression: An instance of the specific ModularExpression subclass.
+    """
+
+    if isinstance(names, str):  # convert str to list
+        names = [names]
+
+    l = list[ModularExpression]()
+    for name in names:
+        me = ModularExpression.get_existing_modular_expression(
+            name)  # if modular expression already constructed, retrieve it
+
+        if me is None:  # modular expression yet unconstructed
+            item_config = dict()
+            for item in config:  # find config of modular expression to construct it
+                if item['name'] == name:
+                    item_config = item
+            me = modular_expression_from_config(item_config, config)  # construct modular expression
+        l.append(me)
+    return l
 
 
 def register_modular_expression(cls):
@@ -251,45 +297,46 @@ class ModularTwo(ModularExpression, ABC):
         return c
 
     @classmethod
-    def _from_config(cls, config: dict) -> 'ModularTwo':
+    def _from_config(cls, item_config: dict, config: list[dict]) -> 'ModularTwo':
         """
         Creates a ModularTwo instance (or its subclass) from a configuration dictionary.
         Handles reconstruction of operand modular expressions if they were ModularExpression objects.
 
         Args:
-            config (dict): Configuration dictionary. Must contain 'feature1' and 'feature2'.
+            item_config (dict): Configuration dictionary. Must contain 'feature1' and 'feature2'.
+            config (list[dict]): The list with the configuration dictionaries of all modular expressions
 
         Returns:
             ModularTwo: An instance of the specific ModularTwo subclass.
         """
 
         # Reconstruct feature 1
-        if isinstance(config['feature1'], dict):
-            item_conf = config['feature1']
+        if isinstance(item_config['feature1'], dict):
+            feature_conf = item_config['feature1']
             # Check if modular expression already exists
-            f1n = ModularExpression.get_modular_expression(item_conf['name'])
+            f1n = ModularExpression.get_existing_modular_expression(feature_conf['name'])
             if f1n is None:
-                f1n = modular_expression_from_config(item_conf)
-        elif isinstance(config['feature1'], str):
-            f1n = ModularExpression.get_modular_expression(config['feature1'])
+                f1n = modular_expression_from_config(feature_conf, config)
+        elif isinstance(item_config['feature1'], str):
+            f1n = ModularExpression.get_existing_modular_expression(item_config['feature1'])
         else:  # feature is int or float
-            f1n = config['feature1']
-        config['feature1'] = f1n
+            f1n = item_config['feature1']
+        item_config['feature1'] = f1n
 
         # Reconstruct feature 2
-        if isinstance(config['feature2'], dict):
-            item_conf = config['feature2']
+        if isinstance(item_config['feature2'], dict):
+            feature_conf = item_config['feature2']
             # Check if modular expression already exists
-            f2n = ModularExpression.get_modular_expression(item_conf['name'])
+            f2n = ModularExpression.get_existing_modular_expression(feature_conf['name'])
             if f2n is None:
-                f2n = modular_expression_from_config(item_conf)
-        elif isinstance(config['feature2'], str):
-            f2n = ModularExpression.get_modular_expression(config['feature2'])
+                f2n = modular_expression_from_config(feature_conf, config)
+        elif isinstance(item_config['feature2'], str):
+            f2n = ModularExpression.get_existing_modular_expression(item_config['feature2'])
         else:  # feature is int or float
-            f2n = config['feature2']
-        config['feature2'] = f2n
+            f2n = item_config['feature2']
+        item_config['feature2'] = f2n
 
-        return cls(**config)
+        return cls(**item_config)
 
 
 @register_modular_expression

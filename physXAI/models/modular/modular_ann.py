@@ -1,6 +1,6 @@
 import functools
 from itertools import combinations
-from logging import warning
+from abc import ABC, abstractmethod
 import operator
 import os
 from pathlib import Path
@@ -9,7 +9,8 @@ from copy import deepcopy
 
 import numpy as np
 from physXAI.models.ann.keras_models.keras_models import NonNegPartial
-from physXAI.models.modular.modular_expression import ModularExpression, register_modular_expression
+from physXAI.models.modular.modular_expression import (ModularExpression, register_modular_expression,
+                                                       get_modular_expressions_by_name)
 from physXAI.models.ann.ann_design import SingleStepModel, ANNModel, CMNNModel, ClassicalANNModel
 from physXAI.models.models import LinearRegressionModel, register_model
 from physXAI.preprocessing.training_data import TrainingDataGeneric
@@ -81,28 +82,76 @@ class ModularANN(ANNModel):
         })
         return config
 
+    @classmethod
+    def from_config(cls, config: dict) -> 'ModularANN':
+
+        a = ModularExpression.get_existing_modular_expression(config['architecture'])
+        assert a is not None, (f"ModularExpression {config['architecture']} not found, make sure to construct required "
+                               f"modular expressions before constructing {cls.__class__.__name__}.")
+        config['architecture'] = a
+
+        return cls(**config)
+
+
+class ModularAbstractModel(ModularExpression, ABC):
+    """
+    Abstract Base Class for ModularExpressions having other ModularExpressions as inputs
+    Examples: ModularModel, ModularExistingModel, ModularLinear, ...
+    """
+    def __init__(self, inputs: list[Union[ModularExpression, FeatureBase]], name: str):
+        super().__init__(name)
+        self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
+
+    @abstractmethod
+    def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
+        pass
+
+    def _get_config(self) -> dict:
+        c = super()._get_config()
+        c.update({
+            'inputs': [inp.name for inp in self.inputs],
+        })
+        return c
+
+    @classmethod
+    def _from_config(cls, item_config: dict, config: list[dict]) -> 'ModularAbstractModel':
+        """
+        Creates a ModularAbstractModel instance (or its subclass) from a configuration dictionary.
+        Handles reconstruction of inputs.
+
+        Args:
+            item_config (dict): Configuration dictionary. Must contain key 'inputs' with list of input names
+            config (list[dict]): The list with the configuration dictionaries of all modular expressions
+
+        Returns:
+            ModularAbstractModel: An instance of the specific ModularAbstractModel subclass.
+        """
+
+        item_config['inputs'] = get_modular_expressions_by_name(item_config['inputs'], config)
+        return cls(**item_config)
+
 
 @register_modular_expression
-class ModularModel(ModularExpression):
+class ModularModel(ModularAbstractModel):
 
     allowed_models = [ClassicalANNModel, CMNNModel, LinearRegressionModel]
     i = 0
 
-    def __init__(self, model: ANNModel, inputs: list[ModularExpression, FeatureBase], name: str = None, nominal_range: tuple[float, float] = None):
+    def __init__(self, model: ANNModel, inputs: list[ModularExpression, FeatureBase], name: str = None,
+                 nominal_range: tuple[float, float] = None):
         if not any(isinstance(model, allowed) for allowed in self.allowed_models):
             raise NotImplementedError(f"Currently {type(model)} is not supported. Allowed models are: {self.allowed_models}")
 
         if name is None:
             name = f"ModularModel_{ModularModel.i}"
             ModularModel.i += 1
+        super().__init__(inputs, name)
 
-        super().__init__(name)
         self.model = model
         self.model.model_config.update({
             "normalize": False,
             "rescale_output": False
         })
-        self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
         self._nominal_range = nominal_range
 
         if nominal_range is None:
@@ -136,39 +185,42 @@ class ModularModel(ModularExpression):
             return l
 
     def _get_config(self) -> dict:
-        c = super()._get_config()
+        c = ModularExpression._get_config(self)
         c.update({
             'model': self.model.get_config(),
-            'inputs': [inp.name for inp in self.inputs],
             'nominal_range': self._nominal_range,
         })
         return c
 
     @classmethod
-    def _from_config(cls, config: dict) -> 'ModularModel':
+    def _from_config(cls, item_config: dict, config: list[dict]) -> 'ModularModel':
         """
         Creates a ModularModel instance from a configuration dictionary.
-        Handles reconstruction of model (ANNModel).
+        Handles reconstruction of model (ANNModel) and inputs.
 
         Args:
-            config (dict): Configuration dictionary. Must contain configuration for model as well.
+            item_config (dict): Configuration dictionary. Must contain configuration for model as well.
+            config (list[dict]): The list with the configuration dictionaries of all modular expressions
 
         Returns:
-            ModularModel: An instance of the specific ModularModel subclass.
+            ModularModel: An instance of the specific ModularModel.
         """
 
-        assert isinstance(config['model'], dict), (f"config must contain the configuration (dict) for the model but #"
-                                                   f"config['model'] is {config['model']}]")
-        m = SingleStepModel.from_config(config['model'])
-        config['model'] = m
-        
-        return cls(**config)
+        assert isinstance(item_config['model'], dict), (f"config must contain the configuration (dict) for the model "
+                                                        f"but config['model'] is {item_config['model']}]")
+        m = SingleStepModel.from_config(item_config['model'])
+        item_config['model'] = m
+
+        item_config['inputs'] = get_modular_expressions_by_name(item_config['inputs'], config)
+
+        return cls(**item_config)
 
 
 @register_modular_expression
-class ModularExistingModel(ModularExpression):
+class ModularExistingModel(ModularAbstractModel):
 
-    def __init__(self, model: Union[Sequential, Functional, str, Path], original_inputs: list[ModularExpression, FeatureBase], trainable: bool, name: str = None):
+    def __init__(self, model: Union[Sequential, Functional, str, Path],
+                 original_inputs: list[ModularExpression, FeatureBase], trainable: bool, name: str = None):
         if isinstance(model, str) or isinstance(model, Path):
             self.model_path = model
             model = keras.models.load_model(model)
@@ -176,9 +228,8 @@ class ModularExistingModel(ModularExpression):
 
         if name is None:
             name = model.name + '_existing'
-        super().__init__(name)
+        super().__init__(original_inputs, name)
 
-        self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in original_inputs]
         self.model.trainable = trainable
         if not trainable:
             for layer in self.model.layers:
@@ -206,22 +257,41 @@ class ModularExistingModel(ModularExpression):
 
         c.update({
             'model': self.model_path,
-            'original_inputs': [inp.name for inp in self.inputs],
+            'original_inputs': c['inputs'],
             'trainable': self.model.trainable
         })
+        c.__delitem__('inputs')  # super config contains key 'inputs', here key must be original_inputs
         return c
+
+    @classmethod
+    def _from_config(cls, item_config: dict, config: list[dict]) -> 'ModularExistingModel':
+        """
+        Creates a ModularExistingModel instance from a configuration dictionary.
+        Handles reconstruction of original_inputs.
+
+        Args:
+            item_config (dict): Configuration dictionary
+            config (list[dict]): The list with the configuration dictionaries of all modular expressions
+
+        Returns:
+            ModularExistingModel: An instance of the specific ModularExistingModel.
+        """
+
+        item_config['original_inputs'] = get_modular_expressions_by_name(item_config['original_inputs'], config)
+
+        return cls(**item_config)
 
 
 @register_modular_expression
-class ModularLinear(ModularExpression):
+class ModularLinear(ModularAbstractModel):
     i = 0
 
-    def __init__(self, inputs: list[ModularExpression, FeatureBase], name: str = None, nominal_range: tuple[float, float] = None):
+    def __init__(self, inputs: list[ModularExpression, FeatureBase], name: str = None,
+                 nominal_range: tuple[float, float] = None):
         if name is None:
             name = f"ModularLinear_{ModularLinear.i}"
             ModularLinear.i += 1
-        super().__init__(name)
-        self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
+        super().__init__(inputs, name)
         self._nominal_range = nominal_range
 
         if nominal_range is None:
@@ -250,22 +320,21 @@ class ModularLinear(ModularExpression):
     def _get_config(self) -> dict:
         c = super()._get_config()
         c.update({
-            'inputs': [inp.name for inp in self.inputs],
             'nominal_range': self._nominal_range,
         })
         return c
 
 
 @register_modular_expression
-class ModularMonotoneLinear(ModularExpression):
+class ModularMonotoneLinear(ModularAbstractModel):
     i = 0
 
-    def __init__(self, inputs: list[Union[ModularExpression, FeatureBase]], name: str = None, monotonicities: Optional[dict[str, int]] = None, nominal_range: tuple[float, float] = None):
+    def __init__(self, inputs: list[Union[ModularExpression, FeatureBase]], name: str = None,
+                 monotonicities: Optional[dict[str, int]] = None, nominal_range: tuple[float, float] = None):
         if name is None:
             name = f"ModularMonotoneLinear_{ModularLinear.i}"
             ModularLinear.i += 1
-        super().__init__(name)
-        self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
+        super().__init__(inputs, name)
         self._nominal_range = nominal_range
 
         if monotonicities is None:
@@ -300,7 +369,6 @@ class ModularMonotoneLinear(ModularExpression):
     def _get_config(self) -> dict:
         c = super()._get_config()
         c.update({
-            'inputs': [inp.name for inp in self.inputs],
             'nominal_range': self._nominal_range,
             'monotonicities': self.monotonicities,
         })
@@ -308,19 +376,19 @@ class ModularMonotoneLinear(ModularExpression):
 
 
 @register_modular_expression
-class ModularPolynomial(ModularExpression):
+class ModularPolynomial(ModularAbstractModel):
     i = 0
 
-    def __init__(self, inputs: list[ModularExpression, FeatureBase], degree: int = 2, interaction_degree: int = 1, name: str = None, nominal_range: tuple[float, float] = None):
+    def __init__(self, inputs: list[ModularExpression, FeatureBase], degree: int = 2, interaction_degree: int = 1,
+                 name: str = None, nominal_range: tuple[float, float] = None):
         if name is None:
             name = f"ModularPolynomial_{ModularPolynomial.i}"
             ModularPolynomial.i += 1
-        super().__init__(name)
+        super().__init__(inputs, name)
         assert degree >= 1, "Degree must be at least 1."
         assert interaction_degree >= 1, "Interaction degree must be at least 1."
         self.degree = degree
         self.interaction_degree = interaction_degree
-        self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
         self._nominal_range = nominal_range
 
         if nominal_range is None:
@@ -359,7 +427,6 @@ class ModularPolynomial(ModularExpression):
     def _get_config(self) -> dict:
         c = super()._get_config()
         c.update({
-            'inputs': [inp.name for inp in self.inputs],
             'degree': self.degree,
             'interaction:degree': self.interaction_degree,
             'nominal_range': self._nominal_range,
@@ -368,15 +435,14 @@ class ModularPolynomial(ModularExpression):
 
 
 @register_modular_expression
-class ModularAverage(ModularExpression):
+class ModularAverage(ModularAbstractModel):
     i = 0
 
     def __init__(self, inputs: list[ModularExpression, FeatureBase], name: str = None):
         if name is None:
             name = f"ModularAverage_{ModularAverage.i}"
             ModularAverage.i += 1
-        super().__init__(name)
-        self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
+        super().__init__(inputs, name)
 
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
         if self.name in ModularExpression.models.keys():
@@ -390,24 +456,16 @@ class ModularAverage(ModularExpression):
             ModularExpression.models[self.name] = l
             return l
 
-    def _get_config(self) -> dict:
-        c = super()._get_config()
-        c.update({
-            'inputs': [inp.name for inp in self.inputs],
-        })
-        return c
-
 
 @register_modular_expression
-class ModularNormalization(ModularExpression):
+class ModularNormalization(ModularAbstractModel):
     i = 0
 
     def __init__(self, input: ModularExpression, name: str = None):
         if name is None:
             name = f"ModularNormalization_{ModularNormalization.i}"
             ModularNormalization.i += 1
-        super().__init__(name)
-        self.inputs = input
+        super().__init__([input], name)
 
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
         inp = self.inputs.construct(input_layer, td)
@@ -418,6 +476,25 @@ class ModularNormalization(ModularExpression):
     def _get_config(self) -> dict:
         c = super()._get_config()
         c.update({
-            'input': self.inputs.name,
+            'input': c['inputs'][0],
         })
+        c.__delitem__('inputs')  # super config contains key 'inputs', here only single input
         return c
+
+    @classmethod
+    def _from_config(cls, item_config: dict, config: list[dict]) -> 'ModularNormalization':
+        """
+        Creates a ModularNormalization instance from a configuration dictionary.
+        Handles reconstruction of single input.
+
+        Args:
+            item_config (dict): Configuration dictionary
+            config (list[dict]): The list with the configuration dictionaries of all modular expressions
+
+        Returns:
+            ModularNormalization: An instance of the specific ModularNormalization.
+        """
+
+        item_config['input'] = get_modular_expressions_by_name(item_config['input'], config)[0]
+
+        return cls(**item_config)
