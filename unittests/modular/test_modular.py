@@ -5,8 +5,10 @@ import json
 import copy
 from pathlib import Path
 from physXAI.models.modular.modular_expression import ModularTrainable, ModularExpression
-from physXAI.models.ann.ann_design import ClassicalANNModel
-from physXAI.models.modular.modular_ann import ModularANN, ModularAverage, ModularLinear, ModularModel
+from physXAI.models.ann.ann_design import ClassicalANNModel, CMNNModel
+from physXAI.models.modular.modular_ann import (ModularANN, ModularAverage, ModularLinear, ModularModel,
+                                                ModularExistingModel, ModularMonotoneLinear, ModularPolynomial,
+                                                ModularNormalization)
 from physXAI.utils.logging import Logger
 from physXAI.preprocessing.constructed import Feature
 from physXAI.models.models import AbstractModel
@@ -67,16 +69,24 @@ def test_generate_sample_model(random_seed: int = 42, training_data_path: str = 
     m7 = mX ** mY
     m8 = ModularAverage([mX, mY])
 
+    # Existing model
+    cmnn = CMNNModel(monotonies={'x1': 1, 'x2': -1, 'x3': 0}, activation_split=[1, 1, 1], epochs=50)
+    cmnn_model = cmnn.pipeline(td, save_model=False, plot=False)
+    me = ModularExistingModel(model=cmnn_model, original_inputs=features, trainable=False)
+
+    mml = ModularMonotoneLinear(inputs=[m3, m4], monotonicities={m3.name: 1, m4.name: -1})
+    mp = ModularPolynomial(inputs=[m5, m7, m8], degree=3)
+    mn = ModularNormalization(input=m2)
+
     out = ModularLinear([
         m1,
-        m2,
-        m3,
-        m4,
-        m5,
         m6,
-        m7,
-        m8
+        me,
+        mml,
+        mp,
+        mn,
     ])
+
     m = ModularANN(architecture=out, epochs=50, random_seed=random_seed)
     model = m.pipeline(td, plot=True, save_model=True)
 
@@ -137,3 +147,4 @@ if __name__ == "__main__":
     test_generate_sample_model()
     test_generate_sample_model()
     test_read_setup()
+    

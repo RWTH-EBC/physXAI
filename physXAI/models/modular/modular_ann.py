@@ -251,7 +251,7 @@ class ModularExistingModel(ModularAbstractModel):
 
         # if model wasn't loaded from path originally, save it and store path
         if not hasattr(self, 'model_path'):
-            self.model_path = Logger.get_model_savepath(save_name_model=self.model.name)
+            self.model_path = Logger.get_model_savepath(save_name_model=self.model.name + '.keras')
             self.model.save(self.model_path)
 
         c.update({
@@ -369,7 +369,7 @@ class ModularMonotoneLinear(ModularAbstractModel):
         c = super()._get_config()
         c.update({
             'nominal_range': self._nominal_range,
-            'monotonicities': self.monotonicities,
+            'monotonicities': {self.inputs[n].name: self.monotonicities[n] for n in range(len(self.inputs))},
         })
         return c
 
@@ -427,7 +427,7 @@ class ModularPolynomial(ModularAbstractModel):
         c = super()._get_config()
         c.update({
             'degree': self.degree,
-            'interaction:degree': self.interaction_degree,
+            'interaction_degree': self.interaction_degree,
             'nominal_range': self._nominal_range,
         })
         return c
@@ -467,7 +467,7 @@ class ModularNormalization(ModularAbstractModel):
         super().__init__([input], name)
 
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
-        inp = self.inputs.construct(input_layer, td)
+        inp = self.inputs[0].construct(input_layer, td)
         normalization = keras.layers.BatchNormalization()
         l = normalization(inp)
         return l
