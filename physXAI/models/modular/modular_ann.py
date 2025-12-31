@@ -136,7 +136,7 @@ class ModularModel(ModularAbstractModel):
     allowed_models = [ClassicalANNModel, CMNNModel, LinearRegressionModel]
     i = 0
 
-    def __init__(self, model: ANNModel, inputs: list[ModularExpression, FeatureBase], name: str = None,
+    def __init__(self, model: ANNModel, inputs: list[Union[ModularExpression, FeatureBase]], name: str = None,
                  nominal_range: tuple[float, float] = None):
         if not any(isinstance(model, allowed) for allowed in self.allowed_models):
             raise NotImplementedError(f"Currently {type(model)} is not supported. Allowed models are: {self.allowed_models}")
@@ -219,7 +219,7 @@ class ModularModel(ModularAbstractModel):
 class ModularExistingModel(ModularAbstractModel):
 
     def __init__(self, model: Union[Sequential, Functional, str, Path],
-                 original_inputs: list[ModularExpression, FeatureBase], trainable: bool, name: str = None):
+                 original_inputs: list[Union[ModularExpression, FeatureBase]], trainable: bool, name: str = None):
         if isinstance(model, str) or isinstance(model, Path):
             self.model_path = model
             model = keras.models.load_model(model)
@@ -285,7 +285,7 @@ class ModularExistingModel(ModularAbstractModel):
 class ModularLinear(ModularAbstractModel):
     i = 0
 
-    def __init__(self, inputs: list[ModularExpression, FeatureBase], name: str = None,
+    def __init__(self, inputs: list[Union[ModularExpression, FeatureBase]], name: str = None,
                  nominal_range: tuple[float, float] = None):
         if name is None:
             name = f"ModularLinear_{ModularLinear.i}"
@@ -378,7 +378,7 @@ class ModularMonotoneLinear(ModularAbstractModel):
 class ModularPolynomial(ModularAbstractModel):
     i = 0
 
-    def __init__(self, inputs: list[ModularExpression, FeatureBase], degree: int = 2, interaction_degree: int = 1,
+    def __init__(self, inputs: list[Union[ModularExpression, FeatureBase]], degree: int = 2, interaction_degree: int = 1,
                  name: str = None, nominal_range: tuple[float, float] = None):
         if name is None:
             name = f"ModularPolynomial_{ModularPolynomial.i}"
@@ -437,7 +437,7 @@ class ModularPolynomial(ModularAbstractModel):
 class ModularAverage(ModularAbstractModel):
     i = 0
 
-    def __init__(self, inputs: list[ModularExpression, FeatureBase], name: str = None):
+    def __init__(self, inputs: list[Union[ModularExpression, FeatureBase]], name: str = None):
         if name is None:
             name = f"ModularAverage_{ModularAverage.i}"
             ModularAverage.i += 1
