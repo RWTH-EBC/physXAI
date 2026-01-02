@@ -355,11 +355,11 @@ class PreprocessingMultiStep(PreprocessingData):
         keras.utils.set_random_seed(random_state)
 
         # Determine necessary parameters for window creation
-        self.features: list[str] = (inputs + self.output +
-                                    [f for f in self.init_features if f not in inputs and f not in self.output])
+        self.features: list[str] = (self.inputs + self.output +
+                                    [f for f in self.init_features if f not in self.inputs and f not in self.output])
         self.column_indices: dict[str, int] = {name: i for i, name in enumerate(self.features)}
-        self.warmup_columns_input: list[str] = list(set(self.init_features) & set(inputs))
-        self.warmup_columns_labels: list[str] = list(set(self.init_features) - set(inputs))
+        self.warmup_columns_input: list[str] = list(set(self.init_features) & set(self.inputs))
+        self.warmup_columns_labels: list[str] = list(set(self.init_features) - set(self.inputs))
 
         self.label_width: int = label_width
         self.warmup_width: int = warmup_width
