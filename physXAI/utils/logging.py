@@ -142,7 +142,7 @@ class Logger:
         if base_path is None:
             base_path = Logger.base_path
         if folder_name is None:
-            folder_name = datetime.now().strftime("%d.%m.%y %H:%M:%S")
+            folder_name = datetime.now().strftime("%y-%m-%d %H.%M.%S")
             folder_name = os.path.join(base_path, folder_name)
         else:
             folder_name = os.path.join(base_path, folder_name)
