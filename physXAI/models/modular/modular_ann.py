@@ -467,7 +467,7 @@ class ModularNormalization(ModularAbstractModel):
         super().__init__([input], name)
 
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
-        inp = self.inputs.construct(input_layer, td)
+        inp = self.inputs[0].construct(input_layer, td)
         normalization = keras.layers.BatchNormalization()
         l = normalization(inp)
         return l
