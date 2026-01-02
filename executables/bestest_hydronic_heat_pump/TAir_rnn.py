@@ -29,7 +29,7 @@ label_width = 48
 warmup_width = 48
 
 # Create Training data. For RNNs MultiStep training data is required
-prep = PreprocessingMultiStep(inputs, output, label_width, warmup_width, init_features=inits)
+prep = PreprocessingMultiStep(inputs=inputs, output=output, label_width=label_width, warmup_width=warmup_width, init_features=inits)
 # Process Training data
 td = prep.pipeline(file_path)
 

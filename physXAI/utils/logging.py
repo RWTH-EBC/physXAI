@@ -109,6 +109,7 @@ class Logger:
     base_path = 'stored_data'
     save_name_model: str = 'model'
     save_name_model_online_learning: str = 'model_ol'
+    save_name_modular_expression_config: str = 'modular_expression_config.json'
 
     _logger = None
     _override = False
@@ -156,7 +157,7 @@ class Logger:
 
     @staticmethod
     def log_setup(preprocessing=None, model=None, save_name_preprocessing=None, save_name_model=None,
-                  save_name_constructed=None):
+                  save_name_constructed=None, save_name_modular_expression=None):
         if Logger._logger is None:
             Logger.setup_logger()
 
@@ -198,6 +199,19 @@ class Logger:
             with open(path, "w") as f:
                 json.dump(model_dict, f, indent=4)
 
+            from physXAI.models.modular.modular_expression import ModularExpression
+            modular_expression_config = ModularExpression.get_config()
+            if len(modular_expression_config) > 0:
+                if save_name_modular_expression is None:
+                    save_name_modular_expression = Logger.save_name_modular_expression_config
+                path = os.path.join(Logger._logger, save_name_modular_expression)
+                path = create_full_path(path)
+                Logger.override_question(path)
+                with open(path, "w") as f:
+                    json.dump(modular_expression_config, f, indent=4)
+
+            ModularExpression.reset()
+
     @staticmethod
     def save_training_data(training_data, path: str = None):
         if Logger._logger is None:
@@ -232,10 +246,19 @@ class Logger:
              pickle.dump(training_data, f)
 
     @staticmethod
-    def get_model_savepath():
+    def get_model_savepath(save_name_model: str = None) -> str:
+        """
+        returns the path the model is saved to
+
+        Args:
+             save_name_model (str): optional name the model is saved with (string without .keras),
+                                    default: Logger.save_name_model
+        """
         if Logger._logger is None:
             Logger.setup_logger()
+        if save_name_model is None:
+            save_name_model = Logger.save_name_model
 
-        p = os.path.join(Logger._logger, Logger.save_name_model)
+        p = os.path.join(Logger._logger, save_name_model)
 
         return p
