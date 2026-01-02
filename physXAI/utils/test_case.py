@@ -1,6 +1,7 @@
 import os
 from typing import Union
 import inspect
+from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
 from physXAI.preprocessing.constructed import FeatureBase
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep, PreprocessingMultiStep, PreprocessingData
 from physXAI.models.models import AbstractModel, SingleStepModel, MultiStepModel
@@ -9,8 +10,8 @@ from physXAI.utils.logging import Logger
 
 class TestCase:
 
-    def __init__(self, inputs: list[Union[str, FeatureBase]], outputs: list[Union[str, FeatureBase]], data_path: str,
-                 label_width: int = None,  warmup_width: int = None):
+    def __init__(self, inputs: list[Union[str, FeatureBase]], outputs: Union[str, list[Union[str, FeatureBase]]],
+                 data_path: str, label_width: int = None,  warmup_width: int = None):
         # TODO: add docstrings
         # label_width, warmup_width required if multistep should be used
         self.inputs = inputs
@@ -25,6 +26,9 @@ class TestCase:
         return PreprocessingSingleStep(self.inputs, self.outputs, **kwargs)
 
     def get_preprocessing_multi_step(self, **kwargs) -> PreprocessingMultiStep:
+        assert self.label_width is not None, 'label_width is required for MultiStepModel'
+        assert self.warmup_width is not None, 'warmup_width is required for MultiStepModel'
+
         return PreprocessingMultiStep(self.inputs, self.outputs, self.label_width, self.warmup_width, **kwargs)
 
     def pipeline(self, m: AbstractModel, prep: PreprocessingData = None, plot: bool = True, save_model: bool = True,
@@ -33,6 +37,7 @@ class TestCase:
         # Get the filename of executable file
         caller_frame = inspect.currentframe().f_back
         caller_filename = caller_frame.f_globals["__file__"]
+        caller_filename = os.path.splitext(os.path.basename(caller_filename))[0]
 
         # Setup up logger for saving
         Logger.setup_logger(folder_name=caller_filename, override=True)
@@ -62,6 +67,9 @@ class TestCase:
         # Log training data as pickle
         Logger.save_training_data(td)
 
-    # TODO feature selection pipeline
+    def recursive_feature_elimination_pipeline(self, m: SingleStepModel, prep=None, **kwargs):
+        # Create Training data
+        if prep is None:
+            prep = self.get_preprocessing_single_step()
 
-
+        return recursive_feature_elimination_pipeline(self.data_path, prep, m, **kwargs)
