@@ -10,12 +10,12 @@ from physXAI.utils.logging import Logger
 
 class TestCase:
 
-    def __init__(self, inputs: list[Union[str, FeatureBase]], outputs: Union[str, list[Union[str, FeatureBase]]],
+    def __init__(self, inputs: list[Union[str, FeatureBase]], output: Union[str, list[Union[str, FeatureBase]]],
                  data_path: str, label_width: int = None,  warmup_width: int = None):
         # TODO: add docstrings
         # label_width, warmup_width required if multistep should be used
         self.inputs = inputs
-        self.outputs = outputs
+        self.output = output
         self.data_path = data_path
 
         # only relevant for MultiStepModels
@@ -23,13 +23,13 @@ class TestCase:
         self.warmup_width = warmup_width
 
     def get_preprocessing_single_step(self, **kwargs) -> PreprocessingSingleStep:
-        return PreprocessingSingleStep(self.inputs, self.outputs, **kwargs)
+        return PreprocessingSingleStep(self.inputs, self.output, **kwargs)
 
     def get_preprocessing_multi_step(self, **kwargs) -> PreprocessingMultiStep:
         assert self.label_width is not None, 'label_width is required for MultiStepModel'
         assert self.warmup_width is not None, 'warmup_width is required for MultiStepModel'
 
-        return PreprocessingMultiStep(self.inputs, self.outputs, self.label_width, self.warmup_width, **kwargs)
+        return PreprocessingMultiStep(self.inputs, self.output, self.label_width, self.warmup_width, **kwargs)
 
     def pipeline(self, m: AbstractModel, prep: PreprocessingData = None, plot: bool = True, save_model: bool = True,
                  online_epochs: int = -1):
@@ -67,7 +67,7 @@ class TestCase:
         # Log training data as pickle
         Logger.save_training_data(td)
 
-    def recursive_feature_elimination_pipeline(self, m: SingleStepModel, prep=None, **kwargs):
+    def recursive_feature_elimination_pipeline(self, m: SingleStepModel, prep: PreprocessingData = None, **kwargs):
         # Create Training data
         if prep is None:
             prep = self.get_preprocessing_single_step()

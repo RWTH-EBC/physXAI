@@ -43,10 +43,14 @@ u_hp.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
 
 # List of input features. Can include constructed features and lagged inputs
 inputs_tair = [TAirRoom, 'reaTZon_y_lag1', 'reaTZon_y_lag2', t_amb, 'weaSta_reaWeaTDryBul_y_lag1',
-          'weaSta_reaWeaHDirNor_y', u_hp, 'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2']
+               'weaSta_reaWeaHDirNor_y', u_hp, 'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2']
 
 # Output feature
 output_tair = 'Change(T_zone)'
 
 # Define test case, including parameter for multistep models
-bestest_tair = TestCase(inputs_tair, output_tair, data_path, label_width=48, warmup_width=48)
+# Number of time steps in the output (label) sequence.
+label_width = 48
+# Number of time steps in the warmup sequence (for RNN state initialization).
+warmup_width = 48
+bestest_tair = TestCase(inputs_tair, output_tair, data_path, label_width=label_width, warmup_width=warmup_width)
