@@ -632,7 +632,7 @@ class PCNNCell(keras.Layer):
         dis_ann_output = self.dis_ann(disturbance_inputs)
 
         # linear module
-        if self.non_lin_inputs is None:
+        if self.non_lin_inputs == 0:
             linear_inputs = inputs[:, self.dis_inputs:]
             lin_module_output = self.lin_layer(linear_inputs)
 
