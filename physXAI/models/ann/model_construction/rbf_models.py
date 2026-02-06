@@ -23,7 +23,7 @@ def gamma_init(centers, overlap=0.5) -> float:
     avg_dist_sq = np.median(dist_sq)
 
     if avg_dist_sq == 0:
-        return 1.0 # Fallback
+        return 1.0  # Fallback
     
     gamma = -np.log(overlap) / avg_dist_sq
     # print(f"Calculated Gamma: {gamma}")
