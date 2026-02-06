@@ -8,6 +8,8 @@ class ClassicalANNConstruction_config(BaseModel):
     n_neurons: Union[int, list[int]] = 32
     activation_function: Union[str, list[str]] = 'softplus'
     rescale_output: bool = True
+    normalize: bool = True
+    n_features: Optional[int] = None
 
     @field_validator('n_neurons')
     def validate_n_neurons(cls, v, info):
@@ -33,6 +35,7 @@ class ClassicalANNConstruction_config(BaseModel):
 
 class RBFConstruction_config(ClassicalANNConstruction_config):
 
+    n_layers: int = Field(..., ge=1, le=1)
     random_state: int = 42
     rescale_mean: Optional[float] = Field(
         None, description="Mean value for z-score normalization of outputs"
