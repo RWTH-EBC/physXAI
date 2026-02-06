@@ -70,11 +70,13 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
         normalization = keras.layers.Normalization()
         normalization.adapt(td.X_train_single)
         x = normalization(input_layer)
+        training_data = normalization(td.X_train_single).numpy()
     else:
         x = input_layer
+        training_data = td.X_train_single.numpy()
 
     kmeans = KMeans(n_clusters=n_neurons, random_state=config['random_state'], n_init='auto')
-    kmeans.fit(normalization(td.X_train_single).numpy())
+    kmeans.fit(training_data)
     initial_centers_kmeans = kmeans.cluster_centers_
     
     x = RBFLayer(n_neurons, 
