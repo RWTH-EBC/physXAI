@@ -7,12 +7,15 @@ from physXAI.models.ann.configs.ann_model_configs import RBFConstruction_config
 from physXAI.models.ann.keras_models.keras_models import RBFLayer
 
 
-def gamma_init(centers, overlap=0.05):
-    """Initialize gamma parameter for RBF layer based on centers and desired overlap.
+def gamma_init(centers, overlap=0.5) -> float:
+    """Initialize gamma parameter for RBF layer based on centers (median nearest-neighbor distance) and desired overlap.
 
     Args:
         centers (np.ndarray): Array of shape (n_centers, n_features) representing the RBF centers.
         overlap (float): Desired overlap factor between RBFs. Higher values lead to more overlap.
+
+    Returns:
+        gamma: Calculated gamma value for the RBF layer (gamma = -np.log(overlap) / avg_dist_sq).
     """
     nbrs = NearestNeighbors(n_neighbors=2).fit(centers)
     distances, _ = nbrs.kneighbors(centers)
@@ -20,10 +23,10 @@ def gamma_init(centers, overlap=0.05):
     avg_dist_sq = np.median(dist_sq)
 
     if avg_dist_sq == 0:
-        return 1.0 # Fallback
+        return 1.0  # Fallback
     
     gamma = -np.log(overlap) / avg_dist_sq
-    print(f"Calculated Gamma: {gamma}")
+    # print(f"Calculated Gamma: {gamma}")
     return gamma
     
 
@@ -67,11 +70,13 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
         normalization = keras.layers.Normalization()
         normalization.adapt(td.X_train_single)
         x = normalization(input_layer)
+        training_data = normalization(td.X_train_single).numpy()
     else:
         x = input_layer
+        training_data = td.X_train_single.numpy()
 
     kmeans = KMeans(n_clusters=n_neurons, random_state=config['random_state'], n_init='auto')
-    kmeans.fit(normalization(td.X_train_single).numpy())
+    kmeans.fit(training_data)
     initial_centers_kmeans = kmeans.cluster_centers_
     
     x = RBFLayer(n_neurons, 

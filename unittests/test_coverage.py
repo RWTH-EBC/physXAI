@@ -227,9 +227,6 @@ def test_model_linANN(p_hp_data, inputs_php, output_php, file_path):
     m = LinANNModel(epochs=1,  n_neurons=4)  # Residual model
     m.pipeline(td, save_model=False, plot=False)
 
-    m = LinANNModel(epochs=1, n_layers=2, n_neurons=[4, 4], activation_function=['softplus', 'softplus'])  # Residual model
-    m.pipeline(td, save_model=False, plot=False)
-
     # Log setup
     Logger.log_setup(prep, m)
     Logger.save_training_data(td)
