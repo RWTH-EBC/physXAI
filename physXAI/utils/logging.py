@@ -5,9 +5,7 @@ import shutil
 from datetime import datetime
 from typing import Union
 import git
-from physXAI.preprocessing.constructed import FeatureConstruction
 import pickle
-from physXAI.preprocessing.training_data import TrainingDataMultiStep
 
 
 def get_parent_working_directory() -> str:
@@ -208,6 +206,7 @@ class Logger:
             with open(path, "w") as f:
                 json.dump(preprocessing_dict, f, indent=4)
 
+            from physXAI.preprocessing.constructed import FeatureConstruction
             constructed_config = FeatureConstruction.get_config()
             if len(constructed_config) > 0:
                 if save_name_constructed is None:
@@ -256,6 +255,7 @@ class Logger:
         with open(p, "w") as f:
             json.dump(td_dict, f, indent=4)
 
+        from physXAI.preprocessing.training_data import TrainingDataMultiStep
         if isinstance(training_data, TrainingDataMultiStep):
             training_data = copy.copy(training_data)
             training_data.train_ds = None
