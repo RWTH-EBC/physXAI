@@ -5,6 +5,7 @@ from sklearn.neighbors import NearestNeighbors
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 from physXAI.models.ann.configs.ann_model_configs import RBFConstruction_config
 from physXAI.models.ann.keras_models.keras_models import RBFLayer
+from physXAI.utils.logging import Logger
 
 
 def gamma_init(centers, overlap=0.5) -> float:
@@ -26,7 +27,7 @@ def gamma_init(centers, overlap=0.5) -> float:
         return 1.0  # Fallback
     
     gamma = -np.log(overlap) / avg_dist_sq
-    # print(f"Calculated Gamma: {gamma}")
+    Logger.print(f"Calculated Gamma: {gamma}", 'info')
     return gamma
     
 
@@ -110,7 +111,5 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
         x = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(x)
 
     model = keras.Model(inputs=input_layer, outputs=x)
-
-    model.summary()
 
     return model

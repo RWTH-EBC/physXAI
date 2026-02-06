@@ -28,10 +28,10 @@ def get_parent_working_directory() -> str:
         git_root = repo.working_tree_dir
         return git_root
     except git.InvalidGitRepositoryError:  # pragma: no cover
-        print(f"Error: Cannot find git root directory.")  # pragma: no cover
+        Logger.print(f"Error: Cannot find git root directory.", 'error')  # pragma: no cover
         return ''  # pragma: no cover
     except Exception as e:  # pragma: no cover
-        print(f"Error: An unexpected error occurred when searching for parent directory: {e}")  # pragma: no cover
+        Logger.print(f"Error: An unexpected error occurred when searching for parent directory: {e}", 'error')  # pragma: no cover
         return ''  # pragma: no cover
 
 
@@ -110,8 +110,32 @@ class Logger:
     save_name_model: str = 'model'
     save_name_model_online_learning: str = 'model_ol'
 
+    print_level: str = 'info'  # options: 'debug', 'info', 'warning', 'error'
+    _print_levels = ['debug', 'info', 'warning', 'error']
+
     _logger = None
     _override = False
+
+    @staticmethod
+    def print(message: str, print_level: str = 'info'):
+        if Logger.check_print_level(print_level):
+            print(message)
+
+    @staticmethod
+    def check_print_level(print_level: str) -> bool:
+        if print_level not in Logger._print_levels:
+            raise ValueError(f"Invalid print level: {print_level}. Valid options are: {Logger._print_levels}")
+        if Logger._print_levels.index(print_level) >= Logger._print_levels.index(Logger.print_level):
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def verbosity() -> git.Union[int, str]:
+        if Logger._print_levels.index(Logger.print_level) >= Logger._print_levels.index('warning'):
+            return 0
+        else:
+            return "auto"
 
     @staticmethod
     def override_question(path: str):  # pragma: no cover
@@ -138,7 +162,7 @@ class Logger:
                 raise e
 
     @staticmethod
-    def setup_logger(folder_name: str = None, override: bool = False, base_path: str = None):
+    def setup_logger(folder_name: str = None, override: bool = False, base_path: str = None, print_level: str = None):
         if base_path is None:
             base_path = Logger.base_path
         if folder_name is None:
@@ -153,6 +177,9 @@ class Logger:
 
         Logger._logger = path
         Logger._override = override
+        
+        if print_level is not None:
+            Logger.print_level = print_level
 
     @staticmethod
     def log_setup(preprocessing=None, model=None, save_name_preprocessing=None, save_name_model=None,
