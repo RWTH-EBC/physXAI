@@ -7,12 +7,15 @@ from physXAI.models.ann.configs.ann_model_configs import RBFConstruction_config
 from physXAI.models.ann.keras_models.keras_models import RBFLayer
 
 
-def gamma_init(centers, overlap=0.05):
-    """Initialize gamma parameter for RBF layer based on centers and desired overlap.
+def gamma_init(centers, overlap=0.5) -> float:
+    """Initialize gamma parameter for RBF layer based on centers (median nearest-neighbor distance) and desired overlap.
 
     Args:
         centers (np.ndarray): Array of shape (n_centers, n_features) representing the RBF centers.
         overlap (float): Desired overlap factor between RBFs. Higher values lead to more overlap.
+
+    Returns:
+        gamma: Calculated gamma value for the RBF layer (gamma = -np.log(overlap) / avg_dist_sq).
     """
     nbrs = NearestNeighbors(n_neighbors=2).fit(centers)
     distances, _ = nbrs.kneighbors(centers)
@@ -23,7 +26,7 @@ def gamma_init(centers, overlap=0.05):
         return 1.0 # Fallback
     
     gamma = -np.log(overlap) / avg_dist_sq
-    print(f"Calculated Gamma: {gamma}")
+    # print(f"Calculated Gamma: {gamma}")
     return gamma
     
 
