@@ -80,7 +80,7 @@ class ANNModel(SingleStepModel, ABC):
         callbacks = list()
         if self.early_stopping_epochs is not None:
             es = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', patience=self.early_stopping_epochs,
-                                               restore_best_weights=True, verbose=Logger.verbosity())
+                                               restore_best_weights=True, verbose=Logger.verbosity_float())
             callbacks.append(es)
 
         # Fit model, track training time
@@ -705,7 +705,7 @@ class RNNModel(MultiStepModel):
         callbacks = list()
         if self.early_stopping_epochs is not None:
             es = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', patience=self.early_stopping_epochs,
-                                               restore_best_weights=True, verbose=Logger.verbosity())
+                                               restore_best_weights=True, verbose=Logger.verbosity_float())
             callbacks.append(es)
 
         # Fit model, track training time

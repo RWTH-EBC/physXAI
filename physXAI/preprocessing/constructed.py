@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from logging import Logger
+from physXAI.utils.logging import Logger
 from typing import Type, Union
 import numpy as np
 from pandas import DataFrame, Series

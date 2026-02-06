@@ -136,6 +136,13 @@ class Logger:
             return 0
         else:
             return "auto"
+        
+    @staticmethod
+    def verbosity_float() -> git.Union[int, str]:
+        if Logger._print_levels.index(Logger.print_level) >= Logger._print_levels.index('warning'):
+            return 0
+        else:
+            return 1
 
     @staticmethod
     def override_question(path: str):  # pragma: no cover
