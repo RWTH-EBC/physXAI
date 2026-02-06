@@ -57,6 +57,4 @@ def LinResidualANNConstruction(config: dict, td: TrainingDataGeneric, lin_model:
     lin.set_weights([lin_model.coef_.reshape(-1, 1), np.array(lin_model.intercept_)])
     lin.trainable = False
 
-    model.summary()
-
     return model

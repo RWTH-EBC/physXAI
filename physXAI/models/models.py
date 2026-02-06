@@ -1,3 +1,4 @@
+import os
 import time
 from abc import ABC, abstractmethod
 from typing import Type
@@ -10,6 +11,9 @@ from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiS
 from physXAI.evaluation.metrics import Metrics, MetricsMultiStep
 from physXAI.plotting.plotting import (plot_prediction_correlation, plot_metrics_table, subplots,
                                               plot_predictions, plot_multi_rmse)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+import keras
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 
 MODEL_CLASS_REGISTRY: dict[str, Type['AbstractModel']] = dict()
@@ -199,7 +203,7 @@ def register_model(cls):  # pragma: no cover
     The class is registered using its __name__.
     """
     if cls.__name__ in MODEL_CLASS_REGISTRY:
-        print(f"Warning: Class '{cls.__name__}' is already registered. Overwriting.")
+        Logger.print(f"Warning: Class '{cls.__name__}' is already registered. Overwriting.", 'warning')
     MODEL_CLASS_REGISTRY[cls.__name__] = cls
     return cls  # Decorators must return the class (or a replacement)
 
@@ -224,11 +228,14 @@ class SingleStepModel(AbstractModel, ABC):
             model: The trained model instance.
             td (TrainingDataGeneric): The TrainingData object containing datasets and for storing results.
         """
+        kwargs = {}
+        if isinstance(model, keras.Model):
+            kwargs['verbose'] = Logger.verbosity()
 
-        y_pred_train = model.predict(td.X_train_single)
-        y_pred_test = model.predict(td.X_test_single)
+        y_pred_train = model.predict(td.X_train_single, **kwargs)
+        y_pred_test = model.predict(td.X_test_single, **kwargs)
         if td.X_val_single is not None:
-            y_pred_val = model.predict(td.X_val_single)
+            y_pred_val = model.predict(td.X_val_single, **kwargs)
         else:
             y_pred_val = None
         td.add_predictions(y_pred_train, y_pred_val, y_pred_test)
@@ -307,7 +314,7 @@ class SingleStepModel(AbstractModel, ABC):
             current_val = X[:, 0, index].reshape(-1, 1)
             current_true_val = current_val.copy()
             for t in range(X.shape[1]):
-                pred = model.predict(X[:, t, :], verbose=0)
+                pred = model.predict(X[:, t, :], verbose=Logger.verbosity())
                 if delta_prediction:
                     current_val += pred
                     current_true_val += y[:, t, 0].reshape(-1, 1)
@@ -463,12 +470,12 @@ class MultiStepModel(AbstractModel, ABC):
             td (TrainingDataMultistep): The TrainingDataMultiStep object containing datasets and for storing results.
         """
 
-        y_pred_train = model.predict(td.X_train)
+        y_pred_train = model.predict(td.X_train, verbose=Logger.verbosity())
         if td.X_val is not None:
-            y_pred_val = model.predict(td.X_val)
+            y_pred_val = model.predict(td.X_val, verbose=Logger.verbosity())
         else:
             y_pred_val = None
-        y_pred_test = model.predict(td.X_test)
+        y_pred_test = model.predict(td.X_test, verbose=Logger.verbosity())
         td.add_predictions(y_pred_train, y_pred_val, y_pred_test)
 
         metrics = MetricsMultiStep(td)

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from physXAI.utils.logging import Logger
 from typing import Type, Union
 import numpy as np
 from pandas import DataFrame, Series
@@ -135,7 +136,7 @@ def register_feature(cls):
     The class is registered using its __name__.
     """
     if cls.__name__ in CONSTRUCTED_CLASS_REGISTRY:  # pragma: no cover
-        print(f"Warning: Class '{cls.__name__}' is already registered. Overwriting.")  # pragma: no cover
+        Logger.print(f"Warning: Class '{cls.__name__}' is already registered. Overwriting.", 'warning')  # pragma: no cover
     CONSTRUCTED_CLASS_REGISTRY[cls.__name__] = cls
     return cls  # Decorators must return the class (or a replacement)
 

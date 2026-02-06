@@ -3,12 +3,9 @@ import json
 import os
 import shutil
 from datetime import datetime
+from typing import Union
 import git
-from physXAI.preprocessing.constructed import FeatureConstruction
 import pickle
-from pathlib import Path
-
-from physXAI.preprocessing.training_data import TrainingDataMultiStep
 
 
 def get_parent_working_directory() -> str:
@@ -28,10 +25,10 @@ def get_parent_working_directory() -> str:
         git_root = repo.working_tree_dir
         return git_root
     except git.InvalidGitRepositoryError:  # pragma: no cover
-        print(f"Error: Cannot find git root directory.")  # pragma: no cover
+        Logger.print(f"Error: Cannot find git root directory.", 'error')  # pragma: no cover
         return ''  # pragma: no cover
     except Exception as e:  # pragma: no cover
-        print(f"Error: An unexpected error occurred when searching for parent directory: {e}")  # pragma: no cover
+        Logger.print(f"Error: An unexpected error occurred when searching for parent directory: {e}", 'error')  # pragma: no cover
         return ''  # pragma: no cover
 
 
@@ -110,8 +107,39 @@ class Logger:
     save_name_model: str = 'model'
     save_name_model_online_learning: str = 'model_ol'
 
+    print_level: str = 'info'  # options: 'debug', 'info', 'warning', 'error'
+    _print_levels = ['debug', 'info', 'warning', 'error']
+
     _logger = None
     _override = False
+
+    @staticmethod
+    def print(message: str, print_level: str = 'info'):
+        if Logger.check_print_level(print_level):
+            print(message)
+
+    @staticmethod
+    def check_print_level(print_level: str) -> bool:
+        if str(print_level).lower() not in Logger._print_levels:
+            raise ValueError(f"Invalid print level: {str(print_level).lower()}. Valid options are: {Logger._print_levels}")
+        if Logger._print_levels.index(str(print_level).lower()) >= Logger._print_levels.index(Logger.print_level):
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def verbosity() -> Union[int, str]:
+        if Logger._print_levels.index(Logger.print_level) >= Logger._print_levels.index('warning'):
+            return 0
+        else:
+            return "auto"
+        
+    @staticmethod
+    def verbosity_int() -> int:
+        if Logger._print_levels.index(Logger.print_level) >= Logger._print_levels.index('warning'):
+            return 0
+        else:
+            return 1
 
     @staticmethod
     def override_question(path: str):  # pragma: no cover
@@ -138,7 +166,7 @@ class Logger:
                 raise e
 
     @staticmethod
-    def setup_logger(folder_name: str = None, override: bool = False, base_path: str = None):
+    def setup_logger(folder_name: str = None, override: bool = False, base_path: str = None, print_level: str = None):
         if base_path is None:
             base_path = Logger.base_path
         if folder_name is None:
@@ -153,6 +181,11 @@ class Logger:
 
         Logger._logger = path
         Logger._override = override
+        
+        if print_level is not None:
+            if str(print_level).lower() not in Logger._print_levels:
+                raise ValueError(f"Invalid print level: {str(print_level).lower()}. Valid options are: {Logger._print_levels}")
+            Logger.print_level = str(print_level).lower()
 
     @staticmethod
     def log_setup(preprocessing=None, model=None, save_name_preprocessing=None, save_name_model=None,
@@ -173,6 +206,7 @@ class Logger:
             with open(path, "w") as f:
                 json.dump(preprocessing_dict, f, indent=4)
 
+            from physXAI.preprocessing.constructed import FeatureConstruction
             constructed_config = FeatureConstruction.get_config()
             if len(constructed_config) > 0:
                 if save_name_constructed is None:
@@ -221,6 +255,7 @@ class Logger:
         with open(p, "w") as f:
             json.dump(td_dict, f, indent=4)
 
+        from physXAI.preprocessing.training_data import TrainingDataMultiStep
         if isinstance(training_data, TrainingDataMultiStep):
             training_data = copy.copy(training_data)
             training_data.train_ds = None

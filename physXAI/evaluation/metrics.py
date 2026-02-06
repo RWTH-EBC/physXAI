@@ -2,6 +2,7 @@ import math
 import numpy as np
 from sklearn.metrics import mean_squared_error, r2_score
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
+from physXAI.utils.logging import Logger
 
 
 class Metrics:
@@ -9,8 +10,6 @@ class Metrics:
     A class to calculate and store regression metrics (MSE, RMSE, R2)
     for training, validation, and test datasets.
     """
-
-    print_evaluate = True
 
     def __init__(self, td: TrainingDataGeneric):
         """
@@ -52,10 +51,9 @@ class Metrics:
         kpis['RMSE' + ' ' + label] = rmse
         kpis['R2' + ' ' + label] = r2
 
-        if Metrics.print_evaluate:
-            # print(f"{label} MSE: {mse:.2f}")
-            print(f"{label} RMSE: {rmse:.2f}")
-            print(f"{label} R2: {r2:.2f}")
+        Logger.print(f"{label} MSE: {mse:.2f}", 'debug')
+        Logger.print(f"{label} RMSE: {rmse:.2f}", 'info')
+        Logger.print(f"{label} R2: {r2:.2f}", 'info')
 
         return kpis
 
@@ -130,7 +128,7 @@ class MetricsPINN(Metrics):
         for loss in kwargs['pinn_losses']:
             val = float(loss(y_true, y_pred))
             kpis[loss.__name__ + ' ' + label] = val
-            print(f"{loss.__name__ + ' ' + label}: {val:.2f}")
+            Logger.print(f"{loss.__name__ + ' ' + label}: {val:.2f}", 'info')
 
         return kpis
 

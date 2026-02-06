@@ -12,7 +12,7 @@ Creates standard models to predict the power of the heat pump using the Boptest 
 """
 
 # Setup up logger for saving
-Logger.setup_logger(folder_name='P_hp', override=True)
+Logger.setup_logger(folder_name='P_hp', override=True, print_level='warning')
 
 # File path to data
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"

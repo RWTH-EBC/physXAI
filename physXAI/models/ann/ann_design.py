@@ -80,7 +80,7 @@ class ANNModel(SingleStepModel, ABC):
         callbacks = list()
         if self.early_stopping_epochs is not None:
             es = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', patience=self.early_stopping_epochs,
-                                               restore_best_weights=True, verbose=1)
+                                               restore_best_weights=True, verbose=Logger.verbosity_int())
             callbacks.append(es)
 
         # Fit model, track training time
@@ -111,14 +111,16 @@ class ANNModel(SingleStepModel, ABC):
         training_history = model.fit(train_ds,
                                      validation_data=val_ds,
                                      epochs=self.epochs,
-                                     callbacks=callbacks)
+                                     callbacks=callbacks,
+                                     verbose=Logger.verbosity())
         stop_time = time.perf_counter()
 
         # Add metrics to training data
         td.add_training_time(stop_time - start_time)
         td.add_training_record(training_history)
 
-        model.summary()
+        if Logger.check_print_level('info'):
+            model.summary()
 
     def plot(self, td: TrainingDataGeneric):
         """
@@ -587,10 +589,10 @@ class PINNModel(ANNModel):
             td (TrainingData): The training data
         """
 
-        y_pred_train = model.predict(td.X_train_single)
-        y_pred_test = model.predict(td.X_test_single)
+        y_pred_train = model.predict(td.X_train_single, verbose=Logger.verbosity())
+        y_pred_test = model.predict(td.X_test_single, verbose=Logger.verbosity())
         if td.X_val is not None:
-            y_pred_val = model.predict(td.X_val_single)
+            y_pred_val = model.predict(td.X_val_single, verbose=Logger.verbosity())
         else:
             y_pred_val = None
         td.add_predictions(y_pred_train, y_pred_val, y_pred_test)
@@ -703,7 +705,7 @@ class RNNModel(MultiStepModel):
         callbacks = list()
         if self.early_stopping_epochs is not None:
             es = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', patience=self.early_stopping_epochs,
-                                               restore_best_weights=True, verbose=1)
+                                               restore_best_weights=True, verbose=Logger.verbosity_int())
             callbacks.append(es)
 
         # Fit model, track training time
