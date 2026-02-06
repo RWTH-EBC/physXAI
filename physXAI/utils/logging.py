@@ -122,9 +122,9 @@ class Logger:
 
     @staticmethod
     def check_print_level(print_level: str) -> bool:
-        if print_level not in Logger._print_levels:
-            raise ValueError(f"Invalid print level: {print_level}. Valid options are: {Logger._print_levels}")
-        if Logger._print_levels.index(print_level) >= Logger._print_levels.index(Logger.print_level):
+        if str(print_level).lower() not in Logger._print_levels:
+            raise ValueError(f"Invalid print level: {str(print_level).lower()}. Valid options are: {Logger._print_levels}")
+        if Logger._print_levels.index(str(print_level).lower()) >= Logger._print_levels.index(Logger.print_level):
             return True
         else:
             return False
@@ -185,7 +185,9 @@ class Logger:
         Logger._override = override
         
         if print_level is not None:
-            Logger.print_level = print_level
+            if str(print_level).lower() not in Logger._print_levels:
+                raise ValueError(f"Invalid print level: {str(print_level).lower()}. Valid options are: {Logger._print_levels}")
+            Logger.print_level = str(print_level).lower()
 
     @staticmethod
     def log_setup(preprocessing=None, model=None, save_name_preprocessing=None, save_name_model=None,
