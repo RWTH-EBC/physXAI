@@ -35,12 +35,12 @@ def search_best_features(runs: dict, multi_step: bool, use_multi_step_error: boo
     except ValueError:
         max_features = np.inf
 
-    print('Selected features:')
+    Logger.print('Selected features:', 'info')
     if max_features == np.inf:
         inputs = sorted_kpis[min_index]['inputs']
     else:
         inputs = sorted_kpis[max_features]['inputs']
-    print(inputs)
+    Logger.print(inputs, 'info')
     return inputs
 
 
@@ -53,11 +53,10 @@ def recursive_feature_elimination(file_path: str, preprocessing: PreprocessingDa
     if fixed_inputs is None:
         fixed_inputs = list()
 
-    print('Feature Selection')
-    Metrics.print_evaluate = False
-
     if Logger._logger is None:
         Logger.setup_logger()
+
+    Logger.print('Feature Selection', 'info')
 
     org_inputs = preprocessing.inputs
     inputs = preprocessing.inputs
@@ -83,8 +82,8 @@ def recursive_feature_elimination(file_path: str, preprocessing: PreprocessingDa
 
     # Recursive feature elimination
     for j in range(input_length - 1, 0, -1):
-        print(f'Features {j + 1}')
-        print(inputs)
+        Logger.print(f'Features {j + 1}', 'info')
+        Logger.print(inputs, 'info')
 
         # Reduced input features
         new_inputs = list()
@@ -137,8 +136,8 @@ def recursive_feature_elimination(file_path: str, preprocessing: PreprocessingDa
             key_filter = int(min(kpis, key=kpis.get))
         inputs = new_inputs[key_filter]
         runs[j] = run
-    print(f'Features {1}')
-    print(inputs)
+    Logger.print(f'Features {1}', 'info')
+    Logger.print(inputs, 'info')
 
     preprocessing.inputs = org_inputs
 

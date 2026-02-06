@@ -69,8 +69,6 @@ def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
         rescale_sigma = float(np.std(td.y_train_single, ddof=1))
         model.add(keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean))
 
-    model.summary()
-
     return model
 
 
@@ -188,7 +186,5 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
     #     x = d(x)
 
     model = keras.models.Model(inputs=input_layer, outputs=x)
-
-    model.summary()
 
     return model
