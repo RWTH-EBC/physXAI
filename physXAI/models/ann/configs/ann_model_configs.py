@@ -8,6 +8,7 @@ class ClassicalANNConstruction_config(BaseModel):
     n_neurons: Union[int, list[int]] = 32
     activation_function: Union[str, list[str]] = 'softplus'
     rescale_output: bool = True
+    n_features: Optional[int] = None
 
     @field_validator('n_neurons')
     def validate_n_neurons(cls, v, info):
