@@ -3,11 +3,10 @@ import json
 import os
 import shutil
 from datetime import datetime
+from typing import Union
 import git
 from physXAI.preprocessing.constructed import FeatureConstruction
 import pickle
-from pathlib import Path
-
 from physXAI.preprocessing.training_data import TrainingDataMultiStep
 
 
@@ -131,14 +130,14 @@ class Logger:
             return False
 
     @staticmethod
-    def verbosity() -> git.Union[int, str]:
+    def verbosity() -> Union[int, str]:
         if Logger._print_levels.index(Logger.print_level) >= Logger._print_levels.index('warning'):
             return 0
         else:
             return "auto"
         
     @staticmethod
-    def verbosity_float() -> git.Union[int, str]:
+    def verbosity_int() -> int:
         if Logger._print_levels.index(Logger.print_level) >= Logger._print_levels.index('warning'):
             return 0
         else:
