@@ -119,6 +119,9 @@ class ModularExpression(ABC):
             if f.name == name:
                 return f
         return None
+    
+    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input):
+        raise NotImplementedError("get_value method is only implemented for base expressions.")
 
 
 def get_name(feature: Union[ModularExpression, int, float]) -> str:
@@ -221,6 +224,17 @@ class ModularFeature(ModularExpression):
                 ModularExpression.feature_list[self.name] = x
 
             return x
+        
+    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input):
+        if not self.normalize and self.name in ModularExpression.feature_list.keys():
+            model = ModularExpression.feature_list[self.name]
+        elif self.normalize and self.name in ModularExpression.feature_list_normalized.keys():
+            model = ModularExpression.feature_list_normalized[self.name]
+        else:
+            raise ValueError(f"Feature '{self.name}' not found in feature lists. Make sure to construct the modular expression pipeline before trying to get feature values.")
+        
+        model = keras.models.Model(inputs=input_layer, outputs=model)
+        return model.predict(td.X_train_single, verbose=0) 
 
     def _get_config(self) -> dict:
         c = super()._get_config()
@@ -282,6 +296,23 @@ class ModularTwo(ModularExpression, ABC):
     
     @abstractmethod
     def _construct(self, layer1: keras.layers.Layer, layer2: keras.layers.Layer) -> keras.layers.Layer:
+        pass
+
+    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input):
+        if isinstance(self.feature1, (int, float)):
+            val1 = self.feature1
+        else:
+            val1 = self.feature1.get_value(td, input_layer)
+
+        if isinstance(self.feature2, (int, float)):
+            val2 = self.feature2
+        else:
+            val2 = self.feature2.get_value(td, input_layer)
+
+        return self._get_value(val1, val2)
+    
+    @abstractmethod
+    def _get_value(self, val1, val2):
         pass
 
     def _get_config(self) -> dict:
@@ -354,6 +385,9 @@ class ModularAdd(ModularTwo):
     def _construct(self, layer1: keras.layers.Layer, layer2: keras.layers.Layer) -> keras.layers.Layer:
         return keras.layers.Add()([layer1, layer2])
     
+    def _get_value(self, val1, val2):
+        return val1 + val2
+    
 
 @register_modular_expression
 class ModularSub(ModularTwo):
@@ -365,6 +399,9 @@ class ModularSub(ModularTwo):
 
     def _construct(self, layer1: keras.layers.Layer, layer2: keras.layers.Layer) -> keras.layers.Layer:
         return keras.layers.Subtract()([layer1, layer2])
+    
+    def _get_value(self, val1, val2):
+        return val1 - val2
     
 
 @register_modular_expression
@@ -378,6 +415,9 @@ class ModularMul(ModularTwo):
     def _construct(self, layer1: keras.layers.Layer, layer2: keras.layers.Layer) -> keras.layers.Layer:
         return keras.layers.Multiply()([layer1, layer2])
     
+    def _get_value(self, val1, val2):
+        return val1 * val2
+    
 
 @register_modular_expression
 class ModularTrueDiv(ModularTwo):
@@ -390,6 +430,9 @@ class ModularTrueDiv(ModularTwo):
     def _construct(self, layer1: keras.layers.Layer, layer2: keras.layers.Layer) -> keras.layers.Layer:
         return DivideLayer()([layer1, layer2])
     
+    def _get_value(self, val1, val2):
+        return val1 / val2
+    
 
 @register_modular_expression
 class ModularPow(ModularTwo):
@@ -401,3 +444,6 @@ class ModularPow(ModularTwo):
 
     def _construct(self, layer1: keras.layers.Layer, layer2: keras.layers.Layer) -> keras.layers.Layer:
         return PowerLayer()([layer1, layer2])
+    
+    def _get_value(self, val1, val2):
+        return val1 ** val2
