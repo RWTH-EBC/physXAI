@@ -69,7 +69,9 @@ class ModularANN(ANNModel):
             rescale_sigma = float(np.std(td.y_train_single, ddof=1))
             x = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(x)
         model = keras.models.Model(inputs=input_layer, outputs=x)
-        model.summary()
+
+        if Logger.check_print_level('debug'):
+            model.summary()
 
         return model
 
@@ -329,7 +331,8 @@ class ModularMonotoneLinear(ModularAbstractModel):
     i = 0
 
     def __init__(self, inputs: list[Union[ModularExpression, FeatureBase]], name: str = None,
-                 monotonicities: Optional[dict[str, int]] = None, nominal_range: tuple[float, float] = None):
+                 monotonicities: Optional[dict[str, int]] = None, nominal_range: tuple[float, float] = None,
+                 bias: bool = True):
         if name is None:
             name = f"ModularMonotoneLinear_{ModularLinear.i}"
             ModularLinear.i += 1
@@ -350,6 +353,8 @@ class ModularMonotoneLinear(ModularAbstractModel):
             self.rescale_output = True
             self.nominal_mean = (nominal_range[1] + nominal_range[0]) / 2.0
             self.nominal_sigma = (nominal_range[1] - nominal_range[0]) / 4.0  # Assuming 4 sigma covers the range
+
+        self.bias = bias
         
     def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
         if self.name in ModularExpression.models.keys():
@@ -359,7 +364,7 @@ class ModularMonotoneLinear(ModularAbstractModel):
             for x in self.inputs:
                 y = x.construct(input_layer, td)
                 inps.append(y)
-            l = keras.layers.Dense(units=1, activation='linear', kernel_constraint=NonNegPartial(self.monotonicities))(keras.layers.Concatenate()(inps))
+            l = keras.layers.Dense(units=1, activation='linear', kernel_constraint=NonNegPartial(self.monotonicities), use_bias=self.bias)(keras.layers.Concatenate()(inps))
             if self.rescale_output:
                 l = keras.layers.Rescaling(scale=self.nominal_sigma, offset=self.nominal_mean)(l) 
             ModularExpression.models[self.name] = l
@@ -370,6 +375,7 @@ class ModularMonotoneLinear(ModularAbstractModel):
         c.update({
             'nominal_range': self._nominal_range,
             'monotonicities': {self.inputs[n].name: self.monotonicities[n] for n in range(len(self.inputs))},
+            'bias': self.bias,
         })
         return c
 
