@@ -39,30 +39,11 @@ class ConstrainedRegression(SingleStepModel):
             
         if monotonies is None:
             monotonies = {}
-        monotonies_idx = {}
-        for k, v in monotonies.items():
-            for i, inp in enumerate(self.inputs):
-                if k == inp.name:
-                    monotonies_idx[i] = v
-                    break
-            else:
-                raise ValueError(f"Monotonicity specified for unknown input '{k}'")
         self.monotonies = monotonies
-        self.monotonies_idx = monotonies_idx
-            
             
         if convexities is None:
             convexities = {}
-        convexities_idx = {}
-        for k, v in convexities.items():
-            for i, inp in enumerate(self.inputs):
-                if k == inp.name:
-                    convexities_idx[i] = v
-                    break
-            else:
-                raise ValueError(f"Convexity specified for unknown input '{k}'")
         self.convexities = convexities
-        self.convexities_idx = convexities_idx
             
         self.opti = ca.Opti()
         self.w_vec = None
@@ -82,10 +63,70 @@ class ConstrainedRegression(SingleStepModel):
             inps.append(y)
         l = keras.layers.Dense(units=1, activation='linear', name='ConstrainedRegression')(keras.layers.Concatenate()(inps))
         model = keras.models.Model(inputs=input_layer, outputs=l)
-        
-        w_sym_list = []
-        x_sym = ca.MX.sym('x', len(self.inputs))
+
+        X = list()
+        sym_raw = {name: ca.MX.sym(name) for name in td.columns}
+        x_sym_list = list()
+        for inp in self.inputs:
+            try:
+                X_0, sym_0 = inp.get_value(td, input_layer, sym_raw)
+                X.append(X_0)
+                x_sym_list.append(sym_0)
+            except NotImplementedError:
+                raise ValueError(f"Input type {type(inp)} does not implement get_value method, but is specified as allowed type for ConstrainedRegression. Please implement get_value method for this input type or remove it from allowed_input_types.")
+        X = np.column_stack(X)
+        x_sym = ca.vertcat(*x_sym_list)
         y_sym = 0
+
+        # Map constraint names to composite or raw feature indices
+        monotonies_composite_idx = {}  # Maps composite feature index to monotonicity value
+        monotonies_raw = {}  # Maps raw feature name to monotonicity value
+        
+        for constraint_name, mono_value in self.monotonies.items():
+            found = False
+            
+            # Check if it's a composite feature (by input name)
+            for i, inp in enumerate(self.inputs):
+                if constraint_name == inp.name:
+                    monotonies_composite_idx[i] = mono_value
+                    found = True
+                    break
+            
+            # If not found, check if it's a raw feature
+            if not found and constraint_name in sym_raw:
+                monotonies_raw[constraint_name] = mono_value
+                found = True
+            
+            if not found:
+                raise ValueError(f"Monotonicity specified for unknown input '{constraint_name}'. "
+                                f"Available composite features: {[inp.name for inp in self.inputs]}. "
+                                f"Available raw features: {list(sym_raw.keys())}")
+        
+        # Same for convexities
+        convexities_composite_idx = {}
+        convexities_raw = {}
+        
+        for constraint_name, convex_value in self.convexities.items():
+            found = False
+            
+            # Check if it's a composite feature (by input name)
+            for i, inp in enumerate(self.inputs):
+                if constraint_name == inp.name:
+                    convexities_composite_idx[i] = convex_value
+                    found = True
+                    break
+            
+            # If not found, check if it's a raw feature
+            if not found and constraint_name in sym_raw:
+                convexities_raw[constraint_name] = convex_value
+                found = True
+            
+            if not found:
+                raise ValueError(f"Convexity specified for unknown input '{constraint_name}'. "
+                                f"Available composite features: {[inp.name for inp in self.inputs]}. "
+                                f"Available raw features: {list(sym_raw.keys())}")
+
+        w_sym_list = []
 
         w_0 = self.opti.variable()
         term = 1
@@ -101,23 +142,27 @@ class ConstrainedRegression(SingleStepModel):
         w_vec = ca.vertcat(*w_sym_list)
         self.w_vec = w_vec
 
+        # Gradients w.r.t. composite features
         grad_sym = ca.gradient(y_sym, x_sym)     
         hess_sym, _ = ca.hessian(y_sym, x_sym)   
+
+        # Gradients w.r.t. raw features (for raw feature constraints)
+        grad_raw_sym = {}
+        for raw_name in sym_raw:
+            if raw_name in monotonies_raw or raw_name in convexities_raw:
+                grad_raw_sym[raw_name] = ca.gradient(y_sym, sym_raw[raw_name])
 
         f_pred = ca.Function('f_pred', [x_sym, w_vec], [y_sym])
         f_grad = ca.Function('f_grad', [x_sym, w_vec], [grad_sym])
         f_hess = ca.Function('f_hess', [x_sym, w_vec], [ca.diag(hess_sym)])
+        
+        # Functions for raw feature gradients
+        f_grad_raw = {}
+        for raw_name, grad_raw in grad_raw_sym.items():
+            f_grad_raw[raw_name] = ca.Function(f'f_grad_{raw_name}', [x_sym, w_vec], [grad_raw])
 
         N, _ = td.y_train_single.shape
         y = td.y_train_single
-
-        X = list()
-        for inp in self.inputs:
-            try:
-                X.append(inp.get_value(td, input_layer))
-            except NotImplementedError:
-                raise ValueError(f"Input type {type(inp)} does not implement get_value method, but is specified as allowed type for ConstrainedRegression. Please implement get_value method for this input type or remove it from allowed_input_types.")
-        X = np.column_stack(X)
 
         y_pred_all = f_pred.map(N)(X.T, ca.repmat(w_vec, 1, N))
         error = y_pred_all - y.reshape(1, N)
@@ -125,19 +170,40 @@ class ConstrainedRegression(SingleStepModel):
         self.opti.minimize(obj)
 
         # TODO: Check if constraints should be applied only to training data or generally
+        
+        # Constraints on composite features (via gradients w.r.t. x_sym)
         grad_all = f_grad.map(N)(X.T, ca.repmat(w_vec, 1, N))
-        for feat_idx, mono in self.monotonies_idx.items():
+        for feat_idx, mono in monotonies_composite_idx.items():
             if mono > 0:
                 self.opti.subject_to(grad_all[feat_idx, :].T >= 0)
             elif mono < 0:
                 self.opti.subject_to(grad_all[feat_idx, :].T <= 0)
         
         hess_all = f_hess.map(N)(X.T, ca.repmat(w_vec, 1, N))
-        for feat_idx, convex in self.convexities_idx.items():
+        for feat_idx, convex in convexities_composite_idx.items():
             if convex > 0:
                 self.opti.subject_to(hess_all[feat_idx, :].T >= 0)
             elif convex < 0:
                 self.opti.subject_to(hess_all[feat_idx, :].T <= 0)
+        
+        # Constraints on raw features (via gradients w.r.t. sym_raw)
+        for raw_name, mono in monotonies_raw.items():
+            grad_raw_all = f_grad_raw[raw_name].map(N)(X.T, ca.repmat(w_vec, 1, N))
+            if mono > 0:
+                self.opti.subject_to(grad_raw_all.T >= 0)
+            elif mono < 0:
+                self.opti.subject_to(grad_raw_all.T <= 0)
+        
+        for raw_name, convex in convexities_raw.items():
+            # For raw features, we need the Hessian w.r.t. that feature
+            # But this is scalar anyway (1 variable), so we need the second derivative
+            hess_raw = ca.gradient(grad_raw_sym[raw_name], sym_raw[raw_name])
+            f_hess_raw = ca.Function(f'f_hess_{raw_name}', [x_sym, w_vec], [hess_raw])
+            hess_raw_all = f_hess_raw.map(N)(X.T, ca.repmat(w_vec, 1, N))
+            if convex > 0:
+                self.opti.subject_to(hess_raw_all.T >= 0)
+            elif convex < 0:
+                self.opti.subject_to(hess_raw_all.T <= 0)
 
         return model 
 

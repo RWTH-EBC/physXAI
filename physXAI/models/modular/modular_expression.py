@@ -120,7 +120,7 @@ class ModularExpression(ABC):
                 return f
         return None
     
-    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input):
+    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input, sym_raw: dict):
         raise NotImplementedError("get_value method is only implemented for base expressions.")
 
 
@@ -225,7 +225,7 @@ class ModularFeature(ModularExpression):
 
             return x
         
-    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input):
+    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input, sym_raw: dict):
         if not self.normalize and self.name in ModularExpression.feature_list.keys():
             model = ModularExpression.feature_list[self.name]
         elif self.normalize and self.name in ModularExpression.feature_list_normalized.keys():
@@ -234,7 +234,10 @@ class ModularFeature(ModularExpression):
             raise ValueError(f"Feature '{self.name}' not found in feature lists. Make sure to construct the modular expression pipeline before trying to get feature values.")
         
         model = keras.models.Model(inputs=input_layer, outputs=model)
-        return model.predict(td.X_train_single, verbose=0) 
+
+        sym = sym_raw[self.name]
+
+        return model.predict(td.X_train_single, verbose=0), sym
 
     def _get_config(self) -> dict:
         c = super()._get_config()
@@ -298,18 +301,20 @@ class ModularTwo(ModularExpression, ABC):
     def _construct(self, layer1: keras.layers.Layer, layer2: keras.layers.Layer) -> keras.layers.Layer:
         pass
 
-    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input):
+    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input, sym_raw: dict):
         if isinstance(self.feature1, (int, float)):
             val1 = self.feature1
+            sym1 = self.feature1
         else:
-            val1 = self.feature1.get_value(td, input_layer)
+            val1, sym1 = self.feature1.get_value(td, input_layer, sym_raw)
 
         if isinstance(self.feature2, (int, float)):
             val2 = self.feature2
+            sym2 = self.feature2
         else:
-            val2 = self.feature2.get_value(td, input_layer)
+            val2, sym2 = self.feature2.get_value(td, input_layer, sym_raw)
 
-        return self._get_value(val1, val2)
+        return self._get_value(val1, val2), self._get_value(sym1, sym2)
     
     @abstractmethod
     def _get_value(self, val1, val2):
