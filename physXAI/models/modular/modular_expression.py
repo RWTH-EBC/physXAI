@@ -3,6 +3,7 @@ import os
 from typing import Union, Type
 from physXAI.models.ann.keras_models.keras_models import ConstantLayer, DivideLayer, InputSliceLayer, PowerLayer
 from physXAI.preprocessing.training_data import TrainingDataGeneric
+import casadi as ca
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
@@ -120,7 +121,7 @@ class ModularExpression(ABC):
                 return f
         return None
     
-    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input, sym_raw: dict):
+    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input, sym_raw: dict, X_raw: dict):
         raise NotImplementedError("get_value method is only implemented for base expressions.")
 
 
@@ -225,7 +226,7 @@ class ModularFeature(ModularExpression):
 
             return x
         
-    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input, sym_raw: dict):
+    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input, sym_raw: dict, X_raw: dict):
         if not self.normalize and self.name in ModularExpression.feature_list.keys():
             model = ModularExpression.feature_list[self.name]
         elif self.normalize and self.name in ModularExpression.feature_list_normalized.keys():
@@ -235,9 +236,14 @@ class ModularFeature(ModularExpression):
         
         model = keras.models.Model(inputs=input_layer, outputs=model)
 
+        X = model.predict(td.X_train_single, verbose=0)
+
+        if self.name not in sym_raw.keys():
+            sym_raw[self.name] = ca.MX.sym(self.name)
+            X_raw[self.name] = X
         sym = sym_raw[self.name]
 
-        return model.predict(td.X_train_single, verbose=0), sym
+        return X, sym
 
     def _get_config(self) -> dict:
         c = super()._get_config()
@@ -301,18 +307,18 @@ class ModularTwo(ModularExpression, ABC):
     def _construct(self, layer1: keras.layers.Layer, layer2: keras.layers.Layer) -> keras.layers.Layer:
         pass
 
-    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input, sym_raw: dict):
+    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input, sym_raw: dict, X_raw: dict):
         if isinstance(self.feature1, (int, float)):
             val1 = self.feature1
             sym1 = self.feature1
         else:
-            val1, sym1 = self.feature1.get_value(td, input_layer, sym_raw)
+            val1, sym1 = self.feature1.get_value(td, input_layer, sym_raw, X_raw)
 
         if isinstance(self.feature2, (int, float)):
             val2 = self.feature2
             sym2 = self.feature2
         else:
-            val2, sym2 = self.feature2.get_value(td, input_layer, sym_raw)
+            val2, sym2 = self.feature2.get_value(td, input_layer, sym_raw, X_raw)
 
         return self._get_value(val1, val2), self._get_value(sym1, sym2)
     

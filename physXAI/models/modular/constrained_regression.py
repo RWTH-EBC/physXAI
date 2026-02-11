@@ -65,101 +65,119 @@ class ConstrainedRegression(SingleStepModel):
         model = keras.models.Model(inputs=input_layer, outputs=l)
 
         X = list()
-        sym_raw = {name: ca.MX.sym(name) for name in td.columns}
-        x_sym_list = list()
+        X_raw = dict()
+        x_sym = list()
+        x_sym_raw = dict()
+        
         for inp in self.inputs:
             try:
-                X_0, sym_0 = inp.get_value(td, input_layer, sym_raw)
+                X_0, x_sym_0 = inp.get_value(td, input_layer, x_sym_raw, X_raw)
                 X.append(X_0)
-                x_sym_list.append(sym_0)
+                x_sym.append(x_sym_0)
             except NotImplementedError:
                 raise ValueError(f"Input type {type(inp)} does not implement get_value method, but is specified as allowed type for ConstrainedRegression. Please implement get_value method for this input type or remove it from allowed_input_types.")
         X = np.column_stack(X)
-        x_sym = ca.vertcat(*x_sym_list)
-        y_sym = 0
+        X_raw = np.column_stack(list(X_raw.values()))
+        x_sym = ca.vertcat(*x_sym)
 
         # Map constraint names to composite or raw feature indices
-        monotonies_composite_idx = {}  # Maps composite feature index to monotonicity value
+        monotonies = {}  # Maps composite feature index to monotonicity value
         monotonies_raw = {}  # Maps raw feature name to monotonicity value
         
         for constraint_name, mono_value in self.monotonies.items():
             found = False
-            
-            # Check if it's a composite feature (by input name)
-            for i, inp in enumerate(self.inputs):
-                if constraint_name == inp.name:
-                    monotonies_composite_idx[i] = mono_value
+
+            # Check if it's a raw feature
+            for i, inp in enumerate(x_sym_raw.keys()):
+                if constraint_name == inp:
+                    if mono_value != 0:
+                        monotonies_raw[i] = mono_value
                     found = True
                     break
             
-            # If not found, check if it's a raw feature
-            if not found and constraint_name in sym_raw:
-                monotonies_raw[constraint_name] = mono_value
-                found = True
+            # Check if it's a composite feature (by input name)
+            if not found:
+                for i, inp in enumerate(self.inputs):
+                    if constraint_name == inp.name:
+                        if mono_value != 0:
+                            monotonies[i] = mono_value
+                        found = True
+                        break
             
             if not found:
                 raise ValueError(f"Monotonicity specified for unknown input '{constraint_name}'. "
+                                f"Available raw features: {list(x_sym_raw.keys())}"
                                 f"Available composite features: {[inp.name for inp in self.inputs]}. "
-                                f"Available raw features: {list(sym_raw.keys())}")
+                                )
         
         # Same for convexities
-        convexities_composite_idx = {}
+        convexities = {}
         convexities_raw = {}
         
         for constraint_name, convex_value in self.convexities.items():
             found = False
-            
-            # Check if it's a composite feature (by input name)
-            for i, inp in enumerate(self.inputs):
-                if constraint_name == inp.name:
-                    convexities_composite_idx[i] = convex_value
+
+            # Check if it's a raw feature
+            for i, inp in enumerate(x_sym_raw.keys()):
+                if constraint_name == inp:
+                    if convex_value != 0:
+                        convexities_raw[i] = convex_value
                     found = True
                     break
-            
-            # If not found, check if it's a raw feature
-            if not found and constraint_name in sym_raw:
-                convexities_raw[constraint_name] = convex_value
-                found = True
-            
+
+            # Check if it's a composite feature (by input name)
+            if not found:
+                for i, inp in enumerate(self.inputs):
+                    if constraint_name == inp.name:
+                        if convex_value != 0:
+                            convexities[i] = convex_value
+                        found = True
+                        break
+
             if not found:
                 raise ValueError(f"Convexity specified for unknown input '{constraint_name}'. "
+                                f"Available raw features: {list(x_sym_raw.keys())}"
                                 f"Available composite features: {[inp.name for inp in self.inputs]}. "
-                                f"Available raw features: {list(sym_raw.keys())}")
-
+                               )
+            
+         
+        x_sym_raw = ca.vertcat(*x_sym_raw.values())
+        x_sym_regression = ca.MX.sym('regression_input', len(self.inputs))
+        y_sym = 0
         w_sym_list = []
 
         w_0 = self.opti.variable()
-        term = 1
-        y_sym += w_0 * term
         w_sym_list.append(w_0)
+        y_sym += w_0
 
         for i, inp in enumerate(self.inputs):
             w_i = self.opti.variable()
-            term = x_sym[i]
-            y_sym += w_i * term
             w_sym_list.append(w_i)
-
+            y_sym += w_i * x_sym_regression[i]
+            
         w_vec = ca.vertcat(*w_sym_list)
         self.w_vec = w_vec
 
+        f_pred = ca.Function('f_pred', [x_sym_regression, w_vec], [y_sym])  
+
+
         # Gradients w.r.t. composite features
-        grad_sym = ca.gradient(y_sym, x_sym)     
-        hess_sym, _ = ca.hessian(y_sym, x_sym)   
+        if monotonies:
+            grad_sym = ca.gradient(y_sym, x_sym_regression)   
+            f_grad = ca.Function('f_grad', [x_sym_regression, w_vec], [grad_sym])  
+        if convexities:
+            hess_sym, _ = ca.hessian(y_sym, x_sym_regression)
+            f_hess = ca.Function('f_hess', [x_sym_regression, w_vec], [ca.diag(hess_sym)]) 
 
         # Gradients w.r.t. raw features (for raw feature constraints)
-        grad_raw_sym = {}
-        for raw_name in sym_raw:
-            if raw_name in monotonies_raw or raw_name in convexities_raw:
-                grad_raw_sym[raw_name] = ca.gradient(y_sym, sym_raw[raw_name])
+        f_pred_raw = f_pred(x_sym, w_vec)
+        if monotonies_raw:
+            grad_sym_raw = ca.gradient(f_pred_raw, x_sym_raw)
+            f_grad_raw = ca.Function('f_grad_raw', [x_sym_raw, w_vec], [grad_sym_raw])
+        if convexities_raw:
+            hess_sym_raw, _ = ca.hessian(f_pred_raw, x_sym_raw)
+            f_hess_raw = ca.Function('f_hess_raw', [x_sym_raw, w_vec], [ca.diag(hess_sym_raw)])
 
-        f_pred = ca.Function('f_pred', [x_sym, w_vec], [y_sym])
-        f_grad = ca.Function('f_grad', [x_sym, w_vec], [grad_sym])
-        f_hess = ca.Function('f_hess', [x_sym, w_vec], [ca.diag(hess_sym)])
-        
-        # Functions for raw feature gradients
-        f_grad_raw = {}
-        for raw_name, grad_raw in grad_raw_sym.items():
-            f_grad_raw[raw_name] = ca.Function(f'f_grad_{raw_name}', [x_sym, w_vec], [grad_raw])
 
         N, _ = td.y_train_single.shape
         y = td.y_train_single
@@ -169,41 +187,46 @@ class ConstrainedRegression(SingleStepModel):
         obj = ca.mtimes(error, error.T)
         self.opti.minimize(obj)
 
+
         # TODO: Check if constraints should be applied only to training data or generally
+        # Constraints on composite features (via gradients w.r.t. x_sym_regression)
+        if monotonies:
+            grad_all = f_grad.map(N)(X.T, ca.repmat(w_vec, 1, N))
+            for feat_idx, mono in monotonies.items():
+                if mono > 0:
+                    self.opti.subject_to(grad_all[feat_idx, :].T >= 0)
+                elif mono < 0:
+                    self.opti.subject_to(grad_all[feat_idx, :].T <= 0)
         
-        # Constraints on composite features (via gradients w.r.t. x_sym)
-        grad_all = f_grad.map(N)(X.T, ca.repmat(w_vec, 1, N))
-        for feat_idx, mono in monotonies_composite_idx.items():
-            if mono > 0:
-                self.opti.subject_to(grad_all[feat_idx, :].T >= 0)
-            elif mono < 0:
-                self.opti.subject_to(grad_all[feat_idx, :].T <= 0)
+        if convexities:
+            hess_all = f_hess.map(N)(X.T, ca.repmat(w_vec, 1, N))
+            for feat_idx, convex in convexities.items():
+                hess = hess_all[feat_idx, :].T
+                if not hess.is_constant():
+                    if convex > 0:
+                        self.opti.subject_to(hess >= 0)
+                    elif convex < 0:
+                        self.opti.subject_to(hess <= 0)
         
-        hess_all = f_hess.map(N)(X.T, ca.repmat(w_vec, 1, N))
-        for feat_idx, convex in convexities_composite_idx.items():
-            if convex > 0:
-                self.opti.subject_to(hess_all[feat_idx, :].T >= 0)
-            elif convex < 0:
-                self.opti.subject_to(hess_all[feat_idx, :].T <= 0)
+        # Constraints on raw features (via gradients w.r.t. x_sym_raw)
+        if monotonies_raw:
+            grad_all_raw = f_grad_raw.map(N)(X_raw.T, ca.repmat(w_vec, 1, N))
+            for feat_idx, mono in monotonies_raw.items():
+                if mono > 0:
+                    self.opti.subject_to(grad_all_raw[feat_idx, :].T >= 0)
+                elif mono < 0:
+                    self.opti.subject_to(grad_all_raw[feat_idx, :].T <= 0)
         
-        # Constraints on raw features (via gradients w.r.t. sym_raw)
-        for raw_name, mono in monotonies_raw.items():
-            grad_raw_all = f_grad_raw[raw_name].map(N)(X.T, ca.repmat(w_vec, 1, N))
-            if mono > 0:
-                self.opti.subject_to(grad_raw_all.T >= 0)
-            elif mono < 0:
-                self.opti.subject_to(grad_raw_all.T <= 0)
-        
-        for raw_name, convex in convexities_raw.items():
-            # For raw features, we need the Hessian w.r.t. that feature
-            # But this is scalar anyway (1 variable), so we need the second derivative
-            hess_raw = ca.gradient(grad_raw_sym[raw_name], sym_raw[raw_name])
-            f_hess_raw = ca.Function(f'f_hess_{raw_name}', [x_sym, w_vec], [hess_raw])
-            hess_raw_all = f_hess_raw.map(N)(X.T, ca.repmat(w_vec, 1, N))
-            if convex > 0:
-                self.opti.subject_to(hess_raw_all.T >= 0)
-            elif convex < 0:
-                self.opti.subject_to(hess_raw_all.T <= 0)
+        if convexities_raw:
+            hess_all_raw = f_hess_raw.map(N)(X_raw.T, ca.repmat(w_vec, 1, N))
+            for feat_idx, convex in convexities_raw.items():
+                hess = hess_all_raw[feat_idx, :].T
+                if not hess.is_constant():
+                    if convex > 0:
+                        self.opti.subject_to(hess >= 0)
+                    elif convex < 0:
+                        
+                        self.opti.subject_to(hess <= 0)
 
         return model 
 
