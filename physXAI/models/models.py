@@ -367,6 +367,12 @@ class LinearRegressionModel(SingleStepModel):
         stop_time = time.perf_counter()
         td.add_training_time(stop_time - start_time)
 
+        if Logger.check_print_level('INFO'):
+            print("Trained Linear Regression Coefficients:")
+            print("Bias:", model.intercept_[0])
+            for i, inp in enumerate(td.columns):
+                print(f"Weight for {inp}:", model.coef_[0][i])
+
     def compile_model(self, model):
         """
         No compilation step is needed for scikit-learn models.

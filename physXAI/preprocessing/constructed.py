@@ -123,6 +123,10 @@ class FeatureBase(ABC):
     def from_config(cls, config: dict) -> 'FeatureBase':
         return cls(**config)
 
+    def input(self, normalize: bool = True):
+        from physXAI.models.modular.modular_expression import ModularFeature
+        return ModularFeature(self.feature, normalize=normalize)
+
 
 # --- Registry for Feature Classes ---
 # This registry maps class names (strings) to the actual class types (Type[FeatureBase]).
@@ -167,7 +171,9 @@ class Feature(FeatureBase):
     Represents a basic feature that is assumed to exist directly in the input DataFrame.
     Its `process` method simply retrieves the column by its name.
     """
-    pass
+    def __init__(self, name: str, **kwargs):
+        super().__init__(name, **kwargs)
+        FeatureConstruction.add_input(self.feature)
 
 
 @register_feature
@@ -196,6 +202,7 @@ class FeatureLag(FeatureBase):
             name = f.feature + f'_lag{lag}'
         super().__init__(name)
         self.lag: int = lag
+        FeatureConstruction.add_input(self.feature)
 
     def process(self, df: DataFrame) -> Series:
         if self.feature not in df.columns:
@@ -526,11 +533,13 @@ class FeatureConstruction:
     """
 
     features = list[FeatureBase]()
+    inputs = list[str]()
 
     @staticmethod
     def reset():
         """Clears all registered features and input names."""
         FeatureConstruction.features = list[FeatureBase]()
+        FeatureConstruction.inputs = list[str]()
 
     @staticmethod
     def append(f: FeatureBase):
@@ -543,6 +552,17 @@ class FeatureConstruction:
         """
         if FeatureConstruction.get_feature(f.feature) is None:
             FeatureConstruction.features.append(f)
+
+    @staticmethod
+    def add_input(name: str):
+        """
+        Adds a feature name to the list of input features.
+
+        Args:
+            name (str): The name of the input feature to add.
+        """
+        if name not in FeatureConstruction.inputs:
+            FeatureConstruction.inputs.append(name)
 
     @staticmethod
     def get_feature(name: str) -> Union[FeatureBase, None]:
