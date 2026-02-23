@@ -39,7 +39,7 @@ pinn = (u_hp * 10000 * ((TAirRoom + 15 - t_amb) / ((TAirRoom + 15) * 0.55)) + (1
 pinn.rename('pinn')
 
 # Create Training data
-prep = PreprocessingSingleStep(inputs, output)
+prep = PreprocessingSingleStep(inputs=inputs, output=output)
 # Process Training data
 td = prep.pipeline(file_path)
 
