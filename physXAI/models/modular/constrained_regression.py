@@ -161,22 +161,18 @@ class ConstrainedRegression(SingleStepModel):
         f_pred = ca.Function('f_pred', [x_sym_regression, w_vec], [y_sym])  
 
 
-        # Gradients w.r.t. composite features
+        # Symbolic gradients/hessians w.r.t. composite features
         if monotonies:
-            grad_sym = ca.gradient(y_sym, x_sym_regression)   
-            f_grad = ca.Function('f_grad', [x_sym_regression, w_vec], [grad_sym])  
+            grad_sym = ca.gradient(y_sym, x_sym_regression)
         if convexities:
             hess_sym, _ = ca.hessian(y_sym, x_sym_regression)
-            f_hess = ca.Function('f_hess', [x_sym_regression, w_vec], [ca.diag(hess_sym)]) 
 
-        # Gradients w.r.t. raw features (for raw feature constraints)
+        # Symbolic gradients/hessians w.r.t. raw features
         f_pred_raw = f_pred(x_sym, w_vec)
         if monotonies_raw:
             grad_sym_raw = ca.gradient(f_pred_raw, x_sym_raw)
-            f_grad_raw = ca.Function('f_grad_raw', [x_sym_raw, w_vec], [grad_sym_raw])
         if convexities_raw:
             hess_sym_raw, _ = ca.hessian(f_pred_raw, x_sym_raw)
-            f_hess_raw = ca.Function('f_hess_raw', [x_sym_raw, w_vec], [ca.diag(hess_sym_raw)])
 
 
         N, _ = td.y_train_single.shape
@@ -191,50 +187,96 @@ class ConstrainedRegression(SingleStepModel):
         # TODO: Check if constraints should be applied only to training data or generally
         # Constraints on composite features (via gradients w.r.t. x_sym_regression)
         if monotonies:
-            grad_all = f_grad.map(N)(X.T, ca.repmat(w_vec, 1, N))
             for feat_idx, mono in monotonies.items():
-                if mono > 0:
-                    self.opti.subject_to(grad_all[feat_idx, :].T >= 0)
-                elif mono < 0:
-                    self.opti.subject_to(grad_all[feat_idx, :].T <= 0)
+                grad_i = grad_sym[feat_idx]
+                if ca.depends_on(grad_i, x_sym_regression):
+                    # Gradient depends on inputs, need per-point constraints
+                    f_grad_i = ca.Function('f_grad_i', [x_sym_regression, w_vec], [grad_i])
+                    grad_vals = f_grad_i.map(N)(X.T, ca.repmat(w_vec, 1, N)).T
+                    if mono > 0:
+                        self.opti.subject_to(grad_vals >= 0)
+                    elif mono < 0:
+                        self.opti.subject_to(grad_vals <= 0)
+                else:
+                    # Gradient is constant w.r.t. inputs, single constraint suffices
+                    # Wrap in Function to eliminate raw MX.sym references
+                    f_grad_i = ca.Function('f_grad_i', [x_sym_regression, w_vec], [grad_i])
+                    grad_val = f_grad_i(ca.DM.zeros(x_sym_regression.shape), w_vec)
+                    if mono > 0:
+                        self.opti.subject_to(grad_val >= 0)
+                    elif mono < 0:
+                        self.opti.subject_to(grad_val <= 0)
         
         if convexities:
-            hess_all = f_hess.map(N)(X.T, ca.repmat(w_vec, 1, N))
             for feat_idx, convex in convexities.items():
-                hess = hess_all[feat_idx, :].T
-                if not hess.is_constant():
+                hess_i = ca.diag(hess_sym)[feat_idx]
+                if hess_i.is_constant():
+                    # Hessian is constant (e.g. zero for linear model), skip
+                    continue
+                if ca.depends_on(hess_i, x_sym_regression):
+                    f_hess_i = ca.Function('f_hess_i', [x_sym_regression, w_vec], [hess_i])
+                    hess_vals = f_hess_i.map(N)(X.T, ca.repmat(w_vec, 1, N)).T
                     if convex > 0:
-                        self.opti.subject_to(hess >= 0)
+                        self.opti.subject_to(hess_vals >= 0)
                     elif convex < 0:
-                        self.opti.subject_to(hess <= 0)
+                        self.opti.subject_to(hess_vals <= 0)
+                else:
+                    # Wrap in Function to eliminate raw MX.sym references
+                    f_hess_i = ca.Function('f_hess_i', [x_sym_regression, w_vec], [hess_i])
+                    hess_val = f_hess_i(ca.DM.zeros(x_sym_regression.shape), w_vec)
+                    if convex > 0:
+                        self.opti.subject_to(hess_val >= 0)
+                    elif convex < 0:
+                        self.opti.subject_to(hess_val <= 0)
         
         # Constraints on raw features (via gradients w.r.t. x_sym_raw)
         if monotonies_raw:
-            grad_all_raw = f_grad_raw.map(N)(X_raw.T, ca.repmat(w_vec, 1, N))
             for feat_idx, mono in monotonies_raw.items():
-                if mono > 0:
-                    self.opti.subject_to(grad_all_raw[feat_idx, :].T >= 0)
-                elif mono < 0:
-                    self.opti.subject_to(grad_all_raw[feat_idx, :].T <= 0)
+                grad_raw_i = grad_sym_raw[feat_idx]
+                if ca.depends_on(grad_raw_i, x_sym_raw):
+                    f_grad_raw_i = ca.Function('f_grad_raw_i', [x_sym_raw, w_vec], [grad_raw_i])
+                    grad_vals = f_grad_raw_i.map(N)(X_raw.T, ca.repmat(w_vec, 1, N)).T
+                    if mono > 0:
+                        self.opti.subject_to(grad_vals >= 0)
+                    elif mono < 0:
+                        self.opti.subject_to(grad_vals <= 0)
+                else:
+                    # Wrap in Function to eliminate raw MX.sym references
+                    f_grad_raw_i = ca.Function('f_grad_raw_i', [x_sym_raw, w_vec], [grad_raw_i])
+                    grad_val = f_grad_raw_i(ca.DM.zeros(x_sym_raw.shape), w_vec)
+                    if mono > 0:
+                        self.opti.subject_to(grad_val >= 0)
+                    elif mono < 0:
+                        self.opti.subject_to(grad_val <= 0)
         
         if convexities_raw:
-            hess_all_raw = f_hess_raw.map(N)(X_raw.T, ca.repmat(w_vec, 1, N))
             for feat_idx, convex in convexities_raw.items():
-                hess = hess_all_raw[feat_idx, :].T
-                if not hess.is_constant():
+                hess_raw_i = ca.diag(hess_sym_raw)[feat_idx]
+                if hess_raw_i.is_constant():
+                    continue
+                if ca.depends_on(hess_raw_i, x_sym_raw):
+                    f_hess_raw_i = ca.Function('f_hess_raw_i', [x_sym_raw, w_vec], [hess_raw_i])
+                    hess_vals = f_hess_raw_i.map(N)(X_raw.T, ca.repmat(w_vec, 1, N)).T
                     if convex > 0:
-                        self.opti.subject_to(hess >= 0)
+                        self.opti.subject_to(hess_vals >= 0)
                     elif convex < 0:
-                        
-                        self.opti.subject_to(hess <= 0)
+                        self.opti.subject_to(hess_vals <= 0)
+                else:
+                    # Wrap in Function to eliminate raw MX.sym references
+                    f_hess_raw_i = ca.Function('f_hess_raw_i', [x_sym_raw, w_vec], [hess_raw_i])
+                    hess_val = f_hess_raw_i(ca.DM.zeros(x_sym_raw.shape), w_vec)
+                    if convex > 0:
+                        self.opti.subject_to(hess_val >= 0)
+                    elif convex < 0:
+                        self.opti.subject_to(hess_val <= 0)
 
         return model 
 
     def compile_model(self, model):
-        if Logger.check_print_level('WARNING'):
-            print_level = 0
-        else:
+        if Logger.check_print_level('INFO'):
             print_level = 5
+        else:
+            print_level = 0
 
         opts = {'ipopt.print_level': print_level, 'expand': True}
         self.opti.solver('ipopt', opts)
