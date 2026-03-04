@@ -307,8 +307,8 @@ def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
     fully_connected = config['fully_connected']
 
     # Rescaling for output layer
-    rescale_min = float(keras.ops.cast(keras.ops.min(td.y_train), dtype="float32").numpy())
-    rescale_max = float(keras.ops.cast(keras.ops.max(td.y_train), dtype="float32").numpy())
+    rescale_mean = float(keras.ops.cast(keras.ops.mean(td.y_train), dtype="float32").numpy())
+    rescale_sigma = float(keras.ops.cast(keras.ops.std(td.y_train), dtype="float32").numpy())
 
     # Input layer
     inputs = keras.Input(shape=(out_steps, num_features))
@@ -323,7 +323,7 @@ def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
     mono = list(monotonicity.values())
 
     def out_mrnn_model(inputs_df: np.ndarray, num_features: int, rnn_units: int, dis_units: int, num_outputs: int,
-                    rescale_min: float, rescale_max: float, rnn_layer: str, dis_layer: str,
+                    rescale_mean: float, rescale_sigma: float, rnn_layer: str, dis_layer: str,
                        activation: str,  monotonicity: list, dis_activation: str, fully_connected: bool):
         """
         Creates the main Keras model that processes an input sequence with an initial RNN state
@@ -337,8 +337,8 @@ def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
             rnn_units (int): Number of units in the monontonic RNN layer.
             dis_units (int): Number of units in the disturbance layer
             num_outputs (int): Number of output features to predict at each time step.
-            rescale_min (float): Minimum value used by a Rescaling layer applied to the predictions.
-            rescale_max (float): Maximum value used by a Rescaling layer applied to the predictions.
+            rescale_mean (float): Mean value for denormalizing the model's normalized predictions back to the original scale (used as the offset in the Rescaling layer; inverse z-score transformation: value * sigma + mean).
+            rescale_sigma (float): Standard deviation for denormalizing the model's normalized predictions back to the original scale (used as the scale in the Rescaling layer; inverse z-score transformation: value * sigma + mean).
             dis_layer (str): The layer for capturing the influence of disturbance inputs without monotonicity.
             activation (str): The activation function to be used in the monotonic rnn.
             monotonicity (dict[str, int]): Dictionary mapping feature names to monotonicity type
@@ -417,7 +417,7 @@ def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
             pred = pred_mono
 
         # Rescaling layer
-        rescaling_layer = keras.layers.Rescaling(scale=rescale_max - rescale_min, offset=rescale_min)
+        rescaling_layer = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)
         pred = rescaling_layer(pred)
 
         # construct the keras model
@@ -430,7 +430,7 @@ def MonotonicRNNModelConstruction(config: dict, td: TrainingDataMultiStep):
 
 
     o_model = out_mrnn_model(x_train.reshape(-1, num_features), num_features, rnn_units, dis_units, num_outputs,
-                        rescale_min, rescale_max, rnn_layer, dis_layer, activation, mono, dis_activation, fully_connected)
+                        rescale_mean, rescale_sigma, rnn_layer, dis_layer, activation, mono, dis_activation, fully_connected)
 
     def init_mrnn_model(warmup: bool, warmup_width, num_warmup_features, out_steps, num_features, init_layer, rnn_layer, rnn_units, init_dis, dis_layer, dis_units, td):
 
