@@ -85,3 +85,28 @@ class RNNModelConstruction_config(BaseModel):
                     raise ValueError(f"init_layer {v} should be the same as rnn_layer "
                                      f"{info.data.get('rnn_layer')} or dense")
         return v
+    
+
+class PINNConstruction_config(ClassicalANNConstruction_config):
+    """
+    
+    """
+    
+    predict_delta: bool = True
+    t_room_column: Union[str, int]
+    trainable_rc: bool = False
+
+    physics_loss_weight: float = Field(1.0, ge=0)
+    physics_loss_reduction: Literal["mean", "sum"] = "mean"
+
+    rc_kwargs: dict = Field(default_factory=dict)
+
+    @field_validator("t_room_column")
+    def validate_feature_identifier(cls, v):
+        if isinstance(v, int):
+            if v < 0:
+                raise ValueError("Feature index must be greater than or equal to 0.")
+        if isinstance(v, str):
+            if not v.strip():
+                raise ValueError("Feature name must not be empty.")
+        return v

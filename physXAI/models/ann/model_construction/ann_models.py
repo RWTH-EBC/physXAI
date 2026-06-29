@@ -2,8 +2,11 @@ import os
 import numpy as np
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 from physXAI.models.ann.configs.ann_model_configs import (ClassicalANNConstruction_config,
-                                                                 CMNNModelConstruction_config)
+                                                                 CMNNModelConstruction_config,
+                                                                 PINNConstruction_config)
 from physXAI.models.ann.keras_models.keras_models import NonNegPartial, ConcaveActivation, SaturatedActivation
+from physXAI.models.ann.pinn_new.rc_layers import RC1R1CLayer
+from physXAI.models.ann.pinn_new.physics_loss import PhysicsLossLayer
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
@@ -186,5 +189,103 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
     #     x = d(x)
 
     model = keras.models.Model(inputs=input_layer, outputs=x)
+
+    return model
+
+
+def PINNConstruction(config: dict, td: TrainingDataGeneric, rc_layer_class):
+    """
+    
+    """
+    # Validate the input configuration dictionary and convert it to a dictionary
+    config = PINNConstruction_config.model_validate(config).model_dump()
+
+    # Get config
+    n_layers = config['n_layers']
+    n_neurons = config['n_neurons']
+    # If n_neurons is a single integer, replicate it for all layers
+    if isinstance(n_neurons, int):
+        n_neurons = [n_neurons] * n_layers
+    else:
+        assert len(n_neurons) == n_layers
+    if config['n_features'] is not None:
+        n_features = config['n_features']
+    else:
+        n_features = td.X_train_single.shape[1]
+    activation_function = config['activation_function']
+    # If activation_function is a single string, replicate it for all layers
+    if isinstance(activation_function, str):
+        activation_function = [activation_function] * n_layers
+    else:
+        assert len(activation_function) == n_layers
+
+    # Get feature indices for the 1R1C model
+    if isinstance(config['t_room_column'], str):
+        t_room_index = list(td.columns).index(config['t_room_column'])
+    else:
+        t_room_index = config['t_room_column']
+
+    # Inject t_toom_index into rc_kwargs if not present
+    rc_kwargs = config['rc_kwargs']
+    if 't_room_index' not in rc_kwargs:
+        rc_kwargs['t_room_index'] = t_room_index
+
+    # Add input layer
+    input_layer = keras.layers.Input(shape=(n_features,))
+
+    # -------------------------------------------------------------------------
+    # ANN branch
+    # -------------------------------------------------------------------------
+
+    # Add normalization layer
+    if config['normalize']:
+        normalization = keras.layers.Normalization()
+        normalization.adapt(td.X_train_single)
+        x = normalization(input_layer)
+    else:
+        x = input_layer
+
+    for i in range(0, n_layers):
+        # For each layer add dense
+        x = keras.layers.Dense(n_neurons[i], activation=activation_function[i])(x)
+
+    # Add output layer
+    y_nn = keras.layers.Dense(1, activation='linear')(x)
+
+    # Add rescaling
+    if config['rescale_output']:
+        # Rescaling for output layer
+        rescale_mean = float(np.mean(td.y_train_single))
+        rescale_sigma = float(np.std(td.y_train_single, ddof=1))
+        y_nn = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(y_nn)
+
+    # -------------------------------------------------------------------------
+    # 1R1C physics branch
+    # -------------------------------------------------------------------------
+
+    y_phys = rc_layer_class(
+        trainable_rc = config['trainable_rc'],
+        **rc_kwargs
+    )(input_layer)
+
+    # Predict delta temperature
+    if config['predict_delta']:
+        residual = keras.ops.subtract(y_nn, y_phys)
+    else:
+        t_room_t_minus_one = keras.ops.take(input_layer, [t_room_index], axis=-1)
+        y_phys_absolute = keras.ops.add(t_room_t_minus_one, y_phys)
+
+        residual = keras.ops.subtract(y_nn, y_phys_absolute)
+
+    # -------------------------------------------------------------------------
+    # Physics loss
+    # -------------------------------------------------------------------------
+
+    output_layer = PhysicsLossLayer(
+        weight=config['physics_loss_weight'],
+        reduction=config['physics_loss_reduction']
+    )([y_nn, residual])
+
+    model = keras.models.Model(inputs=input_layer, outputs=output_layer)
 
     return model

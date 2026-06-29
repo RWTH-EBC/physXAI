@@ -8,7 +8,7 @@ import tensorflow as tf
 from physXAI.utils.logging import create_full_path, get_full_path, Logger
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
 from physXAI.models.models import SingleStepModel, LinearRegressionModel, MultiStepModel, register_model
-from physXAI.models.ann.model_construction.ann_models import ClassicalANNConstruction, CMNNModelConstruction
+from physXAI.models.ann.model_construction.ann_models import ClassicalANNConstruction, CMNNModelConstruction, PINNConstruction
 from physXAI.models.ann.model_construction.rbf_models import RBFModelConstruction
 from physXAI.models.ann.model_construction.residual_models import LinResidualANNConstruction
 from physXAI.models.ann.model_construction.rnn_models import RNNModelConstruction
@@ -457,7 +457,7 @@ class CMNNModel(ANNModel):
 
 
 @register_model
-class PINNModel(ANNModel):
+class PINNModel_old(ANNModel):
     """
     A Physics-Informed Neural Network (PINN) model.
     This implementation uses a CMNN as its base architecture and incorporates
@@ -796,5 +796,94 @@ class RNNModel(MultiStepModel):
             'learning_rate': self.learning_rate,
             'early_stopping_epochs': self.early_stopping_epochs,
             'random_seed': self.random_seed
+        })
+        return config
+
+
+
+@register_model
+class PINNModel(ANNModel):
+    """
+    
+    """
+
+    def __init__(self,
+                 rc_layer,
+                 t_room_column: Union[str, int],
+                 rc_kwargs: Optional[dict] = None,
+                 predict_delta: bool = True,
+                 n_layers: int = 1,
+                 n_neurons: Union[int, list[int]] = 32,
+                 activation_function: Union[str, list[str]] = 'softplus',
+                 rescale_output: bool = True,
+                 trainable_rc: bool = False,
+                 physics_loss_weight: float = 1.0,
+                 physics_loss_reduction: str = 'mean',
+                 batch_size: int = 32,
+                 epochs: int = 1000,
+                 learning_rate: float = 0.001,
+                 early_stopping_epochs: Optional[int] = 100,
+                 random_seed: int = 42,
+                 **kwargs):
+        """
+        
+        """
+
+        super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
+
+        self.rc_layer = rc_layer
+
+        self.t_room_column: str = t_room_column
+
+        self.rc_kwargs =rc_kwargs if rc_kwargs is not None else {}
+
+        self.predict_delta = predict_delta
+
+        self.n_layers: int = n_layers
+        self.n_neurons: Union[int, list[int]] = n_neurons
+        self.activation_function: Union[str, list[str]] = activation_function
+        self.rescale_output: bool = rescale_output
+
+        self.trainable_rc: bool = trainable_rc
+
+        self.physics_loss_weight: float = physics_loss_weight
+        self.physics_loss_reduction: str = physics_loss_reduction
+
+        self.model_config.update({
+            'n_layers': self.n_layers,
+            'n_neurons': self.n_neurons,
+            'activation_function': self.activation_function,
+            'rescale_output': self.rescale_output,
+
+            'predict_delta': self.predict_delta,
+            't_room_column': self.t_room_column,
+            'trainable_rc': self.trainable_rc,
+            'physics_loss_weight': self.physics_loss_weight,
+            'physics_loss_reduction': self.physics_loss_reduction,
+
+            'rc_kwargs': self.rc_kwargs,
+        })
+
+    def generate_model(self, **kwargs):
+        td = kwargs['td']
+        model = PINNConstruction(self.model_config, td, self.rc_layer)
+        return model
+    
+    def get_config(self) -> dict:
+        config = super().get_config()
+        config.update({
+            't_room_column': self.t_room_column,
+            'predict_delta': self.predict_delta,
+
+            'n_layers': self.n_layers,
+            'n_neurons': self.n_neurons,
+            'activation_function': self.activation_function,
+            'rescale_output': self.rescale_output,
+
+            'trainable_rc': self.trainable_rc,
+            'physics_loss_weight': self.physics_loss_weight,
+            'physics_loss_reduction': self.physics_loss_reduction,
+
+            'rc_kwargs': self.rc_kwargs,
         })
         return config
