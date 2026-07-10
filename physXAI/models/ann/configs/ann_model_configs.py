@@ -87,26 +87,143 @@ class RNNModelConstruction_config(BaseModel):
         return v
     
 
-class PINNConstruction_config(ClassicalANNConstruction_config):
+class RC1R1CConstruction_config(ClassicalANNConstruction_config):
     """
     
     """
     
     predict_delta: bool = True
-    t_room_column: Union[str, int]
+    t_air_column: Union[str, int]
     trainable_rc: bool = False
 
     physics_loss_weight: float = Field(1.0, ge=0)
-    physics_loss_reduction: Literal["mean", "sum"] = "mean"
+
+    rc_kwargs: dict = Field(default_factory=dict)
+    
+
+class RC2R2CPhysNetConstruction_config(BaseModel):
+    """
+    
+    """
+    predict_delta: bool = True
+    t_air_column: Union[str, int]
+    trainable_rc: bool = False
+
+    encoder_features: list[Union[str, int]]
+    encoder_layers: int = Field(2, ge=1)
+    encoder_neurons: Union[int, list[int]] = 24
+
+    dynamic_features: list[Union[str, int]]
+    dynamic_layers: int = Field(1, ge=1)
+    dynamic_neurons: Union[int, list[int]] = 128
+    
+    activation_function: Union[str, list[str]] = 'softplus'
+    rescale_output: bool = True
+    normalize: bool = True
+    n_features: Optional[int] = None
+
+    physics_loss_weight: float = Field(1.0, ge=0)
 
     rc_kwargs: dict = Field(default_factory=dict)
 
-    @field_validator("t_room_column")
-    def validate_feature_identifier(cls, v):
-        if isinstance(v, int):
-            if v < 0:
-                raise ValueError("Feature index must be greater than or equal to 0.")
-        if isinstance(v, str):
-            if not v.strip():
-                raise ValueError("Feature name must not be empty.")
+    @field_validator('encoder_neurons')
+    def validate_encoder_neurons(cls, v, info):
+        ls = info.data.get('encoder_layers')
+        if isinstance(v, list):
+            if len(v) != ls:
+                raise ValueError("List of encoder_neurons must have same length as encoder_layers")
+            for i in v:
+                if i <= 0:
+                    raise ValueError("encoder_neurons must be greater than 0")
+        elif v <= 0:
+            raise ValueError("encoder_neurons must be greater than 0")
         return v
+    
+    @field_validator('dynamic_neurons')
+    def validate_dynamic_neurons(cls, v, info):
+        ls = info.data.get('dynamic_layers')
+        if isinstance(v, list):
+            if len(v) != ls:
+                raise ValueError("List of dynamic_neurons must have same length as dynamic_layers")
+            for i in v:
+                if i <= 0:
+                    raise ValueError("dynamic_neurons must be greater than 0")
+        elif v <= 0:
+            raise ValueError("dynamic_neurons must be greater than 0")
+        return v
+    
+
+class RC2R2CGokhalePhysNetConstruction_config(BaseModel):
+    """
+    
+    """
+    predict_delta: bool = True
+
+    t_air_column: Union[str, int]
+    trainable_rc: bool = False
+
+    encoder_features: list[Union[str, int]]
+    encoder_layers: int = Field(2, ge=1)
+    encoder_neurons: Union[int, list[int]] = 24
+
+    dynamic_features: list[Union[str, int]]
+    dynamic_layers: int = Field(1, ge=1)
+    dynamic_neurons: Union[int, list[int]] = 128
+    
+    activation_function: Union[str, list[str]] = 'softplus'
+    rescale_output: bool = True
+    normalize: bool = True
+    n_features: Optional[int] = None
+
+    physics_loss_weight: float = Field(1.0, ge=0)
+
+    rc_kwargs: dict = Field(default_factory=dict)
+
+    @field_validator('encoder_neurons')
+    def validate_encoder_neurons(cls, v, info):
+        ls = info.data.get('encoder_layers')
+        if isinstance(v, list):
+            if len(v) != ls:
+                raise ValueError("List of encoder_neurons must have same length as encoder_layers")
+            for i in v:
+                if i <= 0:
+                    raise ValueError("encoder_neurons must be greater than 0")
+        elif v <= 0:
+            raise ValueError("encoder_neurons must be greater than 0")
+        return v
+    
+    @field_validator('dynamic_neurons')
+    def validate_dynamic_neurons(cls, v, info):
+        ls = info.data.get('dynamic_layers')
+        if isinstance(v, list):
+            if len(v) != ls:
+                raise ValueError("List of dynamic_neurons must have same length as dynamic_layers")
+            for i in v:
+                if i <= 0:
+                    raise ValueError("dynamic_neurons must be greater than 0")
+        elif v <= 0:
+            raise ValueError("dynamic_neurons must be greater than 0")
+        return v
+    
+    @field_validator('activation_function')
+    def validate_activation_function(cls, v, info):
+        encoder_layers = info.data.get('encoder_layers')
+        dynamic_layers = info.data.get('dynamic_layers')
+
+        if encoder_layers is None or dynamic_layers is None:
+            return v
+        
+        expected_lenght = encoder_layers + dynamic_layers
+
+        if isinstance(v, list):
+            if len(v) != expected_lenght:
+                raise ValueError("List of activation_function must have the same length as encoder_layers dynamic_layers")
+            
+        return v
+    
+
+class RC2R2CGokhalePhysNetWallDynamicsConstruction_config(RC2R2CGokhalePhysNetConstruction_config):
+    """
+    
+    """
+    wall_dynamics_loss_weight: float = Field(1.0, ge=0)

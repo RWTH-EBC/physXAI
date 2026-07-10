@@ -12,19 +12,13 @@ class PhysicsLossLayer(keras.Layer):
     def __init__(
             self,
             weight: float=1.0,
-            reduction: str = 'mean',
             **kwargs,
     ):
         """
         
         """
         super().__init__(**kwargs)
-
-        if reduction not in ['mean', 'sum']:
-            raise ValueError("Unsupported reduction. Use 'mean' or 'sum'.")
-        
         self.weight = float(weight)
-        self.reduction = reduction
 
 
     def call(self, inputs, **kwargs):
@@ -36,12 +30,7 @@ class PhysicsLossLayer(keras.Layer):
         
         y_nn, residual = inputs
 
-        squared_residual = keras.ops.square(residual)
-
-        if self.reduction == 'mean':
-            physics_loss = keras.ops.mean(squared_residual)
-        else:
-            physics_loss = keras.ops.sum(squared_residual)
+        physics_loss = keras.ops.mean(keras.ops.square(residual))
 
         weighted_physics_loss = self.weight * physics_loss
 
@@ -64,7 +53,6 @@ class PhysicsLossLayer(keras.Layer):
         config = super().get_config()
         config.update({
             'weight': self.weight,
-            'reduction': self.reduction,
         })
         return config
     

@@ -4,11 +4,12 @@ import time
 from abc import ABC, abstractmethod
 from typing import Optional, Union
 import tensorflow as tf
+import numpy as np
 
 from physXAI.utils.logging import create_full_path, get_full_path, Logger
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
 from physXAI.models.models import SingleStepModel, LinearRegressionModel, MultiStepModel, register_model
-from physXAI.models.ann.model_construction.ann_models import ClassicalANNConstruction, CMNNModelConstruction, PINNConstruction
+from physXAI.models.ann.model_construction.ann_models import ClassicalANNConstruction, CMNNModelConstruction, RC1R1CConstruction, RC2R2CPhysNetConstruction, RC2R2CGokhalePhysNetConstruction, RC2R2CGokhalePhysNetWallDynamicsConstruction
 from physXAI.models.ann.model_construction.rbf_models import RBFModelConstruction
 from physXAI.models.ann.model_construction.residual_models import LinResidualANNConstruction
 from physXAI.models.ann.model_construction.rnn_models import RNNModelConstruction
@@ -16,6 +17,7 @@ from physXAI.models.ann.pinn.pinn_loss import multi_y_loss
 from physXAI.plotting.plotting import plot_prediction_correlation, plot_predictions, plot_training_history, \
     plot_metrics_table, subplots, plot_multi_rmse
 from physXAI.evaluation.metrics import MetricsPINN
+from physXAI.models.ann.pinn_new.modified_lr import MultiplierAdam
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
@@ -802,14 +804,13 @@ class RNNModel(MultiStepModel):
 
 
 @register_model
-class PINNModel(ANNModel):
+class RC1R1CModel(ANNModel):
     """
     
     """
 
     def __init__(self,
-                 rc_layer,
-                 t_room_column: Union[str, int],
+                 t_air_column: Union[str, int],
                  rc_kwargs: Optional[dict] = None,
                  predict_delta: bool = True,
                  n_layers: int = 1,
@@ -818,10 +819,10 @@ class PINNModel(ANNModel):
                  rescale_output: bool = True,
                  trainable_rc: bool = False,
                  physics_loss_weight: float = 1.0,
-                 physics_loss_reduction: str = 'mean',
                  batch_size: int = 32,
                  epochs: int = 1000,
                  learning_rate: float = 0.001,
+                 rc_learning_rate_multiplier: float = 0.1,
                  early_stopping_epochs: Optional[int] = 100,
                  random_seed: int = 42,
                  **kwargs):
@@ -831,9 +832,7 @@ class PINNModel(ANNModel):
 
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
 
-        self.rc_layer = rc_layer
-
-        self.t_room_column: str = t_room_column
+        self.t_air_column: str = t_air_column
 
         self.rc_kwargs =rc_kwargs if rc_kwargs is not None else {}
 
@@ -845,9 +844,9 @@ class PINNModel(ANNModel):
         self.rescale_output: bool = rescale_output
 
         self.trainable_rc: bool = trainable_rc
+        self.rc_learning_rate_multiplier: float = rc_learning_rate_multiplier
 
         self.physics_loss_weight: float = physics_loss_weight
-        self.physics_loss_reduction: str = physics_loss_reduction
 
         self.model_config.update({
             'n_layers': self.n_layers,
@@ -856,34 +855,442 @@ class PINNModel(ANNModel):
             'rescale_output': self.rescale_output,
 
             'predict_delta': self.predict_delta,
-            't_room_column': self.t_room_column,
+            't_air_column': self.t_air_column,
             'trainable_rc': self.trainable_rc,
+            'rc_learning_rate_multiplier': self.rc_learning_rate_multiplier,
             'physics_loss_weight': self.physics_loss_weight,
-            'physics_loss_reduction': self.physics_loss_reduction,
+
+            'rc_kwargs': self.rc_kwargs,
+        })
+
+    def compile_model(self, model):
+        optimizer = MultiplierAdam(
+            learning_rate=self.learning_rate,
+            lr_multipliers={
+                "opt_h_factor_win": self.rc_learning_rate_multiplier,
+                "opt_h_factor_ext": self.rc_learning_rate_multiplier,
+                "opt_k_factor_air": self.rc_learning_rate_multiplier,
+
+                "raw_theta_solar": self.rc_learning_rate_multiplier,
+                "opt_alpha": self.rc_learning_rate_multiplier,
+                "opt_beta": self.rc_learning_rate_multiplier,
+            }
+        )
+
+        model.compile(
+            optimizer=optimizer,
+            loss="mse",
+            metrics=[keras.metrics.RootMeanSquaredError(name="rmse", dtype=None)]
+        )
+    
+    def generate_model(self, **kwargs):
+        td = kwargs['td']
+        model = RC1R1CConstruction(self.model_config, td)
+        return model
+    
+    def get_config(self) -> dict:
+        config = super().get_config()
+        config.update({
+            'n_layers': self.n_layers,
+            'n_neurons': self.n_neurons,
+            'activation_function': self.activation_function,
+            'rescale_output': self.rescale_output,
+
+            'predict_delta': self.predict_delta,
+            't_air_column': self.t_air_column,
+            'trainable_rc': self.trainable_rc,
+            'rc_learning_rate_multiplier': self.rc_learning_rate_multiplier,
+            'physics_loss_weight': self.physics_loss_weight,
+
+            'rc_kwargs': self.rc_kwargs,
+        })
+        return config
+
+
+@register_model
+class RC2R2CPhysNetModel(ANNModel):
+    """
+    
+    """
+    def __init__(self,
+                 t_air_column: Union[str, int],
+                 encoder_features: list[Union[str, int]],
+                 dynamic_features: list[Union[str, int]],
+                 rc_kwargs: Optional[dict] = None,
+                 predict_delta: bool = True,
+                 encoder_layers: int = 2,
+                 encoder_neurons: Union[int, list[int]] = 24,
+                 dynamic_layers: int = 1,
+                 dynamic_neurons: Union[int, list[int]] = 128,
+                 activation_function: Union[str, list[str]] = 'softplus',
+                 rescale_output: bool = True,
+                 trainable_rc: bool = False,
+                 physics_loss_weight: float = 1.0,
+                 batch_size: int = 32,
+                 epochs: int = 1000,
+                 learning_rate: float = 0.001,
+                 rc_learning_rate_multiplier: float = 0.1,
+                 early_stopping_epochs: Optional[int] = 100,
+                 random_seed: int = 42,
+                 **kwargs):
+   
+        super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
+
+        self.predict_delta = predict_delta
+
+        self.t_air_column: str = t_air_column
+
+        self.rc_kwargs = rc_kwargs if rc_kwargs is not None else {}
+
+        self.encoder_features: list[Union[str, int]] = encoder_features
+        self.encoder_layers: int = encoder_layers
+        self.encoder_neurons: Union[int, list[int]] = encoder_neurons
+        self.dynamic_features: list[Union[str, int]] = dynamic_features
+        self.dynamic_layers: int = dynamic_layers
+        self.dynamic_neurons: Union[int, list[int]] = dynamic_neurons
+        self.activation_function: Union[str, list[str]] = activation_function
+        self.rescale_output: bool = rescale_output
+
+        self.trainable_rc: bool = trainable_rc
+        self.rc_learning_rate_multiplier: float = rc_learning_rate_multiplier
+
+        self.physics_loss_weight: float = physics_loss_weight
+
+        self.model_config.update({
+            'encoder_features': self.encoder_features,
+            'encoder_layers': self.encoder_layers,
+            'encoder_neurons': self.encoder_neurons,
+            'dynamic_features': self.dynamic_features,
+            'dynamic_layers': self.dynamic_layers,
+            'dynamic_neurons': self.dynamic_neurons,
+            'activation_function': self.activation_function,
+            'rescale_output': self.rescale_output,
+
+            'predict_delta': self.predict_delta,
+            't_air_column': self.t_air_column,
+            'trainable_rc': self.trainable_rc,
+            'rc_learning_rate_multiplier': self.rc_learning_rate_multiplier,
+            'physics_loss_weight': self.physics_loss_weight,
 
             'rc_kwargs': self.rc_kwargs,
         })
 
     def generate_model(self, **kwargs):
         td = kwargs['td']
-        model = PINNConstruction(self.model_config, td, self.rc_layer)
+        model = RC2R2CPhysNetConstruction(self.model_config, td)
         return model
     
+    def compile_model(self, model):
+        optimizer = MultiplierAdam(
+            learning_rate=self.learning_rate,
+            lr_multipliers={
+                "opt_h_factor_win": self.rc_learning_rate_multiplier,
+                "opt_h_factor_ext": self.rc_learning_rate_multiplier,
+                "opt_k_factor_air": self.rc_learning_rate_multiplier,
+
+                "raw_theta_solar": self.rc_learning_rate_multiplier,
+                "opt_alpha": self.rc_learning_rate_multiplier,
+                "opt_beta": self.rc_learning_rate_multiplier,
+            }
+        )
+
+        model.compile(
+            optimizer=optimizer,
+            loss="mse",
+            metrics=[keras.metrics.RootMeanSquaredError(name="rmse", dtype=None)]
+        )
+
     def get_config(self) -> dict:
         config = super().get_config()
         config.update({
-            't_room_column': self.t_room_column,
-            'predict_delta': self.predict_delta,
-
-            'n_layers': self.n_layers,
-            'n_neurons': self.n_neurons,
+            'encoder_features': self.encoder_features,
+            'encoder_layers': self.encoder_layers,
+            'encoder_neurons': self.encoder_neurons,
+            'dynamic_features': self.dynamic_features,
+            'dynamic_layers': self.dynamic_layers,
+            'dynamic_neurons': self.dynamic_neurons,
             'activation_function': self.activation_function,
             'rescale_output': self.rescale_output,
 
+            'predict_delta': self.predict_delta,
+            't_air_column': self.t_air_column,
             'trainable_rc': self.trainable_rc,
+            'rc_learning_rate_multiplier': self.rc_learning_rate_multiplier,
             'physics_loss_weight': self.physics_loss_weight,
-            'physics_loss_reduction': self.physics_loss_reduction,
 
             'rc_kwargs': self.rc_kwargs,
+        })
+        return config
+
+
+@register_model
+class RC2R2CGokhalePhysNetModel(ANNModel):
+    """
+    
+    """
+    def __init__(
+        self,
+        t_air_column: Union[str, int],
+        encoder_features: list[Union[str, int]],
+        dynamic_features: list[Union[str, int]],
+        rc_kwargs: Optional[dict] = None,
+        predict_delta: bool = True,
+        encoder_layers: int = 2,
+        encoder_neurons: Union[int, list[int]] = 24,
+        dynamic_layers: int = 1,
+        dynamic_neurons: Union[int, list[int]] = 128,
+        activation_function: Union[str, list[str]] = 'softplus',
+        rescale_output: bool = True,
+        trainable_rc: bool = False,
+        physics_loss_weight: float = 1.0,
+        batch_size: int = 32,
+        epochs: int = 1000,
+        learning_rate: float = 0.001,
+        rc_learning_rate_multiplier: float = 0.1,
+        early_stopping_epochs: Optional[int] = 100,
+        random_seed: int = 42,
+        **kwargs
+    ):
+        super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
+
+        self.predict_delta = predict_delta
+
+        self.t_air_column: str = t_air_column
+
+        self.rc_kwargs = rc_kwargs if rc_kwargs is not None else {}
+
+        self.encoder_features: list[Union[str, int]] = encoder_features
+        self.encoder_layers: int = encoder_layers
+        self.encoder_neurons: Union[int, list[int]] = encoder_neurons
+        self.dynamic_features: list[Union[str, int]] = dynamic_features
+        self.dynamic_layers: int = dynamic_layers
+        self.dynamic_neurons: Union[int, list[int]] = dynamic_neurons
+        self.activation_function: Union[str, list[str]] = activation_function
+        self.rescale_output: bool = rescale_output
+
+        self.trainable_rc: bool = trainable_rc
+        self.rc_learning_rate_multiplier: float = rc_learning_rate_multiplier
+
+        self.physics_loss_weight: float = physics_loss_weight
+
+        self.model_config.update({
+            'encoder_features': self.encoder_features,
+            'encoder_layers': self.encoder_layers,
+            'encoder_neurons': self.encoder_neurons,
+            'dynamic_features': self.dynamic_features,
+            'dynamic_layers': self.dynamic_layers,
+            'dynamic_neurons': self.dynamic_neurons,
+            'activation_function': self.activation_function,
+            'rescale_output': self.rescale_output,
+
+            'predict_delta': self.predict_delta,
+            't_air_column': self.t_air_column,
+            'trainable_rc': self.trainable_rc,
+            'rc_learning_rate_multiplier': self.rc_learning_rate_multiplier,
+            'physics_loss_weight': self.physics_loss_weight,
+
+            'rc_kwargs': self.rc_kwargs,
+        })
+
+    def generate_model(self, **kwargs):
+        td = kwargs['td']
+        model = RC2R2CGokhalePhysNetConstruction(self.model_config, td)
+        return model
+    
+    def compile_model(self, model):
+        optimizer = MultiplierAdam(
+            learning_rate=self.learning_rate,
+            lr_multipliers={
+                "opt_h_factor_win": self.rc_learning_rate_multiplier,
+                "opt_h_factor_ext": self.rc_learning_rate_multiplier,
+                "opt_k_factor_air": self.rc_learning_rate_multiplier,
+
+                "raw_theta_solar": self.rc_learning_rate_multiplier,
+                "opt_alpha": self.rc_learning_rate_multiplier,
+                "opt_beta": self.rc_learning_rate_multiplier,
+            }
+        )
+
+        model.compile(
+            optimizer=optimizer,
+        )
+
+    def _make_gokhale_dataset(
+            self,
+            x,
+            y,
+            shuffle: bool,
+    ):
+        """
+        
+        """
+        x = np.asarray(x, dtype=np.float32)
+        y = np.asarray(y, dtype=np.float32).reshape(-1,1)
+
+        if x.shape[0] < 2:
+            raise ValueError("at least two consecutive samples are rewuired for Gokhale!")
+        
+        dataset = tf.data.Dataset.from_tensor_slices(
+            (
+                (x[:-1], x[1:]),
+                y[1:],
+            )
+        )
+
+        if shuffle:
+            dataset = dataset.shuffle(buffer_size=min(10000, x.shape[0] - 1), reshuffle_each_iteration=True)
+
+        dataset = dataset.batch(self.batch_size)
+        dataset = dataset.prefetch(tf.data.AUTOTUNE)
+
+        return dataset
+    
+    def fit_model(self, model, td:TrainingDataGeneric):
+
+        callbacks = list()
+        if self.early_stopping_epochs is not None:
+            es = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', patience=self.early_stopping_epochs,
+                                               restore_best_weights=True, verbose=Logger.verbosity_int())
+            callbacks.append(es)
+
+        train_ds = self._make_gokhale_dataset(
+            x=td.X_train_single,
+            y=td.y_train_single,
+            shuffle=True,
+        )
+
+        if td.y_val is not None:
+            val_ds = self._make_gokhale_dataset(
+                x=td.X_val_single,
+                y=td.y_val_single,
+                shuffle=False
+            )
+        else:
+            val_ds = None
+
+        start_time = time.perf_counter()
+
+        training_history = model.fit(train_ds,
+                                     validation_data=val_ds,
+                                     epochs=self.epochs,
+                                     callbacks=callbacks,
+                                     verbose=Logger.verbosity())
+        stop_time = time.perf_counter()
+
+        # Add metrics to training data
+        td.add_training_time(stop_time - start_time)
+        td.add_training_record(training_history)
+
+        if Logger.check_print_level('info'):
+            model.summary()
+
+    def get_config(self) -> dict:
+        config = super().get_config()
+        config.update({
+            'encoder_features': self.encoder_features,
+            'encoder_layers': self.encoder_layers,
+            'encoder_neurons': self.encoder_neurons,
+            'dynamic_features': self.dynamic_features,
+            'dynamic_layers': self.dynamic_layers,
+            'dynamic_neurons': self.dynamic_neurons,
+            'activation_function': self.activation_function,
+            'rescale_output': self.rescale_output,
+
+            'predict_delta': self.predict_delta,
+            't_air_column': self.t_air_column,
+            'trainable_rc': self.trainable_rc,
+            'rc_learning_rate_multiplier': self.rc_learning_rate_multiplier,
+            'physics_loss_weight': self.physics_loss_weight,
+
+            'rc_kwargs': self.rc_kwargs,
+        })
+        return config
+    
+
+@register_model
+class RC2R2CGokhalePhysNetWallDynamicsModel(RC2R2CGokhalePhysNetModel):
+    """
+    
+    """
+    def __init__(
+        self,
+        t_air_column: Union[str, int],
+        encoder_features: list[Union[str, int]],
+        dynamic_features: list[Union[str, int]],
+        rc_kwargs: Optional[dict] = None,
+        predict_delta: bool = True,
+        encoder_layers: int = 2,
+        encoder_neurons: Union[int, list[int]] = 24,
+        dynamic_layers: int = 1,
+        dynamic_neurons: Union[int, list[int]] = 128,
+        activation_function: Union[str, list[str]] = 'softplus',
+        rescale_output: bool = True,
+        trainable_rc: bool = False,
+        physics_loss_weight: float = 1.0,
+        wall_dynamics_loss_weight: float = 1.0,
+        batch_size: int = 32,
+        epochs: int = 1000,
+        learning_rate: float = 0.001,
+        rc_learning_rate_multiplier: float = 0.1,
+        early_stopping_epochs: Optional[int] = 100,
+        random_seed: int = 42,
+        **kwargs
+    ):
+        
+        super().__init__(
+            t_air_column=t_air_column,
+            encoder_features=encoder_features,
+            dynamic_features=dynamic_features,
+            rc_kwargs=rc_kwargs,
+            predict_delta=predict_delta,
+            encoder_layers=encoder_layers,
+            encoder_neurons=encoder_neurons,
+            dynamic_layers=dynamic_layers,
+            dynamic_neurons=dynamic_neurons,
+            activation_function=activation_function,
+            rescale_output=rescale_output,
+            trainable_rc=trainable_rc,
+            physics_loss_weight=physics_loss_weight,
+            batch_size=batch_size,
+            epochs=epochs,
+            learning_rate=learning_rate,
+            rc_learning_rate_multiplier=rc_learning_rate_multiplier,
+            early_stopping_epochs=early_stopping_epochs,
+            random_seed=random_seed,
+            **kwargs,
+        )
+
+        self.wall_dynamics_loss_weight = wall_dynamics_loss_weight
+        self.model_config['wall_dynamics_loss_weight'] = self.wall_dynamics_loss_weight
+
+    def generate_model(self, **kwargs):
+        td = kwargs['td']
+        model = RC2R2CGokhalePhysNetWallDynamicsConstruction(self.model_config, td)
+        return model
+    
+    def compile_model(self, model):
+        optimizer = MultiplierAdam(
+            learning_rate=self.learning_rate,
+            lr_multipliers={
+                "opt_h_factor_win": self.rc_learning_rate_multiplier,
+                "opt_h_factor_ext": self.rc_learning_rate_multiplier,
+                "opt_h_factor_ext_rem": self.rc_learning_rate_multiplier,
+                "opt_k_factor_air": self.rc_learning_rate_multiplier,
+                "opt_k_factor_ext": self.rc_learning_rate_multiplier,
+
+                "raw_theta_solar": self.rc_learning_rate_multiplier,
+                "opt_alpha": self.rc_learning_rate_multiplier,
+                "opt_beta": self.rc_learning_rate_multiplier,
+            }
+        )
+
+        model.compile(
+            optimizer=optimizer,
+        )
+
+    def get_config(self) -> dict:
+        config = super().get_config()
+        config.update({
+            'wall_dynamics_loss_weight': self.wall_dynamics_loss_weight,
         })
         return config
