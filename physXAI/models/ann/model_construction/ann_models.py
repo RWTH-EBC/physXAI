@@ -8,7 +8,7 @@ from physXAI.models.ann.configs.ann_model_configs import (ClassicalANNConstructi
                                                                  RC2R2CPhysNetConstruction_config,
                                                                  RC2R2CGokhalePhysNetConstruction_config,
                                                                  RC2R2CGokhalePhysNetWallDynamicsConstruction_config)
-from physXAI.models.ann.keras_models.keras_models import NonNegPartial, ConcaveActivation, SaturatedActivation
+from physXAI.models.ann.keras_models.keras_models import NonNegPartial, ConcaveActivation, SaturatedActivation, InputSliceLayer
 from physXAI.models.ann.pinn_new.rc_layers import RC1R1CLayer, RC2R2CPhysNetLayer, RC2R2CGokhalePhysNetLayer, RC2R2CGokhalePhysNetWallDynamicsLayer
 from physXAI.models.ann.pinn_new.physics_loss import PhysicsLossLayer
 from physXAI.models.ann.pinn_new.feature_index import _resolve_feature_indices
@@ -236,33 +236,44 @@ def RC1R1CConstruction(config: dict, td: TrainingDataGeneric):
     if 't_air_index' not in rc_kwargs:
         rc_kwargs['t_air_index'] = t_air_index
 
-    # Add input layer
-    input_layer = keras.layers.Input(shape=(n_features,))
 
     # -------------------------------------------------------------------------
-    # ANN branch
+    # neural core model
     # -------------------------------------------------------------------------
+    core_input = keras.layers.Input(shape=(n_features,), name='core_input')
+
     # Add normalization layer
     if config['normalize']:
         normalization = keras.layers.Normalization()
         normalization.adapt(td.X_train_single)
-        x = normalization(input_layer)
+        x = normalization(core_input)
     else:
-        x = input_layer
+        x = core_input
 
     for i in range(0, n_layers):
         # For each layer add dense
         x = keras.layers.Dense(n_neurons[i], activation=activation_function[i])(x)
 
     # Add output layer
-    y_nn = keras.layers.Dense(1, activation='linear')(x)
+    output_name = 'change_t_air_dense' if config['predict_delta'] else 't_air_dense'
+    y_core = keras.layers.Dense(1, activation='linear', name=output_name)(x)
 
     # Add rescaling
     if config['rescale_output']:
         # Rescaling for output layer
         rescale_mean = float(np.mean(td.y_train_single))
         rescale_sigma = float(np.std(td.y_train_single, ddof=1))
-        y_nn = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(y_nn)
+        y_core = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(y_core)
+
+    core_model = keras.models.Model(inputs=core_input, outputs=y_core, name='core_model')
+
+
+    # -------------------------------------------------------------------------
+    # PINN
+    # -------------------------------------------------------------------------
+    pinn_input = keras.layers.Input(shape=(n_features,), name='pinn_input')
+    
+    y_nn = core_model(pinn_input)
 
     # -------------------------------------------------------------------------
     # 1R1C physics branch
@@ -270,13 +281,13 @@ def RC1R1CConstruction(config: dict, td: TrainingDataGeneric):
     y_phys = RC1R1CLayer(
         trainable_rc = config['trainable_rc'],
         **rc_kwargs
-    )(input_layer)
+    )(pinn_input)
 
     # calculate resiudal
     if config['predict_delta']:
         residual = keras.ops.subtract(y_nn, y_phys)
     else:
-        t_air_k = keras.ops.take(input_layer, [t_air_index], axis=-1)
+        t_air_k = InputSliceLayer(feature_indices=[t_air_index])(pinn_input)
         y_phys_absolute = keras.ops.add(t_air_k, y_phys)
 
         residual = keras.ops.subtract(y_nn, y_phys_absolute)
@@ -288,7 +299,7 @@ def RC1R1CConstruction(config: dict, td: TrainingDataGeneric):
         weight=config['physics_loss_weight']
     )([y_nn, residual])
 
-    model = keras.models.Model(inputs=input_layer, outputs=output_layer)
+    model = keras.models.Model(inputs=pinn_input, outputs=output_layer, name='pinn_1r1c')
 
     return model
 
@@ -324,8 +335,8 @@ def RC2R2CPhysNetConstruction(config: dict, td: TrainingDataGeneric):
     else:
         assert len(activation_function)== (encoder_layers + dynamic_layers)
 
-    enc_activation = activation_function[:encoder_layers]
-    dyn_activation = activation_function[encoder_layers:]
+    encoder_activation = activation_function[:encoder_layers]
+    dynamic_activation = activation_function[encoder_layers:]
 
     if isinstance(config['t_air_column'], str):
         t_air_index = list(td.columns).index(config['t_air_column'])
@@ -340,55 +351,68 @@ def RC2R2CPhysNetConstruction(config: dict, td: TrainingDataGeneric):
     encoder_indices = _resolve_feature_indices(config['encoder_features'], td.columns)
     dynamic_indices = _resolve_feature_indices(config['dynamic_features'], td.columns)
 
-    input_layer = keras.layers.Input(shape=(n_features,))
 
-    x_encoder_input = keras.ops.take(input_layer, encoder_indices, axis=-1)
-    x_dynamic_input = keras.ops.take(input_layer, dynamic_indices, axis=-1)
+    # -------------------------------------------------------------------------
+    # neural core model
+    # -------------------------------------------------------------------------
+    core_input = keras.layers.Input(shape=(n_features,), name='core_input')
+
+    x_encoder_input = InputSliceLayer(feature_indices=encoder_indices, name='encoder_input_slice')(core_input)
+    x_dynamic_input = InputSliceLayer(feature_indices=dynamic_indices, name='dynamic_input_slice')(core_input)
 
     # Add normalization layer
     if config['normalize']:
         encoder_normalization = keras.layers.Normalization()
         encoder_normalization.adapt(td.X_train_single[:,encoder_indices])
-        x_enc = encoder_normalization(x_encoder_input)
+        x_encoder = encoder_normalization(x_encoder_input)
 
         dynamic_normalization = keras.layers.Normalization()
         dynamic_normalization.adapt(td.X_train_single[:,dynamic_indices])
-        x_dyn = dynamic_normalization(x_dynamic_input)
+        x_dynamic = dynamic_normalization(x_dynamic_input)
     else:
-        x_enc = x_encoder_input
-        x_dyn = x_dynamic_input
+        x_encoder = x_encoder_input
+        x_dynamic = x_dynamic_input
 
     # -------------------------------------------------------------------------
     # Encoder branch
     # -------------------------------------------------------------------------
     for i in range(0, encoder_layers):
-        x_enc = keras.layers.Dense(encoder_neurons[i], activation=enc_activation[i])(x_enc)
+        x_encoder = keras.layers.Dense(encoder_neurons[i], activation=encoder_activation[i])(x_encoder)
 
-    z_latent = keras.layers.Dense(1, activation='linear', name='T_w_latent')(x_enc)
+    z_latent_core = keras.layers.Dense(1, activation='linear', name='t_wall_latent_dense')(x_encoder)
 
     # -------------------------------------------------------------------------
     # Dynamic branch
     # -------------------------------------------------------------------------
-    x_dyn = keras.layers.Concatenate()([x_dyn, z_latent])
+    x_dynamic = keras.layers.Concatenate()([x_dynamic, z_latent_core])
     for i in range(0, dynamic_layers):
         # For each layer add dense
-        x_dyn = keras.layers.Dense(dynamic_neurons[i], activation=dyn_activation[i])(x_dyn)
+        x_dynamic = keras.layers.Dense(dynamic_neurons[i], activation=dynamic_activation[i])(x_dynamic)
 
     # Add output layer
-    output_name = 'Change_TAir_pred' if config['predict_delta'] else 'TAir_pred'
-    y_nn = keras.layers.Dense(1, activation='linear', name=output_name)(x_dyn)
+    output_name = 'change_t_air_dense' if config['predict_delta'] else 't_air_dense'
+    y_core = keras.layers.Dense(1, activation='linear', name=output_name)(x_dynamic)
 
     if config['normalize']:
         z_rescale_mean = float(np.mean(td.X_train_single[:, [t_air_index]]))
         z_rescale_sigma = float(np.std(td.X_train_single[:, [t_air_index]], ddof=1))
-        z_latent = keras.layers.Rescaling(scale=z_rescale_sigma, offset=z_rescale_mean)(z_latent)
+        z_latent_core = keras.layers.Rescaling(scale=z_rescale_sigma, offset=z_rescale_mean)(z_latent_core)
 
     # Add rescaling
     if config['rescale_output']:
         # Rescaling for output layer
         rescale_mean = float(np.mean(td.y_train_single))
         rescale_sigma = float(np.std(td.y_train_single, ddof=1))
-        y_nn = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(y_nn)
+        y_core = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(y_core)
+
+    core_model = keras.models.Model(inputs=core_input, outputs=[y_core, z_latent_core], name='core_model')
+
+    # -------------------------------------------------------------------------
+    # PINN
+    # -------------------------------------------------------------------------
+    pinn_input = keras.layers.Input(shape=(n_features,), name='pinn_input')
+
+    y_nn, z_latent = core_model(pinn_input)
 
     # -------------------------------------------------------------------------
     # 2R2C physics branch
@@ -396,7 +420,7 @@ def RC2R2CPhysNetConstruction(config: dict, td: TrainingDataGeneric):
     z_phys = RC2R2CPhysNetLayer(
         trainable_rc=config['trainable_rc'],
         **rc_kwargs
-    )([input_layer, y_nn])
+    )([pinn_input, y_nn])
 
     # calculate resiudal
     residual = keras.ops.subtract(z_latent, z_phys)
@@ -408,7 +432,7 @@ def RC2R2CPhysNetConstruction(config: dict, td: TrainingDataGeneric):
         weight=config['physics_loss_weight']
     )([y_nn, residual])
 
-    model = keras.models.Model(inputs=input_layer, outputs=output_layer)
+    model = keras.models.Model(inputs=pinn_input, outputs=output_layer, name='pinn_2r2c')
 
     return model
 
@@ -460,10 +484,13 @@ def RC2R2CGokhalePhysNetConstruction(config: dict, td: TrainingDataGeneric):
     encoder_indices = _resolve_feature_indices(config['encoder_features'], td.columns)
     dynamic_indices = _resolve_feature_indices(config['dynamic_features'], td.columns)
 
-    input_layer = keras.layers.Input(shape=(n_features,))
+    # -------------------------------------------------------------------------
+    # neural core model
+    # -------------------------------------------------------------------------
+    core_input = keras.layers.Input(shape=(n_features,), name='core_input')
 
-    x_encoder_input = keras.ops.take(input_layer, encoder_indices, axis=-1)
-    x_dynamic_input = keras.ops.take(input_layer, dynamic_indices, axis=-1)
+    x_encoder_input = InputSliceLayer(feature_indices=encoder_indices, name='encoder_input_slice')(core_input)
+    x_dynamic_input = InputSliceLayer(feature_indices=dynamic_indices, name='dynamic_input_slice')(core_input)
 
     # Add normalization layer
     if config['normalize']:
@@ -484,43 +511,53 @@ def RC2R2CGokhalePhysNetConstruction(config: dict, td: TrainingDataGeneric):
     for i in range(0, encoder_layers):
         x_encoder = keras.layers.Dense(encoder_neurons[i], activation=encoder_activation[i])(x_encoder)
 
-    z_latent = keras.layers.Dense(1, activation='linear', name='T_w_latent_scaled')(x_encoder)
+    z_latent_core = keras.layers.Dense(1, activation='linear', name='t_wall_latent_dense')(x_encoder)
 
     # -------------------------------------------------------------------------
     # Dynamic branch
     # -------------------------------------------------------------------------
-    x_dynamic = keras.layers.Concatenate()([x_dynamic, z_latent])
+    x_dynamic = keras.layers.Concatenate()([x_dynamic, z_latent_core])
     for i in range(0, dynamic_layers):
         # For each layer add dense
         x_dynamic = keras.layers.Dense(dynamic_neurons[i], activation=dynamic_activation[i])(x_dynamic)
 
     # Add output layer
-    output_name = 'Change_TAir_pred' if config['predict_delta'] else 'TAir_pred'
-    y_pred = keras.layers.Dense(1, activation='linear', name=output_name)(x_dynamic)
+    output_name = 'change_t_air_dense' if config['predict_delta'] else 't_air_dense'
+    y_core = keras.layers.Dense(1, activation='linear', name=output_name)(x_dynamic)
 
     if config['normalize']:
         z_rescale_mean = float(np.mean(td.X_train_single[:, [t_air_index]]))
         z_rescale_sigma = float(np.std(td.X_train_single[:, [t_air_index]], ddof=1))
-        z_latent = keras.layers.Rescaling(scale=z_rescale_sigma, offset=z_rescale_mean)(z_latent)
+        z_latent_core = keras.layers.Rescaling(scale=z_rescale_sigma, offset=z_rescale_mean)(z_latent_core)
 
     # Add rescaling
     if config['rescale_output']:
         # Rescaling for output layer
         rescale_mean = float(np.mean(td.y_train_single))
         rescale_sigma = float(np.std(td.y_train_single, ddof=1))
-        y_pred = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(y_pred)
+        y_core = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(y_core)
+
+    core_model = keras.models.Model(inputs=core_input, outputs=[y_core, z_latent_core], name='core_model')
+
+    # -------------------------------------------------------------------------
+    # PINN
+    # -------------------------------------------------------------------------
+    pinn_input = keras.layers.Input(shape=(n_features,), name='pinn_input')
+
+    y_nn, _ = core_model(pinn_input)
 
     physics_layer = RC2R2CGokhalePhysNetLayer(
         trainable_rc=config['trainable_rc'],
         **rc_kwargs
     )
-
-    core_model = keras.models.Model(inputs=input_layer, outputs=[y_pred, z_latent])
     
     model = RC2R2CGokhalePhysNetKerasModel(
+        inputs=pinn_input,
+        outputs=y_nn,
         core_model=core_model,
         physics_layer=physics_layer,
         physics_loss_weight=config['physics_loss_weight'],
+        name='pinn_2r2c_gokhale'
     )
 
     return model
@@ -572,10 +609,13 @@ def RC2R2CGokhalePhysNetWallDynamicsConstruction(config: dict, td: TrainingDataG
     encoder_indices = _resolve_feature_indices(config['encoder_features'], td.columns)
     dynamic_indices = _resolve_feature_indices(config['dynamic_features'], td.columns)
 
-    input_layer = keras.layers.Input(shape=(n_features,))
+        # -------------------------------------------------------------------------
+    # neural core model
+    # -------------------------------------------------------------------------
+    core_input = keras.layers.Input(shape=(n_features,), name='core_input')
 
-    x_encoder_input = keras.ops.take(input_layer, encoder_indices, axis=-1)
-    x_dynamic_input = keras.ops.take(input_layer, dynamic_indices, axis=-1)
+    x_encoder_input = InputSliceLayer(feature_indices=encoder_indices, name='encoder_input_slice')(core_input)
+    x_dynamic_input = InputSliceLayer(feature_indices=dynamic_indices, name='dynamic_input_slice')(core_input)
 
     # Add normalization layer
     if config['normalize']:
@@ -596,44 +636,54 @@ def RC2R2CGokhalePhysNetWallDynamicsConstruction(config: dict, td: TrainingDataG
     for i in range(0, encoder_layers):
         x_encoder = keras.layers.Dense(encoder_neurons[i], activation=encoder_activation[i])(x_encoder)
 
-    z_latent = keras.layers.Dense(1, activation='linear', name='T_w_latent_scaled')(x_encoder)
+    z_latent_core = keras.layers.Dense(1, activation='linear', name='t_wall_latent_dense')(x_encoder)
 
     # -------------------------------------------------------------------------
     # Dynamic branch
     # -------------------------------------------------------------------------
-    x_dynamic = keras.layers.Concatenate()([x_dynamic, z_latent])
+    x_dynamic = keras.layers.Concatenate()([x_dynamic, z_latent_core])
     for i in range(0, dynamic_layers):
         # For each layer add dense
         x_dynamic = keras.layers.Dense(dynamic_neurons[i], activation=dynamic_activation[i])(x_dynamic)
 
     # Add output layer
-    output_name = 'Change_TAir_pred' if config['predict_delta'] else 'TAir_pred'
-    y_pred = keras.layers.Dense(1, activation='linear', name=output_name)(x_dynamic)
-    
+    output_name = 'change_t_air_dense' if config['predict_delta'] else 't_air_dense'
+    y_core = keras.layers.Dense(1, activation='linear', name=output_name)(x_dynamic)
+
     if config['normalize']:
         z_rescale_mean = float(np.mean(td.X_train_single[:, [t_air_index]]))
         z_rescale_sigma = float(np.std(td.X_train_single[:, [t_air_index]], ddof=1))
-        z_latent = keras.layers.Rescaling(scale=z_rescale_sigma, offset=z_rescale_mean)(z_latent)
-        
+        z_latent_core = keras.layers.Rescaling(scale=z_rescale_sigma, offset=z_rescale_mean)(z_latent_core)
+
     # Add rescaling
     if config['rescale_output']:
         # Rescaling for output layer
         rescale_mean = float(np.mean(td.y_train_single))
         rescale_sigma = float(np.std(td.y_train_single, ddof=1))
-        y_pred = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(y_pred)
+        y_core = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(y_core)
+
+    core_model = keras.models.Model(inputs=core_input, outputs=[y_core, z_latent_core], name='core_model')
+
+    # -------------------------------------------------------------------------
+    # PINN
+    # -------------------------------------------------------------------------
+    pinn_input = keras.layers.Input(shape=(n_features,), name='pinn_input')
+
+    y_nn, _ = core_model(pinn_input)
 
     physics_layer = RC2R2CGokhalePhysNetWallDynamicsLayer(
         trainable_rc=config['trainable_rc'],
         **rc_kwargs
     )
-
-    core_model = keras.models.Model(inputs=input_layer, outputs=[y_pred, z_latent])
     
     model = RC2R2CGokhalePhysNetWallDynamicsKerasModel(
+        inputs=pinn_input,
+        outputs=y_nn,
         core_model=core_model,
         physics_layer=physics_layer,
         physics_loss_weight=config['physics_loss_weight'],
         wall_dynamics_loss_weight=config['wall_dynamics_loss_weight'],
+        name='pinn_2r2c_gokhale_wall_dynamics',
     )
 
     return model

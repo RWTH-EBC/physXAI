@@ -81,9 +81,11 @@ class RC1R1CLayer(keras.Layer):
         self.alpha_init = float(alpha_init)
         self.beta_init = float(beta_init)
         
-        self.initial_H_win = 1.0 / self.initial_r_win
-        self.initial_H_ext = 1.0 / self.initial_r_ext
-        self.initial_K_air = 1.0 / self.initial_c_air
+        self.initial_tau_ext_air = self.initial_r_ext * self.initial_c_air
+        self.initial_kappa_ext_air = 1.0 / self.initial_tau_ext_air
+        self.initial_tau_win_air = self.initial_r_win * self.initial_c_air
+        self.initial_kappa_win_air = 1.0 / self.initial_tau_win_air
+        self.initial_k_air = 1.0 / self.initial_c_air
 
         self.t_air_index = int(t_air_index)
         self.t_amb_index = int(t_amb_index)
@@ -126,15 +128,15 @@ class RC1R1CLayer(keras.Layer):
         alpha_initializer = _inverse_sigmoid(self.alpha_init)
         beta_initializer = _inverse_sigmoid(self.beta_init)
 
-        self.opt_h_factor_win = self.add_weight(
-            name="opt_h_factor_win",
+        self.opt_kappa_factor_win_air = self.add_weight(
+            name="opt_kappa_factor_win_air",
             shape=(1,),
             initializer=keras.initializers.Constant(initializer_val),
             trainable=self.trainable_rc
         )
 
-        self.opt_h_factor_ext = self.add_weight(
-            name="opt_h_factor_ext",
+        self.opt_kappa_factor_ext_air = self.add_weight(
+            name="opt_kappa_factor_ext_air",
             shape=(1,),
             initializer=keras.initializers.Constant(initializer_val),
             trainable=self.trainable_rc
@@ -165,7 +167,7 @@ class RC1R1CLayer(keras.Layer):
             name="opt_beta",
             shape=(1,),
             initializer=keras.initializers.Constant(beta_initializer),
-            trainable=True
+            trainable=self.use_internal_gains
         )
 
         super().build(input_shape)
@@ -252,37 +254,39 @@ class RC1R1CLayer(keras.Layer):
         )
 
 
-        h_factor_win = self._positive_parameter(self.opt_h_factor_win)
-        h_factor_ext = self._positive_parameter(self.opt_h_factor_ext)
-        k_factor = self._positive_parameter(self.opt_k_factor_air)
+        kappa_factor_win_air = self._positive_parameter(self.opt_kappa_factor_win_air)
+        kappa_factor_ext_air = self._positive_parameter(self.opt_kappa_factor_ext_air)
+        k_factor_air = self._positive_parameter(self.opt_k_factor_air)
 
-        H_phys_win = h_factor_win * self.initial_H_win
-        H_phys_ext = h_factor_ext * self.initial_H_ext
-        K_phys = k_factor * self.initial_K_air
+        kappa_phys_win_air = kappa_factor_win_air * self.initial_kappa_win_air
+        kappa_phys_ext_air = kappa_factor_ext_air * self.initial_kappa_ext_air
+        k_phys_air = k_factor_air * self.initial_k_air
 
         theta_solar = self._positive_parameter(self.raw_theta_solar)
         alpha = keras.activations.sigmoid(self.opt_alpha)
         beta = keras.activations.sigmoid(self.opt_beta)
 
-        q_transmission_ext = H_phys_ext * (t_ambient - t_air)
-        q_transmission_win = H_phys_win * (t_ambient - t_air)
+        term_transmission_ext = kappa_phys_ext_air * (t_ambient - t_air)
+        term_transmission_win = kappa_phys_win_air * (t_ambient - t_air)
 
         v_flow_m3_s = v_flow_ahu / 3600.0
         q_ahu = self.rho_air * self.cp_air * v_flow_m3_s * (t_ahu_sup - t_air)
+        term_ahu = k_phys_air * q_ahu
 
         V_flow_w_h = self.V_flow_w_h_max * (keras.ops.exp(self.valve_a * y_valve_h / 100) - 1) / (keras.ops.exp(self.valve_a) - 1)
         QT = self.m_QT * v_flow_ahu + self.m_QT2 * v_flow_ahu**2
         KQ =  self.KQ_w3 * V_flow_w_h**3 + self.KQ_w2 * V_flow_w_h**2 + self.KQ_w1 * V_flow_w_h + self.KQ_w1a1 * v_flow_ahu * V_flow_w_h + self.KQ_w1a2 * v_flow_ahu**2 * V_flow_w_h + self.KQ_w2a1 * v_flow_ahu * V_flow_w_h**2
         q_did = QT * (t_sup_w_h - t_air) * KQ / (1 + QT * 0.86 / (2*V_flow_w_h + 1))
+        term_did = k_phys_air * q_did
 
-        q_solar = alpha * theta_solar * h_dir_nor
+        term_solar = alpha * k_phys_air * theta_solar * h_dir_nor
 
-        q_total = q_transmission_ext + q_transmission_win + q_ahu + q_solar + q_did
+        term_total = term_transmission_ext + term_transmission_win + term_ahu + term_solar + term_did
 
         if self.use_internal_gains:
-            q_total = q_total + beta * q_int
+            term_total = term_total + beta * k_phys_air * q_int
 
-        delta_t_phys = self.time_step * K_phys * q_total
+        delta_t_phys = self.time_step * term_total
 
         return delta_t_phys
     
@@ -378,9 +382,10 @@ class RC2R2CPhysNetLayer(keras.Layer):
         self.alpha_init = float(alpha_init)
         self.beta_init = float(beta_init)
 
-        self.initial_H_win = 1.0 / self.initial_r_win
-        self.initial_H_ext = 1.0 / self.initial_r_ext
-        self.initial_K_air = 1.0 / self.initial_c_air
+        self.initial_tau_win_air = self.initial_r_win * self.initial_c_air
+        self.initial_kappa_win_air = 1.0 / self.initial_tau_win_air
+        self.initial_tau_ext_air = self.initial_r_ext * self.initial_c_air
+        self.initial_k_air = 1.0 / self.initial_c_air
 
         self.t_air_index = int(t_air_index)
         self.t_amb_index = int(t_amb_index)
@@ -425,15 +430,15 @@ class RC2R2CPhysNetLayer(keras.Layer):
         alpha_initializer = _inverse_sigmoid(self.alpha_init)
         beta_initializer = _inverse_sigmoid(self.beta_init)
 
-        self.opt_h_factor_win = self.add_weight(
-            name="opt_h_factor_win",
+        self.opt_kappa_factor_win_air = self.add_weight(
+            name="opt_kappa_factor_win_air",
             shape=(1,),
             initializer=keras.initializers.Constant(initializer_val),
             trainable=self.trainable_rc
         )
 
-        self.opt_h_factor_ext = self.add_weight(
-            name="opt_h_factor_ext",
+        self.opt_tau_factor_ext_air = self.add_weight(
+            name="opt_tau_factor_ext_air",
             shape=(1,),
             initializer=keras.initializers.Constant(initializer_val),
             trainable=self.trainable_rc
@@ -464,7 +469,7 @@ class RC2R2CPhysNetLayer(keras.Layer):
             name="opt_beta",
             shape=(1,),
             initializer=keras.initializers.Constant(beta_initializer),
-            trainable=True
+            trainable=self.use_internal_gains
         )
 
 
@@ -557,13 +562,13 @@ class RC2R2CPhysNetLayer(keras.Layer):
             reference=t_air
         )
 
-        h_factor_win = self._positive_parameter(self.opt_h_factor_win)
-        h_factor_ext = self._positive_parameter(self.opt_h_factor_ext)
+        kappa_factor_win_air = self._positive_parameter(self.opt_kappa_factor_win_air)
+        tau_factor_ext_air = self._positive_parameter(self.opt_tau_factor_ext_air)
         k_factor_air = self._positive_parameter(self.opt_k_factor_air)
 
-        H_phys_win = h_factor_win * self.initial_H_win
-        H_phys_ext = h_factor_ext * self.initial_H_ext
-        K_phys_r = k_factor_air * self.initial_K_air
+        kappa_phys_win_air = kappa_factor_win_air * self.initial_kappa_win_air
+        tau_phys_ext_air = tau_factor_ext_air * self.initial_tau_ext_air
+        k_phys_air = k_factor_air * self.initial_k_air
 
         theta_solar = self._positive_parameter(self.raw_theta_solar)
         alpha = keras.activations.sigmoid(self.opt_alpha)
@@ -584,15 +589,15 @@ class RC2R2CPhysNetLayer(keras.Layer):
         else:
             delta_t_air = (y_air_pred - t_air) / self.time_step
 
-        term_delta_t_air = (1.0 / (K_phys_r * H_phys_ext)) * delta_t_air
-        term_t_air = (1.0 + (H_phys_win / H_phys_ext) + (h_ahu / H_phys_ext)) * t_air
-        term_amb = (H_phys_win / H_phys_ext) * t_amb
-        term_ahu = (h_ahu / H_phys_ext) * t_ahu_sup
-        term_did = (1.0 / H_phys_ext) * q_did
-        term_solar = alpha * (1.0 / H_phys_ext) * q_solar
+        term_delta_t_air = tau_phys_ext_air * delta_t_air
+        term_t_air = (1.0 + tau_phys_ext_air * kappa_phys_win_air + h_ahu * tau_phys_ext_air * k_phys_air) * t_air
+        term_amb = tau_phys_ext_air * kappa_phys_win_air * t_amb
+        term_ahu = h_ahu * tau_phys_ext_air * k_phys_air * t_ahu_sup
+        term_did = tau_phys_ext_air * k_phys_air * q_did
+        term_solar = alpha * tau_phys_ext_air * k_phys_air * q_solar
 
         if self.use_internal_gains:
-            term_int = beta * (1.0 / H_phys_ext) * q_int
+            term_int = beta * tau_phys_ext_air * k_phys_air * q_int
         else:
             term_int = 0.0
 
@@ -696,9 +701,10 @@ class RC2R2CGokhalePhysNetLayer(keras.Layer):
         self.alpha_init = float(alpha_init)
         self.beta_init = float(beta_init)
 
-        self.initial_H_win = 1.0 / self.initial_r_win
-        self.initial_H_ext = 1.0 / self.initial_r_ext
-        self.initial_K_air = 1.0 / self.initial_c_air
+        self.initial_tau_win_air = self.initial_r_win * self.initial_c_air
+        self.initial_kappa_win_air = 1.0 / self.initial_tau_win_air
+        self.initial_tau_ext_air = self.initial_r_ext * self.initial_c_air
+        self.initial_k_air = 1.0 / self.initial_c_air
 
         self.t_air_index = int(t_air_index)
         self.t_amb_index = int(t_amb_index)
@@ -742,15 +748,15 @@ class RC2R2CGokhalePhysNetLayer(keras.Layer):
         alpha_initializer = _inverse_sigmoid(self.alpha_init)
         beta_initializer = _inverse_sigmoid(self.beta_init)
 
-        self.opt_h_factor_win = self.add_weight(
-            name="opt_h_factor_win",
+        self.opt_kappa_factor_win_air = self.add_weight(
+            name="opt_kappa_factor_win_air",
             shape=(1,),
             initializer=keras.initializers.Constant(initializer_val),
             trainable=self.trainable_rc
         )
 
-        self.opt_h_factor_ext = self.add_weight(
-            name="opt_h_factor_ext",
+        self.opt_tau_factor_ext_air = self.add_weight(
+            name="opt_tau_factor_ext_air",
             shape=(1,),
             initializer=keras.initializers.Constant(initializer_val),
             trainable=self.trainable_rc
@@ -781,7 +787,7 @@ class RC2R2CGokhalePhysNetLayer(keras.Layer):
             name="opt_beta",
             shape=(1,),
             initializer=keras.initializers.Constant(beta_initializer),
-            trainable=True
+            trainable=self.use_internal_gains
         )
 
 
@@ -862,13 +868,13 @@ class RC2R2CGokhalePhysNetLayer(keras.Layer):
             reference=t_air_eval
         )
 
-        h_factor_win = self._positive_parameter(self.opt_h_factor_win)
-        h_factor_ext = self._positive_parameter(self.opt_h_factor_ext)
+        kappa_factor_win_air = self._positive_parameter(self.opt_kappa_factor_win_air)
+        tau_factor_ext_air = self._positive_parameter(self.opt_tau_factor_ext_air)
         k_factor_air = self._positive_parameter(self.opt_k_factor_air)
 
-        H_phys_win = h_factor_win * self.initial_H_win
-        H_phys_ext = h_factor_ext * self.initial_H_ext
-        K_phys_r = k_factor_air * self.initial_K_air
+        kappa_phys_win_air = kappa_factor_win_air * self.initial_kappa_win_air
+        tau_phys_ext_air = tau_factor_ext_air * self.initial_tau_ext_air
+        k_phys_air = k_factor_air * self.initial_k_air
 
         theta_solar = self._positive_parameter(self.raw_theta_solar)
         alpha = keras.activations.sigmoid(self.opt_alpha)
@@ -884,15 +890,15 @@ class RC2R2CGokhalePhysNetLayer(keras.Layer):
 
         q_solar = theta_solar * h_dir_nor
 
-        term_delta_t_air = (1.0 / (K_phys_r * H_phys_ext)) * delta_t_air_eval
-        term_t_air = (1.0 + (H_phys_win / H_phys_ext) + (h_ahu / H_phys_ext)) * t_air_eval
-        term_amb = (H_phys_win / H_phys_ext) * t_amb
-        term_ahu = (h_ahu / H_phys_ext) * t_ahu_sup
-        term_did = (1.0 / H_phys_ext) * q_did
-        term_solar = alpha * (1.0 / H_phys_ext) * q_solar
+        term_delta_t_air = tau_phys_ext_air * delta_t_air_eval
+        term_t_air = (1.0 + tau_phys_ext_air * kappa_phys_win_air + h_ahu * tau_phys_ext_air * k_phys_air) * t_air_eval
+        term_amb = tau_phys_ext_air * kappa_phys_win_air * t_amb
+        term_ahu = h_ahu * tau_phys_ext_air * k_phys_air * t_ahu_sup
+        term_did = tau_phys_ext_air * k_phys_air * q_did
+        term_solar = alpha * tau_phys_ext_air * k_phys_air * q_solar
 
         if self.use_internal_gains:
-            term_int = beta * (1.0 / H_phys_ext) * q_int
+            term_int = beta * tau_phys_ext_air * k_phys_air * q_int
         else:
             term_int = 0.0
 
@@ -987,6 +993,9 @@ class RC2R2CGokhalePhysNetWallDynamicsLayer(RC2R2CGokhalePhysNetLayer):
             c_ext: float,
             **kwargs
     ):
+        
+        super().__init__(**kwargs)
+
         if r_ext_rem <= 0:
             raise ValueError("remaining external resistance of the wall must be positive")
 
@@ -996,25 +1005,24 @@ class RC2R2CGokhalePhysNetWallDynamicsLayer(RC2R2CGokhalePhysNetLayer):
         self.initial_r_ext_rem = float(r_ext_rem)
         self.initial_c_ext = float(c_ext)
 
-        self.initial_H_ext_rem = 1.0 / self.initial_r_ext_rem
-        self.initial_K_ext = 1.0 / self.initial_c_ext
-
-        super().__init__(**kwargs)
+        self.initial_tau_ext_rem_wall = self.initial_r_ext_rem * self.initial_c_ext
+        self.initial_kappa_ext_rem_wall = 1.0 / self.initial_tau_ext_rem_wall
+        self.initial_k_wall = 1.0 / self.initial_c_ext
 
     def build(self, input_shape):
         super().build(input_shape)
 
         initializer_val = _inverse_softplus(1.0)
 
-        self.opt_h_factor_ext_rem = self.add_weight(
-            name="opt_h_factor_ext_rem",
+        self.opt_kappa_factor_ext_rem_wall = self.add_weight(
+            name="opt_kappa_factor_ext_rem_wall",
             shape=(1,),
             initializer=keras.initializers.Constant(initializer_val),
             trainable=self.trainable_rc,
         )
 
-        self.opt_k_factor_ext = self.add_weight(
-            name="opt_k_factor_ext",
+        self.opt_k_factor_wall = self.add_weight(
+            name="opt_k_factor_wall",
             shape=(1,),
             initializer=keras.initializers.Constant(initializer_val),
             trainable=self.trainable_rc,
@@ -1041,18 +1049,6 @@ class RC2R2CGokhalePhysNetWallDynamicsLayer(RC2R2CGokhalePhysNetLayer):
             reference=t_air_k,
         )
 
-        t_sup_w_h = self._take_feature(
-            inputs=x_k,
-            feature_index=self.t_sup_w_h_index,
-            reference=t_air_k
-        )
-
-        y_valve_h = self._take_feature(
-            inputs=x_k,
-            feature_index=self.y_valve_h_index,
-            reference=t_air_k
-        )
-
         h_dir_nor = self._take_feature(
             inputs=x_k, 
             feature_index=self.h_dir_nor_index, 
@@ -1066,28 +1062,30 @@ class RC2R2CGokhalePhysNetWallDynamicsLayer(RC2R2CGokhalePhysNetLayer):
             reference=t_air_k
         )
 
-        h_factor_ext = self._positive_parameter(self.opt_h_factor_ext)
-        h_factor_ext_rem = self._positive_parameter(self.opt_h_factor_ext_rem)
-        k_factor_ext = self._positive_parameter(self.opt_k_factor_ext)
+        tau_factor_ext_air = self._positive_parameter(self.opt_tau_factor_ext_air)
+        k_factor_air = self._positive_parameter(self.opt_k_factor_air)
+        kappa_factor_ext_rem_wall = self._positive_parameter(self.opt_kappa_factor_ext_rem_wall)
+        k_factor_wall = self._positive_parameter(self.opt_k_factor_wall)
 
-        H_phys_ext = h_factor_ext * self.initial_H_ext
-        H_phys_ext_rem = h_factor_ext_rem * self.initial_H_ext_rem
-        K_phys_ext = k_factor_ext * self.initial_K_ext
+        tau_phys_ext_air = tau_factor_ext_air * self.initial_tau_ext_air
+        k_phys_air = k_factor_air * self.initial_k_air
+        kappa_phys_ext_rem_wall = kappa_factor_ext_rem_wall * self.initial_kappa_ext_rem_wall
+        k_phys_wall = k_factor_wall * self.initial_k_wall
+        r_phys_wall_air = tau_phys_ext_air * k_phys_air
+        kappa_phys_ext_wall = k_phys_wall / r_phys_wall_air
 
         theta_solar = self._positive_parameter(self.raw_theta_solar)
         alpha = keras.activations.sigmoid(self.opt_alpha)
         beta = keras.activations.sigmoid(self.opt_beta)
 
-        q_solar = (1.0 - alpha) * theta_solar * h_dir_nor
-        q_air_to_wall = H_phys_ext * (t_air_k - t_wall_k)
-        q_amb_to_wall = H_phys_ext_rem * (t_amb - t_wall_k)
+        term_solar = (1.0 - alpha) * k_phys_wall * theta_solar * h_dir_nor
+        term_air_to_wall = kappa_phys_ext_wall * (t_air_k - t_wall_k)
+        term_amb_to_wall = kappa_phys_ext_rem_wall * (t_amb - t_wall_k)
 
-        q_total = q_solar + q_air_to_wall + q_amb_to_wall
+        delta_t_wall = term_solar + term_air_to_wall + term_amb_to_wall
 
         if self.use_internal_gains:
-            q_total = q_total + (1.0 - beta) * q_int
-
-        delta_t_wall = K_phys_ext * q_total
+            delta_t_wall = delta_t_wall + (1.0 - beta) * k_phys_wall * q_int
 
         t_wall_k1_phys = t_wall_k + self.time_step * delta_t_wall
 

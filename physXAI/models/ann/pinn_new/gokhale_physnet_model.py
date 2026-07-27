@@ -12,13 +12,19 @@ class RC2R2CGokhalePhysNetKerasModel(keras.Model):
     """
 
     def __init__(
-            self, 
+            self,
+            inputs,
+            outputs,
             core_model: keras.Model,
             physics_layer: RC2R2CGokhalePhysNetLayer,
             physics_loss_weight: float = 1.0,
             **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__(
+            inputs=inputs, 
+            outputs=outputs, 
+            **kwargs,
+        )
 
         self.core_model = core_model
         self.physics_layer = physics_layer
@@ -32,13 +38,47 @@ class RC2R2CGokhalePhysNetKerasModel(keras.Model):
     @property
     def metrics(self):
         return [self.total_loss_tracker, self.prediction_loss_tracker, self.physics_loss_tracker, self.rmse_tracker]
-
-    def call(self, inputs, training=False):
-        y_pred, _ = self.core_model(inputs, training=training)
-        return y_pred
     
     def predict_with_latent(self, inputs, training=False):
         return self.core_model(inputs, training=training)
+
+    def get_config(self):
+        config = super().get_config()
+
+        config.update(
+            {
+                "core_model": keras.saving.serialize_keras_object(self.core_model),
+                "physics_layer": keras.saving.serialize_keras_object(self.physics_layer),
+                "physics_loss_weight": self.physics_loss_weight,
+            }
+        )
+
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        config = dict(config)
+
+        core_model = keras.saving.deserialize_keras_object(config.pop("core_model"))
+        physics_layer = keras.saving.deserialize_keras_object(config.pop("physics_layer"))
+        physics_loss_weight = config.pop("physics_loss_weight")
+        core_input = core_model.inputs[0]
+        pinn_input = keras.layers.Input(
+            shape=tuple(core_input.shape[1:]),
+            dtype=core_input.dtype,
+            name='pinn_input',
+        )
+
+        y_nn, _ = core_model(pinn_input)
+
+        return cls(
+            inputs=pinn_input,
+            outputs=y_nn,
+            core_model=core_model,
+            physics_layer=physics_layer,
+            physics_loss_weight=physics_loss_weight,
+            **config,
+        )
     
     def train_step(self, data):
         (x_k, x_k1), y_k1 = data
@@ -113,15 +153,17 @@ class RC2R2CGokhalePhysNetWallDynamicsKerasModel(RC2R2CGokhalePhysNetKerasModel)
     """
     def __init__(
             self,
+            inputs,
+            outputs,
             core_model: keras.Model,
             physics_layer: RC2R2CGokhalePhysNetWallDynamicsLayer,
-            z_phys_normalization: keras.layers.Normalization,
             physics_loss_weight: float = 1.0,
             wall_dynamics_loss_weight: float = 1.0,
-            normalize_z: bool = False,
             **kwargs,
     ):
         super().__init__(
+            inputs=inputs,
+            outputs=outputs,
             core_model=core_model,
             physics_layer=physics_layer,
             physics_loss_weight=physics_loss_weight,
@@ -136,6 +178,43 @@ class RC2R2CGokhalePhysNetWallDynamicsKerasModel(RC2R2CGokhalePhysNetKerasModel)
     def metrics(self):
         return [self.total_loss_tracker, self.prediction_loss_tracker, self.physics_loss_tracker, self.wall_dynamics_loss_tracker, self.rmse_tracker]
     
+    def get_config(self):
+        config = super().get_config()
+
+        config.update(
+            {
+                "wall_dynamics_loss_weight": self.wall_dynamics_loss_weight,
+            }
+        )
+
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        config = dict(config)
+
+        core_model = keras.saving.deserialize_keras_object(config.pop("core_model"))
+        physics_layer = keras.saving.deserialize_keras_object(config.pop("physics_layer"))
+        physics_loss_weight = config.pop("physics_loss_weight")
+        wall_dynamics_loss_weight = config.pop("wall_dynamics_loss_weight")
+        core_input = core_model.inputs[0]
+        pinn_input = keras.layers.Input(
+            shape=tuple(core_input.shape[1:]),
+            dtype=core_input.dtype,
+            name='pinn_input',
+        )
+
+        y_nn, _ = core_model(pinn_input)
+
+        return cls(
+            inputs=pinn_input,
+            outputs=y_nn,
+            core_model=core_model,
+            physics_layer=physics_layer,
+            physics_loss_weight=physics_loss_weight,
+            wall_dynamics_loss_weight=wall_dynamics_loss_weight,
+            **config,
+        )
    
     def train_step(self, data):
         (x_k, x_k1), y_k1 = data

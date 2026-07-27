@@ -867,8 +867,8 @@ class RC1R1CModel(ANNModel):
         optimizer = MultiplierAdam(
             learning_rate=self.learning_rate,
             lr_multipliers={
-                "opt_h_factor_win": self.rc_learning_rate_multiplier,
-                "opt_h_factor_ext": self.rc_learning_rate_multiplier,
+                "opt_kappa_factor_win_air": self.rc_learning_rate_multiplier,
+                "opt_kappa_factor_ext_air": self.rc_learning_rate_multiplier,
                 "opt_k_factor_air": self.rc_learning_rate_multiplier,
 
                 "raw_theta_solar": self.rc_learning_rate_multiplier,
@@ -984,8 +984,8 @@ class RC2R2CPhysNetModel(ANNModel):
         optimizer = MultiplierAdam(
             learning_rate=self.learning_rate,
             lr_multipliers={
-                "opt_h_factor_win": self.rc_learning_rate_multiplier,
-                "opt_h_factor_ext": self.rc_learning_rate_multiplier,
+                "opt_kappa_factor_win_air": self.rc_learning_rate_multiplier,
+                "opt_tau_factor_ext_air": self.rc_learning_rate_multiplier,
                 "opt_k_factor_air": self.rc_learning_rate_multiplier,
 
                 "raw_theta_solar": self.rc_learning_rate_multiplier,
@@ -1101,8 +1101,8 @@ class RC2R2CGokhalePhysNetModel(ANNModel):
         optimizer = MultiplierAdam(
             learning_rate=self.learning_rate,
             lr_multipliers={
-                "opt_h_factor_win": self.rc_learning_rate_multiplier,
-                "opt_h_factor_ext": self.rc_learning_rate_multiplier,
+                "opt_kappa_factor_win_air": self.rc_learning_rate_multiplier,
+                "opt_tau_factor_ext_air": self.rc_learning_rate_multiplier,
                 "opt_k_factor_air": self.rc_learning_rate_multiplier,
 
                 "raw_theta_solar": self.rc_learning_rate_multiplier,
@@ -1272,11 +1272,11 @@ class RC2R2CGokhalePhysNetWallDynamicsModel(RC2R2CGokhalePhysNetModel):
         optimizer = MultiplierAdam(
             learning_rate=self.learning_rate,
             lr_multipliers={
-                "opt_h_factor_win": self.rc_learning_rate_multiplier,
-                "opt_h_factor_ext": self.rc_learning_rate_multiplier,
-                "opt_h_factor_ext_rem": self.rc_learning_rate_multiplier,
+                "opt_kappa_factor_win_air": self.rc_learning_rate_multiplier,
+                "opt_tau_factor_ext_air": self.rc_learning_rate_multiplier,
+                "opt_kappa_factor_ext_rem_wall": self.rc_learning_rate_multiplier,
                 "opt_k_factor_air": self.rc_learning_rate_multiplier,
-                "opt_k_factor_ext": self.rc_learning_rate_multiplier,
+                "opt_k_factor_wall": self.rc_learning_rate_multiplier,
 
                 "raw_theta_solar": self.rc_learning_rate_multiplier,
                 "opt_alpha": self.rc_learning_rate_multiplier,
