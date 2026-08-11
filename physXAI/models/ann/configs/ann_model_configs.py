@@ -95,6 +95,7 @@ class RC1R1CConstruction_config(ClassicalANNConstruction_config):
     predict_delta: bool = True
     t_air_column: Union[str, int]
     trainable_rc: bool = False
+    use_internal_gains: bool = False
 
     physics_loss_weight: float = Field(1.0, ge=0)
 
@@ -108,6 +109,7 @@ class RC2R2CPhysNetConstruction_config(BaseModel):
     predict_delta: bool = True
     t_air_column: Union[str, int]
     trainable_rc: bool = False
+    use_internal_gains: bool = False
 
     encoder_features: list[Union[str, int]]
     encoder_layers: int = Field(2, ge=1)
@@ -161,6 +163,7 @@ class RC2R2CGokhalePhysNetConstruction_config(BaseModel):
 
     t_air_column: Union[str, int]
     trainable_rc: bool = False
+    use_internal_gains: bool = False
 
     encoder_features: list[Union[str, int]]
     encoder_layers: int = Field(2, ge=1)

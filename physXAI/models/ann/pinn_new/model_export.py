@@ -46,7 +46,45 @@ def build_mpc_model(training_model: keras.Model) -> keras.Model:
 
     return mpc_model
 
+def _assert_same_predictions(reference: np.ndarray, candidate: np.ndarray, comparison_name: str):
+    """
+    
+    """
+    reference = np.asarray(reference)
+    candidate = np.asarray(candidate)
 
+    if reference.shape != candidate.shape:
+        raise AssertionError(f"{comparison_name}: different shape {reference.shape} and {candidate.shape}!")
+
+    if not np.all(np.isfinite(reference)):
+        raise AssertionError(f"{comparison_name}: the reference model contains NaN or Inf!")
+
+    if not np.all(np.isfinite(candidate)):
+        raise AssertionError(f"{comparison_name}: the candidate model contains NaN or Inf!")
+
+    difference = reference.astype(np.float64) - candidate.astype(np.float64)
+
+    max_abs_difference = float(np.max(np.abs(difference)))
+    mean_abs_difference = float(np.mean(np.abs(difference)))
+    rmse_abs_difference = float(np.sqrt(np.mean(difference**2)))
+    exactly_equal = np.array_equal(reference, candidate)
+
+    print(
+        f"\n{comparison_name}\n"
+        f"identisch: {exactly_equal}\n"
+        f"Maximale Abweichung: {max_abs_difference:.12e}\n"
+        f"Mittlere Abweichung: {mean_abs_difference:.12e}\n"
+        f"RMSE der Abweichung: {rmse_abs_difference:.12e}"
+    )
+
+    np.testing.assert_allclose(
+            reference,
+            candidate,
+            rtol=1e-6,
+            atol=1e-7,
+            err_msg=f"{comparison_name}: forecasts do not match!"
+        )
+    
 def export_model_for_mpc(training_model: keras.Model, validation_inputs: np.ndarray, save_path: str) -> str:
     """
     
@@ -59,25 +97,38 @@ def export_model_for_mpc(training_model: keras.Model, validation_inputs: np.ndar
     if len(mpc_model.outputs) != 1:
         raise ValueError("The MPC model must have exactly one output tensor!")
 
-    validation_inputs = validation_inputs[:256]
+    full_model_prediction = training_model.predict(validation_inputs, verbose=0)
 
-    prediction_before_saving = mpc_model.predict(validation_inputs, verbose=0)
+    extracted_model_prediction = mpc_model.predict(validation_inputs, verbose=0)
 
+    _assert_same_predictions(
+        reference=full_model_prediction,
+        candidate=extracted_model_prediction,
+        comparison_name="Full PINN model vs. MPC-model"
+    )
+    
     if not save_path.endswith(".keras"):
         save_path += ".keras"
 
     mpc_model.save(save_path)
 
-    loaded_model = keras.saving.load_model(save_path)
+    loaded_model = keras.saving.load_model(save_path, compile=False)
 
-    prediction_after_loading = loaded_model.predict(validation_inputs, verbose=0)
+    loaded_model_prediction = loaded_model.predict(validation_inputs, verbose=0)
 
-    np.testing.assert_allclose(
-        prediction_before_saving,
-        prediction_after_loading,
-        rtol=1e-5,
-        atol=1e-6,
+    _assert_same_predictions(
+        reference=full_model_prediction,
+        candidate=loaded_model_prediction,
+        comparison_name="Full PINN model vs. loaded MPC-Model"
     )
+
+    _assert_same_predictions(
+        reference=extracted_model_prediction,
+        candidate=loaded_model_prediction,
+        comparison_name="MPC model before saving vs. after loading"
+    )
+
+    print(f"\nMPC export successfully verified: {save_path}")
 
     return save_path
 

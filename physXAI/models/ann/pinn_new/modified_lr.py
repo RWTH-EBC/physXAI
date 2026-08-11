@@ -22,10 +22,15 @@ class MultiplierAdam(keras.optimizers.Adam):
 
         variable_name = getattr(variable, "path", variable.name)
 
-        parameter_name = variable_name.split("/")[-1]
+        # parameter_name = variable_name.split("/")[-1]
 
-        if parameter_name in self.lr_multipliers:
-            modified_lr = learning_rate * self.lr_multipliers[parameter_name]
+        # if parameter_name in self.lr_multipliers:
+        #     modified_lr = learning_rate * self.lr_multipliers[parameter_name]
+
+        for mult_name in self.lr_multipliers:
+            if mult_name in variable_name:
+                modified_lr = learning_rate * self.lr_multipliers[mult_name]
+                break
 
         super().update_step(gradient, variable, modified_lr)
 

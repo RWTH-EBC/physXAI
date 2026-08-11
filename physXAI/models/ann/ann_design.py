@@ -818,6 +818,7 @@ class RC1R1CModel(ANNModel):
                  activation_function: Union[str, list[str]] = 'softplus',
                  rescale_output: bool = True,
                  trainable_rc: bool = False,
+                 use_internal_gains: bool = False,
                  physics_loss_weight: float = 1.0,
                  batch_size: int = 32,
                  epochs: int = 1000,
@@ -844,6 +845,7 @@ class RC1R1CModel(ANNModel):
         self.rescale_output: bool = rescale_output
 
         self.trainable_rc: bool = trainable_rc
+        self.use_internal_gains: bool = use_internal_gains
         self.rc_learning_rate_multiplier: float = rc_learning_rate_multiplier
 
         self.physics_loss_weight: float = physics_loss_weight
@@ -857,6 +859,7 @@ class RC1R1CModel(ANNModel):
             'predict_delta': self.predict_delta,
             't_air_column': self.t_air_column,
             'trainable_rc': self.trainable_rc,
+            'use_internal_gains': self.use_internal_gains,
             'rc_learning_rate_multiplier': self.rc_learning_rate_multiplier,
             'physics_loss_weight': self.physics_loss_weight,
 
@@ -877,11 +880,7 @@ class RC1R1CModel(ANNModel):
             }
         )
 
-        model.compile(
-            optimizer=optimizer,
-            loss="mse",
-            metrics=[keras.metrics.RootMeanSquaredError(name="rmse", dtype=None)]
-        )
+        model.compile(optimizer=optimizer)
     
     def generate_model(self, **kwargs):
         td = kwargs['td']
@@ -899,6 +898,7 @@ class RC1R1CModel(ANNModel):
             'predict_delta': self.predict_delta,
             't_air_column': self.t_air_column,
             'trainable_rc': self.trainable_rc,
+            'use_internal_gains': self.use_internal_gains,
             'rc_learning_rate_multiplier': self.rc_learning_rate_multiplier,
             'physics_loss_weight': self.physics_loss_weight,
 
@@ -925,6 +925,7 @@ class RC2R2CPhysNetModel(ANNModel):
                  activation_function: Union[str, list[str]] = 'softplus',
                  rescale_output: bool = True,
                  trainable_rc: bool = False,
+                 use_internal_gains: bool = False,
                  physics_loss_weight: float = 1.0,
                  batch_size: int = 32,
                  epochs: int = 1000,
@@ -952,6 +953,7 @@ class RC2R2CPhysNetModel(ANNModel):
         self.rescale_output: bool = rescale_output
 
         self.trainable_rc: bool = trainable_rc
+        self.use_internal_gains: bool = use_internal_gains
         self.rc_learning_rate_multiplier: float = rc_learning_rate_multiplier
 
         self.physics_loss_weight: float = physics_loss_weight
@@ -969,6 +971,7 @@ class RC2R2CPhysNetModel(ANNModel):
             'predict_delta': self.predict_delta,
             't_air_column': self.t_air_column,
             'trainable_rc': self.trainable_rc,
+            'use_internal_gains': self.use_internal_gains,
             'rc_learning_rate_multiplier': self.rc_learning_rate_multiplier,
             'physics_loss_weight': self.physics_loss_weight,
 
@@ -994,11 +997,7 @@ class RC2R2CPhysNetModel(ANNModel):
             }
         )
 
-        model.compile(
-            optimizer=optimizer,
-            loss="mse",
-            metrics=[keras.metrics.RootMeanSquaredError(name="rmse", dtype=None)]
-        )
+        model.compile(optimizer=optimizer)
 
     def get_config(self) -> dict:
         config = super().get_config()
@@ -1015,6 +1014,7 @@ class RC2R2CPhysNetModel(ANNModel):
             'predict_delta': self.predict_delta,
             't_air_column': self.t_air_column,
             'trainable_rc': self.trainable_rc,
+            'use_internal_gains': self.use_internal_gains,
             'rc_learning_rate_multiplier': self.rc_learning_rate_multiplier,
             'physics_loss_weight': self.physics_loss_weight,
 
@@ -1042,6 +1042,7 @@ class RC2R2CGokhalePhysNetModel(ANNModel):
         activation_function: Union[str, list[str]] = 'softplus',
         rescale_output: bool = True,
         trainable_rc: bool = False,
+        use_internal_gains: bool = False,
         physics_loss_weight: float = 1.0,
         batch_size: int = 32,
         epochs: int = 1000,
@@ -1069,6 +1070,7 @@ class RC2R2CGokhalePhysNetModel(ANNModel):
         self.rescale_output: bool = rescale_output
 
         self.trainable_rc: bool = trainable_rc
+        self.use_internal_gains: bool = use_internal_gains
         self.rc_learning_rate_multiplier: float = rc_learning_rate_multiplier
 
         self.physics_loss_weight: float = physics_loss_weight
@@ -1086,6 +1088,7 @@ class RC2R2CGokhalePhysNetModel(ANNModel):
             'predict_delta': self.predict_delta,
             't_air_column': self.t_air_column,
             'trainable_rc': self.trainable_rc,
+            'use_internal_gains': self.use_internal_gains,
             'rc_learning_rate_multiplier': self.rc_learning_rate_multiplier,
             'physics_loss_weight': self.physics_loss_weight,
 
@@ -1111,15 +1114,14 @@ class RC2R2CGokhalePhysNetModel(ANNModel):
             }
         )
 
-        model.compile(
-            optimizer=optimizer,
-        )
+        model.compile(optimizer=optimizer)
 
     def _make_gokhale_dataset(
             self,
             x,
             y,
             shuffle: bool,
+            chunk_ids = None,
     ):
         """
         
@@ -1129,16 +1131,33 @@ class RC2R2CGokhalePhysNetModel(ANNModel):
 
         if x.shape[0] < 2:
             raise ValueError("at least two consecutive samples are rewuired for Gokhale!")
+
+        if chunk_ids is None:
+            valid_pairs = np.ones(x.shape[0] - 1, dtype=bool)
+        else:
+            chunk_ids = np.asarray(chunk_ids).reshape(-1)
+
+            if len(chunk_ids) != x.shape[0]:
+                raise ValueError("the number of chunk ids must match the number od samples!")
+
+            valid_pairs = chunk_ids[:-1] == chunk_ids[1:]
+
+        x_k = x[:-1][valid_pairs]
+        x_k1 = x[1:][valid_pairs]
+        y_k1 = y[1:][valid_pairs]
+
+        if len(x_k) == 0:
+            raise ValueError("No valid Gokhale pairs were reated!")
         
         dataset = tf.data.Dataset.from_tensor_slices(
             (
-                (x[:-1], x[1:]),
-                y[1:],
+                (x_k, x_k1),
+                y_k1,
             )
         )
 
         if shuffle:
-            dataset = dataset.shuffle(buffer_size=min(10000, x.shape[0] - 1), reshuffle_each_iteration=True)
+            dataset = dataset.shuffle(buffer_size=min(10000, len(x_k)), reshuffle_each_iteration=True)
 
         dataset = dataset.batch(self.batch_size)
         dataset = dataset.prefetch(tf.data.AUTOTUNE)
@@ -1156,6 +1175,7 @@ class RC2R2CGokhalePhysNetModel(ANNModel):
         train_ds = self._make_gokhale_dataset(
             x=td.X_train_single,
             y=td.y_train_single,
+            chunk_ids=getattr(td, "train_chunk_ids", None),
             shuffle=True,
         )
 
@@ -1163,6 +1183,7 @@ class RC2R2CGokhalePhysNetModel(ANNModel):
             val_ds = self._make_gokhale_dataset(
                 x=td.X_val_single,
                 y=td.y_val_single,
+                chunk_ids=getattr(td, "val_chunk_ids", None),
                 shuffle=False
             )
         else:
@@ -1184,6 +1205,44 @@ class RC2R2CGokhalePhysNetModel(ANNModel):
         if Logger.check_print_level('info'):
             model.summary()
 
+    # @staticmethod
+    # def _trim_split_to_gokhale_targets(td, split: str):
+    #     x = np.asarray(getattr(td, f"X_{split}_single"))
+    #     y = np.asarray(getattr(td, f"y_{split}_single"))
+    #     chunk_ids = np.asarray(getattr(td, f"{split}_chunk_ids")).reshape(-1)
+
+    #     if len(x) != len(y) or len(x) != len(chunk_ids):
+    #         raise ValueError(f"Inconsitent lengths in {split} split!")
+
+    #     valid_pairs = chunk_ids[:-1] == chunk_ids[1:]
+
+    #     x_eval = x[1:][valid_pairs]
+    #     y_eval = y[1:][valid_pairs]
+    #     chunk_ids_eval = chunk_ids[1:][valid_pairs]
+
+    #     setattr(td, f"X_{split}", x_eval)
+    #     setattr(td, f"y_{split}", y_eval)
+    #     setattr(td, f"{split}_chunk_ids", chunk_ids_eval)
+
+    #     time_attribute = f"time_{split}"
+
+    #     if hasattr(td, time_attribute):
+    #         time_values = np.asarray(getattr(td, time_attribute))
+    #         setattr(td, time_attribute, time_values[1:][valid_pairs])
+
+    # def evaluate(self, model, td:TrainingDataGeneric):
+    #     if not getattr(td, "_gokhale_evaluation_trimmed", False):
+    #         self._trim_split_to_gokhale_targets(td, "train")
+
+    #         if td.X_val is not None:
+    #             self._trim_split_to_gokhale_targets(td, "val")
+
+    #         self._trim_split_to_gokhale_targets(td, "test")
+
+    #         td._gokhale_evaluation_trimmed = True
+
+    #     return super().evaluate(model, td)
+
     def get_config(self) -> dict:
         config = super().get_config()
         config.update({
@@ -1199,6 +1258,7 @@ class RC2R2CGokhalePhysNetModel(ANNModel):
             'predict_delta': self.predict_delta,
             't_air_column': self.t_air_column,
             'trainable_rc': self.trainable_rc,
+            'use_internal_gains': self.use_internal_gains,
             'rc_learning_rate_multiplier': self.rc_learning_rate_multiplier,
             'physics_loss_weight': self.physics_loss_weight,
 
@@ -1226,6 +1286,7 @@ class RC2R2CGokhalePhysNetWallDynamicsModel(RC2R2CGokhalePhysNetModel):
         activation_function: Union[str, list[str]] = 'softplus',
         rescale_output: bool = True,
         trainable_rc: bool = False,
+        use_internal_gains: bool = False,
         physics_loss_weight: float = 1.0,
         wall_dynamics_loss_weight: float = 1.0,
         batch_size: int = 32,
@@ -1250,6 +1311,7 @@ class RC2R2CGokhalePhysNetWallDynamicsModel(RC2R2CGokhalePhysNetModel):
             activation_function=activation_function,
             rescale_output=rescale_output,
             trainable_rc=trainable_rc,
+            use_internal_gains=use_internal_gains,
             physics_loss_weight=physics_loss_weight,
             batch_size=batch_size,
             epochs=epochs,
@@ -1284,9 +1346,7 @@ class RC2R2CGokhalePhysNetWallDynamicsModel(RC2R2CGokhalePhysNetModel):
             }
         )
 
-        model.compile(
-            optimizer=optimizer,
-        )
+        model.compile(optimizer=optimizer)
 
     def get_config(self) -> dict:
         config = super().get_config()

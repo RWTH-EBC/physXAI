@@ -821,10 +821,16 @@ class RC2R2CGokhalePhysNetLayer(keras.Layer):
         return keras.ops.sum(extracted, axis=-1, keepdims=True)
     
 
-    def _physical_calculation(self, x_eval, t_air_eval, delta_t_air_eval):
+    def _physical_calculation(self, x_eval, t_air_eval, delta_t_air_eval, x_did=None, t_air_did=None):
         """
         
         """
+        if x_did is None:
+            x_did = x_eval
+
+        if t_air_did is None:
+            t_air_did = t_air_eval
+
         t_amb = self._take_feature(
             inputs=x_eval,
             feature_index=self.t_amb_index,
@@ -844,15 +850,21 @@ class RC2R2CGokhalePhysNetLayer(keras.Layer):
         )
 
         t_sup_w_h = self._take_feature(
-            inputs=x_eval,
+            inputs=x_did,
             feature_index=self.t_sup_w_h_index,
-            reference=t_air_eval
+            reference=t_air_did
+        )
+
+        v_flow_ahu_did = self._take_feature(
+            inputs=x_did,
+            feature_index=self.v_flow_ahu_index,
+            reference=t_air_did
         )
 
         y_valve_h = self._take_feature(
-            inputs=x_eval,
+            inputs=x_did,
             feature_index=self.y_valve_h_index,
-            reference=t_air_eval
+            reference=t_air_did
         )
 
         h_dir_nor = self._take_feature(
@@ -884,9 +896,9 @@ class RC2R2CGokhalePhysNetLayer(keras.Layer):
         h_ahu = self.rho_air * self.cp_air * v_flow_m3_s
 
         V_flow_w_h = self.V_flow_w_h_max * (keras.ops.exp(self.valve_a * y_valve_h / 100) - 1) / (keras.ops.exp(self.valve_a) - 1)
-        QT = self.m_QT * v_flow_ahu + self.m_QT2 * v_flow_ahu**2
-        KQ =  self.KQ_w3 * V_flow_w_h**3 + self.KQ_w2 * V_flow_w_h**2 + self.KQ_w1 * V_flow_w_h + self.KQ_w1a1 * v_flow_ahu * V_flow_w_h + self.KQ_w1a2 * v_flow_ahu**2 * V_flow_w_h + self.KQ_w2a1 * v_flow_ahu * V_flow_w_h**2
-        q_did = QT * (t_sup_w_h - t_air_eval) * KQ / (1 + QT * 0.86 / (2*V_flow_w_h + 1))
+        QT = self.m_QT * v_flow_ahu_did + self.m_QT2 * v_flow_ahu_did**2
+        KQ =  self.KQ_w3 * V_flow_w_h**3 + self.KQ_w2 * V_flow_w_h**2 + self.KQ_w1 * V_flow_w_h + self.KQ_w1a1 * v_flow_ahu_did * V_flow_w_h + self.KQ_w1a2 * v_flow_ahu_did**2 * V_flow_w_h + self.KQ_w2a1 * v_flow_ahu_did * V_flow_w_h**2
+        q_did = QT * (t_sup_w_h - t_air_did) * KQ / (1 + QT * 0.86 / (2*V_flow_w_h + 1))
 
         q_solar = theta_solar * h_dir_nor
 
@@ -937,7 +949,7 @@ class RC2R2CGokhalePhysNetLayer(keras.Layer):
 
         delta_t_air_k1 =(t_air_k2 - t_air_k) / (self.time_step * 2.0)
 
-        return self._physical_calculation(x_eval=x_k1, t_air_eval=t_air_k1_pred, delta_t_air_eval=delta_t_air_k1)
+        return self._physical_calculation(x_eval=x_k1, t_air_eval=t_air_k1_pred, delta_t_air_eval=delta_t_air_k1, x_did=x_k, t_air_did=t_air_k)
     
 
     def compute_output_shape(self, input_shape):
