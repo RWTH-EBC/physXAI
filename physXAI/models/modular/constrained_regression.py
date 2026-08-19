@@ -4,7 +4,8 @@ import time
 from typing import Union
 import numpy as np
 from physXAI.models.models import SingleStepModel, register_model
-from physXAI.models.modular.modular_expression import ModularAdd, ModularExpression, ModularFeature, ModularMul, ModularPow, ModularSub, ModularTrueDiv
+from physXAI.models.modular.modular_expression import (ModularActivation, ModularAdd, ModularExpression, ModularFeature,
+                                                       ModularMul, ModularPow, ModularSub, ModularTrueDiv)
 from physXAI.plotting.plotting import plot_metrics_table, plot_multi_rmse, plot_prediction_correlation, plot_predictions, subplots
 from physXAI.preprocessing.constructed import FeatureBase
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneric, TrainingDataMultiStep
@@ -27,6 +28,7 @@ class ConstrainedRegression(SingleStepModel):
         ModularMul,
         ModularTrueDiv,
         ModularPow,
+        ModularActivation,
     ]
 
     def __init__(self, inputs: list[Union[ModularExpression, FeatureBase]], monotonies: dict[str, int] = None, convexities: dict[str, int] = None):

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import os
 from typing import Union, Type
+import numpy as np
 from physXAI.models.ann.keras_models.keras_models import ConstantLayer, DivideLayer, InputSliceLayer, PowerLayer
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 import casadi as ca
@@ -455,6 +456,171 @@ class ModularPow(ModularTwo):
 
     def _construct(self, layer1: keras.layers.Layer, layer2: keras.layers.Layer) -> keras.layers.Layer:
         return PowerLayer()([layer1, layer2])
-    
+
     def _get_value(self, val1, val2):
         return val1 ** val2
+
+
+class ModularOne(ModularExpression, ABC):
+    """
+    Abstract Base Class for ModularExpressions applying a single argument function to one operand.
+    Examples: ModularActivation
+    """
+
+    def __init__(self, feature: Union[ModularExpression, int, float], name: str):
+        super().__init__(name)
+        self.feature = feature
+
+    def construct(self, input_layer: keras.layers.Input, td: TrainingDataGeneric) -> keras.layers.Layer:
+        if isinstance(self.feature, (int, float)):
+            l = ConstantLayer(value=self.feature)(input_layer)
+        else:
+            l = self.feature.construct(input_layer, td)
+
+        return self._construct(l)
+
+    @abstractmethod
+    def _construct(self, layer: keras.layers.Layer) -> keras.layers.Layer:
+        pass
+
+    def get_value(self, td: TrainingDataGeneric, input_layer: keras.layers.Input, sym_raw: dict, X_raw: dict):
+        if isinstance(self.feature, (int, float)):
+            val = self.feature
+            sym = self.feature
+        else:
+            val, sym = self.feature.get_value(td, input_layer, sym_raw, X_raw)
+
+        return self._get_value(val), self._get_value_symbolic(sym)
+
+    @abstractmethod
+    def _get_value(self, val):
+        pass
+
+    @abstractmethod
+    def _get_value_symbolic(self, sym):
+        pass
+
+    def _get_config(self) -> dict:
+        c = super()._get_config()
+        if isinstance(self.feature, ModularExpression):
+            fn = self.feature.name
+        else:
+            fn = self.feature
+        c.update({
+            'feature': fn,
+        })
+        return c
+
+    @classmethod
+    def _from_config(cls, item_config: dict, config: list[dict]) -> 'ModularOne':
+        """
+        Creates a ModularOne instance (or its subclass) from a configuration dictionary.
+        Handles reconstruction of the operand modular expression if it was a ModularExpression object.
+
+        Args:
+            item_config (dict): Configuration dictionary. Must contain 'feature'.
+            config (list[dict]): The list with the configuration dictionaries of all modular expressions
+
+        Returns:
+            ModularOne: An instance of the specific ModularOne subclass.
+        """
+
+        # Reconstruct feature
+        if isinstance(item_config['feature'], dict):
+            feature_conf = item_config['feature']
+            # Check if modular expression already exists
+            fn = ModularExpression.get_existing_modular_expression(feature_conf['name'])
+            if fn is None:
+                fn = modular_expression_from_config(feature_conf, config)
+        elif isinstance(item_config['feature'], str):
+            fn = ModularExpression.get_existing_modular_expression(item_config['feature'])
+        else:  # feature is int or float
+            fn = item_config['feature']
+        item_config['feature'] = fn
+
+        return cls(**item_config)
+
+
+# Numeric (numpy) and symbolic (casadi) implementation of the supported activation functions.
+# The keys must be valid keras activations which are also supported by the casadi export of
+# AgentLib-MPC, so that training and MPC use the identical function.
+ACTIVATION_FUNCTIONS = {
+    'softplus': (lambda x: np.logaddexp(0, x), lambda x: ca.log(1 + ca.exp(x))),
+    'exponential': (np.exp, ca.exp),
+    'sigmoid': (lambda x: 1 / (1 + np.exp(-x)), lambda x: 1 / (1 + ca.exp(-x))),
+    'tanh': (np.tanh, ca.tanh),
+    'relu': (lambda x: np.maximum(0, x), lambda x: ca.fmax(0, x)),
+    'linear': (lambda x: x, lambda x: x),
+}
+
+
+@register_modular_expression
+class ModularActivation(ModularOne):
+    """
+    Applies an activation function (e.g. softplus) elementwise to a modular expression.
+    """
+
+    def __init__(self, feature: Union[ModularExpression, int, float], activation: str = 'softplus', name: str = None):
+        if activation not in ACTIVATION_FUNCTIONS.keys():
+            raise NotImplementedError(f"Activation '{activation}' is not supported. Supported activations are: "
+                                      f"{list(ACTIVATION_FUNCTIONS.keys())}")
+        if name is None:
+            name = f"{activation}({get_name(feature)})"
+        super().__init__(feature, name)
+        self.activation = activation
+
+    def _construct(self, layer: keras.layers.Layer) -> keras.layers.Layer:
+        # The activation is applied by a frozen Dense layer with an identity kernel and without bias,
+        # i.e. activation(x @ I) = activation(x). A plain keras.layers.Activation would be simpler, but
+        # Dense layers are already supported by the casadi export of AgentLib-MPC.
+        units = layer.shape[-1]
+        return keras.layers.Dense(units=units, activation=self.activation, use_bias=False,
+                                  kernel_initializer=keras.initializers.Identity(), trainable=False)(layer)
+
+    def _get_value(self, val):
+        return ACTIVATION_FUNCTIONS[self.activation][0](val)
+
+    def _get_value_symbolic(self, sym):
+        return ACTIVATION_FUNCTIONS[self.activation][1](sym)
+
+    def _get_config(self) -> dict:
+        c = super()._get_config()
+        c.update({
+            'activation': self.activation,
+        })
+        return c
+
+
+def softplus(feature: Union[ModularExpression, int, float], name: str = None) -> ModularActivation:
+    """
+    log(1 + exp(feature)) as modular expression.
+    """
+    return ModularActivation(feature, 'softplus', name)
+
+
+def exp(feature: Union[ModularExpression, int, float], name: str = None) -> ModularActivation:
+    """
+    exp(feature) as modular expression.
+    """
+    return ModularActivation(feature, 'exponential', name)
+
+
+def sigmoid(feature: Union[ModularExpression, int, float], name: str = None) -> ModularActivation:
+    """
+    1 / (1 + exp(-feature)) as modular expression.
+    """
+    return ModularActivation(feature, 'sigmoid', name)
+
+
+def tanh(feature: Union[ModularExpression, int, float], name: str = None) -> ModularActivation:
+    """
+    tanh(feature) as modular expression.
+    """
+    return ModularActivation(feature, 'tanh', name)
+
+
+def relu(feature: Union[ModularExpression, int, float], name: str = None) -> ModularActivation:
+    """
+    max(0, feature) as modular expression.
+    """
+    return ModularActivation(feature, 'relu', name)
