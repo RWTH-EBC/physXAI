@@ -240,15 +240,31 @@ def RC1R1CConstruction(config: dict, td: TrainingDataGeneric):
     # -------------------------------------------------------------------------
     # neural core model
     # -------------------------------------------------------------------------
+    all_columns = list(td.columns)
+
+    if "T_AHU_sup" not in all_columns:
+        raise ValueError("T_AHU_sup is not in td.columns!")
+
+    t_ahu_sup_index = all_columns.index("T_AHU_sup")
+
+    core_indices = [
+        index
+        for index in range(n_features)
+        if index != t_ahu_sup_index
+    ]
+
     core_input = keras.layers.Input(shape=(n_features,), name='core_input')
+
+    x = InputSliceLayer(feature_indices=core_indices, name="core_input_slice")(core_input)
 
     # Add normalization layer
     if config['normalize']:
         normalization = keras.layers.Normalization()
-        normalization.adapt(td.X_train_single)
-        x = normalization(core_input)
+        core_training_inputs = np.asarray(td.X_train_single)[:, core_indices]
+        normalization.adapt(core_training_inputs)
+        x = normalization(x)
     else:
-        x = core_input
+        x = x
 
     for i in range(0, n_layers):
         # For each layer add dense

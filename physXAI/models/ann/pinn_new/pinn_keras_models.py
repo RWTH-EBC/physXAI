@@ -120,9 +120,11 @@ class RC1R1CKerasModel(keras.Model):
         
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-        self.total_loss_tracker.update_state(total_loss)
-        self.prediction_loss_tracker.update_state(prediction_loss)
-        self.physics_loss_tracker.update_state(physics_loss)
+        batch_weight = keras.ops.cast(keras.ops.shape(targets)[0], total_loss.dtype)
+
+        self.total_loss_tracker.update_state(total_loss, sample_weight=batch_weight)
+        self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
+        self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(targets, predictions)
 
         return {
@@ -157,9 +159,11 @@ class RC1R1CKerasModel(keras.Model):
         if self.losses:
             total_loss = total_loss + tf.add_n(self.losses)
 
-        self.total_loss_tracker.update_state(total_loss)
-        self.prediction_loss_tracker.update_state(prediction_loss)
-        self.physics_loss_tracker.update_state(physics_loss)
+        batch_weight = keras.ops.cast(keras.ops.shape(targets)[0], total_loss.dtype)
+
+        self.total_loss_tracker.update_state(total_loss, sample_weight=batch_weight)
+        self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
+        self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(targets, predictions)
 
         return {
@@ -284,9 +288,11 @@ class RC2R2CPhysNetKerasModel(keras.Model):
 
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-        self.total_loss_tracker.update_state(total_loss)
-        self.prediction_loss_tracker.update_state(prediction_loss)
-        self.physics_loss_tracker.update_state(physics_loss)
+        batch_weight = keras.ops.cast(keras.ops.shape(targets)[0], total_loss.dtype)
+
+        self.total_loss_tracker.update_state(total_loss, sample_weight=batch_weight)
+        self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
+        self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(targets, predictions)
 
         return {
@@ -316,9 +322,11 @@ class RC2R2CPhysNetKerasModel(keras.Model):
         if self.losses:
             total_loss = total_loss + tf.add_n(self.losses)
 
-        self.total_loss_tracker.update_state(total_loss)
-        self.prediction_loss_tracker.update_state(prediction_loss)
-        self.physics_loss_tracker.update_state(physics_loss)
+        batch_weight = keras.ops.cast(keras.ops.shape(targets)[0], total_loss.dtype)
+
+        self.total_loss_tracker.update_state(total_loss, sample_weight=batch_weight)
+        self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
+        self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(targets, predictions)
 
         return {
@@ -446,9 +454,11 @@ class RC2R2CGokhalePhysNetKerasModel(keras.Model):
 
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-        self.total_loss_tracker.update_state(total_loss)
-        self.prediction_loss_tracker.update_state(prediction_loss)
-        self.physics_loss_tracker.update_state(physics_loss)
+        batch_weight = keras.ops.cast(keras.ops.shape(y_k1)[0], total_loss.dtype)
+
+        self.total_loss_tracker.update_state(total_loss, sample_weight=batch_weight)
+        self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
+        self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(y_k1, y_pred_k1)
 
         return {
@@ -481,9 +491,11 @@ class RC2R2CGokhalePhysNetKerasModel(keras.Model):
         if self.losses:
             total_loss = total_loss + tf.add_n(self.losses)
 
-        self.total_loss_tracker.update_state(total_loss)
-        self.prediction_loss_tracker.update_state(prediction_loss)
-        self.physics_loss_tracker.update_state(physics_loss)
+        batch_weight = keras.ops.cast(keras.ops.shape(y_k1)[0], total_loss.dtype)
+
+        self.total_loss_tracker.update_state(total_loss, sample_weight=batch_weight)
+        self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
+        self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(y_k1, y_pred_k1)
 
         return {
@@ -602,10 +614,12 @@ class RC2R2CGokhalePhysNetWallDynamicsKerasModel(RC2R2CGokhalePhysNetKerasModel)
         gradients = tape.gradient(total_loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-        self.total_loss_tracker.update_state(total_loss)
-        self.prediction_loss_tracker.update_state(prediction_loss)
-        self.physics_loss_tracker.update_state(physics_loss)
-        self.wall_dynamics_loss_tracker.update_state(wall_dynamics_loss)
+        batch_weight = keras.ops.cast(keras.ops.shape(y_k1)[0], total_loss.dtype)
+
+        self.total_loss_tracker.update_state(total_loss, sample_weight=batch_weight)
+        self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
+        self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
+        self.wall_dynamics_loss_tracker.update_state(wall_dynamics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(y_k1, y_pred_k1)
 
         return {
@@ -642,10 +656,12 @@ class RC2R2CGokhalePhysNetWallDynamicsKerasModel(RC2R2CGokhalePhysNetKerasModel)
         if self.losses:
             total_loss = total_loss + tf.add_n(self.losses)
 
-        self.total_loss_tracker.update_state(total_loss)
-        self.prediction_loss_tracker.update_state(prediction_loss)
-        self.physics_loss_tracker.update_state(physics_loss)
-        self.wall_dynamics_loss_tracker.update_state(wall_dynamics_loss)
+        batch_weight = keras.ops.cast(keras.ops.shape(y_k1)[0], total_loss.dtype)
+
+        self.total_loss_tracker.update_state(total_loss, sample_weight=batch_weight)
+        self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
+        self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
+        self.wall_dynamics_loss_tracker.update_state(wall_dynamics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(y_k1, y_pred_k1)
 
         return {

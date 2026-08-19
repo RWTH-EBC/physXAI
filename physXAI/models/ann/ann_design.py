@@ -881,7 +881,62 @@ class RC1R1CModel(ANNModel):
         )
 
         model.compile(optimizer=optimizer)
-    
+
+    def fit_model(self, model, td: TrainingDataGeneric):
+        """
+         Fits the Keras model to the training data.
+
+         Args:
+             model (keras.Model): The Keras model to fit.
+             td (TrainingDataGeneric): The TrainingData object
+         """
+
+        # Early stopping
+        callbacks = list()
+        if self.early_stopping_epochs is not None:
+            es = keras.callbacks.EarlyStopping(monitor='val_prediction_loss', mode='min', patience=self.early_stopping_epochs,
+                                               restore_best_weights=True, verbose=Logger.verbosity_int())
+            callbacks.append(es)
+
+        # Fit model, track training time
+        start_time = time.perf_counter()
+
+        # Create tf.data.Dataset for better performance
+        train_ds = tf.data.Dataset.from_tensor_slices((td.X_train_single, td.y_train_single))
+        train_ds = (
+            train_ds
+            .cache()                                                                                       # 1. Cache first so data is not reloaded, may need to be removed for large datasets
+            .shuffle(buffer_size=min(10000, td.X_train_single.shape[0]), reshuffle_each_iteration=True)    # 2. Shuffle randomly every epoch
+            .batch(self.batch_size)                                                                        # 3. Group into batches
+            .prefetch(buffer_size=tf.data.AUTOTUNE)                                                        # 4. Prepare next batch in background
+        )
+
+        # Check for validation data
+        if td.y_val is not None:
+            val_ds = tf.data.Dataset.from_tensor_slices((td.X_val_single, td.y_val_single))
+            val_ds = (
+                val_ds
+                .cache()                                        # 1. Cache first so data is not reloaded, may need to be removed for large datasets
+                .batch(self.batch_size)                         # 2. Group into batches
+                .prefetch(buffer_size=tf.data.AUTOTUNE)         # 3. Prepare next batch in background
+            )
+        else:
+            val_ds = None
+
+        training_history = model.fit(train_ds,
+                                     validation_data=val_ds,
+                                     epochs=self.epochs,
+                                     callbacks=callbacks,
+                                     verbose=Logger.verbosity())
+        stop_time = time.perf_counter()
+
+        # Add metrics to training data
+        td.add_training_time(stop_time - start_time)
+        td.add_training_record(training_history)
+
+        if Logger.check_print_level('info'):
+            model.summary()
+
     def generate_model(self, **kwargs):
         td = kwargs['td']
         model = RC1R1CConstruction(self.model_config, td)
@@ -921,7 +976,7 @@ class RC2R2CPhysNetModel(ANNModel):
                  encoder_layers: int = 2,
                  encoder_neurons: Union[int, list[int]] = 24,
                  dynamic_layers: int = 1,
-                 dynamic_neurons: Union[int, list[int]] = 128,
+                 dynamic_neurons: Union[int, list[int]] = 32,
                  activation_function: Union[str, list[str]] = 'softplus',
                  rescale_output: bool = True,
                  trainable_rc: bool = False,
@@ -999,6 +1054,61 @@ class RC2R2CPhysNetModel(ANNModel):
 
         model.compile(optimizer=optimizer)
 
+    def fit_model(self, model, td: TrainingDataGeneric):
+        """
+         Fits the Keras model to the training data.
+
+         Args:
+             model (keras.Model): The Keras model to fit.
+             td (TrainingDataGeneric): The TrainingData object
+         """
+
+        # Early stopping
+        callbacks = list()
+        if self.early_stopping_epochs is not None:
+            es = keras.callbacks.EarlyStopping(monitor='val_prediction_loss', mode='min', patience=self.early_stopping_epochs,
+                                               restore_best_weights=True, verbose=Logger.verbosity_int())
+            callbacks.append(es)
+
+        # Fit model, track training time
+        start_time = time.perf_counter()
+
+        # Create tf.data.Dataset for better performance
+        train_ds = tf.data.Dataset.from_tensor_slices((td.X_train_single, td.y_train_single))
+        train_ds = (
+            train_ds
+            .cache()                                                                                       # 1. Cache first so data is not reloaded, may need to be removed for large datasets
+            .shuffle(buffer_size=min(10000, td.X_train_single.shape[0]), reshuffle_each_iteration=True)    # 2. Shuffle randomly every epoch
+            .batch(self.batch_size)                                                                        # 3. Group into batches
+            .prefetch(buffer_size=tf.data.AUTOTUNE)                                                        # 4. Prepare next batch in background
+        )
+
+        # Check for validation data
+        if td.y_val is not None:
+            val_ds = tf.data.Dataset.from_tensor_slices((td.X_val_single, td.y_val_single))
+            val_ds = (
+                val_ds
+                .cache()                                        # 1. Cache first so data is not reloaded, may need to be removed for large datasets
+                .batch(self.batch_size)                         # 2. Group into batches
+                .prefetch(buffer_size=tf.data.AUTOTUNE)         # 3. Prepare next batch in background
+            )
+        else:
+            val_ds = None
+
+        training_history = model.fit(train_ds,
+                                     validation_data=val_ds,
+                                     epochs=self.epochs,
+                                     callbacks=callbacks,
+                                     verbose=Logger.verbosity())
+        stop_time = time.perf_counter()
+
+        # Add metrics to training data
+        td.add_training_time(stop_time - start_time)
+        td.add_training_record(training_history)
+
+        if Logger.check_print_level('info'):
+            model.summary()
+
     def get_config(self) -> dict:
         config = super().get_config()
         config.update({
@@ -1038,7 +1148,7 @@ class RC2R2CGokhalePhysNetModel(ANNModel):
         encoder_layers: int = 2,
         encoder_neurons: Union[int, list[int]] = 24,
         dynamic_layers: int = 1,
-        dynamic_neurons: Union[int, list[int]] = 128,
+        dynamic_neurons: Union[int, list[int]] = 32,
         activation_function: Union[str, list[str]] = 'softplus',
         rescale_output: bool = True,
         trainable_rc: bool = False,
@@ -1168,7 +1278,7 @@ class RC2R2CGokhalePhysNetModel(ANNModel):
 
         callbacks = list()
         if self.early_stopping_epochs is not None:
-            es = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', patience=self.early_stopping_epochs,
+            es = keras.callbacks.EarlyStopping(monitor='val_prediction_loss', mode='min', patience=self.early_stopping_epochs,
                                                restore_best_weights=True, verbose=Logger.verbosity_int())
             callbacks.append(es)
 
@@ -1282,7 +1392,7 @@ class RC2R2CGokhalePhysNetWallDynamicsModel(RC2R2CGokhalePhysNetModel):
         encoder_layers: int = 2,
         encoder_neurons: Union[int, list[int]] = 24,
         dynamic_layers: int = 1,
-        dynamic_neurons: Union[int, list[int]] = 128,
+        dynamic_neurons: Union[int, list[int]] = 32,
         activation_function: Union[str, list[str]] = 'softplus',
         rescale_output: bool = True,
         trainable_rc: bool = False,
