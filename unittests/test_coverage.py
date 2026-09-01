@@ -75,7 +75,7 @@ def test_preprocessing(monkeypatch, file_path, inputs_php, output_php):
     FeatureConstant(1, 'name')
 
     # Create & process Training data
-    prep = PreprocessingSingleStep(inputs_php, output_php)
+    prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php)
     prep.pipeline(file_path)
 
 def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
@@ -89,7 +89,7 @@ def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
     x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
 
     # EvaluateMultiStep: Prepare Preprocessing
-    prep = PreprocessingMultiStep(inputs_tair, output_tair, 6, 6, init_features=['reaTZon_y'],
+    prep = PreprocessingMultiStep(inputs=inputs_tair, output=output_tair, label_width=6, warmup_width=6, init_features=['reaTZon_y'],
                                   overlapping_sequences=False, batch_size=1)
     prep.pipeline(file_path)
 
@@ -98,7 +98,7 @@ def p_hp_data(file_path, inputs_php, output_php):
     # Setup up logger for saving
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
     # Create & process Training data
-    prep = PreprocessingSingleStep(inputs_php, output_php)
+    prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php)
     td = prep.pipeline(file_path)
     return prep, td
 
@@ -111,7 +111,7 @@ def tair_data_delta(file_path, inputs_tair, output_tair):
     x2.lag(1)  # weaSta_reaWeaTDryBul_y_lag1
     x3 = Feature('oveHeaPumY_u')
     x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
-    prep = PreprocessingMultiStep(inputs_tair, output_tair, 3, 0, init_features=['reaTZon_y'],
+    prep = PreprocessingMultiStep(inputs=inputs_tair, output=output_tair, label_width=3, warmup_width=0, init_features=['reaTZon_y'],
                                   overlapping_sequences=False, batch_size=1)
     td = prep.pipeline(file_path)
     return prep, td
@@ -125,7 +125,7 @@ def tair_data_noval(file_path, inputs_tair, output_tair):
     x2.lag(1)  # weaSta_reaWeaTDryBul_y_lag1
     x3 = Feature('oveHeaPumY_u')
     x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
-    prep = PreprocessingMultiStep(inputs_tair, output_tair, 3, 0, init_features=['reaTZon_y'],
+    prep = PreprocessingMultiStep(inputs=inputs_tair, output=output_tair, label_width=3, warmup_width=0, init_features=['reaTZon_y'],
                                   overlapping_sequences=False, batch_size=1, val_size=0)
     td = prep.pipeline(file_path)
     return prep, td
@@ -140,7 +140,7 @@ def tair_data_total(file_path, inputs_tair, output_tair):
     x2.lag(1)  # weaSta_reaWeaTDryBul_y_lag1
     x3 = Feature('oveHeaPumY_u')
     x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
-    prep = PreprocessingMultiStep(inputs_tair, 'reaTZon_y', 3, 0, init_features=['reaTZon_y'],
+    prep = PreprocessingMultiStep(inputs=inputs_tair, output='reaTZon_y', label_width=3, warmup_width=0, init_features=['reaTZon_y'],
                                   overlapping_sequences=False, batch_size=1)
     td = prep.pipeline(file_path)
     return prep, td
@@ -150,7 +150,7 @@ def test_model_linReg(inputs_php, output_php, file_path):
     Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_coverage', override=True)
 
     # Create & process Training data
-    prep = PreprocessingSingleStep(inputs_php, output_php, val_size=0)
+    prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php, val_size=0)
     td = prep.pipeline(file_path)
 
     # Check Models
@@ -254,12 +254,12 @@ def test_model_pinn(inputs_php, output_php, file_path):
     pinn.rename('pinn')
 
     # PINN: Preprocessing
-    prep = PreprocessingSingleStep(inputs_php, output_php)
+    prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php)
     td = prep.pipeline(file_path)
     m = PINNModel(pinn_weights=[1], epochs=1, n_neurons=4)
     m.pipeline(td, save_model=False, plot=False)
 
-    prep = PreprocessingSingleStep(inputs_php, output_php, val_size=0)
+    prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php, val_size=0)
     td = prep.pipeline(file_path)
     m = PINNModel(pinn_weights=None, epochs=1, n_neurons=4)
     m.pipeline(td, save_model=True, plot=False)
@@ -278,7 +278,7 @@ def test_models_rnn(file_path):
     inputs = ['weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaHDirNor_y', 'oveHeaPumY_u']
     inits = ['reaTZon_y']
     output = 'reaTZon_y'
-    prep = PreprocessingMultiStep(inputs, output, 4, 2, init_features=inits)
+    prep = PreprocessingMultiStep(inputs=inputs, output=output, label_width=4, warmup_width=2, init_features=inits)
     td = prep.pipeline(file_path)
 
     m = RNNModel(epochs=1, rnn_layer='LSTM', init_layer='dense')
@@ -299,7 +299,7 @@ def test_models_rnn(file_path):
     m = RNNModel(epochs=1, rnn_layer='RNN')
     m.pipeline(td, save_model=True, plot=False)
 
-    prep = PreprocessingMultiStep(inputs, output, 4, 0, val_size=0)
+    prep = PreprocessingMultiStep(inputs=inputs, output=output, label_width=4, warmup_width=0, val_size=0)
     td = prep.pipeline(file_path)
     m = RNNModel(epochs=1, rnn_layer='LSTM', early_stopping_epochs=None)
     m.pipeline(td, save_model=False, plot=False)

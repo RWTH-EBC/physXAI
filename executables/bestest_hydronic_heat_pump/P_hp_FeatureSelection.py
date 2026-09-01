@@ -33,7 +33,7 @@ x4.lag(2)
 
 # Generic Preprocessing Pipeline
 # Model is output model, so single step evaluation is choosen
-prep = PreprocessingSingleStep(inputs, output)
+prep = PreprocessingSingleStep(inputs=inputs, output=output)
 
 # Generic Model
 m = LinearRegressionModel()

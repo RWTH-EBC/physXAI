@@ -10,7 +10,7 @@ from physXAI.evaluation.metrics import Metrics
 from physXAI.models.models import SingleStepModel
 
 
-def search_best_features(runs: dict, multi_step: bool, use_multi_step_error: bool):
+def search_best_features(runs: dict, multi_step: bool, use_multi_step_error: bool, automatic: bool = False):
     sorted_kpis = dict()
     min_value = np.inf
     min_index = None
@@ -30,9 +30,12 @@ def search_best_features(runs: dict, multi_step: bool, use_multi_step_error: boo
             min_value = values[index]
             min_index = k
 
-    try:
-        max_features = int(input("Enter number of features. Otherwise features are selected based on RMSE."))
-    except ValueError:
+    if not automatic:
+        try:
+            max_features = int(input("Enter number of features. Otherwise features are selected based on RMSE."))
+        except ValueError:
+            max_features = np.inf
+    else:
         max_features = np.inf
 
     Logger.print('Selected features:', 'info')
@@ -148,13 +151,14 @@ def recursive_feature_elimination_pipeline(file_path: str,
                                            preprocessing: PreprocessingData,
                                            model: SingleStepModel, ascending_lag_order: bool = True,
                                            use_multi_step_error: bool = True, save_models: bool = False,
-                                           fixed_inputs: list[str] = None):
+                                           fixed_inputs: list[str] = None,
+                                           automatic: bool = False):
 
     runs = recursive_feature_elimination(file_path, preprocessing, model, ascending_lag_order, use_multi_step_error,
                                          save_models, fixed_inputs)
 
     plot_recFeatureSelection(runs, isinstance(preprocessing, PreprocessingMultiStep), use_multi_step_error)
 
-    inputs = search_best_features(runs, isinstance(preprocessing, PreprocessingMultiStep), use_multi_step_error)
+    inputs = search_best_features(runs, isinstance(preprocessing, PreprocessingMultiStep), use_multi_step_error, automatic=automatic)
 
     return runs, inputs

@@ -34,7 +34,7 @@ x4.lag(2)
 # Generic Preprocessing Pipeline
 # Model is state model, so multi-step evaluation is choosen
 # See example TAir_evaluateMultiStep.py for more information
-prep = PreprocessingMultiStep(inputs, output, 48, 0, init_features=['reaTZon_y'],
+prep = PreprocessingMultiStep(inputs=inputs, output=output, label_width=48, warmup_width=0, init_features=['reaTZon_y'],
                               overlapping_sequences=False, batch_size=1)
 
 # Generic Model

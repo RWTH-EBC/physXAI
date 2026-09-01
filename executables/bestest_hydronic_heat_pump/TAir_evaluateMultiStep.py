@@ -42,7 +42,7 @@ init_features should contain original variable, can be None in mode (1)
 overlapping_sequence should be False to avoid duplicate labels for single step prediction
 batch_size should be 1 as batches are processes differently in single step models
 """
-prep = PreprocessingMultiStep(inputs, output, 48, 0, init_features=['reaTZon_y'],
+prep = PreprocessingMultiStep(inputs=inputs, output=output, label_width=48, warmup_width=0, init_features=['reaTZon_y'],
                               overlapping_sequences=False, batch_size=1)
 # Process Training data
 td = prep.pipeline(file_path)
