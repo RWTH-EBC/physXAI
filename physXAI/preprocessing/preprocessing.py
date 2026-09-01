@@ -318,8 +318,11 @@ class PreprocessingMultiStep (PreprocessingData):
         self.features: list[str] = (inputs + self.output +
                                     [f for f in self.init_features if f not in inputs and f not in self.output])
         self.column_indices: dict[str, int] = {name: i for i, name in enumerate(self.features)}
-        self.warmup_columns_input: list[str] = list(set(self.init_features) & set(inputs))
-        self.warmup_columns_labels: list[str] = list(set(self.init_features) - set(inputs))
+        # The order of these lists defines the column order of the warmup sequence.
+        # It has to be derived from the init_features list, since the iteration order
+        # of a set is not stable across processes.
+        self.warmup_columns_input: list[str] = [f for f in self.init_features if f in inputs]
+        self.warmup_columns_labels: list[str] = [f for f in self.init_features if f not in inputs]
 
         self.label_width: int = label_width
         self.warmup_width: int = warmup_width
@@ -491,6 +494,8 @@ class PreprocessingMultiStep (PreprocessingData):
             'overlapping_sequences': self.overlapping_sequences,
             'batch_size': self.batch_size,
             'init_features': self.init_features,
+            'warmup_columns_input': self.warmup_columns_input,
+            'warmup_columns_labels': self.warmup_columns_labels,
             'shift': self.shift,
             'test_size': self.test_size,
             'val_size': self.val_size,
