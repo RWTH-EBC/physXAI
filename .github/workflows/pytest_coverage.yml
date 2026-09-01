@@ -45,7 +45,7 @@ jobs:
     - name: Generate coverage badge
       if: matrix.python-version == '3.12'
       run: |
-        coverage-badge -o build/reports/coverage.svg -f
+        anybadge --value="$(coverage report --format=total)" --file=build/reports/coverage.svg --overwrite coverage
         
     - name: Check if badge changed or is new
       if: matrix.python-version == '3.12'
