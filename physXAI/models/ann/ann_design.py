@@ -1315,43 +1315,43 @@ class RC2R2CGokhalePhysNetModel(ANNModel):
         if Logger.check_print_level('info'):
             model.summary()
 
-    # @staticmethod
-    # def _trim_split_to_gokhale_targets(td, split: str):
-    #     x = np.asarray(getattr(td, f"X_{split}_single"))
-    #     y = np.asarray(getattr(td, f"y_{split}_single"))
-    #     chunk_ids = np.asarray(getattr(td, f"{split}_chunk_ids")).reshape(-1)
+    @staticmethod
+    def _trim_split_to_gokhale_targets(td, split: str):
+        x = np.asarray(getattr(td, f"X_{split}_single"))
+        y = np.asarray(getattr(td, f"y_{split}_single"))
+        chunk_ids = np.asarray(getattr(td, f"{split}_chunk_ids")).reshape(-1)
 
-    #     if len(x) != len(y) or len(x) != len(chunk_ids):
-    #         raise ValueError(f"Inconsitent lengths in {split} split!")
+        if len(x) != len(y) or len(x) != len(chunk_ids):
+            raise ValueError(f"Inconsitent lengths in {split} split!")
 
-    #     valid_pairs = chunk_ids[:-1] == chunk_ids[1:]
+        valid_pairs = chunk_ids[:-1] == chunk_ids[1:]
 
-    #     x_eval = x[1:][valid_pairs]
-    #     y_eval = y[1:][valid_pairs]
-    #     chunk_ids_eval = chunk_ids[1:][valid_pairs]
+        x_eval = x[1:][valid_pairs]
+        y_eval = y[1:][valid_pairs]
+        chunk_ids_eval = chunk_ids[1:][valid_pairs]
 
-    #     setattr(td, f"X_{split}", x_eval)
-    #     setattr(td, f"y_{split}", y_eval)
-    #     setattr(td, f"{split}_chunk_ids", chunk_ids_eval)
+        setattr(td, f"X_{split}", x_eval)
+        setattr(td, f"y_{split}", y_eval)
+        setattr(td, f"{split}_chunk_ids", chunk_ids_eval)
 
-    #     time_attribute = f"time_{split}"
+        time_attribute = f"time_{split}"
 
-    #     if hasattr(td, time_attribute):
-    #         time_values = np.asarray(getattr(td, time_attribute))
-    #         setattr(td, time_attribute, time_values[1:][valid_pairs])
+        if hasattr(td, time_attribute):
+            time_values = np.asarray(getattr(td, time_attribute))
+            setattr(td, time_attribute, time_values[1:][valid_pairs])
 
-    # def evaluate(self, model, td:TrainingDataGeneric):
-    #     if not getattr(td, "_gokhale_evaluation_trimmed", False):
-    #         self._trim_split_to_gokhale_targets(td, "train")
+    def evaluate(self, model, td:TrainingDataGeneric):
+        if not getattr(td, "_gokhale_evaluation_trimmed", False):
+            self._trim_split_to_gokhale_targets(td, "train")
 
-    #         if td.X_val is not None:
-    #             self._trim_split_to_gokhale_targets(td, "val")
+            if td.X_val is not None:
+                self._trim_split_to_gokhale_targets(td, "val")
 
-    #         self._trim_split_to_gokhale_targets(td, "test")
+            self._trim_split_to_gokhale_targets(td, "test")
 
-    #         td._gokhale_evaluation_trimmed = True
+            td._gokhale_evaluation_trimmed = True
 
-    #     return super().evaluate(model, td)
+        return super().evaluate(model, td)
 
     def get_config(self) -> dict:
         config = super().get_config()
