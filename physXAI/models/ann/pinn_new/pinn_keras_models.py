@@ -1,8 +1,12 @@
 import keras
 import tensorflow as tf
 
-from physXAI.models.ann.pinn_new.rc_layers import RC1R1CLayer, RC2R2CPhysNetLayer, RC2R2CGokhalePhysNetLayer, RC2R2CGokhalePhysNetWallDynamicsLayer
 
+
+def _tabs_physics_loss(physics_layer, inputs, scale):
+    delta_t_tabs_phys, delta_t_tabs_measured = physics_layer.tabs_temperature_calc(inputs)
+
+    return keras.ops.mean(keras.ops.square((delta_t_tabs_measured - delta_t_tabs_phys) / scale))
 
 @keras.saving.register_keras_serializable(package="custom_model", name="RC1R1CKerasModel")
 class RC1R1CKerasModel(keras.Model):
@@ -15,10 +19,14 @@ class RC1R1CKerasModel(keras.Model):
             inputs,
             outputs,
             core_model: keras.Model,
-            physics_layer: RC1R1CLayer,
+            physics_layer: keras.layers.Layer,
             physics_loss_weight: float = 1.0,
             predict_delta: bool = True,
             t_air_index : int = 0,
+            prediction_loss_scale: float = 1.0,
+            use_tabs_physics_loss: bool = False,
+            tabs_physics_loss_weight: float = 1.0,
+            tabs_physics_loss_scale: float = 1.0,
             **kwargs,
     ):
         super().__init__(
@@ -37,14 +45,21 @@ class RC1R1CKerasModel(keras.Model):
         self.predict_delta = predict_delta
         self.t_air_index = t_air_index
 
+        self.prediction_loss_scale = prediction_loss_scale
+
+        self.use_tabs_physics_loss = use_tabs_physics_loss
+        self.tabs_physics_loss_weight = tabs_physics_loss_weight
+        self.tabs_physics_loss_scale = tabs_physics_loss_scale
+
         self.total_loss_tracker = keras.metrics.Mean(name='loss')
         self.prediction_loss_tracker = keras.metrics.Mean(name='prediction_loss')
         self.physics_loss_tracker = keras.metrics.Mean(name='physics_loss')
+        self.tabs_physics_loss_tracker = keras.metrics.Mean(name="tabs_physics_loss")
         self.rmse_tracker = keras.metrics.RootMeanSquaredError(name='rmse')
 
     @property
     def metrics(self):
-        return [self.total_loss_tracker, self.prediction_loss_tracker, self.physics_loss_tracker, self.rmse_tracker]
+        return [self.total_loss_tracker, self.prediction_loss_tracker, self.physics_loss_tracker, self.tabs_physics_loss_tracker, self.rmse_tracker]
 
     def get_config(self):
         config = super().get_config()
@@ -56,6 +71,10 @@ class RC1R1CKerasModel(keras.Model):
                 "physics_loss_weight": self.physics_loss_weight,
                 "predict_delta": self.predict_delta,
                 "t_air_index": self.t_air_index,
+                "prediction_loss_scale": self.prediction_loss_scale,
+                "use_tabs_physics_loss": self.use_tabs_physics_loss,
+                "tabs_physics_loss_weight": self.tabs_physics_loss_weight,
+                "tabs_physics_loss_scale": self.tabs_physics_loss_scale,
             }
         )
 
@@ -68,6 +87,10 @@ class RC1R1CKerasModel(keras.Model):
         core_model = keras.saving.deserialize_keras_object(config.pop("core_model"))
         physics_layer = keras.saving.deserialize_keras_object(config.pop("physics_layer"))
         physics_loss_weight = config.pop("physics_loss_weight")
+        prediction_loss_scale = config.pop("prediction_loss_scale")
+        use_tabs_physics_loss = config.pop("use_tabs_physics_loss")
+        tabs_physics_loss_weight = config.pop("tabs_physics_loss_weight")
+        tabs_physics_loss_scale = config.pop("tabs_physics_loss_scale")
         predict_delta = config.pop("predict_delta")
         t_air_index = config.pop("t_air_index")
         core_input = core_model.inputs[0]
@@ -87,6 +110,10 @@ class RC1R1CKerasModel(keras.Model):
             physics_loss_weight=physics_loss_weight,
             predict_delta=predict_delta,
             t_air_index=t_air_index,
+            prediction_loss_scale=prediction_loss_scale,
+            use_tabs_physics_loss=use_tabs_physics_loss,
+            tabs_physics_loss_weight=tabs_physics_loss_weight,
+            tabs_physics_loss_scale=tabs_physics_loss_scale,
             **config,
         )
 
@@ -94,6 +121,7 @@ class RC1R1CKerasModel(keras.Model):
         inputs, targets = data
 
         model_dtype = self.core_model.compute_dtype
+
         inputs = keras.ops.cast(inputs, model_dtype)
         targets = keras.ops.cast(targets, model_dtype)
 
@@ -107,11 +135,20 @@ class RC1R1CKerasModel(keras.Model):
 
                 physics_predictions = t_air + physics_predictions
 
-            prediction_loss = keras.ops.mean(keras.ops.square(targets - predictions))
+            prediction_loss = keras.ops.mean(keras.ops.square((targets - predictions) / self.prediction_loss_scale))
 
-            physics_loss = keras.ops.mean(keras.ops.square(predictions - physics_predictions))
+            physics_loss = keras.ops.mean(keras.ops.square((predictions - physics_predictions) / self.prediction_loss_scale))
 
-            total_loss = prediction_loss + self.physics_loss_weight * physics_loss
+            if self.use_tabs_physics_loss:
+                tabs_physics_loss = _tabs_physics_loss(
+                    physics_layer=self.physics_layer,
+                    inputs=inputs,
+                    scale=self.tabs_physics_loss_scale,
+                )
+            else:
+                tabs_physics_loss = keras.ops.zeros((), dtype=prediction_loss.dtype)
+
+            total_loss = prediction_loss + self.physics_loss_weight * physics_loss + self.tabs_physics_loss_weight * tabs_physics_loss
 
             if self.losses:
                 total_loss = total_loss + tf.add_n(self.losses)
@@ -125,12 +162,14 @@ class RC1R1CKerasModel(keras.Model):
         self.total_loss_tracker.update_state(total_loss, sample_weight=batch_weight)
         self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
         self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
+        self.tabs_physics_loss_tracker.update_state(tabs_physics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(targets, predictions)
 
         return {
             "loss": self.total_loss_tracker.result(),
             "prediction_loss": self.prediction_loss_tracker.result(),
             "physics_loss": self.physics_loss_tracker.result(),
+            "tabs_physics_loss": self.tabs_physics_loss_tracker.result(),
             "rmse": self.rmse_tracker.result(),
                 }
 
@@ -138,6 +177,7 @@ class RC1R1CKerasModel(keras.Model):
         inputs, targets = data
 
         model_dtype = self.core_model.compute_dtype
+
         inputs = keras.ops.cast(inputs, model_dtype)
         targets = keras.ops.cast(targets, model_dtype)
 
@@ -150,11 +190,20 @@ class RC1R1CKerasModel(keras.Model):
 
             physics_predictions = t_air + physics_predictions
 
-        prediction_loss = keras.ops.mean(keras.ops.square(targets - predictions))
+        prediction_loss = keras.ops.mean(keras.ops.square((targets - predictions) / self.prediction_loss_scale))
 
-        physics_loss = keras.ops.mean(keras.ops.square(predictions - physics_predictions))
+        physics_loss = keras.ops.mean(keras.ops.square((predictions - physics_predictions) / self.prediction_loss_scale))
 
-        total_loss = prediction_loss + self.physics_loss_weight * physics_loss
+        if self.use_tabs_physics_loss:
+            tabs_physics_loss = _tabs_physics_loss(
+                physics_layer=self.physics_layer,
+                inputs=inputs,
+                scale=self.tabs_physics_loss_scale,
+            )
+        else:
+            tabs_physics_loss = keras.ops.zeros((), dtype=prediction_loss.dtype)     
+
+        total_loss = prediction_loss + self.physics_loss_weight * physics_loss + self.tabs_physics_loss_weight * tabs_physics_loss
 
         if self.losses:
             total_loss = total_loss + tf.add_n(self.losses)
@@ -164,12 +213,14 @@ class RC1R1CKerasModel(keras.Model):
         self.total_loss_tracker.update_state(total_loss, sample_weight=batch_weight)
         self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
         self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
+        self.tabs_physics_loss_tracker.update_state(tabs_physics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(targets, predictions)
 
         return {
             "loss": self.total_loss_tracker.result(),
             "prediction_loss": self.prediction_loss_tracker.result(),
             "physics_loss": self.physics_loss_tracker.result(),
+            "tabs_physics_loss": self.tabs_physics_loss_tracker.result(),
             "rmse": self.rmse_tracker.result(),
                 }
 
@@ -185,10 +236,13 @@ class RC2R2CPhysNetKerasModel(keras.Model):
             inputs,
             outputs,
             core_model: keras.Model,
-            physics_layer: RC2R2CPhysNetLayer,
+            physics_layer: keras.layers.Layer,
             physics_loss_weight: float = 1.0,
             prediction_loss_scale: float = 1.0,
             physics_loss_scale: float = 1.0,
+            use_tabs_physics_loss: bool = False,
+            tabs_physics_loss_weight: float = 1.0,
+            tabs_physics_loss_scale: float = 1.0,
             **kwargs,
     ):
         super().__init__(
@@ -207,14 +261,19 @@ class RC2R2CPhysNetKerasModel(keras.Model):
         self.prediction_loss_scale = float(prediction_loss_scale)
         self.physics_loss_scale = float(physics_loss_scale)
 
+        self.use_tabs_physics_loss = use_tabs_physics_loss
+        self.tabs_physics_loss_weight = tabs_physics_loss_weight
+        self.tabs_physics_loss_scale = tabs_physics_loss_scale
+
         self.total_loss_tracker = keras.metrics.Mean(name='loss')
         self.prediction_loss_tracker = keras.metrics.Mean(name='prediction_loss')
         self.physics_loss_tracker = keras.metrics.Mean(name='physics_loss')
+        self.tabs_physics_loss_tracker = keras.metrics.Mean(name="tabs_physics_loss")
         self.rmse_tracker = keras.metrics.RootMeanSquaredError(name='rmse')
 
     @property
     def metrics(self):
-        return [self.total_loss_tracker, self.prediction_loss_tracker, self.physics_loss_tracker, self.rmse_tracker]
+        return [self.total_loss_tracker, self.prediction_loss_tracker, self.physics_loss_tracker, self.tabs_physics_loss_tracker, self.rmse_tracker]
     
     def predict_with_latent(self, inputs, training=False):
         return self.core_model(inputs, training=training)
@@ -229,6 +288,9 @@ class RC2R2CPhysNetKerasModel(keras.Model):
                 "physics_loss_weight": self.physics_loss_weight,
                 "prediction_loss_scale": self.prediction_loss_scale,
                 "physics_loss_scale": self.physics_loss_scale,
+                "use_tabs_physics_loss": self.use_tabs_physics_loss,
+                "tabs_physics_loss_weight": self.tabs_physics_loss_weight,
+                "tabs_physics_loss_scale": self.tabs_physics_loss_scale,
             }
         )
 
@@ -243,6 +305,9 @@ class RC2R2CPhysNetKerasModel(keras.Model):
         physics_loss_weight = config.pop("physics_loss_weight")
         prediction_loss_scale = config.pop("prediction_loss_scale")
         physics_loss_scale = config.pop("physics_loss_scale")
+        use_tabs_physics_loss = config.pop("use_tabs_physics_loss")
+        tabs_physics_loss_weight = config.pop("tabs_physics_loss_weight")
+        tabs_physics_loss_scale = config.pop("tabs_physics_loss_scale")
         core_input = core_model.inputs[0]
         pinn_input = keras.layers.Input(
             shape=tuple(core_input.shape[1:]),
@@ -260,6 +325,9 @@ class RC2R2CPhysNetKerasModel(keras.Model):
             physics_loss_weight=physics_loss_weight,
             prediction_loss_scale=prediction_loss_scale,
             physics_loss_scale=physics_loss_scale,
+            use_tabs_physics_loss=use_tabs_physics_loss,
+            tabs_physics_loss_weight=tabs_physics_loss_weight,
+            tabs_physics_loss_scale=tabs_physics_loss_scale,
             **config,
         )
 
@@ -267,6 +335,7 @@ class RC2R2CPhysNetKerasModel(keras.Model):
         inputs, targets = data
 
         model_dtype = self.core_model.compute_dtype
+
         inputs = keras.ops.cast(inputs, model_dtype)
         targets = keras.ops.cast(targets, model_dtype)
 
@@ -279,7 +348,16 @@ class RC2R2CPhysNetKerasModel(keras.Model):
 
             physics_loss = keras.ops.mean(keras.ops.square((z_latent - z_physic) / self.physics_loss_scale))
 
-            total_loss = prediction_loss + self.physics_loss_weight * physics_loss
+            if self.use_tabs_physics_loss:
+                tabs_physics_loss = _tabs_physics_loss(
+                    physics_layer=self.physics_layer,
+                    inputs=inputs,
+                    scale=self.tabs_physics_loss_scale,
+                )
+            else:
+                tabs_physics_loss = keras.ops.zeros((), dtype=prediction_loss.dtype)
+
+            total_loss = prediction_loss + self.physics_loss_weight * physics_loss + self.tabs_physics_loss_weight * tabs_physics_loss
 
             if self.losses:
                 total_loss = total_loss + tf.add_n(self.losses)
@@ -293,12 +371,14 @@ class RC2R2CPhysNetKerasModel(keras.Model):
         self.total_loss_tracker.update_state(total_loss, sample_weight=batch_weight)
         self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
         self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
+        self.tabs_physics_loss_tracker.update_state(tabs_physics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(targets, predictions)
 
         return {
             "loss": self.total_loss_tracker.result(),
             "prediction_loss": self.prediction_loss_tracker.result(),
             "physics_loss": self.physics_loss_tracker.result(),
+            "tabs_physics_loss": self.tabs_physics_loss_tracker.result(),
             "rmse": self.rmse_tracker.result(),
         }
 
@@ -306,6 +386,7 @@ class RC2R2CPhysNetKerasModel(keras.Model):
         inputs, targets = data
 
         model_dtype = self.core_model.compute_dtype
+
         inputs = keras.ops.cast(inputs, model_dtype)
         targets = keras.ops.cast(targets, model_dtype)
 
@@ -317,7 +398,16 @@ class RC2R2CPhysNetKerasModel(keras.Model):
 
         physics_loss = keras.ops.mean(keras.ops.square((z_latent - z_physic) / self.physics_loss_scale))
 
-        total_loss = prediction_loss + self.physics_loss_weight * physics_loss
+        if self.use_tabs_physics_loss:
+            tabs_physics_loss = _tabs_physics_loss(
+                physics_layer=self.physics_layer,
+                inputs=inputs,
+                scale=self.tabs_physics_loss_scale,
+            )
+        else:
+            tabs_physics_loss = keras.ops.zeros((), dtype=prediction_loss.dtype)     
+
+        total_loss = prediction_loss + self.physics_loss_weight * physics_loss + self.tabs_physics_loss_weight * tabs_physics_loss
 
         if self.losses:
             total_loss = total_loss + tf.add_n(self.losses)
@@ -327,12 +417,14 @@ class RC2R2CPhysNetKerasModel(keras.Model):
         self.total_loss_tracker.update_state(total_loss, sample_weight=batch_weight)
         self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
         self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
+        self.tabs_physics_loss_tracker.update_state(tabs_physics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(targets, predictions)
 
         return {
             "loss": self.total_loss_tracker.result(),
             "prediction_loss": self.prediction_loss_tracker.result(),
             "physics_loss": self.physics_loss_tracker.result(),
+            "tabs_physics_loss": self.tabs_physics_loss_tracker.result(),
             "rmse": self.rmse_tracker.result(),
         }
 
@@ -347,10 +439,13 @@ class RC2R2CGokhalePhysNetKerasModel(keras.Model):
             inputs,
             outputs,
             core_model: keras.Model,
-            physics_layer: RC2R2CGokhalePhysNetLayer,
+            physics_layer: keras.layers.Layer,
             physics_loss_weight: float = 1.0,
             prediction_loss_scale: float = 1.0,
             physics_loss_scale: float = 1.0,
+            use_tabs_physics_loss: bool = False,
+            tabs_physics_loss_weight: float = 1.0,
+            tabs_physics_loss_scale: float = 1.0,
             **kwargs,
     ):
         super().__init__(
@@ -370,14 +465,19 @@ class RC2R2CGokhalePhysNetKerasModel(keras.Model):
         self.prediction_loss_scale = float(prediction_loss_scale)
         self.physics_loss_scale = float(physics_loss_scale)
 
+        self.use_tabs_physics_loss = use_tabs_physics_loss
+        self.tabs_physics_loss_weight = tabs_physics_loss_weight
+        self.tabs_physics_loss_scale = tabs_physics_loss_scale
+
         self.total_loss_tracker = keras.metrics.Mean(name='loss')
         self.prediction_loss_tracker = keras.metrics.Mean(name='prediction_loss')
         self.physics_loss_tracker = keras.metrics.Mean(name='physics_loss')
+        self.tabs_physics_loss_tracker = keras.metrics.Mean(name="tabs_physics_loss")
         self.rmse_tracker = keras.metrics.RootMeanSquaredError(name='rmse')
 
     @property
     def metrics(self):
-        return [self.total_loss_tracker, self.prediction_loss_tracker, self.physics_loss_tracker, self.rmse_tracker]
+        return [self.total_loss_tracker, self.prediction_loss_tracker, self.physics_loss_tracker, self.tabs_physics_loss_tracker, self.rmse_tracker]
     
     def predict_with_latent(self, inputs, training=False):
         return self.core_model(inputs, training=training)
@@ -392,6 +492,9 @@ class RC2R2CGokhalePhysNetKerasModel(keras.Model):
                 "physics_loss_weight": self.physics_loss_weight,
                 "prediction_loss_scale": self.prediction_loss_scale,
                 "physics_loss_scale": self.physics_loss_scale,
+                "use_tabs_physics_loss": self.use_tabs_physics_loss,
+                "tabs_physics_loss_weight": self.tabs_physics_loss_weight,
+                "tabs_physics_loss_scale": self.tabs_physics_loss_scale,
             }
         )
 
@@ -406,6 +509,9 @@ class RC2R2CGokhalePhysNetKerasModel(keras.Model):
         physics_loss_weight = config.pop("physics_loss_weight")
         prediction_loss_scale = config.pop("prediction_loss_scale")
         physics_loss_scale = config.pop("physics_loss_scale")
+        use_tabs_physics_loss = config.pop("use_tabs_physics_loss")
+        tabs_physics_loss_weight = config.pop("tabs_physics_loss_weight")
+        tabs_physics_loss_scale = config.pop("tabs_physics_loss_scale")
         core_input = core_model.inputs[0]
         pinn_input = keras.layers.Input(
             shape=tuple(core_input.shape[1:]),
@@ -423,6 +529,9 @@ class RC2R2CGokhalePhysNetKerasModel(keras.Model):
             physics_loss_weight=physics_loss_weight,
             prediction_loss_scale=prediction_loss_scale,
             physics_loss_scale=physics_loss_scale,
+            use_tabs_physics_loss=use_tabs_physics_loss,
+            tabs_physics_loss_weight=tabs_physics_loss_weight,
+            tabs_physics_loss_scale=tabs_physics_loss_scale,
             **config,
         )
     
@@ -445,7 +554,16 @@ class RC2R2CGokhalePhysNetKerasModel(keras.Model):
 
             physics_loss = keras.ops.mean(keras.ops.square((z_latent_k1 - z_phys_k1) / self.physics_loss_scale))
 
-            total_loss = prediction_loss + self.physics_loss_weight * physics_loss
+            if self.use_tabs_physics_loss:
+                tabs_physics_loss = _tabs_physics_loss(
+                    physics_layer=self.physics_layer,
+                    inputs=x_k,
+                    scale=self.tabs_physics_loss_scale,
+                )
+            else:
+                tabs_physics_loss = keras.ops.zeros((), dtype=prediction_loss.dtype)
+
+            total_loss = prediction_loss + self.physics_loss_weight * physics_loss + self.tabs_physics_loss_weight * tabs_physics_loss
 
             if self.losses:
                 total_loss = total_loss + tf.add_n(self.losses)
@@ -459,12 +577,14 @@ class RC2R2CGokhalePhysNetKerasModel(keras.Model):
         self.total_loss_tracker.update_state(total_loss, sample_weight=batch_weight)
         self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
         self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
+        self.tabs_physics_loss_tracker.update_state(tabs_physics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(y_k1, y_pred_k1)
 
         return {
             "loss": self.total_loss_tracker.result(),
             "prediction_loss": self.prediction_loss_tracker.result(),
             "physics_loss": self.physics_loss_tracker.result(),
+            "tabs_physics_loss": self.tabs_physics_loss_tracker.result(),
             "rmse": self.rmse_tracker.result(),
         }
     
@@ -485,8 +605,17 @@ class RC2R2CGokhalePhysNetKerasModel(keras.Model):
         prediction_loss = keras.ops.mean(keras.ops.square((y_k1 - y_pred_k1) / self.prediction_loss_scale))
         
         physics_loss = keras.ops.mean(keras.ops.square((z_latent_k1 - z_phys_k1) / self.physics_loss_scale))
-        
-        total_loss = prediction_loss + self.physics_loss_weight * physics_loss
+
+        if self.use_tabs_physics_loss:
+            tabs_physics_loss = _tabs_physics_loss(
+                physics_layer=self.physics_layer,
+                inputs=x_k,
+                scale=self.tabs_physics_loss_scale,
+            )
+        else:
+            tabs_physics_loss = keras.ops.zeros((), dtype=prediction_loss.dtype)
+
+        total_loss = prediction_loss + self.physics_loss_weight * physics_loss + self.tabs_physics_loss_weight * tabs_physics_loss
 
         if self.losses:
             total_loss = total_loss + tf.add_n(self.losses)
@@ -496,12 +625,14 @@ class RC2R2CGokhalePhysNetKerasModel(keras.Model):
         self.total_loss_tracker.update_state(total_loss, sample_weight=batch_weight)
         self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
         self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
+        self.tabs_physics_loss_tracker.update_state(tabs_physics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(y_k1, y_pred_k1)
 
         return {
             "loss": self.total_loss_tracker.result(),
             "prediction_loss": self.prediction_loss_tracker.result(),
             "physics_loss": self.physics_loss_tracker.result(),
+            "tabs_physics_loss": self.tabs_physics_loss_tracker.result(),
             "rmse": self.rmse_tracker.result(),
         }
 
@@ -516,11 +647,14 @@ class RC2R2CGokhalePhysNetWallDynamicsKerasModel(RC2R2CGokhalePhysNetKerasModel)
             inputs,
             outputs,
             core_model: keras.Model,
-            physics_layer: RC2R2CGokhalePhysNetWallDynamicsLayer,
+            physics_layer: keras.layers.Layer,
             physics_loss_weight: float = 1.0,
             wall_dynamics_loss_weight: float = 1.0,
             prediction_loss_scale: float = 1.0,
             physics_loss_scale: float = 1.0,
+            use_tabs_physics_loss: bool = False,
+            tabs_physics_loss_weight: float = 1.0,
+            tabs_physics_loss_scale: float = 1.0,
             **kwargs,
     ):
         super().__init__(
@@ -531,6 +665,9 @@ class RC2R2CGokhalePhysNetWallDynamicsKerasModel(RC2R2CGokhalePhysNetKerasModel)
             physics_loss_weight=physics_loss_weight,
             prediction_loss_scale=prediction_loss_scale,
             physics_loss_scale=physics_loss_scale,
+            use_tabs_physics_loss=use_tabs_physics_loss,
+            tabs_physics_loss_weight=tabs_physics_loss_weight,
+            tabs_physics_loss_scale=tabs_physics_loss_scale,
             **kwargs,
         )
 
@@ -540,7 +677,7 @@ class RC2R2CGokhalePhysNetWallDynamicsKerasModel(RC2R2CGokhalePhysNetKerasModel)
 
     @property
     def metrics(self):
-        return [self.total_loss_tracker, self.prediction_loss_tracker, self.physics_loss_tracker, self.wall_dynamics_loss_tracker, self.rmse_tracker]
+        return [self.total_loss_tracker, self.prediction_loss_tracker, self.physics_loss_tracker,  self.tabs_physics_loss_tracker, self.wall_dynamics_loss_tracker, self.rmse_tracker]
     
     def get_config(self):
         config = super().get_config()
@@ -563,6 +700,9 @@ class RC2R2CGokhalePhysNetWallDynamicsKerasModel(RC2R2CGokhalePhysNetKerasModel)
         prediction_loss_scale = config.pop("prediction_loss_scale")
         physics_loss_scale = config.pop("physics_loss_scale")
         wall_dynamics_loss_weight = config.pop("wall_dynamics_loss_weight")
+        use_tabs_physics_loss = config.pop("use_tabs_physics_loss")
+        tabs_physics_loss_weight = config.pop("tabs_physics_loss_weight")
+        tabs_physics_loss_scale = config.pop("tabs_physics_loss_scale")
         core_input = core_model.inputs[0]
         pinn_input = keras.layers.Input(
             shape=tuple(core_input.shape[1:]),
@@ -581,6 +721,9 @@ class RC2R2CGokhalePhysNetWallDynamicsKerasModel(RC2R2CGokhalePhysNetKerasModel)
             wall_dynamics_loss_weight=wall_dynamics_loss_weight,
             prediction_loss_scale=prediction_loss_scale,
             physics_loss_scale=physics_loss_scale,
+            use_tabs_physics_loss=use_tabs_physics_loss,
+            tabs_physics_loss_weight=tabs_physics_loss_weight,
+            tabs_physics_loss_scale=tabs_physics_loss_scale,
             **config,
         )
    
@@ -606,7 +749,16 @@ class RC2R2CGokhalePhysNetWallDynamicsKerasModel(RC2R2CGokhalePhysNetKerasModel)
 
             wall_dynamics_loss = keras.ops.mean(keras.ops.square((z_latent_k1 - z_dyn_phys_k1) / self.physics_loss_scale))
 
-            total_loss = prediction_loss + self.physics_loss_weight * physics_loss + self.wall_dynamics_loss_weight * wall_dynamics_loss
+            if self.use_tabs_physics_loss:
+                tabs_physics_loss = _tabs_physics_loss(
+                    physics_layer=self.physics_layer,
+                    inputs=x_k,
+                    scale=self.tabs_physics_loss_scale,
+                )
+            else:
+                tabs_physics_loss = keras.ops.zeros((), dtype=prediction_loss.dtype)
+
+            total_loss = prediction_loss + self.physics_loss_weight * physics_loss + self.wall_dynamics_loss_weight * wall_dynamics_loss + self.tabs_physics_loss_weight * tabs_physics_loss
 
             if self.losses:
                 total_loss = total_loss + tf.add_n(self.losses)
@@ -620,6 +772,7 @@ class RC2R2CGokhalePhysNetWallDynamicsKerasModel(RC2R2CGokhalePhysNetKerasModel)
         self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
         self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
         self.wall_dynamics_loss_tracker.update_state(wall_dynamics_loss, sample_weight=batch_weight)
+        self.tabs_physics_loss_tracker.update_state(tabs_physics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(y_k1, y_pred_k1)
 
         return {
@@ -627,6 +780,7 @@ class RC2R2CGokhalePhysNetWallDynamicsKerasModel(RC2R2CGokhalePhysNetKerasModel)
             "prediction_loss": self.prediction_loss_tracker.result(),
             "physics_loss": self.physics_loss_tracker.result(),
             "wall_dynamics_loss": self.wall_dynamics_loss_tracker.result(),
+            "tabs_physics_loss": self.tabs_physics_loss_tracker.result(),
             "rmse": self.rmse_tracker.result(),
         }
     
@@ -651,7 +805,16 @@ class RC2R2CGokhalePhysNetWallDynamicsKerasModel(RC2R2CGokhalePhysNetKerasModel)
 
         wall_dynamics_loss = keras.ops.mean(keras.ops.square((z_latent_k1 - z_dyn_phys_k1) / self.physics_loss_scale))
 
-        total_loss = prediction_loss + self.physics_loss_weight * physics_loss + self.wall_dynamics_loss_weight * wall_dynamics_loss
+        if self.use_tabs_physics_loss:
+            tabs_physics_loss = _tabs_physics_loss(
+                physics_layer=self.physics_layer,
+                inputs=x_k,
+                scale=self.tabs_physics_loss_scale,
+            )
+        else:
+            tabs_physics_loss = keras.ops.zeros((), dtype=prediction_loss.dtype)
+
+        total_loss = prediction_loss + self.physics_loss_weight * physics_loss + self.wall_dynamics_loss_weight * wall_dynamics_loss + self.tabs_physics_loss_weight * tabs_physics_loss
 
         if self.losses:
             total_loss = total_loss + tf.add_n(self.losses)
@@ -662,6 +825,7 @@ class RC2R2CGokhalePhysNetWallDynamicsKerasModel(RC2R2CGokhalePhysNetKerasModel)
         self.prediction_loss_tracker.update_state(prediction_loss, sample_weight=batch_weight)
         self.physics_loss_tracker.update_state(physics_loss, sample_weight=batch_weight)
         self.wall_dynamics_loss_tracker.update_state(wall_dynamics_loss, sample_weight=batch_weight)
+        self.tabs_physics_loss_tracker.update_state(tabs_physics_loss, sample_weight=batch_weight)
         self.rmse_tracker.update_state(y_k1, y_pred_k1)
 
         return {
@@ -669,5 +833,6 @@ class RC2R2CGokhalePhysNetWallDynamicsKerasModel(RC2R2CGokhalePhysNetKerasModel)
             "prediction_loss": self.prediction_loss_tracker.result(),
             "physics_loss": self.physics_loss_tracker.result(),
             "wall_dynamics_loss": self.wall_dynamics_loss_tracker.result(),
+            "tabs_physics_loss": self.tabs_physics_loss_tracker.result(),
             "rmse": self.rmse_tracker.result(),
         }

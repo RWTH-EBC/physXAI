@@ -6,7 +6,7 @@ import pandas as pd
 from pathlib import Path
 from typing import Optional, Sequence
 
-from physXAI.models.ann.pinn_new.rc_layers import RC2R2CPhysNetLayer
+from physXAI.models.ann.pinn_new.rc_layers import RC2R2CPhysNetLayerUC1, RC2R2CPhysNetLayerUC2
 
 
 time_column = "time"
@@ -44,6 +44,7 @@ def calculate_wall_temperature_for_scaling(
     measured_change_t_air: np.ndarray,
     columns: Sequence[str],
     rc_kwargs: Optional[dict] = None,
+    use_case: str = "UC1",
 ) -> np.ndarray:
 
     x = np.asarray(x)
@@ -56,63 +57,30 @@ def calculate_wall_temperature_for_scaling(
     if len(x) != len(measured_change_t_air):
         raise ValueError("x and measured_change_t_air must contain the same number of rows!")
 
-    missing_columns = [
-        column
-        for column in input_column
-        if column not in columns
-    ]
+    if rc_kwargs is None:
+        raise ValueError("rc_kwargs must be provided!")
 
-    if missing_columns:
-        raise ValueError("Missing columns for the 2R2C calculation: "+ ", ".join(missing_columns))
+    rc_kwargs = dict(rc_kwargs)
 
-    rc_kwargs = {} if rc_kwargs is None else dict(rc_kwargs)
+    physics_layer_classes = {
+        "UC1": RC2R2CPhysNetLayerUC1,
+        "UC2": RC2R2CPhysNetLayerUC2,
+    }
 
-    time_step = float(rc_kwargs.get("time_step", 300.0))
+    physics_layer_class = physics_layer_classes[use_case]
 
-    if time_step <= 0:
-        raise ValueError("time_step must be positive!")
-
-    parameters = dict(parameters_RC)
-
-    parameters.update(
-        {
-            name: rc_kwargs[name]
-            for name in parameters
-            if name in rc_kwargs
-        }
-    )
-
-    feature_indices = [
-        list(columns).index(column)
-        for column in input_column
-    ]
-
-    model_inputs = np.asarray(
-        x[:, feature_indices],
-        dtype=np.float32,
-    )
-
-    physics_layer = RC2R2CPhysNetLayer(
-        time_step=time_step,
-        t_air_index=input_column.index(t_air_column),
-        t_amb_index=input_column.index(t_amb_column),
-        v_flow_ahu_index=input_column.index(v_flow_ahu_column),
-        t_ahu_sup_index=input_column.index(t_ahu_sub_column),
-        t_sup_w_h_index=input_column.index(t_sup_w_h_column),
-        y_valve_h_index=input_column.index(y_valve_h_column),
-        h_dir_nor_index=input_column.index(h_dir_nor_column),
-        predict_delta=True,
-        use_internal_gains=False,
+    physics_layer = physics_layer_class(
         trainable_rc=False,
-        **parameters,
+        use_internal_gains=False,
+        **rc_kwargs,
     )
 
     physics_layer.trainable = False
 
     t_wall = physics_layer(
         [
-            keras.ops.convert_to_tensor(model_inputs),
-            keras.ops.convert_to_tensor(measured_change_t_air),
+            keras.ops.convert_to_tensor(x, dtype="float32"),
+            keras.ops.convert_to_tensor(measured_change_t_air, dtype="float32"),
         ],
         training=False,
     )

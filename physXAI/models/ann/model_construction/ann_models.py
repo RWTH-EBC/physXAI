@@ -9,9 +9,10 @@ from physXAI.models.ann.configs.ann_model_configs import (ClassicalANNConstructi
                                                                  RC2R2CGokhalePhysNetConstruction_config,
                                                                  RC2R2CGokhalePhysNetWallDynamicsConstruction_config)
 from physXAI.models.ann.keras_models.keras_models import NonNegPartial, ConcaveActivation, SaturatedActivation, InputSliceLayer
-from physXAI.models.ann.pinn_new.rc_layers import RC1R1CLayer, RC2R2CPhysNetLayer, RC2R2CGokhalePhysNetLayer, RC2R2CGokhalePhysNetWallDynamicsLayer
+from physXAI.models.ann.pinn_new.rc_layers import RC1R1CLayerUC1, RC1R1CLayerUC2, RC2R2CPhysNetLayerUC1, RC2R2CPhysNetLayerUC2, RC2R2CGokhalePhysNetLayerUC1, RC2R2CGokhalePhysNetLayerUC2, RC2R2CGokhalePhysNetWallDynamicsLayerUC1, RC2R2CGokhalePhysNetWallDynamicsLayerUC2
 from physXAI.models.ann.pinn_new.feature_index import _resolve_feature_indices
 from physXAI.models.ann.pinn_new.calculate_wall_temperature import calculate_wall_temperature_for_scaling
+from physXAI.models.ann.pinn_new.calculate_tabs_temperature import calculate_tabs_temperature_scale
 from physXAI.models.ann.pinn_new.pinn_keras_models import RC1R1CKerasModel, RC2R2CPhysNetKerasModel, RC2R2CGokhalePhysNetKerasModel, RC2R2CGokhalePhysNetWallDynamicsKerasModel
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
@@ -206,6 +207,11 @@ def RC1R1CConstruction(config: dict, td: TrainingDataGeneric):
     # Validate the input configuration dictionary and convert it to a dictionary
     config = RC1R1CConstruction_config.model_validate(config).model_dump()
 
+    rc1r1c_layers = {
+        "UC1": RC1R1CLayerUC1,
+        "UC2": RC1R1CLayerUC2,
+    }
+
     # Get config
     n_layers = config['n_layers']
     n_neurons = config['n_neurons']
@@ -247,10 +253,18 @@ def RC1R1CConstruction(config: dict, td: TrainingDataGeneric):
 
     t_ahu_sup_index = all_columns.index("T_AHU_sup")
 
+    physics_only_indices = {t_ahu_sup_index}
+
+    if "T_tabs_core_mea_k1" in all_columns:
+        physics_only_indices.add(all_columns.index("T_tabs_core_mea_k1"))
+
+    if "T_tabs_sup_mea" in all_columns:
+        physics_only_indices.add(all_columns.index("T_tabs_sup_mea"))
+
     core_indices = [
         index
         for index in range(n_features)
-        if index != t_ahu_sup_index
+        if index not in physics_only_indices
     ]
 
     core_input = keras.layers.Input(shape=(n_features,), name='core_input')
@@ -283,6 +297,18 @@ def RC1R1CConstruction(config: dict, td: TrainingDataGeneric):
 
     core_model = keras.models.Model(inputs=core_input, outputs=y_core, name='core_model')
 
+    if config["use_tabs_physics_loss"]:
+        tabs_physics_loss_scale = calculate_tabs_temperature_scale(
+            x=td.X_train_single,
+            columns=td.columns,
+            rc_kwargs=rc_kwargs,
+            use_case=config["use_case"]
+        )
+        
+        prediction_loss_scale = float(np.std(td.y_train_single, ddof=1))
+    else:
+        tabs_physics_loss_scale = 1.0
+        prediction_loss_scale = 1.0
 
     # -------------------------------------------------------------------------
     # PINN
@@ -294,7 +320,9 @@ def RC1R1CConstruction(config: dict, td: TrainingDataGeneric):
     # -------------------------------------------------------------------------
     # 1R1C physics branch
     # -------------------------------------------------------------------------
-    physics_layer = RC1R1CLayer(
+    physics_layer_class = rc1r1c_layers[config["use_case"]]
+    
+    physics_layer = physics_layer_class(
         trainable_rc=config["trainable_rc"],
         use_internal_gains=config["use_internal_gains"],
         **rc_kwargs,
@@ -308,6 +336,10 @@ def RC1R1CConstruction(config: dict, td: TrainingDataGeneric):
         physics_loss_weight=config["physics_loss_weight"],
         predict_delta=config["predict_delta"],
         t_air_index=t_air_index,
+        prediction_loss_scale=prediction_loss_scale,
+        use_tabs_physics_loss=config["use_tabs_physics_loss"],
+        tabs_physics_loss_weight=config["tabs_physics_loss_weight"],
+        tabs_physics_loss_scale=tabs_physics_loss_scale,
         name="pinn_1r1c",
     )
 
@@ -319,6 +351,11 @@ def RC2R2CPhysNetConstruction(config: dict, td: TrainingDataGeneric):
     
     """
     config = RC2R2CPhysNetConstruction_config.model_validate(config).model_dump()
+
+    rc2r2c_layers = {
+        "UC1": RC2R2CPhysNetLayerUC1,
+        "UC2": RC2R2CPhysNetLayerUC2,
+    }
 
     encoder_layers = config['encoder_layers']
     encoder_neurons = config['encoder_neurons']
@@ -365,11 +402,22 @@ def RC2R2CPhysNetConstruction(config: dict, td: TrainingDataGeneric):
         x=td.X_train_single,
         measured_change_t_air=td.y_train_single,
         columns=td.columns,
-        rc_kwargs=rc_kwargs
+        rc_kwargs=rc_kwargs,
+        use_case=config["use_case"],
     )
 
     physics_loss_scale = float(np.std(t_wall_train, ddof=1))
     #physics_loss_scale=1.0
+
+    if config["use_tabs_physics_loss"]:
+        tabs_physics_loss_scale = calculate_tabs_temperature_scale(
+            x=td.X_train_single,
+            columns=td.columns,
+            rc_kwargs=rc_kwargs,
+            use_case=config["use_case"]
+        )
+    else:
+        tabs_physics_loss_scale = 1.0
 
     encoder_indices = _resolve_feature_indices(config['encoder_features'], td.columns)
     dynamic_indices = _resolve_feature_indices(config['dynamic_features'], td.columns)
@@ -444,7 +492,9 @@ def RC2R2CPhysNetConstruction(config: dict, td: TrainingDataGeneric):
     # -------------------------------------------------------------------------
     # 2R2C physics branch
     # -------------------------------------------------------------------------
-    physics_layer = RC2R2CPhysNetLayer(
+    physics_layer_class = rc2r2c_layers[config["use_case"]]
+    
+    physics_layer = physics_layer_class(
         trainable_rc=config["trainable_rc"],
         use_internal_gains=config["use_internal_gains"],
         **rc_kwargs,
@@ -458,6 +508,9 @@ def RC2R2CPhysNetConstruction(config: dict, td: TrainingDataGeneric):
         physics_loss_weight=config["physics_loss_weight"],
         prediction_loss_scale=prediction_loss_scale,
         physics_loss_scale=physics_loss_scale,
+        use_tabs_physics_loss=config["use_tabs_physics_loss"],
+        tabs_physics_loss_weight=config["tabs_physics_loss_weight"],
+        tabs_physics_loss_scale=tabs_physics_loss_scale,
         name="pinn_2r2c",
     )
     
@@ -471,6 +524,11 @@ def RC2R2CGokhalePhysNetConstruction(config: dict, td: TrainingDataGeneric):
     """
     config = RC2R2CGokhalePhysNetConstruction_config.model_validate(config).model_dump()
 
+    gokhale_layers = {
+        "UC1": RC2R2CGokhalePhysNetLayerUC1,
+        "UC2": RC2R2CGokhalePhysNetLayerUC2,
+    }
+
     if isinstance(config['t_air_column'], str):
         t_air_index = list(td.columns).index(config['t_air_column'])
     else:
@@ -518,11 +576,22 @@ def RC2R2CGokhalePhysNetConstruction(config: dict, td: TrainingDataGeneric):
         x=td.X_train_single,
         measured_change_t_air=td.y_train_single,
         columns=td.columns,
-        rc_kwargs=rc_kwargs
+        rc_kwargs=rc_kwargs,
+        use_case=config["use_case"],
     )
 
     physics_loss_scale = float(np.std(t_wall_train, ddof=1))
     #physics_loss_scale=1.0
+
+    if config["use_tabs_physics_loss"]:
+        tabs_physics_loss_scale = calculate_tabs_temperature_scale(
+            x=td.X_train_single,
+            columns=td.columns,
+            rc_kwargs=rc_kwargs,
+            use_case=config["use_case"]
+        )
+    else:
+        tabs_physics_loss_scale = 1.0
 
     # -------------------------------------------------------------------------
     # neural core model
@@ -586,7 +655,9 @@ def RC2R2CGokhalePhysNetConstruction(config: dict, td: TrainingDataGeneric):
 
     y_nn, _ = core_model(pinn_input)
 
-    physics_layer = RC2R2CGokhalePhysNetLayer(
+    physics_layer_class = gokhale_layers[config["use_case"]]
+
+    physics_layer = physics_layer_class(
         trainable_rc=config['trainable_rc'],
         use_internal_gains=config["use_internal_gains"],
         **rc_kwargs
@@ -600,6 +671,9 @@ def RC2R2CGokhalePhysNetConstruction(config: dict, td: TrainingDataGeneric):
         physics_loss_weight=config['physics_loss_weight'],
         prediction_loss_scale=prediction_loss_scale,
         physics_loss_scale=physics_loss_scale,
+        use_tabs_physics_loss=config["use_tabs_physics_loss"],
+        tabs_physics_loss_weight=config["tabs_physics_loss_weight"],
+        tabs_physics_loss_scale=tabs_physics_loss_scale,
         name='pinn_2r2c_gokhale'
     )
 
@@ -611,6 +685,11 @@ def RC2R2CGokhalePhysNetWallDynamicsConstruction(config: dict, td: TrainingDataG
     
     """
     config = RC2R2CGokhalePhysNetWallDynamicsConstruction_config.model_validate(config).model_dump()
+
+    gokhale_wall_layers = {
+        "UC1": RC2R2CGokhalePhysNetWallDynamicsLayerUC1,
+        "UC2": RC2R2CGokhalePhysNetWallDynamicsLayerUC2,
+    }
 
     if isinstance(config['t_air_column'], str):
         t_air_index = list(td.columns).index(config['t_air_column'])
@@ -659,11 +738,22 @@ def RC2R2CGokhalePhysNetWallDynamicsConstruction(config: dict, td: TrainingDataG
         x=td.X_train_single,
         measured_change_t_air=td.y_train_single,
         columns=td.columns,
-        rc_kwargs=rc_kwargs
+        rc_kwargs=rc_kwargs,
+        use_case=config["use_case"],
     )
 
     physics_loss_scale = float(np.std(t_wall_train, ddof=1))
     #physics_loss_scale=1.0
+
+    if config["use_tabs_physics_loss"]:
+        tabs_physics_loss_scale = calculate_tabs_temperature_scale(
+            x=td.X_train_single,
+            columns=td.columns,
+            rc_kwargs=rc_kwargs,
+            use_case=config["use_case"]
+        )
+    else:
+        tabs_physics_loss_scale = 1.0
 
     # -------------------------------------------------------------------------
     # neural core model
@@ -727,7 +817,9 @@ def RC2R2CGokhalePhysNetWallDynamicsConstruction(config: dict, td: TrainingDataG
 
     y_nn, _ = core_model(pinn_input)
 
-    physics_layer = RC2R2CGokhalePhysNetWallDynamicsLayer(
+    physics_layer_class = gokhale_wall_layers[config["use_case"]]
+
+    physics_layer = physics_layer_class(
         trainable_rc=config['trainable_rc'],
         use_internal_gains=config["use_internal_gains"],
         **rc_kwargs
@@ -742,6 +834,9 @@ def RC2R2CGokhalePhysNetWallDynamicsConstruction(config: dict, td: TrainingDataG
         wall_dynamics_loss_weight=config['wall_dynamics_loss_weight'],
         prediction_loss_scale=prediction_loss_scale,
         physics_loss_scale=physics_loss_scale,
+        use_tabs_physics_loss=config["use_tabs_physics_loss"],
+        tabs_physics_loss_weight=config["tabs_physics_loss_weight"],
+        tabs_physics_loss_scale=tabs_physics_loss_scale,
         name='pinn_2r2c_gokhale_wall_dynamics',
     )
 

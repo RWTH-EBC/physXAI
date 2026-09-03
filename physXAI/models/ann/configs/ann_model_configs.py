@@ -91,6 +91,7 @@ class RC1R1CConstruction_config(ClassicalANNConstruction_config):
     """
     
     """
+    use_case: Literal["UC1", "UC2"] = "UC1"
     
     predict_delta: bool = True
     t_air_column: Union[str, int]
@@ -99,6 +100,9 @@ class RC1R1CConstruction_config(ClassicalANNConstruction_config):
 
     physics_loss_weight: float = Field(1.0, ge=0)
 
+    use_tabs_physics_loss: bool = False
+    tabs_physics_loss_weight: float = Field(1.0, ge=0)
+
     rc_kwargs: dict = Field(default_factory=dict)
     
 
@@ -106,6 +110,8 @@ class RC2R2CPhysNetConstruction_config(BaseModel):
     """
     
     """
+    use_case: Literal["UC1", "UC2"] = "UC1"
+
     predict_delta: bool = True
     t_air_column: Union[str, int]
     trainable_rc: bool = False
@@ -125,6 +131,9 @@ class RC2R2CPhysNetConstruction_config(BaseModel):
     n_features: Optional[int] = None
 
     physics_loss_weight: float = Field(1.0, ge=0)
+
+    use_tabs_physics_loss: bool = False
+    tabs_physics_loss_weight: float = Field(1.0, ge=0)
 
     rc_kwargs: dict = Field(default_factory=dict)
 
@@ -159,6 +168,8 @@ class RC2R2CGokhalePhysNetConstruction_config(BaseModel):
     """
     
     """
+    use_case: Literal["UC1", "UC2"] = "UC1"
+    
     predict_delta: bool = True
 
     t_air_column: Union[str, int]
@@ -179,6 +190,9 @@ class RC2R2CGokhalePhysNetConstruction_config(BaseModel):
     n_features: Optional[int] = None
 
     physics_loss_weight: float = Field(1.0, ge=0)
+
+    use_tabs_physics_loss: bool = False
+    tabs_physics_loss_weight: float = Field(1.0, ge=0)
 
     rc_kwargs: dict = Field(default_factory=dict)
 
