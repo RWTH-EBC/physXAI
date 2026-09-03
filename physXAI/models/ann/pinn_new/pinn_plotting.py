@@ -53,7 +53,7 @@ def _plot_history_metric(histroy: dict, metric_key: str, y_axis_title: str) -> g
     return figure
 
 
-def _add_weighted_loss_columns(history_frame: pd.DataFrame, physics_loss_weight: float, wall_dynamics_loss_weight: float):
+def _add_weighted_loss_columns(history_frame: pd.DataFrame, physics_loss_weight: float, wall_dynamics_loss_weight: float, tabs_physics_loss_weight: float, use_tabs_physics_loss: bool):
 
     for prefix in ("", "val_"):
         physics_key = f"{prefix}physics_loss"
@@ -66,8 +66,13 @@ def _add_weighted_loss_columns(history_frame: pd.DataFrame, physics_loss_weight:
         if wall_key in history_frame:
             history_frame[f"{prefix}weighted_wall_dynamics_loss"] = wall_dynamics_loss_weight * history_frame[wall_key]
 
+        tabs_key = f"{prefix}tabs_physics_loss"
 
-def _plot_weighted_loss_contributions(history_frame: pd.DataFrame, physics_loss_weight: float, wall_dynamics_loss_weight: float) -> go.Figure:
+        if use_tabs_physics_loss and tabs_key in history_frame:
+            history_frame[f"{prefix}weighted_tabs_physics_loss"] = tabs_physics_loss_weight * history_frame[tabs_key]
+
+
+def _plot_weighted_loss_contributions(history_frame: pd.DataFrame, physics_loss_weight: float, wall_dynamics_loss_weight: float, tabs_physics_loss_weight: float, use_tabs_physics_loss: bool) -> go.Figure:
 
     if "val_prediction_loss" in history_frame:
         prefix = "val_"
@@ -99,6 +104,17 @@ def _plot_weighted_loss_contributions(history_frame: pd.DataFrame, physics_loss_
                 f"{wall_dynamics_loss_weight:g} x Wall Dynamics Loss",
                 (wall_dynamics_loss_weight * history_frame[wall_key]).tolist(),
                 "red",
+            ),
+        )
+
+    tabs_key = f"{prefix}tabs_physics_loss"
+
+    if use_tabs_physics_loss and tabs_key in history_frame:
+        series.append(
+            (
+                f"{tabs_physics_loss_weight:g} x Tabs Physics Loss",
+                (tabs_physics_loss_weight * history_frame[tabs_key]).tolist(),
+                "orange",
             ),
         )
 
@@ -173,6 +189,10 @@ def plot_and_save_pinn_training_history(td: TrainingDataGeneric, training_model,
 
     wall_dynamics_loss_weight = float(getattr(training_model, "wall_dynamics_loss_weight", 0.0))
 
+    use_tabs_physics_loss = bool(getattr(training_model, "use_tabs_physics_loss", False))
+
+    tabs_physics_loss_weight = float(getattr(training_model, "tabs_physics_loss_weight", 0.0))
+
     history_frame = pd.DataFrame(history)
 
     history_frame.index = range(1, len(history_frame) + 1)
@@ -182,6 +202,8 @@ def plot_and_save_pinn_training_history(td: TrainingDataGeneric, training_model,
         history_frame=history_frame,
         physics_loss_weight=physics_loss_weight,
         wall_dynamics_loss_weight=wall_dynamics_loss_weight,
+        use_tabs_physics_loss=use_tabs_physics_loss,
+        tabs_physics_loss_weight=tabs_physics_loss_weight,
     )
 
     rmse_figure = plot_training_history(td)
@@ -232,11 +254,28 @@ def plot_and_save_pinn_training_history(td: TrainingDataGeneric, training_model,
             },
         )
 
+    if use_tabs_physics_loss and "tabs_physics_loss" in history:
+        tabs_loss_figure = _plot_history_metric(
+            histroy=history,
+            metric_key="tabs_physics_loss",
+            y_axis_title="Tabs Physics Loss"
+        )
+
+        figures.append(
+            {
+                "title": "Tabs Physics Loss",
+                "type": "scatter",
+                "figure": tabs_loss_figure,
+            }
+        )
+
     weighted_loss_figure = (
         _plot_weighted_loss_contributions(
             history_frame=history_frame,
             physics_loss_weight=physics_loss_weight,
-            wall_dynamics_loss_weight=wall_dynamics_loss_weight
+            wall_dynamics_loss_weight=wall_dynamics_loss_weight,
+            use_tabs_physics_loss=use_tabs_physics_loss,
+            tabs_physics_loss_weight=tabs_physics_loss_weight,
         )
     )
 
@@ -247,6 +286,10 @@ def plot_and_save_pinn_training_history(td: TrainingDataGeneric, training_model,
             "figure": weighted_loss_figure,
         },
     )
+
+
+
+    
 
     display_name = model_name.replace("_", " ")
 
