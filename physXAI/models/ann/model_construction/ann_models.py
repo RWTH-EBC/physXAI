@@ -255,11 +255,15 @@ def RC1R1CConstruction(config: dict, td: TrainingDataGeneric):
 
     physics_only_indices = {t_ahu_sup_index}
 
-    if "T_tabs_core_mea_k1" in all_columns:
-        physics_only_indices.add(all_columns.index("T_tabs_core_mea_k1"))
+    if config["use_case"] == "UC2":
+        if "T_tabs_core_mea_k1" in all_columns:
+            physics_only_indices.add(all_columns.index("T_tabs_core_mea_k1"))
 
-    if "T_tabs_sup_mea" in all_columns:
-        physics_only_indices.add(all_columns.index("T_tabs_sup_mea"))
+        if "T_tabs_sup_mea" in all_columns:
+            physics_only_indices.add(all_columns.index("T_tabs_sup_mea"))
+
+        if "V_flow_AHU" in all_columns:
+            physics_only_indices.add(all_columns.index("V_flow_AHU"))
 
     core_indices = [
         index
