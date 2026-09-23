@@ -1177,6 +1177,7 @@ class RC2R2CPhysNetModelDeltaT(ANNModel):
                  t_air_column: Union[str, int],
                  encoder_features: list[Union[str, int]],
                  dynamic_features: list[Union[str, int]],
+                 use_case: Literal["UC1", "UC2"] = "UC1",
                  rc_kwargs: Optional[dict] = None,
                  predict_delta: bool = True,
                  encoder_layers: int = 2,
@@ -1188,6 +1189,8 @@ class RC2R2CPhysNetModelDeltaT(ANNModel):
                  trainable_rc: bool = False,
                  use_internal_gains: bool = False,
                  physics_loss_weight: float = 1.0,
+                 use_tabs_physics_loss: bool = False,
+                 tabs_physics_loss_weight: float = 1.0,
                  batch_size: int = 32,
                  epochs: int = 1000,
                  learning_rate: float = 0.001,
@@ -1201,6 +1204,8 @@ class RC2R2CPhysNetModelDeltaT(ANNModel):
         self.predict_delta = predict_delta
 
         self.t_air_column: str = t_air_column
+
+        self.use_case = use_case
 
         self.rc_kwargs = rc_kwargs if rc_kwargs is not None else {}
 
@@ -1219,6 +1224,9 @@ class RC2R2CPhysNetModelDeltaT(ANNModel):
 
         self.physics_loss_weight: float = physics_loss_weight
 
+        self.use_tabs_physics_loss = use_tabs_physics_loss
+        self.tabs_physics_loss_weight = tabs_physics_loss_weight
+
         self.model_config.update({
             'encoder_features': self.encoder_features,
             'encoder_layers': self.encoder_layers,
@@ -1229,12 +1237,16 @@ class RC2R2CPhysNetModelDeltaT(ANNModel):
             'activation_function': self.activation_function,
             'rescale_output': self.rescale_output,
 
+            'use_case': self.use_case,
+
             'predict_delta': self.predict_delta,
             't_air_column': self.t_air_column,
             'trainable_rc': self.trainable_rc,
             'use_internal_gains': self.use_internal_gains,
             'rc_learning_rate_multiplier': self.rc_learning_rate_multiplier,
             'physics_loss_weight': self.physics_loss_weight,
+            'use_tabs_physics_loss': self.use_tabs_physics_loss,
+            'tabs_physics_loss_weight': self.tabs_physics_loss_weight,
 
             'rc_kwargs': self.rc_kwargs,
         })
@@ -1252,6 +1264,8 @@ class RC2R2CPhysNetModelDeltaT(ANNModel):
                 "opt_tau_factor_ext_air": self.rc_learning_rate_multiplier,
                 "opt_kappa_factor_ext_air": self.rc_learning_rate_multiplier,
                 "opt_k_factor_air": self.rc_learning_rate_multiplier,
+
+                "opt_k_tabs_air_w_factor": self.rc_learning_rate_multiplier,
 
                 "raw_theta_solar": self.rc_learning_rate_multiplier,
                 "opt_alpha": self.rc_learning_rate_multiplier,
@@ -1328,12 +1342,16 @@ class RC2R2CPhysNetModelDeltaT(ANNModel):
             'activation_function': self.activation_function,
             'rescale_output': self.rescale_output,
 
+            'use_case': self.use_case,
+
             'predict_delta': self.predict_delta,
             't_air_column': self.t_air_column,
             'trainable_rc': self.trainable_rc,
             'use_internal_gains': self.use_internal_gains,
             'rc_learning_rate_multiplier': self.rc_learning_rate_multiplier,
             'physics_loss_weight': self.physics_loss_weight,
+            'use_tabs_physics_loss': self.use_tabs_physics_loss,
+            'tabs_physics_loss_weight': self.tabs_physics_loss_weight,
 
             'rc_kwargs': self.rc_kwargs,
         })

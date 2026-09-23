@@ -42,7 +42,7 @@ def calculate_tabs_temperature_scale(
     t_tabs_k1_index = rc_kwargs["t_tabs_k1_index"]
     t_tabs_index = rc_kwargs["t_tabs_index"]
 
-    if isinstance(t_tabs_k1_index, (int, np.integer)):
+    if isinstance(t_tabs_index, (int, np.integer)):
         t_tabs_indices = [t_tabs_index]
     else:
         t_tabs_indices = list(t_tabs_index)
