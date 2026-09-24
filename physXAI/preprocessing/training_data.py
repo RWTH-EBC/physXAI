@@ -248,6 +248,37 @@ class TrainingDataMultiStep(TrainingDataGeneric):
 
         self.single_step_metrics = None
 
+        self.closed_loop_metrics = None
+        self.y_train_pred_closed_loop = None
+        self.y_val_pred_closed_loop = None
+        self.y_test_pred_closed_loop = None
+
+    def add_closed_loop_predictions(self, y_train_pred: np.array, y_val_pred: np.array,
+                                    y_test_pred: np.array):
+        """
+        Stores the closed loop predictions, in which the model uses its own predictions
+        as inputs instead of the measured values.
+
+        Args:
+            y_train_pred (np.ndarray): Closed loop predictions on the training set.
+            y_val_pred (Optional[np.ndarray]): Closed loop predictions on the validation set.
+            y_test_pred (np.ndarray): Closed loop predictions on the test set.
+        """
+
+        self.y_train_pred_closed_loop = y_train_pred
+        self.y_val_pred_closed_loop = y_val_pred
+        self.y_test_pred_closed_loop = y_test_pred
+
+    def add_closed_loop_metrics(self, metrics):
+        """
+        Stores the evaluation metrics of the closed loop predictions.
+
+        Args:
+            metrics: The metrics object.
+        """
+
+        self.closed_loop_metrics = metrics
+
     def add_single_step_metrics(self, metrics):
         """
         Stores the calculated evaluation single step metrics.
@@ -321,6 +352,8 @@ class TrainingDataMultiStep(TrainingDataGeneric):
         config = {
             'file_path': self.file_path,
             'metrics': self.metrics.get_config() if self.metrics is not None else None,
+            'closed_loop_metrics': self.closed_loop_metrics.get_config()
+                                   if self.closed_loop_metrics is not None else None,
             'training_time': self.training_time,
             'training_record': self.training_record.history if self.training_record is not None else None,
         }

@@ -152,8 +152,8 @@ class PreprocessingSingleStep(PreprocessingData):
             ignore_nan (bool): If True, rows with NaN values will be dropped. If False, an error is raised if NaNs are present. Default is False.
         """
 
-        super().__init__(inputs, output, shift, time_step, test_size, val_size, random_state, time_index_col,
-                         csv_delimiter, csv_encoding, csv_header, csv_skiprows, ignore_nan)
+        super().__init__(inputs=inputs, output=output, shift=shift, time_step=time_step, test_size=test_size, val_size=val_size, random_state=random_state, time_index_col=time_index_col,
+                         csv_delimiter=csv_delimiter, csv_encoding=csv_encoding, csv_header=csv_header, csv_skiprows=csv_skiprows, ignore_nan=ignore_nan)
 
     def process_data(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
@@ -298,17 +298,19 @@ class PreprocessingMultiStep (PreprocessingData):
             overlapping_sequences (bool): Whether to use overlapping sequences to generate multi-step sequences.
             batch_size (int): Batch size for creating tf.data.Dataset objects.
             init_features (Optional[List[str]]): Features to include in the warmup sequence.
-                                                 If None and warmup_width > 0, defaults to `inputs`.
-                                                 If None and warmup_width <= 0, defaults to empty list.
+                                                 Defaults to `inputs`, which lets a model warm up its
+                                                 own states on the warmup sequence. A separate
+                                                 initialization model can use other features, e.g. the
+                                                 measured output.
         """
-        super().__init__(inputs, output, shift, time_step, test_size, val_size, random_state, time_index_col,
-                         csv_delimiter, csv_encoding, csv_header, csv_skiprows)
+        super().__init__(inputs=inputs, output=output, shift=shift, time_step=time_step, test_size=test_size, val_size=val_size, random_state=random_state, time_index_col=time_index_col,
+                         csv_delimiter=csv_delimiter, csv_encoding=csv_encoding, csv_header=csv_header, csv_skiprows=csv_skiprows)
 
         self.overlapping_sequences = overlapping_sequences
 
-        # Determine initialization features
+        # Determine initialization features.
         if init_features is None:
-            self.init_features: list[str] = self.output
+            self.init_features: list[str] = list(inputs)
         else:
             self.init_features: list[str] = init_features
 

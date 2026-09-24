@@ -471,17 +471,17 @@ class ConstantLayer(keras.Layer):
         )
 
     def call(self, inputs):
-        batch_size = keras.ops.shape(inputs)[0]
-        
-        # Create the full target shape, including the batch dimension
-        # e.g., (batch_size,) + (1,) -> (batch_size, 1)
-        full_shape = (batch_size,) + self.target_shape
-        
+        # Create the full target shape, keeping all axes of the input except the
+        # feature axis. For a batch of samples that is (batch_size,) + target_shape,
+        # for a batch of sequences (batch_size, steps) + target_shape.
+        leading_shape = tuple(keras.ops.shape(inputs))[:-1]
+        full_shape = leading_shape + self.target_shape
+
         return keras.ops.broadcast_to(self.constant, full_shape)
 
     def compute_output_shape(self, input_shape):
-        # The output shape is (batch_size,) + our target_shape
-        return (input_shape[0],) + self.target_shape
+        # The output shape keeps all axes of the input except the feature axis
+        return tuple(input_shape)[:-1] + self.target_shape
 
     def get_config(self):
         config = super().get_config()

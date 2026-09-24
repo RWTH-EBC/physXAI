@@ -31,7 +31,7 @@ x3 = Feature('oveHeaPumY_u')
 x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
 
 # Create Training data
-prep = PreprocessingSingleStep(inputs, output)
+prep = PreprocessingSingleStep(inputs=inputs, output=output)
 # Process Training data
 td = prep.pipeline(file_path)
 

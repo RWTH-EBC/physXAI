@@ -1,13 +1,16 @@
 import os
+from typing import Optional, Union
 import numpy as np
 from physXAI.preprocessing.training_data import TrainingDataMultiStep
 from physXAI.models.ann.configs.ann_model_configs import RNNModelConstruction_config
+from physXAI.models.modular.modular_expression import ModularExpression
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 
-def RNNModelConstruction(config: dict, td: TrainingDataMultiStep):
+def RNNModelConstruction(config: dict, td: TrainingDataMultiStep,
+                         feature_architecture: Optional[ModularExpression] = None):
     """
     Constructs a Recurrent Neural Network (RNN) model for multi-step time series forecasting.
     The model can optionally use a "warmup" sequence to initialize the RNN's hidden state.
@@ -17,6 +20,12 @@ def RNNModelConstruction(config: dict, td: TrainingDataMultiStep):
                        Validated against `RNNModelConstruction_config`.
         td (TrainingDataMultiStep): An object containing the multi-step training data.
                                     It provides shapes for inputs, outputs, and warmup sequences.
+        feature_architecture (list[ModularExpression], optional): Modular expressions that build
+                                    the inputs of the recurrent layer out of the input features. If
+                                    None, the normalized input features are used directly.
+
+    An 'init_layer' of None or 'out_model' builds no separate initialization model, but applies
+    the output model to the warmup sequence, starting from zeros. That is what an MPC does.
 
     Returns:
         keras.Model: The constructed Keras functional model for RNN-based forecasting.
@@ -55,26 +64,37 @@ def RNNModelConstruction(config: dict, td: TrainingDataMultiStep):
     inputs = keras.Input(shape=(out_steps, num_features))
 
     # Output rnn model
-    o_model = out_model(td.X_train[0].reshape(-1, num_features), num_features, rnn_layer, rnn_units,  num_outputs,
-                        rescale_mean, rescale_sigma)
+    o_model = out_model(td.X_train_single, num_features, rnn_layer, rnn_units,  num_outputs,
+                        rescale_mean, rescale_sigma, td=td, feature_architecture=feature_architecture)
 
     # Warmup
     if warmup:
-        # Create warmup model
         initial_value_layer = keras.Input(shape=(warmup_width, num_warmup_features))
-        int_model = init_model(td.X_train[1].reshape(-1, num_warmup_features), warmup_width, num_warmup_features,
-                               init_layer, rnn_layer, rnn_units)
-        state = int_model(initial_value_layer)
+        if init_layer is None or init_layer == 'out_model':
+            # No separate initialization model: the states are warmed up by applying the
+            # output model itself to the measured past, starting from zeros.
+            if num_warmup_features != num_features:
+                raise ValueError(
+                    f"Config Error: With init_layer 'out_model' the warmup sequence has to hold the "
+                    f"same features as the input sequence, since the same model is applied to both. "
+                    f"The warmup has {num_warmup_features} features, the input {num_features}. Set "
+                    f"'init_features' of the preprocessing to the inputs of the model."
+                )
+            int_model = init_zeros(num_features, rnn_units, warmup_width)
+            zero_state = [int_model(initial_value_layer) for _ in range(number_of_states(rnn_layer))]
+            _, *state = o_model([initial_value_layer, zero_state])
+        else:
+            # Create warmup model
+            int_model = init_model(td.X_train[1].reshape(-1, num_warmup_features), warmup_width,
+                                   num_warmup_features, init_layer, rnn_layer, rnn_units)
+            state = int_model(initial_value_layer)
 
     # No warmup
     else:
         # Initialize models with zeros
         initial_value_layer = None
         int_model = init_zeros(num_features, rnn_units, out_steps)
-        if rnn_layer == "LSTM":
-            state = [int_model(inputs), int_model(inputs)]
-        else:
-            state = [int_model(inputs)]
+        state = [int_model(inputs) for _ in range(number_of_states(rnn_layer))]
 
     # Get output predictions
     prediction, *_ = o_model([inputs, state])
@@ -94,6 +114,19 @@ def RNNModelConstruction(config: dict, td: TrainingDataMultiStep):
     o_model.summary()
 
     return model
+
+
+def number_of_states(rnn_layer: str) -> int:
+    """
+    Number of state tensors a recurrent layer carries between two time steps.
+
+    Args:
+        rnn_layer (str): Type of RNN layer ('GRU', 'RNN', 'LSTM').
+
+    Returns:
+        int: 2 for an LSTM, which has a cell state next to its output, 1 otherwise.
+    """
+    return 2 if rnn_layer == "LSTM" else 1
 
 
 def init_model(warmup_df: np.ndarray, warmup_width: int, num_warmup_features: int, init_layer: str,
@@ -175,7 +208,8 @@ def init_zeros(num_features: int, rnn_units: int, out_steps: int):
 
 
 def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_units: int, num_outputs: int,
-              rescale_mean: float, rescale_sigma: float):
+              rescale_mean: float, rescale_sigma: float, td: TrainingDataMultiStep = None,
+              feature_architecture: Optional[ModularExpression] = None):
     """
     Creates the main Keras model that processes an input sequence with an initial RNN state
     to produce predictions and the final RNN state.
@@ -189,6 +223,11 @@ def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_unit
         num_outputs (int): Number of output features to predict at each time step.
         rescale_mean (float): Mean value for denormalizing the model's normalized predictions back to the original scale (used as the offset in the Rescaling layer; inverse z-score transformation: value * sigma + mean).
         rescale_sigma (float): Standard deviation for denormalizing the model's normalized predictions back to the original scale (used as the scale in the Rescaling layer; inverse z-score transformation: value * sigma + mean).
+        td (TrainingDataMultiStep, optional): The training data, needed if a feature architecture is used.
+        feature_architecture (list[ModularExpression], optional): Modular expressions that build the
+                                inputs of the recurrent layer out of the input features. This allows using
+                                physically motivated combinations of features. If None, the normalized input
+                                features are used directly.
 
     Returns:
         keras.Model: A Keras model that takes [main_input_sequence, initial_state(s)]
@@ -197,10 +236,20 @@ def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_unit
     # Input layer
     inputs = keras.Input(shape=(None, num_features))
 
-    # Normalization layer
-    normalization_layer = keras.layers.Normalization()
-    normalization_layer.adapt(inputs_df)
-    normalized_inputs = normalization_layer(inputs)
+    if feature_architecture is None:
+        # Normalization layer
+        normalization_layer = keras.layers.Normalization()
+        normalization_layer.adapt(inputs_df)
+        normalized_inputs = normalization_layer(inputs)
+    else:
+        # The modular expressions slice the features they need out of the last axis of the
+        # input, so they work on sequences just as well as on single time steps. Like for
+        # a ModularANN, they bring their own normalization.
+        channels = [expression.construct(inputs, td) for expression in feature_architecture]
+        if len(channels) == 1:
+            normalized_inputs = channels[0]
+        else:
+            normalized_inputs = keras.layers.Concatenate()(channels)
 
     # RNN layer
     if rnn_layer == "GRU":
