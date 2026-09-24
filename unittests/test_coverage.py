@@ -292,11 +292,11 @@ def test_models_rnn(file_path):
 
     m = RNNModel(epochs=1, rnn_layer='RNN', init_layer='dense')
     m.pipeline(td, save_model=False, plot=False)
-    m = RNNModel(epochs=1, rnn_layer='LSTM')
+    m = RNNModel(epochs=1, rnn_layer='LSTM', init_layer='LSTM')
     m.pipeline(td, save_model=False, plot=False)
-    m = RNNModel(epochs=1, rnn_layer='GRU')
+    m = RNNModel(epochs=1, rnn_layer='GRU', init_layer='GRU')
     m.pipeline(td, save_model=False, plot=False)
-    m = RNNModel(epochs=1, rnn_layer='RNN')
+    m = RNNModel(epochs=1, rnn_layer='RNN', init_layer='RNN')
     m.pipeline(td, save_model=True, plot=False)
 
     prep = PreprocessingMultiStep(inputs=inputs, output=output, label_width=4, warmup_width=0, val_size=0)

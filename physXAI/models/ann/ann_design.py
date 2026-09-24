@@ -12,6 +12,7 @@ from physXAI.models.ann.model_construction.ann_models import ClassicalANNConstru
 from physXAI.models.ann.model_construction.rbf_models import RBFModelConstruction
 from physXAI.models.ann.model_construction.residual_models import LinResidualANNConstruction
 from physXAI.models.ann.model_construction.rnn_models import RNNModelConstruction
+from physXAI.models.modular.modular_expression import ModularExpression
 from physXAI.models.ann.pinn.pinn_loss import multi_y_loss
 from physXAI.plotting.plotting import plot_prediction_correlation, plot_predictions, plot_training_history, \
     plot_metrics_table, subplots, plot_multi_rmse
@@ -640,21 +641,32 @@ class RNNModel(MultiStepModel):
     """
 
     def __init__(self, rnn_units: int = 32, rnn_layer: str = 'RNN', init_layer=None, epochs: int = 1000,
-                 learning_rate: float = 0.001, early_stopping_epochs: Optional[int] = 100, random_seed: int = 42, **kwargs):
+                 learning_rate: float = 0.001, early_stopping_epochs: Optional[int] = 100, random_seed: int = 42,
+                 feature_architecture: Optional[Union[ModularExpression, list[ModularExpression]]] = None,
+                 **kwargs):
         """
         Initializes the RNNModel.
 
         Args:
             rnn_units (int): Number of units in the RNN layer.
             rnn_layer (str): Type of RNN layer ('RNN', 'LSTM', 'GRU').
-            init_layer (str, optional): Type of layer  ('dense', 'RNN', 'LSTM', 'GRU')
-                                        used for initializing RNN state if warmup is used.
-                                        Defaults to the same as `rnn_layer`.
+            init_layer (str, optional): How the RNN state is initialized if warmup is used.
+                                        Defaults to None, which builds no separate
+                                        initialization model but applies the model itself to
+                                        the warmup sequence, starting from zeros. That is what
+                                        an MPC does, so training and MPC see the same thing.
+                                        It requires 'init_features' of the preprocessing to be
+                                        the inputs of the model, which is their default.
+                                        A layer type ('dense', 'RNN', 'LSTM', 'GRU') instead
+                                        trains a separate model on the warmup sequence.
+                                        'out_model' is an explicit spelling of the default.
             epochs (int): Number of times to iterate over the entire training dataset.
             learning_rate (float): Learning rate for the Adam optimizer.
             early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
                                          If None, early stopping is disabled.
             random_seed (int): Seed for random number generators to ensure reproducibility.
+            feature_architecture (optional): A modular expression, or a list of them, building
+                                        the inputs of the recurrent layer out of the input features.
         """
 
         super().__init__(**kwargs)
@@ -665,12 +677,12 @@ class RNNModel(MultiStepModel):
         self.random_seed: int = random_seed
         keras.utils.set_random_seed(random_seed)
 
-        if init_layer is None:
-            init_layer = rnn_layer
-
         self.rnn_units: int = rnn_units
         self.rnn_layer: str = rnn_layer
         self.init_layer: str = init_layer
+        if isinstance(feature_architecture, ModularExpression):
+            feature_architecture = [feature_architecture]
+        self.feature_architecture: Optional[list[ModularExpression]] = feature_architecture
 
         self.model_config = {
             'rnn_units': rnn_units,
@@ -684,7 +696,7 @@ class RNNModel(MultiStepModel):
         """
 
         td = kwargs['td']
-        model = RNNModelConstruction(self.model_config, td)
+        model = RNNModelConstruction(self.model_config, td, feature_architecture=self.feature_architecture)
         return model
 
     def compile_model(self, model):
@@ -795,6 +807,21 @@ class RNNModel(MultiStepModel):
             'epochs': self.epochs,
             'learning_rate': self.learning_rate,
             'early_stopping_epochs': self.early_stopping_epochs,
-            'random_seed': self.random_seed
+            'random_seed': self.random_seed,
+            'feature_architecture': [expression.name for expression in self.feature_architecture]
+                                    if self.feature_architecture is not None else None,
         })
         return config
+
+    @classmethod
+    def from_config(cls, config: dict) -> 'RNNModel':
+        architecture = config.get('feature_architecture')
+        if architecture is not None:
+            expressions = list()
+            for name in architecture:
+                a = ModularExpression.get_existing_modular_expression(name)
+                assert a is not None, (f"ModularExpression {name} not found, make sure to construct required "
+                                       f"modular expressions before constructing {cls.__name__}.")
+                expressions.append(a)
+            config['feature_architecture'] = expressions
+        return cls(**config)

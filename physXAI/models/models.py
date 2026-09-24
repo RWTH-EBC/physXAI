@@ -487,6 +487,11 @@ class MultiStepModel(AbstractModel, ABC):
         metrics = MetricsMultiStep(td)
         td.add_metrics(metrics)
 
+        # The metrics above are teacher forced: at every time step the model sees the
+        # measured value of the features it predicts itself.
+        from physXAI.evaluation.closed_loop import evaluate_closed_loop
+        evaluate_closed_loop(model, td)
+
     @abstractmethod
     def plot(self, td: TrainingDataMultiStep):
         """

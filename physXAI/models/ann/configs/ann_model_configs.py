@@ -75,13 +75,13 @@ class CMNNModelConstruction_config(ClassicalANNConstruction_config):
 class RNNModelConstruction_config(BaseModel):
     rnn_units: int = Field(32, gt=0)
     rnn_layer: Literal["RNN", "GRU", "LSTM"] = "RNN"
-    init_layer: Optional[Literal["dense", "RNN", "GRU", "LSTM"]] = "RNN"
+    init_layer: Optional[Literal["dense", "out_model", "RNN", "GRU", "LSTM"]] = "RNN"
 
     @field_validator("init_layer")
     def validate_init_layer(cls, v, info):
         if v is not None:
-            if v != "dense":
+            if v not in ("dense", "out_model"):
                 if v is not info.data.get('rnn_layer'):
                     raise ValueError(f"init_layer {v} should be the same as rnn_layer "
-                                     f"{info.data.get('rnn_layer')} or dense")
+                                     f"{info.data.get('rnn_layer')}, dense or out_model")
         return v

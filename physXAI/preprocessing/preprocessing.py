@@ -298,17 +298,19 @@ class PreprocessingMultiStep (PreprocessingData):
             overlapping_sequences (bool): Whether to use overlapping sequences to generate multi-step sequences.
             batch_size (int): Batch size for creating tf.data.Dataset objects.
             init_features (Optional[List[str]]): Features to include in the warmup sequence.
-                                                 If None and warmup_width > 0, defaults to `inputs`.
-                                                 If None and warmup_width <= 0, defaults to empty list.
+                                                 Defaults to `inputs`, which lets a model warm up its
+                                                 own states on the warmup sequence. A separate
+                                                 initialization model can use other features, e.g. the
+                                                 measured output.
         """
         super().__init__(inputs=inputs, output=output, shift=shift, time_step=time_step, test_size=test_size, val_size=val_size, random_state=random_state, time_index_col=time_index_col,
                          csv_delimiter=csv_delimiter, csv_encoding=csv_encoding, csv_header=csv_header, csv_skiprows=csv_skiprows)
 
         self.overlapping_sequences = overlapping_sequences
 
-        # Determine initialization features
+        # Determine initialization features.
         if init_features is None:
-            self.init_features: list[str] = self.output
+            self.init_features: list[str] = list(inputs)
         else:
             self.init_features: list[str] = init_features
 

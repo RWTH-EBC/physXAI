@@ -139,7 +139,7 @@ class MetricsMultiStep(Metrics):
     time series forecasting models. It evaluates overall performance and performance at each step.
     """
 
-    def __init__(self, td: TrainingDataMultiStep):
+    def __init__(self, td: TrainingDataMultiStep, predictions: tuple = None):
         """
         Initializes the MetricsMultiStep object. Calculates overall metrics for train,
         validation (if available), and test sets, as well as step-wise RMSE for each set.
@@ -147,26 +147,34 @@ class MetricsMultiStep(Metrics):
         Args:
             td (TrainingDataMultiStep): An object containing the true and predicted values
                                         for multi-step forecasts.
+            predictions (tuple, optional): Predictions for the training, validation and test
+                                        set to evaluate instead of the ones stored in `td`,
+                                        e.g. closed loop predictions.
         """
 
-        self.train_kpis = self.evaluate(td.y_train.reshape(-1, 1), td.y_train_pred.reshape(-1, 1), label='Train')
+        if predictions is None:
+            y_train_pred, y_val_pred, y_test_pred = td.y_train_pred, td.y_val_pred, td.y_test_pred
+        else:
+            y_train_pred, y_val_pred, y_test_pred = predictions
+
+        self.train_kpis = self.evaluate(td.y_train.reshape(-1, 1), y_train_pred.reshape(-1, 1), label='Train')
         if td.y_val is not None:
-            self.val_kpis = self.evaluate(td.y_val.reshape(-1, 1), td.y_val_pred.reshape(-1, 1), label='Val')
+            self.val_kpis = self.evaluate(td.y_val.reshape(-1, 1), y_val_pred.reshape(-1, 1), label='Val')
         else:
             self.val_kpis = None
-        self.test_kpis = self.evaluate(td.y_test.reshape(-1, 1), td.y_test_pred.reshape(-1, 1), label='Test')
+        self.test_kpis = self.evaluate(td.y_test.reshape(-1, 1), y_test_pred.reshape(-1, 1), label='Test')
 
         # Stepwise RMSE
         rmse_train_l = list[float]()
         rmse_val_l = list[float]()
         rmse_test_l = list[float]()
         for i in range(td.y_train.shape[1]):
-            _, rmse_train, _ = self.evaluate_step(td.y_train, td.y_train_pred, i)
-            _, rmse_test, _ = self.evaluate_step(td.y_test, td.y_test_pred, i)
+            _, rmse_train, _ = self.evaluate_step(td.y_train, y_train_pred, i)
+            _, rmse_test, _ = self.evaluate_step(td.y_test, y_test_pred, i)
             rmse_train_l.append(rmse_train)
             rmse_test_l.append(rmse_test)
             if td.y_val is not None:
-                _, rmse_val, _ = self.evaluate_step(td.y_val, td.y_val_pred, i)
+                _, rmse_val, _ = self.evaluate_step(td.y_val, y_val_pred, i)
                 rmse_val_l.append(rmse_val)
         self.rmse_train_l = rmse_train_l
         if td.y_val is not None:

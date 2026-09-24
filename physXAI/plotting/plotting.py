@@ -156,14 +156,24 @@ def plot_training_history(td: TrainingDataGeneric) -> go.Figure:
 
 def plot_multi_rmse(td: TrainingDataMultiStep) -> go.Figure:
     fig1 = go.Figure()
-    fig1.add_trace(go.Scatter(x=np.array(range(1, len(td.metrics.rmse_train_l)+1)), y=np.array(td.metrics.rmse_train_l),
-                              name='Train', mode='lines', marker=dict(color='green')))
-    if td.y_val is not None:
-        fig1.add_trace(go.Scatter(x=np.array(range(1, len(td.metrics.rmse_val_l) + 1)),
-                                  y=np.array(td.metrics.rmse_val_l), name='Val',
-                                  mode='lines', marker=dict(color='blue')))
-    fig1.add_trace(go.Scatter(x=np.array(range(1, len(td.metrics.rmse_test_l)+1)), y=np.array(td.metrics.rmse_test_l),
-                              name='Test', mode='lines', marker=dict(color='red')))
+
+    def add_rmse(metrics, dashed: bool):
+        suffix = ' (closed loop)' if dashed else ''
+        line = dict(dash='dash') if dashed else dict()
+        fig1.add_trace(go.Scatter(x=np.array(range(1, len(metrics.rmse_train_l)+1)),
+                                  y=np.array(metrics.rmse_train_l), name='Train' + suffix,
+                                  mode='lines', marker=dict(color='green'), line=line))
+        if td.y_val is not None:
+            fig1.add_trace(go.Scatter(x=np.array(range(1, len(metrics.rmse_val_l) + 1)),
+                                      y=np.array(metrics.rmse_val_l), name='Val' + suffix,
+                                      mode='lines', marker=dict(color='blue'), line=line))
+        fig1.add_trace(go.Scatter(x=np.array(range(1, len(metrics.rmse_test_l)+1)),
+                                  y=np.array(metrics.rmse_test_l), name='Test' + suffix,
+                                  mode='lines', marker=dict(color='red'), line=line))
+
+    add_rmse(td.metrics, dashed=False)
+    if td.closed_loop_metrics is not None:
+        add_rmse(td.closed_loop_metrics, dashed=True)
 
     fig1.update_layout(
         xaxis_title="Prediction Step",
