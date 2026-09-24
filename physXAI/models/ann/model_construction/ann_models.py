@@ -9,11 +9,11 @@ from physXAI.models.ann.configs.ann_model_configs import (ClassicalANNConstructi
                                                                  RC2R2CGokhalePhysNetConstruction_config,
                                                                  RC2R2CGokhalePhysNetWallDynamicsConstruction_config)
 from physXAI.models.ann.keras_models.keras_models import NonNegPartial, ConcaveActivation, SaturatedActivation, InputSliceLayer
-from physXAI.models.ann.pinn_new.rc_layers import RC1R1CLayerUC1, RC1R1CLayerUC2, RC2R2CPhysNetLayerUC1, RC2R2CPhysNetLayerUC2, RC2R2CGokhalePhysNetLayerUC1, RC2R2CGokhalePhysNetLayerUC2, RC2R2CGokhalePhysNetWallDynamicsLayerUC1, RC2R2CGokhalePhysNetWallDynamicsLayerUC2
+from physXAI.models.ann.pinn_new.rc_layers import RC1R1CLayerUC1, RC1R1CLayerUC2, RC2R2CPhysNetLayerUC1, RC2R2CPhysNetLayerUC2, RC2R2CPhysNetDeltaTLayerUC1, RC2R2CPhysNetDeltaTLayerUC2, RC2R2CGokhalePhysNetLayerUC1, RC2R2CGokhalePhysNetLayerUC2, RC2R2CGokhalePhysNetWallDynamicsLayerUC1, RC2R2CGokhalePhysNetWallDynamicsLayerUC2
 from physXAI.models.ann.pinn_new.feature_index import _resolve_feature_indices
 from physXAI.models.ann.pinn_new.calculate_wall_temperature import calculate_wall_temperature_for_scaling
 from physXAI.models.ann.pinn_new.calculate_tabs_temperature import calculate_tabs_temperature_scale
-from physXAI.models.ann.pinn_new.pinn_keras_models import RC1R1CKerasModel, RC2R2CPhysNetKerasModel, RC2R2CGokhalePhysNetKerasModel, RC2R2CGokhalePhysNetWallDynamicsKerasModel
+from physXAI.models.ann.pinn_new.pinn_keras_models import RC1R1CKerasModel, RC2R2CPhysNetKerasModel, RC2R2CPhysNetDeltaTKerasModel, RC2R2CGokhalePhysNetKerasModel, RC2R2CGokhalePhysNetWallDynamicsKerasModel
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
@@ -332,6 +332,8 @@ def RC1R1CConstruction(config: dict, td: TrainingDataGeneric):
         **rc_kwargs,
     )
 
+    model_name = "pinn_1r1c" if not config["use_tabs_physics_loss"] else "pinn_1r1c_tabs"
+    
     model = RC1R1CKerasModel(
         inputs=pinn_input,
         outputs=y_nn,
@@ -344,7 +346,7 @@ def RC1R1CConstruction(config: dict, td: TrainingDataGeneric):
         use_tabs_physics_loss=config["use_tabs_physics_loss"],
         tabs_physics_loss_weight=config["tabs_physics_loss_weight"],
         tabs_physics_loss_scale=tabs_physics_loss_scale,
-        name="pinn_1r1c",
+        name=model_name,
     )
 
     return model
@@ -504,6 +506,8 @@ def RC2R2CPhysNetConstruction(config: dict, td: TrainingDataGeneric):
         **rc_kwargs,
     )
 
+    model_name = "pinn_2r2c" if not config["use_tabs_physics_loss"] else "pinn_2r2c_tabs"
+
     model = RC2R2CPhysNetKerasModel(
         inputs=pinn_input,
         outputs=y_nn,
@@ -515,7 +519,171 @@ def RC2R2CPhysNetConstruction(config: dict, td: TrainingDataGeneric):
         use_tabs_physics_loss=config["use_tabs_physics_loss"],
         tabs_physics_loss_weight=config["tabs_physics_loss_weight"],
         tabs_physics_loss_scale=tabs_physics_loss_scale,
-        name="pinn_2r2c",
+        name=model_name,
+    )
+    
+    return model
+
+
+def RC2R2CPhysNetDeltaTConstruction(config: dict, td: TrainingDataGeneric):
+    """
+    
+    """
+    config = RC2R2CPhysNetConstruction_config.model_validate(config).model_dump()
+
+    rc2r2c_layers = {
+        "UC1": RC2R2CPhysNetDeltaTLayerUC1,
+        "UC2": RC2R2CPhysNetDeltaTLayerUC2,
+    }
+
+    encoder_layers = config['encoder_layers']
+    encoder_neurons = config['encoder_neurons']
+    if isinstance(encoder_neurons, int):
+        encoder_neurons= [encoder_neurons] * encoder_layers
+    else:
+        assert len(encoder_neurons) == encoder_layers
+
+    dynamic_layers = config['dynamic_layers']
+    dynamic_neurons = config['dynamic_neurons']
+    if isinstance(dynamic_neurons, int):
+        dynamic_neurons= [dynamic_neurons] * dynamic_layers
+    else:
+        assert len(dynamic_neurons) == dynamic_layers
+
+    if config['n_features'] is not None:
+        n_features = config['n_features']
+    else:
+        n_features = td.X_train_single.shape[1]
+
+    activation_function = config['activation_function']
+    if isinstance(activation_function, str):
+        activation_function = [activation_function] * (encoder_layers + dynamic_layers)
+    else:
+        assert len(activation_function)== (encoder_layers + dynamic_layers)
+
+    encoder_activation = activation_function[:encoder_layers]
+    dynamic_activation = activation_function[encoder_layers:]
+
+    if isinstance(config['t_air_column'], str):
+        t_air_index = list(td.columns).index(config['t_air_column'])
+    else:
+        t_air_index = config['t_air_column']
+    
+
+    rc_kwargs = dict(config['rc_kwargs'])
+    rc_kwargs['t_air_index'] = t_air_index
+    rc_kwargs['predict_delta'] = config['predict_delta']
+
+    prediction_loss_scale = float(np.std(td.y_train_single, ddof=1))
+    #prediction_loss_scale=1.0
+
+    physics_loss_scale = prediction_loss_scale
+
+    if config["use_tabs_physics_loss"]:
+        tabs_physics_loss_scale = calculate_tabs_temperature_scale(
+            x=td.X_train_single,
+            columns=td.columns,
+            rc_kwargs=rc_kwargs,
+            use_case=config["use_case"]
+        )
+    else:
+        tabs_physics_loss_scale = 1.0
+
+    encoder_indices = _resolve_feature_indices(config['encoder_features'], td.columns)
+    dynamic_indices = _resolve_feature_indices(config['dynamic_features'], td.columns)
+
+
+    # -------------------------------------------------------------------------
+    # neural core model
+    # -------------------------------------------------------------------------
+    core_input = keras.layers.Input(shape=(n_features,), name='core_input')
+
+    x_encoder_input = InputSliceLayer(feature_indices=encoder_indices, name='encoder_input_slice')(core_input)
+    x_dynamic_input = InputSliceLayer(feature_indices=dynamic_indices, name='dynamic_input_slice')(core_input)
+
+    # Add normalization layer
+    if config['normalize']:
+        encoder_normalization = keras.layers.Normalization()
+        encoder_normalization.adapt(td.X_train_single[:,encoder_indices])
+        x_encoder = encoder_normalization(x_encoder_input)
+
+        dynamic_normalization = keras.layers.Normalization()
+        dynamic_normalization.adapt(td.X_train_single[:,dynamic_indices])
+        x_dynamic = dynamic_normalization(x_dynamic_input)
+    else:
+        x_encoder = x_encoder_input
+        x_dynamic = x_dynamic_input
+
+    # -------------------------------------------------------------------------
+    # Encoder branch
+    # -------------------------------------------------------------------------
+    for i in range(0, encoder_layers):
+        x_encoder = keras.layers.Dense(encoder_neurons[i], activation=encoder_activation[i])(x_encoder)
+
+    z_latent_core = keras.layers.Dense(1, activation='linear', name='t_wall_latent_dense')(x_encoder)
+
+    # -------------------------------------------------------------------------
+    # Dynamic branch
+    # -------------------------------------------------------------------------
+    x_dynamic = keras.layers.Concatenate()([x_dynamic, z_latent_core])
+    for i in range(0, dynamic_layers):
+        # For each layer add dense
+        x_dynamic = keras.layers.Dense(dynamic_neurons[i], activation=dynamic_activation[i])(x_dynamic)
+
+    # Add output layer
+    output_name = 'change_t_air_dense' if config['predict_delta'] else 't_air_dense'
+    y_core = keras.layers.Dense(1, activation='linear', name=output_name)(x_dynamic)
+
+    if config['normalize']:
+        z_rescale_mean = float(np.mean(td.X_train_single[:, [t_air_index]]))
+        z_rescale_sigma = float(np.std(td.X_train_single[:, [t_air_index]], ddof=1))
+
+        #z_rescale_mean = float(np.mean(t_wall_train))
+        #z_rescale_sigma = float(np.std(t_wall_train, ddof=1))
+
+        z_latent_core = keras.layers.Rescaling(scale=z_rescale_sigma, offset=z_rescale_mean)(z_latent_core)
+
+    # Add rescaling
+    if config['rescale_output']:
+        # Rescaling for output layer
+        rescale_mean = float(np.mean(td.y_train_single))
+        rescale_sigma = float(np.std(td.y_train_single, ddof=1))
+        y_core = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(y_core)
+
+    core_model = keras.models.Model(inputs=core_input, outputs=[y_core, z_latent_core], name='core_model')
+
+    # -------------------------------------------------------------------------
+    # PINN
+    # -------------------------------------------------------------------------
+    pinn_input = keras.layers.Input(shape=(n_features,), name='pinn_input')
+
+    y_nn, _ = core_model(pinn_input)
+
+    # -------------------------------------------------------------------------
+    # 2R2C physics branch
+    # -------------------------------------------------------------------------
+    physics_layer_class = rc2r2c_layers[config["use_case"]]    
+    
+    physics_layer = physics_layer_class(
+        trainable_rc=config["trainable_rc"],
+        use_internal_gains=config["use_internal_gains"],
+        **rc_kwargs,
+    )
+
+    model_name = "pinn_2r2c_deltaT" if not config["use_tabs_physics_loss"] else "pinn_2r2c_deltaT_tabs"
+
+    model = RC2R2CPhysNetDeltaTKerasModel(
+        inputs=pinn_input,
+        outputs=y_nn,
+        core_model=core_model,
+        physics_layer=physics_layer,
+        physics_loss_weight=config["physics_loss_weight"],
+        prediction_loss_scale=prediction_loss_scale,
+        physics_loss_scale=physics_loss_scale,
+        use_tabs_physics_loss=config["use_tabs_physics_loss"],
+        tabs_physics_loss_weight=config["tabs_physics_loss_weight"],
+        tabs_physics_loss_scale=tabs_physics_loss_scale,
+        name=model_name,
     )
     
     return model
@@ -666,6 +834,8 @@ def RC2R2CGokhalePhysNetConstruction(config: dict, td: TrainingDataGeneric):
         use_internal_gains=config["use_internal_gains"],
         **rc_kwargs
     )
+
+    model_name = "pinn_2r2c_gokhale" if not config["use_tabs_physics_loss"] else "pinn_2r2c_gokhale_tabs"
     
     model = RC2R2CGokhalePhysNetKerasModel(
         inputs=pinn_input,
@@ -678,7 +848,7 @@ def RC2R2CGokhalePhysNetConstruction(config: dict, td: TrainingDataGeneric):
         use_tabs_physics_loss=config["use_tabs_physics_loss"],
         tabs_physics_loss_weight=config["tabs_physics_loss_weight"],
         tabs_physics_loss_scale=tabs_physics_loss_scale,
-        name='pinn_2r2c_gokhale'
+        name=model_name,
     )
 
     return model
@@ -828,6 +998,8 @@ def RC2R2CGokhalePhysNetWallDynamicsConstruction(config: dict, td: TrainingDataG
         use_internal_gains=config["use_internal_gains"],
         **rc_kwargs
     )
+
+    model_name = "pinn_2r2c_gokhale_wall_dynamics" if not config["use_tabs_physics_loss"] else "pinn_2r2c_gokhale_wall_dynamics_tabs"
     
     model = RC2R2CGokhalePhysNetWallDynamicsKerasModel(
         inputs=pinn_input,
@@ -841,7 +1013,7 @@ def RC2R2CGokhalePhysNetWallDynamicsConstruction(config: dict, td: TrainingDataG
         use_tabs_physics_loss=config["use_tabs_physics_loss"],
         tabs_physics_loss_weight=config["tabs_physics_loss_weight"],
         tabs_physics_loss_scale=tabs_physics_loss_scale,
-        name='pinn_2r2c_gokhale_wall_dynamics',
+        name=model_name,
     )
 
     return model

@@ -645,7 +645,318 @@ class RC2R2CPhysNetLayerUC1(keras.Layer):
     @classmethod
     def from_config(cls, config):
         return cls(**config)
+
+
+@keras.saving.register_keras_serializable(package="custom_layer", name="RC2R2CPhysNetDeltaTLayerUC1",)
+class RC2R2CPhysNetDeltaTLayerUC1(keras.Layer):
+    def __init__(
+        self,
+        time_step: float,
+        r_win: float,
+        r_ext: float,
+        c_air: float,
+        t_air_index: int,
+        t_amb_index: int,
+        theta_solar_init: float = 1.75,
+        alpha_init: float = 1.0,
+        beta_init: float = 1.0,
+        v_flow_ahu_index: FeatureIndex = None,
+        t_ahu_sup_index: FeatureIndex = None,
+        t_sup_w_h_index: FeatureIndex = None,
+        y_valve_h_index: FeatureIndex = None,
+        h_dir_nor_index: FeatureIndex = None,
+        q_int_index: FeatureIndex = None,
+        predict_delta: bool = True,
+        use_internal_gains: bool = False,
+        trainable_rc: bool = False,
+        epsilon: float = 1e-6,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+
+        if time_step <= 0:
+            raise ValueError("time_step must be positive")
+        
+        if r_win <= 0:
+            raise ValueError("resistance of the window must be positive")
+        
+        if r_ext <= 0:
+            raise ValueError("resistance of the wall must be positive")
+        
+        if c_air <= 0:
+            raise ValueError("capacitance of the air must be positive")
+        
+        if theta_solar_init <= 0:
+            raise ValueError("theta_solar_init must be positive")
+        
+        self.time_step = float(time_step)
+
+        self.initial_r_win = float(r_win)
+        self.initial_r_ext = float(r_ext)
+        self.initial_c_air = float(c_air)
+        self.theta_solar_init = float(theta_solar_init)
+        self.alpha_init = float(alpha_init)
+        self.beta_init = float(beta_init)
+
+        self.initial_tau_win_air = self.initial_r_win * self.initial_c_air
+        self.initial_kappa_win_air = 1.0 / self.initial_tau_win_air
+        self.initial_tau_ext_air = self.initial_r_ext * self.initial_c_air
+        self.initial_kappa_ext_air = 1.0 / self.initial_tau_ext_air
+        self.initial_k_air = 1.0 / self.initial_c_air
+
+        self.t_air_index = int(t_air_index)
+        self.t_amb_index = int(t_amb_index)
+
+        self.v_flow_ahu_index = v_flow_ahu_index
+        self.t_ahu_sup_index = t_ahu_sup_index
+        self.t_sup_w_h_index = t_sup_w_h_index
+        self.y_valve_h_index = y_valve_h_index
+        self.h_dir_nor_index = h_dir_nor_index
+        self.q_int_index = q_int_index
+
+        self.predict_delta = bool(predict_delta)
+        self.use_internal_gains = bool(use_internal_gains)
+        self.trainable_rc = bool(trainable_rc)
+
+        if self.use_internal_gains and not self.trainable_rc:
+            raise ValueError("Configuration error: 'use_internal_gains' can only be True if 'trainable_rc' is also set to True.")
+        
+        self.epsilon = float(epsilon)
+
+        self.rho_air = 1.204
+        self.cp_air = 1005.0
+        self.V_flow_w_h_max = 100
+        self.valve_a = 3.2
+        self.m_QT = 0.4464068811
+        self.m_QT2 = -0.0003313083
+        self.KQ_w1 = 0.0199019187
+        self.KQ_w1a1 = -0.0000048959
+        self.KQ_w2 = -0.0001255783
+        self.KQ_w1a2 = -0.0000000062
+        self.KQ_w2a1 = 0.0000000597
+        self.KQ_w3 = 0.0000002721
+
+    def build(self, input_shape):
+        """
+        
+        """
+        theta_solar_initializer = _inverse_softplus(self.theta_solar_init)
+        initializer_val = _inverse_softplus(1.0)
+
+        alpha_initializer = _inverse_sigmoid(self.alpha_init)
+        beta_initializer = _inverse_sigmoid(self.beta_init)
+
+        self.opt_kappa_factor_win_air = self.add_weight(
+            name="opt_kappa_factor_win_air",
+            shape=(1,),
+            initializer=keras.initializers.Constant(initializer_val),
+            trainable=self.trainable_rc
+        )
+
+        self.opt_kappa_factor_ext_air = self.add_weight(
+            name="opt_kappa_factor_ext_air",
+            shape=(1,),
+            initializer=keras.initializers.Constant(initializer_val),
+            trainable=self.trainable_rc
+        )
+
+        self.opt_k_factor_air = self.add_weight(
+            name="opt_k_factor_air",
+            shape=(1,),
+            initializer=keras.initializers.Constant(initializer_val),
+            trainable=self.trainable_rc
+        )
+
+        self.raw_theta_solar = self.add_weight(
+            name="raw_theta_solar",
+            shape=(1,),
+            initializer=keras.initializers.Constant(theta_solar_initializer),
+            trainable=True 
+        )
+
+        self.opt_alpha = self.add_weight(
+            name="opt_alpha",
+            shape=(1,),
+            initializer=keras.initializers.Constant(alpha_initializer),
+            trainable=True
+        )
+
+        self.opt_beta = self.add_weight(
+            name="opt_beta",
+            shape=(1,),
+            initializer=keras.initializers.Constant(beta_initializer),
+            trainable=self.use_internal_gains
+        )
+
+
+        super().build(input_shape)
+
+    def _positive_parameter(self, raw_parameter):
+        """
+        
+        """
+        return keras.activations.softplus(raw_parameter) + self.epsilon
     
+
+    def _take_feature(self, inputs, feature_index: FeatureIndex, reference):
+        """
+        
+        """
+        if feature_index is None:
+            return keras.ops.zeros_like(reference)
+        
+        if isinstance(feature_index, int):
+            indices = [feature_index]
+        else:
+            indices = list(feature_index)
+
+        extracted = keras.ops.take(
+            inputs,
+            indices,
+            axis=-1,
+        )
+
+        return keras.ops.sum(extracted, axis=-1, keepdims=True)
+    
+    def call(self, inputs, **kwargs):
+        """
+        
+        """
+        if not isinstance(inputs, (list, tuple)) or len(inputs) != 2:
+            raise ValueError("RC2R2CPhysNetDeltaTlayer expects [x, z_latent_pred]!")
+
+        x, z_latent_pred = inputs
+
+        t_air = self._take_feature(
+            inputs=x,
+            feature_index=self.t_air_index,
+            reference=x,
+        )
+
+        t_amb = self._take_feature(
+            inputs=x,
+            feature_index=self.t_amb_index,
+            reference=t_air,
+        )
+
+        v_flow_ahu = self._take_feature(
+            inputs=x, 
+            feature_index=self.v_flow_ahu_index, 
+            reference=t_air
+        )
+
+        t_ahu_sup = self._take_feature(
+            inputs=x, 
+            feature_index=self.t_ahu_sup_index, 
+            reference=t_air
+        )
+
+        t_sup_w_h = self._take_feature(
+            inputs=x,
+            feature_index=self.t_sup_w_h_index,
+            reference=t_air
+        )
+
+        y_valve_h = self._take_feature(
+            inputs=x,
+            feature_index=self.y_valve_h_index,
+            reference=t_air
+        )
+
+        h_dir_nor = self._take_feature(
+            inputs=x, 
+            feature_index=self.h_dir_nor_index, 
+            reference=t_air
+        )
+
+        
+        q_int = self._take_feature(
+            inputs=x, 
+            feature_index=self.q_int_index, 
+            reference=t_air
+        )
+
+        kappa_factor_win_air = self._positive_parameter(self.opt_kappa_factor_win_air)
+        kappa_factor_ext_air = self._positive_parameter(self.opt_kappa_factor_ext_air)
+        k_factor_air = self._positive_parameter(self.opt_k_factor_air)
+
+        kappa_phys_win_air = kappa_factor_win_air * self.initial_kappa_win_air
+        kappa_phys_ext_air = kappa_factor_ext_air * self.initial_kappa_ext_air
+        k_phys_air = k_factor_air * self.initial_k_air
+
+        theta_solar = self._positive_parameter(self.raw_theta_solar)
+        alpha = keras.activations.sigmoid(self.opt_alpha)
+        beta = keras.activations.sigmoid(self.opt_beta)
+
+        v_flow_m3_s = v_flow_ahu / 3600.0
+        h_ahu = self.rho_air * self.cp_air * v_flow_m3_s
+
+        V_flow_w_h = self.V_flow_w_h_max * (keras.ops.exp(self.valve_a * y_valve_h / 100) - 1) / (keras.ops.exp(self.valve_a) - 1)
+        QT = self.m_QT * v_flow_ahu + self.m_QT2 * v_flow_ahu**2
+        KQ =  self.KQ_w3 * V_flow_w_h**3 + self.KQ_w2 * V_flow_w_h**2 + self.KQ_w1 * V_flow_w_h + self.KQ_w1a1 * v_flow_ahu * V_flow_w_h + self.KQ_w1a2 * v_flow_ahu**2 * V_flow_w_h + self.KQ_w2a1 * v_flow_ahu * V_flow_w_h**2
+        q_did = QT * (t_sup_w_h - t_air) * KQ / (1 + QT * 0.86 / (2*V_flow_w_h + 1))
+
+        q_solar = theta_solar * h_dir_nor
+
+        q_ahu = h_ahu * (t_ahu_sup - t_air)
+
+        if self.use_internal_gains:
+            q_int = q_int
+        else:
+            q_int = 0.0
+
+        term_q = k_phys_air * (q_did + q_ahu + alpha * q_solar + beta * q_int)
+        term_wall_air = kappa_phys_ext_air * (z_latent_pred - t_air)
+        term_win_air = kappa_phys_win_air * (t_amb - t_air)
+
+        delta_t_phys = self.time_step * (term_q + term_wall_air + term_win_air)
+
+        if self.predict_delta:
+            return delta_t_phys
+
+        return t_air + delta_t_phys
+
+
+    def compute_output_shape(self, input_shape):
+        return tuple(input_shape[0][:-1]) + (1,)
+    
+
+    def get_config(self):
+        """
+        
+        """
+        config = super().get_config()
+
+        config.update(
+            {
+                "time_step": self.time_step,
+                "r_win": self.initial_r_win,
+                "r_ext": self.initial_r_ext,
+                "c_air": self.initial_c_air,
+                "theta_solar_init": self.theta_solar_init,
+                "alpha_init": self.alpha_init,
+                "beta_init": self.beta_init,
+                "t_air_index": self.t_air_index,
+                "t_amb_index": self.t_amb_index,
+                "v_flow_ahu_index": self.v_flow_ahu_index,
+                "t_ahu_sup_index": self.t_ahu_sup_index,
+                "t_sup_w_h_index": self.t_sup_w_h_index,
+                "y_valve_h_index": self.y_valve_h_index,
+                "h_dir_nor_index": self.h_dir_nor_index,
+                "q_int_index": self.q_int_index,
+                "predict_delta": self.predict_delta,
+                "use_internal_gains": self.use_internal_gains,
+                "trainable_rc": self.trainable_rc,
+                "epsilon": self.epsilon,
+            }
+        )
+
+        return config
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
 
 @keras.saving.register_keras_serializable(package="custom_layer", name="RC2R2CGokhalePhysNetLayerUC1",)
 class RC2R2CGokhalePhysNetLayerUC1(keras.Layer):
@@ -1878,7 +2189,333 @@ class RC2R2CPhysNetLayerUC2(_TabsTemperaturePhysics, keras.Layer):
     @classmethod
     def from_config(cls, config):
         return cls(**config)
+
+
+@keras.saving.register_keras_serializable(package="custom_layer", name="RC2R2CPhysNetDeltaTLayerUC2",)
+class RC2R2CPhysNetDeltaTLayerUC2(_TabsTemperaturePhysics ,keras.Layer):
+    def __init__(
+        self,
+        time_step: float,
+        r_win: float,
+        r_ext: float,
+        c_air: float,
+        k_tabs_air_w: float,
+        t_air_index: int,
+        t_amb_index: int,
+        theta_solar_init: float = 1.75,
+        alpha_init: float = 1.0,
+        beta_init: float = 1.0,
+        v_flow_ahu_index: FeatureIndex = None,
+        t_ahu_sup_index: FeatureIndex = None,
+        t_tabs_index: FeatureIndex = None,
+        t_tabs_sup_index: FeatureIndex = None,
+        t_tabs_k1_index: FeatureIndex = None,
+        h_dir_nor_index: FeatureIndex = None,
+        q_int_index: FeatureIndex = None,
+        predict_delta: bool = True,
+        use_internal_gains: bool = False,
+        trainable_rc: bool = False,
+        epsilon: float = 1e-6,
+        m_flow_tabs: float = 0.11064,
+        cp_fluid_tabs: float = 4184.0,
+        area_tabs: float = 48.0,
+        rho_tabs: float = 2400.0,
+        thickness_tabs: float = 0.15,
+        cp_tabs: float = 1000.0,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+
+        if time_step <= 0:
+            raise ValueError("time_step must be positive")
+        
+        if r_win <= 0:
+            raise ValueError("resistance of the window must be positive")
+        
+        if r_ext <= 0:
+            raise ValueError("resistance of the wall must be positive")
+        
+        if c_air <= 0:
+            raise ValueError("capacitance of the air must be positive")
+
+        if k_tabs_air_w <= 0:
+            raise ValueError("heat transfer of the tabs must be positive")
+        
+        if theta_solar_init <= 0:
+            raise ValueError("theta_solar_init must be positive")
+        
+        self.time_step = float(time_step)
+
+        self.initial_r_win = float(r_win)
+        self.initial_r_ext = float(r_ext)
+        self.initial_c_air = float(c_air)
+        self.initial_k_tabs_air_w = float(k_tabs_air_w)
+        self.theta_solar_init = float(theta_solar_init)
+        self.alpha_init = float(alpha_init)
+        self.beta_init = float(beta_init)
+
+        self.initial_tau_win_air = self.initial_r_win * self.initial_c_air
+        self.initial_kappa_win_air = 1.0 / self.initial_tau_win_air
+        self.initial_tau_ext_air = self.initial_r_ext * self.initial_c_air
+        self.initial_kappa_ext_air = 1.0 / self.initial_tau_ext_air
+        self.initial_k_air = 1.0 / self.initial_c_air
+
+        self.t_air_index = int(t_air_index)
+        self.t_amb_index = int(t_amb_index)
+
+        self.v_flow_ahu_index = v_flow_ahu_index
+        self.t_ahu_sup_index = t_ahu_sup_index
+        self.t_tabs_index = t_tabs_index
+        self.h_dir_nor_index = h_dir_nor_index
+        self.q_int_index = q_int_index
+
+        self.predict_delta = bool(predict_delta)
+        self.use_internal_gains = bool(use_internal_gains)
+        self.trainable_rc = bool(trainable_rc)
+
+        if self.use_internal_gains and not self.trainable_rc:
+            raise ValueError("Configuration error: 'use_internal_gains' can only be True if 'trainable_rc' is also set to True.")
+        
+        self.epsilon = float(epsilon)
+
+        self.rho_air = 1.204
+        self.cp_air = 1005.0
+
+        self._init_tabs_temperature_physics(
+            t_tabs_sup_index=t_tabs_sup_index,
+            t_tabs_k1_index=t_tabs_k1_index,
+            m_flow_tabs=m_flow_tabs,
+            cp_fluid_tabs=cp_fluid_tabs,
+            area_tabs=area_tabs,
+            rho_tabs=rho_tabs,
+            thickness_tabs=thickness_tabs,
+            cp_tabs=cp_tabs,
+        )
+
+    def build(self, input_shape):
+        """
+        
+        """
+        theta_solar_initializer = _inverse_softplus(self.theta_solar_init)
+        initializer_val = _inverse_softplus(1.0)
+
+        alpha_initializer = _inverse_sigmoid(self.alpha_init)
+        beta_initializer = _inverse_sigmoid(self.beta_init)
+
+        self.opt_kappa_factor_win_air = self.add_weight(
+            name="opt_kappa_factor_win_air",
+            shape=(1,),
+            initializer=keras.initializers.Constant(initializer_val),
+            trainable=self.trainable_rc
+        )
+
+        self.opt_kappa_factor_ext_air = self.add_weight(
+            name="opt_kappa_factor_ext_air",
+            shape=(1,),
+            initializer=keras.initializers.Constant(initializer_val),
+            trainable=self.trainable_rc
+        )
+
+        self.opt_k_factor_air = self.add_weight(
+            name="opt_k_factor_air",
+            shape=(1,),
+            initializer=keras.initializers.Constant(initializer_val),
+            trainable=self.trainable_rc
+        )
+
+        self.opt_k_tabs_air_w_factor = self.add_weight(
+            name="opt_k_tabs_air_w_factor",
+            shape=(1,),
+            initializer=keras.initializers.Constant(initializer_val),
+            trainable=True
+        )
+
+        self.raw_theta_solar = self.add_weight(
+            name="raw_theta_solar",
+            shape=(1,),
+            initializer=keras.initializers.Constant(theta_solar_initializer),
+            trainable=True 
+        )
+
+        self.opt_alpha = self.add_weight(
+            name="opt_alpha",
+            shape=(1,),
+            initializer=keras.initializers.Constant(alpha_initializer),
+            trainable=True
+        )
+
+        self.opt_beta = self.add_weight(
+            name="opt_beta",
+            shape=(1,),
+            initializer=keras.initializers.Constant(beta_initializer),
+            trainable=self.use_internal_gains
+        )
+
+
+        super().build(input_shape)
+
+    def _positive_parameter(self, raw_parameter):
+        """
+        
+        """
+        return keras.activations.softplus(raw_parameter) + self.epsilon
     
+
+    def _take_feature(self, inputs, feature_index: FeatureIndex, reference):
+        """
+        
+        """
+        if feature_index is None:
+            return keras.ops.zeros_like(reference)
+        
+        if isinstance(feature_index, int):
+            indices = [feature_index]
+        else:
+            indices = list(feature_index)
+
+        extracted = keras.ops.take(
+            inputs,
+            indices,
+            axis=-1,
+        )
+
+        return keras.ops.sum(extracted, axis=-1, keepdims=True)
+    
+    def call(self, inputs, **kwargs):
+        """
+        
+        """
+        if not isinstance(inputs, (list, tuple)) or len(inputs) != 2:
+            raise ValueError("RC2R2CPhysNetDeltaTlayer expects [x, z_latent_pred]!")
+
+        x, z_latent_pred = inputs
+
+        t_air = self._take_feature(
+            inputs=x,
+            feature_index=self.t_air_index,
+            reference=x,
+        )
+
+        t_amb = self._take_feature(
+            inputs=x,
+            feature_index=self.t_amb_index,
+            reference=t_air,
+        )
+
+        v_flow_ahu = self._take_feature(
+            inputs=x, 
+            feature_index=self.v_flow_ahu_index, 
+            reference=t_air
+        )
+
+        t_ahu_sup = self._take_feature(
+            inputs=x, 
+            feature_index=self.t_ahu_sup_index, 
+            reference=t_air
+        )
+
+        t_tabs = self._take_feature(
+            inputs=x,
+            feature_index=self.t_tabs_index,
+            reference=t_air
+        )
+
+        h_dir_nor = self._take_feature(
+            inputs=x, 
+            feature_index=self.h_dir_nor_index, 
+            reference=t_air
+        )
+
+        
+        q_int = self._take_feature(
+            inputs=x, 
+            feature_index=self.q_int_index, 
+            reference=t_air
+        )
+
+        kappa_factor_win_air = self._positive_parameter(self.opt_kappa_factor_win_air)
+        kappa_factor_ext_air = self._positive_parameter(self.opt_kappa_factor_ext_air)
+        k_factor_air = self._positive_parameter(self.opt_k_factor_air)
+        k_tabs_air_w_factor = self._positive_parameter(self.opt_k_tabs_air_w_factor)
+
+        kappa_phys_win_air = kappa_factor_win_air * self.initial_kappa_win_air
+        kappa_phys_ext_air = kappa_factor_ext_air * self.initial_kappa_ext_air
+        k_phys_air = k_factor_air * self.initial_k_air
+
+        k_tabs_air_w = k_tabs_air_w_factor * self.initial_k_tabs_air_w
+
+        theta_solar = self._positive_parameter(self.raw_theta_solar)
+        alpha = keras.activations.sigmoid(self.opt_alpha)
+        beta = keras.activations.sigmoid(self.opt_beta)
+
+        h_ahu = self.rho_air * self.cp_air * v_flow_ahu
+
+        q_tabs = k_tabs_air_w * (t_tabs - t_air)
+        
+        q_solar = theta_solar * h_dir_nor
+
+        q_ahu = h_ahu * (t_ahu_sup - t_air)
+
+        if self.use_internal_gains:
+            q_int = q_int
+        else:
+            q_int = 0.0
+
+        term_q = k_phys_air * (q_tabs + q_ahu + alpha * q_solar + beta * q_int)
+        term_wall_air = kappa_phys_ext_air * (z_latent_pred - t_air)
+        term_win_air = kappa_phys_win_air * (t_amb - t_air)
+
+        delta_t_phys = self.time_step * (term_q + term_wall_air + term_win_air)
+
+        if self.predict_delta:
+            return delta_t_phys
+
+        return t_air + delta_t_phys
+
+
+    def compute_output_shape(self, input_shape):
+        return tuple(input_shape[0][:-1]) + (1,)
+    
+
+    def get_config(self):
+        """
+        
+        """
+        config = super().get_config()
+
+        config.update(
+            {
+                "time_step": self.time_step,
+                "r_win": self.initial_r_win,
+                "r_ext": self.initial_r_ext,
+                "c_air": self.initial_c_air,
+                "k_tabs_air_w": self.initial_k_tabs_air_w,
+                "theta_solar_init": self.theta_solar_init,
+                "alpha_init": self.alpha_init,
+                "beta_init": self.beta_init,
+                "t_air_index": self.t_air_index,
+                "t_amb_index": self.t_amb_index,
+                "v_flow_ahu_index": self.v_flow_ahu_index,
+                "t_ahu_sup_index": self.t_ahu_sup_index,
+                "t_tabs_index": self.t_tabs_index,
+                "h_dir_nor_index": self.h_dir_nor_index,
+                "q_int_index": self.q_int_index,
+                "predict_delta": self.predict_delta,
+                "use_internal_gains": self.use_internal_gains,
+                "trainable_rc": self.trainable_rc,
+                "epsilon": self.epsilon,
+            }
+        )
+
+        config.update(self._tabs_temperature_physics_config())
+
+        return config
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+
 
 @keras.saving.register_keras_serializable(package="custom_layer", name="RC2R2CGokhalePhysNetLayerUC2",)
 class RC2R2CGokhalePhysNetLayerUC2(_TabsTemperaturePhysics, keras.Layer):
