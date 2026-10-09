@@ -45,6 +45,7 @@ def calculate_wall_temperature_for_scaling(
     columns: Sequence[str],
     rc_kwargs: Optional[dict] = None,
     use_case: str = "UC1",
+    physics_layer_class=None,
 ) -> np.ndarray:
 
     x = np.asarray(x)
@@ -66,8 +67,8 @@ def calculate_wall_temperature_for_scaling(
         "UC1": RC2R2CPhysNetLayerUC1,
         "UC2": RC2R2CPhysNetLayerUC2,
     }
-
-    physics_layer_class = physics_layer_classes[use_case]
+    if physics_layer_class is None:
+        physics_layer_class = physics_layer_classes[use_case]
 
     physics_layer = physics_layer_class(
         trainable_rc=False,

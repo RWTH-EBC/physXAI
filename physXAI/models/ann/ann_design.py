@@ -829,6 +829,7 @@ class RC1R1CModel(ANNModel):
                  rc_learning_rate_multiplier: float = 0.1,
                  early_stopping_epochs: Optional[int] = 100,
                  random_seed: int = 42,
+                 use_integration: bool = False,
                  **kwargs):
         """
         
@@ -841,6 +842,8 @@ class RC1R1CModel(ANNModel):
         self.rc_kwargs =rc_kwargs if rc_kwargs is not None else {}
 
         self.use_case = use_case
+
+        self.use_integration = bool(use_integration)
 
         self.predict_delta = predict_delta
 
@@ -865,6 +868,8 @@ class RC1R1CModel(ANNModel):
             'rescale_output': self.rescale_output,
 
             'use_case': self.use_case,
+
+            'use_integration': self.use_integration,
 
             'predict_delta': self.predict_delta,
             't_air_column': self.t_air_column,
@@ -966,6 +971,8 @@ class RC1R1CModel(ANNModel):
 
             'use_case': self.use_case,
 
+            'use_integration': self.use_integration,
+
             'predict_delta': self.predict_delta,
             't_air_column': self.t_air_column,
             'trainable_rc': self.trainable_rc,
@@ -1009,6 +1016,7 @@ class RC2R2CPhysNetModel(ANNModel):
                  rc_learning_rate_multiplier: float = 0.1,
                  early_stopping_epochs: Optional[int] = 100,
                  random_seed: int = 42,
+                 use_integration: bool = False,
                  **kwargs):
    
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
@@ -1018,6 +1026,8 @@ class RC2R2CPhysNetModel(ANNModel):
         self.t_air_column: str = t_air_column
 
         self.use_case = use_case
+
+        self.use_integration = bool(use_integration)
 
         self.rc_kwargs = rc_kwargs if rc_kwargs is not None else {}
 
@@ -1050,6 +1060,8 @@ class RC2R2CPhysNetModel(ANNModel):
             'rescale_output': self.rescale_output,
 
             'use_case': self.use_case,
+
+            'use_integration': self.use_integration,
 
             'predict_delta': self.predict_delta,
             't_air_column': self.t_air_column,
@@ -1154,6 +1166,8 @@ class RC2R2CPhysNetModel(ANNModel):
             'rescale_output': self.rescale_output,
 
             'use_case': self.use_case,
+
+            'use_integration': self.use_integration,
 
             'predict_delta': self.predict_delta,
             't_air_column': self.t_air_column,

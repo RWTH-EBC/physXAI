@@ -342,11 +342,11 @@ class RC2R2CPhysNetKerasModel(keras.Model):
         with tf.GradientTape() as tape:
             predictions, z_latent = self.core_model(inputs, training=True)
 
-            y_physic = self.physics_layer([inputs, z_latent], training=True)
+            z_physic = self.physics_layer([inputs, predictions], training=True)
 
             prediction_loss = keras.ops.mean(keras.ops.square((targets - predictions) / self.prediction_loss_scale))
 
-            physics_loss = keras.ops.mean(keras.ops.square((predictions - y_physic) / self.physics_loss_scale))
+            physics_loss = keras.ops.mean(keras.ops.square((z_latent - z_physic) / self.physics_loss_scale))
 
             if self.use_tabs_physics_loss:
                 tabs_physics_loss = _tabs_physics_loss(
@@ -392,11 +392,11 @@ class RC2R2CPhysNetKerasModel(keras.Model):
 
         predictions, z_latent = self.core_model(inputs, training=False)
 
-        y_physic = self.physics_layer([inputs, z_latent], training=False)
+        z_physic = self.physics_layer([inputs, predictions], training=False)
 
         prediction_loss = keras.ops.mean(keras.ops.square((targets - predictions) / self.prediction_loss_scale))
 
-        physics_loss = keras.ops.mean(keras.ops.square((predictions - y_physic) / self.physics_loss_scale))
+        physics_loss = keras.ops.mean(keras.ops.square((z_latent - z_physic) / self.physics_loss_scale))
 
         if self.use_tabs_physics_loss:
             tabs_physics_loss = _tabs_physics_loss(

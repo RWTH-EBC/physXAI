@@ -9,7 +9,7 @@ from physXAI.models.ann.configs.ann_model_configs import (ClassicalANNConstructi
                                                                  RC2R2CGokhalePhysNetConstruction_config,
                                                                  RC2R2CGokhalePhysNetWallDynamicsConstruction_config)
 from physXAI.models.ann.keras_models.keras_models import NonNegPartial, ConcaveActivation, SaturatedActivation, InputSliceLayer
-from physXAI.models.ann.pinn_new.rc_layers import RC1R1CLayerUC1, RC1R1CLayerUC2, RC2R2CPhysNetLayerUC1, RC2R2CPhysNetLayerUC2, RC2R2CPhysNetDeltaTLayerUC1, RC2R2CPhysNetDeltaTLayerUC2, RC2R2CGokhalePhysNetLayerUC1, RC2R2CGokhalePhysNetLayerUC2, RC2R2CGokhalePhysNetWallDynamicsLayerUC1, RC2R2CGokhalePhysNetWallDynamicsLayerUC2
+from physXAI.models.ann.pinn_new.rc_layers import RC1R1CLayerUC1, RC1R1CLayerUC2, RC1R1CLayerUC2_integration, RC2R2CPhysNetLayerUC1, RC2R2CPhysNetLayerUC2, RC2R2CPhysNetLayerUC2_integration, RC2R2CPhysNetDeltaTLayerUC1, RC2R2CPhysNetDeltaTLayerUC2, RC2R2CGokhalePhysNetLayerUC1, RC2R2CGokhalePhysNetLayerUC2, RC2R2CGokhalePhysNetWallDynamicsLayerUC1, RC2R2CGokhalePhysNetWallDynamicsLayerUC2
 from physXAI.models.ann.pinn_new.feature_index import _resolve_feature_indices
 from physXAI.models.ann.pinn_new.calculate_wall_temperature import calculate_wall_temperature_for_scaling
 from physXAI.models.ann.pinn_new.calculate_tabs_temperature import calculate_tabs_temperature_scale
@@ -212,6 +212,12 @@ def RC1R1CConstruction(config: dict, td: TrainingDataGeneric):
         "UC2": RC1R1CLayerUC2,
     }
 
+    if config["use_integration"]:
+        if config["use_case"] != "UC2":
+            raise ValueError("use_integration=True is only supported for UC2!")
+
+        rc1r1c_layers['UC2'] = RC1R1CLayerUC2_integration
+
     # Get config
     n_layers = config['n_layers']
     n_neurons = config['n_neurons']
@@ -363,6 +369,12 @@ def RC2R2CPhysNetConstruction(config: dict, td: TrainingDataGeneric):
         "UC2": RC2R2CPhysNetLayerUC2,
     }
 
+    if config["use_integration"]:
+        if config["use_case"] != "UC2":
+            raise ValueError("use_integration=True is only supported for UC2!")
+
+        rc2r2c_layers['UC2'] = RC2R2CPhysNetLayerUC2_integration
+
     encoder_layers = config['encoder_layers']
     encoder_neurons = config['encoder_neurons']
     if isinstance(encoder_neurons, int):
@@ -410,6 +422,7 @@ def RC2R2CPhysNetConstruction(config: dict, td: TrainingDataGeneric):
         columns=td.columns,
         rc_kwargs=rc_kwargs,
         use_case=config["use_case"],
+        physics_layer_class=rc2r2c_layers[config["use_case"]],
     )
 
     physics_loss_scale = float(np.std(t_wall_train, ddof=1))

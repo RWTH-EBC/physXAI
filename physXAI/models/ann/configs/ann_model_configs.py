@@ -92,6 +92,7 @@ class RC1R1CConstruction_config(ClassicalANNConstruction_config):
     
     """
     use_case: Literal["UC1", "UC2"] = "UC1"
+    use_integration: bool = False
     
     predict_delta: bool = True
     t_air_column: Union[str, int]
@@ -111,6 +112,7 @@ class RC2R2CPhysNetConstruction_config(BaseModel):
     
     """
     use_case: Literal["UC1", "UC2"] = "UC1"
+    use_integration: bool = False
 
     predict_delta: bool = True
     t_air_column: Union[str, int]
