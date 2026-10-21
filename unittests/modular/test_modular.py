@@ -44,7 +44,7 @@ def test_generate_sample_csv(output_path: str = "data/sample_data.csv", num_rows
 
 
 def test_generate_sample_model(random_seed: int = 42, training_data_path: str = "data/sample_data.csv"):
-    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_modular', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_modular', override=True)
 
     inputs = [f"x{i}" for i in range(1, 4)]
     output = "x4"
@@ -94,7 +94,7 @@ def test_generate_sample_model(random_seed: int = 42, training_data_path: str = 
 
 
 def test_read_setup(training_data_path: str = "data/sample_data.csv"):
-    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_modular', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_modular', override=True)
 
     # Read setup
     save_name_preprocessing = Logger.save_name_preprocessing

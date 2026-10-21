@@ -32,7 +32,7 @@ def file_path():
 @pytest.fixture
 def recursive_data(file_path):
     """Multi step data of a model that predicts one of its own inputs."""
-    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_closed_loop', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_closed_loop', override=True)
     inputs = ['weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u', 'reaTZon_y']
     prep = PreprocessingMultiStep(inputs=inputs, output='reaTZon_y', label_width=4, warmup_width=2)
     return prep.pipeline(file_path)
@@ -78,7 +78,7 @@ def test_closed_loop_predictions(recursive_data):
 
 def test_closed_loop_is_skipped_without_feedback(file_path):
     """A model that does not predict any of its own inputs has nothing to feed back."""
-    Logger.setup_logger(base_path=base_path, folder_name='unittests\\test_closed_loop', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_closed_loop', override=True)
     prep = PreprocessingMultiStep(inputs=['weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u'],
                                   output='reaTZon_y', label_width=4, warmup_width=2)
     td = prep.pipeline(file_path)
@@ -126,7 +126,7 @@ def test_feature_architecture(recursive_data):
 @pytest.fixture
 def warmup_data(file_path):
     """Multi step data whose warmup holds the inputs of the model, which is the default."""
-    Logger.setup_logger(base_path=base_path, folder_name='unittests\test_closed_loop', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_closed_loop', override=True)
     inputs = ['weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u', 'reaTZon_y']
     prep = PreprocessingMultiStep(inputs=inputs, output='reaTZon_y', label_width=4, warmup_width=3)
     assert prep.init_features == inputs, "the warmup should hold the inputs by default"
@@ -169,7 +169,7 @@ def test_warmup_with_the_model_itself(warmup_data):
 
 def test_warmup_features_have_to_match(file_path):
     """The model can only be applied to the warmup if it holds the same features."""
-    Logger.setup_logger(base_path=base_path, folder_name='unittests\test_closed_loop', override=True)
+    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_closed_loop', override=True)
     prep = PreprocessingMultiStep(inputs=['weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u'],
                                   output='reaTZon_y', label_width=4, warmup_width=3,
                                   init_features=['reaTZon_y'])
