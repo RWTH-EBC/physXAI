@@ -81,13 +81,22 @@ jobs:
   run-scripts:
     needs: setup
     if: needs.setup.outputs.scripts != '[]' && needs.setup.outputs.scripts != ''
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash  # identical scripts on Linux and Windows runners
 
     strategy:
       fail-fast: false
       matrix:
         script: ${{ fromJSON(needs.setup.outputs.scripts) }}
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.11', '3.12', '3.13']
+        exclude:  # Windows only with one Python version to keep the matrix small
+          - os: windows-latest
+            python-version: '3.11'
+          - os: windows-latest
+            python-version: '3.13'
 
     steps:
     - name: Checkout Code

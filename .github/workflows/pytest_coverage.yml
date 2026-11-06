@@ -10,11 +10,15 @@ on:
 
 jobs:
   run_pytest_coverage:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash  # identical scripts on Linux and Windows runners
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.11', '3.12', '3.13']
 
     steps:
     - name: Checkout Code
@@ -32,7 +36,7 @@ jobs:
     - name: Install requirements and add python path
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[dev]
+        pip install -e .[dev,agentlib]
         
     - name: Create reports directory
       run: |
@@ -43,12 +47,12 @@ jobs:
         pytest --cov --cov-report=html --cov-report=xml --cov-report=term
     
     - name: Generate coverage badge
-      if: matrix.python-version == '3.12'
+      if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
       run: |
         anybadge --value="$(coverage report --format=total)" --file=build/reports/coverage.svg --overwrite coverage
         
     - name: Check if badge changed or is new
-      if: matrix.python-version == '3.12'
+      if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
       id: badge-check
       run: |
         # Check if the file exists in git (tracked)
@@ -68,7 +72,7 @@ jobs:
         fi
         
     - name: Commit and push coverage badge
-      if: matrix.python-version == '3.12' && steps.badge-check.outputs.changed == 'true' && github.event_name == 'pull_request'
+      if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest' && steps.badge-check.outputs.changed == 'true' && github.event_name == 'pull_request'
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
@@ -77,7 +81,7 @@ jobs:
         git push origin ${{ github.head_ref }}
         
     - name: Upload coverage badge as artifact
-      if: matrix.python-version == '3.12'
+      if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
       uses: actions/upload-artifact@v4
       with:
         name: coverage-badge
@@ -85,7 +89,7 @@ jobs:
         retention-days: 30
         
     - name: Upload coverage HTML report
-      if: matrix.python-version == '3.12'
+      if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
       uses: actions/upload-artifact@v4
       with:
         name: coverage-html-report

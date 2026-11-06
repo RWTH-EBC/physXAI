@@ -3,8 +3,11 @@
 **/__pycache__/
 /.run
 **/coverage.xml
-**/_version.py
 /**.egg-info
 **/.coverage
 /docs/build
 /venv
+/.venv
+/build/.pytest_cache
+/.ruff_cache
+external/
