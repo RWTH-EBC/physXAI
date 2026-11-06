@@ -128,11 +128,12 @@ def plot_training_history(td: TrainingDataGeneric) -> go.Figure:
     if td.training_record is None:  # e.g. closed form solutions
         return go.Figure(layout=dict(xaxis_title="Epochs", yaxis_title="RMSE"))
     history = td.training_record.history
-    # Plot training history using plotly library
-    training_rmse = history['rmse']
+    # Plot training history using plotly library (multi step trainings only record the loss)
+    key = 'rmse' if 'rmse' in history else 'loss'
+    training_rmse = history[key]
     len_train = len(training_rmse)
-    if td.y_val is not None:
-        validation_rmse = history['val_rmse']
+    if td.y_val is not None and f'val_{key}' in history:
+        validation_rmse = history[f'val_{key}']
         len_val = len(validation_rmse)
     else:
         validation_rmse = []
@@ -228,3 +229,25 @@ def plot_recFeatureSelection(fs: dict, multi_step: bool, use_multi_step_error: b
     )
 
     fig.show()
+
+
+SPLIT_COLORS = {"train": "green", "val": "blue", "test": "red"}
+
+
+def plot_horizon_metrics(td) -> go.Figure:
+    """
+    RMSE (solid) and bias (dashed) of the recursive prediction over the horizon, per split.
+    The x axis is in hours if the time step is known, else in steps.
+    """
+    metrics = td.horizon_metrics
+    x = metrics.hours if metrics.hours is not None else metrics.steps
+    fig = go.Figure()
+    for split, kpis in metrics.kpis.items():
+        color = SPLIT_COLORS.get(split, "black")
+        name = split.capitalize()
+        fig.add_trace(go.Scatter(x=x, y=kpis["rmse"], mode="lines", name=f"{name} RMSE", line=dict(color=color)))
+        fig.add_trace(go.Scatter(x=x, y=kpis["bias"], mode="lines", name=f"{name} bias",
+                                 line=dict(color=color, dash="dash")))
+    fig.update_layout(xaxis_title="Prediction horizon [h]" if metrics.hours is not None else "Prediction step",
+                      yaxis_title=f"Error of {metrics.feature}")
+    return fig

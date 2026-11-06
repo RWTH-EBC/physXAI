@@ -287,12 +287,7 @@ class PreprocessingData(ABC):
     # --- processing -----------------------------------------------------------------------------
     def _required_columns(self) -> list[str]:
         """Raw columns (besides inputs and outputs) needed in the data."""
-        columns = list()
-        for out in self.output:
-            change = CHANGE_PATTERN.match(out)
-            if change:
-                columns.append(change.group(1).strip())
-        return columns
+        return [output_feature(out) for out in self.output]
 
     def _window_length(self) -> int:
         return 1
@@ -327,8 +322,10 @@ class PreprocessingData(ABC):
         shifted = list(dict.fromkeys([*self.output, *(extra_targets or [])]))
         for name in dict.fromkeys([*self.inputs, *shifted]):
             ensure_column(df, name)
-        # raw features of 'Change(X)' outputs are kept for multi step evaluations, if available
-        aux = [c for c in self._required_columns() if c not in self.inputs and _try_ensure_column(df, c)]
+        # raw features of the outputs and the variables of derived columns are kept for recursive
+        # (multi step) evaluations, if available
+        candidates = [*self._required_columns(), *(v for e in self.columns.values() for v in e.free_vars())]
+        aux = [c for c in dict.fromkeys(candidates) if c not in self.inputs and _try_ensure_column(df, c)]
 
         target_columns = [TARGET_PREFIX + name for name in shifted]
         targets = pd.DataFrame({TARGET_PREFIX + name: df[name].shift(-self.shift) for name in shifted}, index=df.index)
@@ -361,6 +358,7 @@ class PreprocessingData(ABC):
             eval_horizon=eval_horizon,
             eval_stride=eval_stride,
             targets=[TARGET_PREFIX + name for name in self.output],
+            derived=self.columns,
         )
         logger.info("Split of the data: %s", {k: round(v, 3) for k, v in split_summary(labels[valid]).items()})
         return td

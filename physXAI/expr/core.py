@@ -229,8 +229,9 @@ class BuildContext:
         """Keras tensor of an expression, built only once per node."""
         key = id(expr)
         if key not in self._tensors:
-            self._tensors[key] = expr.to_keras(self)
-        return self._tensors[key]
+            # the expression is stored with its tensor: as long as it is alive, its id is not reused
+            self._tensors[key] = (expr, expr.to_keras(self))
+        return self._tensors[key][1]
 
     def values(self, expr: Expr) -> np.ndarray | None:
         """Training values of a data only expression, None if not available."""

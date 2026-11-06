@@ -13,9 +13,11 @@ from __future__ import annotations
 import json
 from abc import ABC, abstractmethod
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 
+from physXAI.expr.serialization import from_config, to_config
 from physXAI.preprocessing.splitting import SPLITS, split_summary
 from physXAI.preprocessing.windows import gather_windows, window_starts
 
@@ -33,6 +35,8 @@ class TrainingDataGeneric(ABC):
 
         self.file_path = None
         self.training_record = None
+        #: History of the training on the multi step error (`physXAI.training.RecursiveTraining`)
+        self.recursive_training_record = None
         self.training_time = None
         self.metrics = None
 
@@ -56,6 +60,15 @@ class TrainingDataGeneric(ABC):
 
     def add_file_path(self, path: str):
         self.file_path = str(path)
+
+    def __getstate__(self):
+        # keras histories reference their (possibly not picklable) model: keep the recorded values only
+        state = self.__dict__.copy()
+        for key in ("training_record", "recursive_training_record"):
+            record = state.get(key)
+            if record is not None and hasattr(record, "history"):
+                state[key] = SimpleNamespace(history=record.history)
+        return state
 
     def _results_config(self) -> dict:
         return {
@@ -134,6 +147,8 @@ class TrainingData(TrainingDataGeneric):
         time_step: Sampling time in seconds.
         eval_horizon: Number of steps of the multi step evaluation (None: no multi step evaluation).
         eval_stride: Distance between two evaluation windows in steps.
+        derived: Expressions of derived data columns {name: expression}. They are recomputed in every
+                 step of a recursive (multi step) prediction.
     """
 
     def __init__(
@@ -149,6 +164,7 @@ class TrainingData(TrainingDataGeneric):
         eval_horizon: int | None = None,
         eval_stride: int = 1,
         targets: list[str] | None = None,
+        derived: dict | None = None,
     ):
         super().__init__()
         targets = list(outputs) if targets is None else list(targets)
@@ -170,7 +186,12 @@ class TrainingData(TrainingDataGeneric):
         self.eval_stride = eval_stride
         self._input_index = [self.all_columns.index(c) for c in self.inputs]
         self._output_index = [self.all_columns.index(c) for c in self.targets]
+        self.derived: dict = dict(derived or {})
         self._cache: dict = dict()
+
+        #: Results of the recursive multi step evaluation (`physXAI.evaluation.rollout`)
+        self.horizon_metrics = None
+        self.horizon_predictions: dict | None = None
 
     # --- generic views -------------------------------------------------------------------------
     def column(self, name: str) -> np.ndarray:
@@ -271,7 +292,11 @@ class TrainingData(TrainingDataGeneric):
 
     # --- (de)serialization --------------------------------------------------------------------
     def get_config(self) -> dict:
-        return {**self._results_config(), "summary": self.summary()}
+        return {
+            **self._results_config(),
+            "horizon_metrics": self.horizon_metrics.get_config() if self.horizon_metrics is not None else None,
+            "summary": self.summary(),
+        }
 
     def _meta(self) -> dict:
         time_is_datetime = np.issubdtype(np.asarray(self.time).dtype, np.datetime64)
@@ -280,6 +305,7 @@ class TrainingData(TrainingDataGeneric):
             "inputs": self.inputs,
             "outputs": self.outputs,
             "targets": self.targets,
+            "derived": {name: to_config(e) for name, e in self.derived.items()},
             "time_step": self.time_step,
             "eval_horizon": self.eval_horizon,
             "eval_stride": self.eval_stride,
@@ -327,12 +353,13 @@ class TrainingData(TrainingDataGeneric):
             eval_horizon=meta["eval_horizon"],
             eval_stride=meta["eval_stride"],
             targets=meta["targets"],
+            derived={name: from_config(e) for name, e in meta.get("derived", {}).items()},
         )
         td.file_path = file_path
         return td
 
     def __getstate__(self):
-        state = self.__dict__.copy()
+        state = super().__getstate__()
         state["_cache"] = dict()
         return state
 
