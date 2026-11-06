@@ -84,7 +84,16 @@
            <div itemprop="articleBody">
              
   <h1>Source code for physXAI.models.models</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span></span><span class="sd">"""</span>
+<span class="sd">Base classes of all physXAI models and the scikit-learn linear regression.</span>
+
+<span class="sd">A model object holds the settings of a model (its config) and runs the training pipeline: generate, compile,</span>
+<span class="sd">fit, evaluate, save. The trained (keras or scikit-learn) model is returned by `pipeline` and kept in</span>
+<span class="sd">`trained_model`. Models are registered by class name (`register_model`), so they can be created from their</span>
+<span class="sd">saved config (`AbstractModel.model_from_config`); AgentLib-MPC reads the class name from `{name}_model.json`.</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
@@ -108,8 +117,21 @@
 
 <span class="n">MODEL_CLASS_REGISTRY</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">[</span><span class="s1">'AbstractModel'</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 
+<span class="c1">#: Keys of a saved model config which are no arguments of the model (see `Run.save`)</span>
+<span class="n">CONFIG_META_KEYS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"__class_name__"</span><span class="p">,</span> <span class="s2">"physXAI_version"</span><span class="p">,</span> <span class="s2">"environment"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_reject_unknown_arguments</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Unknown arguments are errors, so a misspelled setting does not silently fall back to its default."""</span>
+    <span class="k">if</span> <span class="n">kwargs</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> got unknown arguments </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+
 
 <div class="viewcode-block" id="AbstractModel"><a class="viewcode-back" href="../../../code/physXAI.models.html#physXAI.models.models.AbstractModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">AbstractModel</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Base class of all models: the training pipeline (`pipeline`, `online_pipeline`), saving, loading and the</span>
+<span class="sd">    config (`get_config`, `from_config`, `model_from_config`).</span>
+<span class="sd">    """</span>
 
 <div class="viewcode-block" id="AbstractModel.generate_model"><a class="viewcode-back" href="../../../code/physXAI.models.html#physXAI.models.models.AbstractModel.generate_model">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -143,6 +165,7 @@
 <div class="viewcode-block" id="AbstractModel.evaluate"><a class="viewcode-back" href="../../../code/physXAI.models.html#physXAI.models.models.AbstractModel.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Predicts all splits of `td` with the trained model and stores predictions and metrics in `td`."""</span>
         <span class="k">pass</span></div>
 
     <span class="c1">#: Title of the plots of the model</span>
@@ -260,6 +283,7 @@
 <span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_check_training_data</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">load_path</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">compile_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
@@ -297,9 +321,12 @@
         <span class="p">}</span></div>
 
 <div class="viewcode-block" id="AbstractModel.from_config"><a class="viewcode-back" href="../../../code/physXAI.models.html#physXAI.models.models.AbstractModel.from_config">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">'AbstractModel'</span><span class="p">:</span>
-        <span class="k">pass</span></div>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Creates the model from its config (`get_config`). Meta keys of saved configs (`__class_name__`,</span>
+<span class="sd">        `physXAI_version`, `environment`) are ignored, unknown settings raise a `TypeError`.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">CONFIG_META_KEYS</span><span class="p">})</span></div>
 
 <div class="viewcode-block" id="AbstractModel.model_from_config"><a class="viewcode-back" href="../../../code/physXAI.models.html#physXAI.models.models.AbstractModel.model_from_config">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">model_from_config</span><span class="p">(</span><span class="n">item_conf</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">'AbstractModel'</span><span class="p">:</span>
@@ -308,13 +335,13 @@
 
 <span class="sd">        Args:</span>
 <span class="sd">            item_conf (dict): The configuration dictionary for a model.</span>
-<span class="sd">                              Must contain 'class_name' and other necessary parameters.</span>
+<span class="sd">                              Must contain '__class_name__' and other necessary parameters.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            AbstractModel: An instance of the appropriate model subclass.</span>
 
 <span class="sd">        Raises:</span>
-<span class="sd">            KeyError: If 'class_name' is not in `item_conf` or if the class_name is not in `MODEL_CLASS_REGISTRY`.</span>
+<span class="sd">            KeyError: If '__class_name__' is not in `item_conf` or the class is not in `MODEL_CLASS_REGISTRY`.</span>
 <span class="sd">        """</span>
         <span class="n">class_name</span> <span class="o">=</span> <span class="n">item_conf</span><span class="p">[</span><span class="s1">'__class_name__'</span><span class="p">]</span>
         <span class="n">model_class</span> <span class="o">=</span> <span class="n">MODEL_CLASS_REGISTRY</span><span class="p">[</span><span class="n">class_name</span><span class="p">]</span>
@@ -341,7 +368,7 @@
 <span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">pass</span>
+        <span class="n">_reject_unknown_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="SingleStepModel.evaluate"><a class="viewcode-back" href="../../../code/physXAI.models.html#physXAI.models.models.SingleStepModel.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingData</span><span class="p">):</span>
@@ -374,11 +401,7 @@
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is a single step model and needs PreprocessingSingleStep data. "</span>
                 <span class="s2">"To evaluate it over a horizon, use PreprocessingSingleStep(eval_horizon=...)."</span>
-            <span class="p">)</span>
-
-<div class="viewcode-block" id="SingleStepModel.from_config"><a class="viewcode-back" href="../../../code/physXAI.models.html#physXAI.models.models.SingleStepModel.from_config">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">'SingleStepModel'</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div></div>
+            <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="LinearRegressionModel"><a class="viewcode-back" href="../../../code/physXAI.models.html#physXAI.models.models.LinearRegressionModel">[docs]</a><span class="nd">@register_model</span>
@@ -454,7 +477,7 @@
 <span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">pass</span>
+        <span class="n">_reject_unknown_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="MultiStepModel.fit_model"><a class="viewcode-back" href="../../../code/physXAI.models.html#physXAI.models.models.MultiStepModel.fit_model">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">fit_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataMultiStep</span><span class="p">):</span>
@@ -482,11 +505,7 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_check_training_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="n">TrainingDataMultiStep</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is a multi step model and needs PreprocessingMultiStep data."</span><span class="p">)</span>
-
-<div class="viewcode-block" id="MultiStepModel.from_config"><a class="viewcode-back" href="../../../code/physXAI.models.html#physXAI.models.models.MultiStepModel.from_config">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">'MultiStepModel'</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div></div>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is a multi step model and needs PreprocessingMultiStep data."</span><span class="p">)</span></div>
 </pre></div>
 
            </div>

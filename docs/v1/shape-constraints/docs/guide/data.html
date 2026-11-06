@@ -105,8 +105,14 @@
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">inputs</span></code>, <code class="docutils literal notranslate"><span class="pre">output</span></code></p></td>
 <td><p>column names; <code class="docutils literal notranslate"><span class="pre">X_lagN</span></code> and <code class="docutils literal notranslate"><span class="pre">Change(X)</span></code> are derived, <code class="docutils literal notranslate"><span class="pre">lags={'X':</span> <span class="pre">2}</span></code> adds <code class="docutils literal notranslate"><span class="pre">X_lag1</span></code>, <code class="docutils literal notranslate"><span class="pre">X_lag2</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">columns</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">shift</span></code></p></td>
+<td><p>1 (default): the output at the next time step, for states (<code class="docutils literal notranslate"><span class="pre">Change(T)</span></code>) and as AgentLib-MPC uses it; 0: the output at the time of the inputs, for algebraic outputs of point sampled data (the output feature must not be an input, no recursive evaluation, not exportable)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">columns</span></code></p></td>
 <td><p>derived data columns as expressions, see <a class="reference internal" href="expressions.html"><span class="std std-doc">Expressions</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">loss_columns</span></code></p></td>
+<td><p>columns used only in the training loss (e.g. physics targets), <code class="docutils literal notranslate"><span class="pre">'y:name'</span></code> at the predicted time; added by models via <code class="docutils literal notranslate"><span class="pre">prep.pipeline(path,</span> <span class="pre">model=model)</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">time_index_col</span></code>, <code class="docutils literal notranslate"><span class="pre">time_step</span></code></p></td>
 <td><p>time column (seconds or date time); the data is put onto a regular grid of <code class="docutils literal notranslate"><span class="pre">time_step</span></code></p></td>
@@ -139,7 +145,9 @@ training and test data and overestimates the test performance. physXAI splits bl
 <li><p>the time axis is cut into blocks (default: the longer of four windows and one day),</p></li>
 <li><p>validation and test blocks are drawn in every stratum of neighbouring blocks, so all seasons are part of
 every split,</p></li>
-<li><p>an embargo of <code class="docutils literal notranslate"><span class="pre">gap_steps</span></code> (default: the largest lag plus the warmup) separates blocks of different splits,</p></li>
+<li><p>an embargo of <code class="docutils literal notranslate"><span class="pre">gap_steps</span></code> (default: the largest lag plus <code class="docutils literal notranslate"><span class="pre">shift</span></code>, plus the warmup of multi step data) separates
+blocks of different splits; the rows are taken from the training side, so validation and test blocks stay
+complete,</p></li>
 <li><p>windows of multi step data never cross a split boundary.</p></li>
 </ul>
 <p><code class="docutils literal notranslate"><span class="pre">split='holdout_end'</span></code> uses the end of the data for validation and test (non-stationary data),
@@ -153,7 +161,8 @@ on the split, see <a class="reference internal" href="evaluation.html#comparing-
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">td.X_train</span></code>, <code class="docutils literal notranslate"><span class="pre">td.y_train</span></code>, … the samples of a split, <code class="docutils literal notranslate"><span class="pre">td.inputs</span></code>, <code class="docutils literal notranslate"><span class="pre">td.outputs</span></code>,</p></li>
 <li><p>after training: predictions, <code class="docutils literal notranslate"><span class="pre">td.metrics</span></code> and <code class="docutils literal notranslate"><span class="pre">td.horizon_metrics</span></code>,</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">td.save(path)</span></code> / <code class="docutils literal notranslate"><span class="pre">TrainingData.load(path)</span></code> (npz and json, no pickle),</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">td.save(path)</span></code> / <code class="docutils literal notranslate"><span class="pre">TrainingData.load(path)</span></code> for single step data (npz and json, no pickle; multi step data is
+created from the same csv file and preprocessing config),</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">td.get_config()</span></code> holds metrics and history, as written by <code class="docutils literal notranslate"><span class="pre">Run.save</span></code>.</p></li>
 </ul>
 </section>

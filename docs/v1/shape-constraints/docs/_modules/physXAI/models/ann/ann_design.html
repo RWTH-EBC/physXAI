@@ -84,7 +84,15 @@
            <div itemprop="articleBody">
              
   <h1>Source code for physXAI.models.ann.ann_design</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span></span><span class="sd">"""</span>
+<span class="sd">Keras models of physXAI: single step networks (`ClassicalANNModel`, `CMNNModel`, `RBFModel`, `LinANNModel`,</span>
+<span class="sd">`PINNModel`, base class `ANNModel`) and recurrent multi step models (`RNNModel`, `PCNNModel`).</span>
+
+<span class="sd">All of them share the training settings (epochs, learning rate, batch size, early stopping, seed); single step networks</span>
+<span class="sd">can additionally be trained on the multi step error (`recursive_training`) and with a physics residual (`physics`).</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
@@ -116,6 +124,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TARGET_PREFIX</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.training_data</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingData</span><span class="p">,</span> <span class="n">TrainingDataGeneric</span><span class="p">,</span> <span class="n">TrainingDataMultiStep</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.training.recursive</span><span class="w"> </span><span class="kn">import</span> <span class="n">step_weights</span><span class="p">,</span> <span class="n">weighted_step_loss</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.utils.seed</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_seed</span>
 
 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'TF_CPP_MIN_LOG_LEVEL'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'2'</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">keras</span>
@@ -138,7 +147,7 @@
     <span class="n">plot_title</span> <span class="o">=</span> <span class="s2">"Artificial Neural Network"</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
-                 <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span>
+                 <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">recursive_training</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s1">'RecursiveTraining'</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">physics</span><span class="p">:</span> <span class="n">PhysicsResidual</span> <span class="o">|</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">physics_fit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'calibrate'</span><span class="p">,</span>
                  <span class="n">physics_learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -151,8 +160,9 @@
 <span class="sd">            learning_rate (float): Learning rate for the Adam optimizer.</span>
 <span class="sd">            early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.</span>
 <span class="sd">                                         If None, early stopping is disabled.</span>
-<span class="sd">            random_seed (int): Seed for random number generators to ensure reproducibility. It is set when</span>
-<span class="sd">                               the model is generated, not when the object is created.</span>
+<span class="sd">            random_seed (int, optional): Seed of the weight initialization and the batch order, set when the model</span>
+<span class="sd">                               is generated. Defaults to the global seed (`physXAI.set_seed`), else a new seed is</span>
+<span class="sd">                               drawn. The used seed is stored in the config.</span>
 <span class="sd">            recursive_training (RecursiveTraining, optional): Train on the multi step (recursive) error,</span>
 <span class="sd">                               see `physXAI.training.RecursiveTraining`. None trains on the single step error.</span>
 <span class="sd">            physics (PhysicsResidual, optional): A physics residual with trainable physical parameters, used in</span>
@@ -166,7 +176,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">epochs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">learning_rate</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">early_stopping_epochs</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">random_seed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">resolve_seed</span><span class="p">(</span><span class="n">random_seed</span><span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.training.recursive</span><span class="w"> </span><span class="kn">import</span> <span class="n">RecursiveTraining</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">recursive_training</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
             <span class="n">recursive_training</span> <span class="o">=</span> <span class="n">RecursiveTraining</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">recursive_training</span><span class="p">)</span>
@@ -190,6 +200,12 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_check_training_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_check_training_data</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">outputs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># the networks have one output neuron: several targets would be broadcast against it in the loss</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> predicts one output, got </span><span class="si">{</span><span class="n">td</span><span class="o">.</span><span class="n">outputs</span><span class="si">}</span><span class="s2">. Train one model per output "</span>
+                <span class="s2">"(as AgentLib-MPC expects it), or use LinearRegressionModel or an RNNModel for several outputs."</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">physics</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">physics</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">td</span><span class="o">.</span><span class="n">loss_columns</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
@@ -197,9 +213,6 @@
                     <span class="sa">f</span><span class="s2">"The training data holds no columns </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2"> of the physics residual. Pass the model to the "</span>
                     <span class="s2">"preprocessing, prep.pipeline(path, model=model), so it adds them as loss columns."</span>
                 <span class="p">)</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">outputs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Physics residuals need a model with one output, got </span><span class="si">{</span><span class="n">td</span><span class="o">.</span><span class="n">outputs</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
-
 
 <div class="viewcode-block" id="ANNModel.generate_model"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.generate_model">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -222,7 +235,7 @@
 
 <div class="viewcode-block" id="ANNModel.prepare"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.prepare">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Seeds keras before the model is generated, so weight initializations are reproducible."""</span>
-        <span class="n">keras</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">set_random_seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">)</span></div>
+        <span class="n">keras</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">set_random_seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span> <span class="o">%</span> <span class="mi">2</span><span class="o">**</span><span class="mi">32</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ANNModel.fit_model"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.fit_model">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
@@ -374,7 +387,7 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_neurons</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
                  <span class="n">activation_function</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'softplus'</span><span class="p">,</span> <span class="n">rescale_output</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                  <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
-                 <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                 <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">          Initializes the ClassicalANNModel.</span>
 
@@ -390,7 +403,7 @@
 <span class="sd">              learning_rate (float): Learning rate for the Adam optimizer.</span>
 <span class="sd">              early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.</span>
 <span class="sd">                                           If None, early stopping is disabled.</span>
-<span class="sd">              random_seed (int): Seed for random number generators to ensure reproducibility.</span>
+<span class="sd">              random_seed (int, optional): Seed of the weights and the batch order, defaults to the global seed.</span>
 <span class="sd">        """</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">epochs</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">,</span> <span class="n">early_stopping_epochs</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -429,13 +442,12 @@
 <div class="viewcode-block" id="LinANNModel"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.LinANNModel">[docs]</a><span class="nd">@register_model</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">LinANNModel</span><span class="p">(</span><span class="n">ANNModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    A hybrid model combining a Linear Regression model with an ANN (likely RBF)</span>
-<span class="sd">    that models the residuals of the linear regression.</span>
+<span class="sd">    A hybrid model: a linear regression (fitted first, then frozen) plus an RBF network trained on its residuals.</span>
 <span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_neurons</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">rescale_output</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                  <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
-                 <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                 <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Initializes the LinANNModel.</span>
 
@@ -448,7 +460,7 @@
 <span class="sd">            learning_rate (float): Learning rate for the Adam optimizer.</span>
 <span class="sd">            early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.</span>
 <span class="sd">                                           If None, early stopping is disabled.</span>
-<span class="sd">            random_seed (int): Seed for random number generators to ensure reproducibility.</span>
+<span class="sd">            random_seed (int, optional): Seed of the weights and the batch order, defaults to the global seed.</span>
 <span class="sd">        """</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">epochs</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">,</span> <span class="n">early_stopping_epochs</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">n_layers</span>
@@ -459,26 +471,24 @@
             <span class="s2">"n_layers"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span><span class="p">,</span>
             <span class="s2">"n_neurons"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_neurons</span><span class="p">,</span>
             <span class="s2">"rescale_output"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">rescale_output</span><span class="p">,</span>
-            <span class="s2">"random_state"</span><span class="p">:</span> <span class="n">random_seed</span>
         <span class="p">})</span>
 
 <div class="viewcode-block" id="LinANNModel.generate_model"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.LinANNModel.generate_model">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Generates the hybrid Linear + ANN model.</span>
-<span class="sd">        First, a Linear Regression model is trained. Then, an ANN (e.g., RBF)</span>
+<span class="sd">        First, a Linear Regression model is trained. Then, an RBF network</span>
 <span class="sd">        is constructed to model its residuals.</span>
 <span class="sd">        """</span>
 
         <span class="n">td</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">'td'</span><span class="p">]</span>
 
-        <span class="c1"># Train linear regression</span>
-        <span class="n">lr</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">()</span>
-        <span class="n">lr_model</span> <span class="o">=</span> <span class="n">lr</span><span class="o">.</span><span class="n">generate_model</span><span class="p">()</span>
-        <span class="n">lr</span><span class="o">.</span><span class="n">fit_model</span><span class="p">(</span><span class="n">lr_model</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span>
-        <span class="n">lr</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">lr_model</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span>
+        <span class="c1"># Fit the linear regression (only fitted: its evaluation would overwrite the results in td)</span>
+        <span class="n">lr_model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">()</span><span class="o">.</span><span class="n">generate_model</span><span class="p">()</span>
+        <span class="n">lr_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="p">,</span> <span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">)</span>
 
-        <span class="c1"># Construct residual model</span>
-        <span class="n">model</span> <span class="o">=</span> <span class="n">LinResidualANNConstruction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="p">,</span> <span class="n">td</span><span class="p">,</span> <span class="n">lr_model</span><span class="p">)</span>
+        <span class="c1"># Construct residual model (the k-means seed is the seed of the model, also if it changed after __init__)</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="p">,</span> <span class="s2">"random_state"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span> <span class="o">%</span> <span class="mi">2</span><span class="o">**</span><span class="mi">32</span><span class="p">}</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">LinResidualANNConstruction</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">td</span><span class="p">,</span> <span class="n">lr_model</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">model</span></div>
 
 <div class="viewcode-block" id="LinANNModel.get_config"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.LinANNModel.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
@@ -499,20 +509,20 @@
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_neurons</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">rescale_output</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                  <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
-                 <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                 <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Initializes the RBFModel.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            n_layers (int): Number of RBF layers.</span>
-<span class="sd">            n_neurons (int or list[int]): Number of RBF neurons in each layer.</span>
+<span class="sd">            n_layers (int): Number of RBF layers, only 1 is supported.</span>
+<span class="sd">            n_neurons (int or list[int]): Number of RBF neurons (k-means centers).</span>
 <span class="sd">            rescale_output (bool): Whether to rescale the model's output.</span>
 <span class="sd">            batch_size (int): Number of samples per gradient update.</span>
 <span class="sd">            epochs (int): Number of times to iterate over the entire training dataset.</span>
 <span class="sd">            learning_rate (float): Learning rate for the Adam optimizer.</span>
 <span class="sd">            early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.</span>
 <span class="sd">                                           If None, early stopping is disabled.</span>
-<span class="sd">            random_seed (int): Seed for random number generators to ensure reproducibility.</span>
+<span class="sd">            random_seed (int, optional): Seed of the weights and the batch order, defaults to the global seed.</span>
 <span class="sd">        """</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">epochs</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">,</span> <span class="n">early_stopping_epochs</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">n_layers</span>
@@ -523,7 +533,6 @@
             <span class="s2">"n_layers"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span><span class="p">,</span>
             <span class="s2">"n_neurons"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_neurons</span><span class="p">,</span>
             <span class="s2">"rescale_output"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">rescale_output</span><span class="p">,</span>
-            <span class="s2">"random_state"</span><span class="p">:</span> <span class="n">random_seed</span>
         <span class="p">})</span>
 
 <div class="viewcode-block" id="RBFModel.generate_model"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.RBFModel.generate_model">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -532,7 +541,8 @@
 <span class="sd">        """</span>
 
         <span class="n">td</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">'td'</span><span class="p">]</span>
-        <span class="n">model</span> <span class="o">=</span> <span class="n">RBFModelConstruction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span>
+        <span class="c1"># the k-means seed is the seed of the model, also if it changed after __init__ (repeat_training)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">RBFModelConstruction</span><span class="p">({</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="p">,</span> <span class="s2">"random_state"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span> <span class="o">%</span> <span class="mi">2</span><span class="o">**</span><span class="mi">32</span><span class="p">},</span> <span class="n">td</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">model</span></div>
 
 <div class="viewcode-block" id="RBFModel.get_config"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.RBFModel.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
@@ -556,7 +566,7 @@
                  <span class="n">activation_function</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'softplus'</span><span class="p">,</span> <span class="n">rescale_output</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                  <span class="n">monotonies</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">activation_split</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
-                 <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                 <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Initializes the CMNNModel.</span>
 
@@ -574,7 +584,7 @@
 <span class="sd">            learning_rate (float): Learning rate for the Adam optimizer.</span>
 <span class="sd">            early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.</span>
 <span class="sd">                                           If None, early stopping is disabled.</span>
-<span class="sd">            random_seed (int): Seed for random number generators to ensure reproducibility.</span>
+<span class="sd">            random_seed (int, optional): Seed of the weights and the batch order, defaults to the global seed.</span>
 <span class="sd">        """</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">epochs</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">,</span> <span class="n">early_stopping_epochs</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">n_layers</span>
@@ -645,7 +655,7 @@
                  <span class="n">monotonies</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">activation_split</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">normalize_terms</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">early_stopping_on</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'data'</span><span class="p">,</span>
                  <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
-                 <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                 <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Initializes the PINNModel.</span>
 
@@ -668,7 +678,7 @@
 <span class="sd">            learning_rate (float): Learning rate for the Adam optimizer.</span>
 <span class="sd">            early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.</span>
 <span class="sd">                                           If None, early stopping is disabled.</span>
-<span class="sd">            random_seed (int): Seed for random number generators to ensure reproducibility.</span>
+<span class="sd">            random_seed (int, optional): Seed of the weights and the batch order, defaults to the global seed.</span>
 <span class="sd">        """</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">epochs</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">,</span> <span class="n">early_stopping_epochs</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">physics_targets</span><span class="p">:</span>
@@ -807,7 +817,8 @@
 <span class="sd">        learning_rate: Learning rate of the Adam optimizer.</span>
 <span class="sd">        batch_size: Number of sequences per batch.</span>
 <span class="sd">        early_stopping_epochs: Patience of the early stopping on the validation loss (None disables it).</span>
-<span class="sd">        random_seed: Seed of the weight initialization, set when the model is generated.</span>
+<span class="sd">        random_seed: Seed of the weight initialization and the batch order, set when the model is generated.</span>
+<span class="sd">                     Defaults to the global seed (`physXAI.set_seed`), else a new seed is drawn (stored in the config).</span>
 <span class="sd">        feature_architecture: An expression (`physXAI.expr`), or a list of them, building the inputs of</span>
 <span class="sd">                              the recurrent layer out of the input features. Variables are not</span>
 <span class="sd">                              normalized, wrap them in `px.Normalize` where needed.</span>
@@ -828,7 +839,7 @@
         <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
         <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
         <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
-        <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span>
+        <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">feature_architecture</span><span class="p">:</span> <span class="n">Expr</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">Expr</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">loss_on</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"trajectory"</span><span class="p">,</span>
         <span class="n">first_step_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -847,7 +858,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">learning_rate</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">batch_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">early_stopping_epochs</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">random_seed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">resolve_seed</span><span class="p">(</span><span class="n">random_seed</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">feature_architecture</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
             <span class="n">feature_architecture</span> <span class="o">=</span> <span class="n">expr_from_config</span><span class="p">(</span><span class="n">feature_architecture</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">feature_architecture</span><span class="p">,</span> <span class="n">Expr</span><span class="p">):</span>
@@ -871,7 +882,7 @@
 
 <div class="viewcode-block" id="RNNModel.prepare"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.prepare">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Seeds keras before the model is generated, so weight initializations are reproducible."""</span>
-        <span class="n">keras</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">set_random_seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">)</span></div>
+        <span class="n">keras</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">set_random_seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span> <span class="o">%</span> <span class="mi">2</span><span class="o">**</span><span class="mi">32</span><span class="p">)</span></div>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataMultiStep</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SequenceSpec</span><span class="p">:</span>
         <span class="n">spec</span> <span class="o">=</span> <span class="n">SequenceSpec</span><span class="o">.</span><span class="n">from_training_data</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
@@ -959,6 +970,7 @@
                         <span class="n">plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">save_model</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">show_plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Loads a saved step model, trains it further on `td`, evaluates, plots and saves it."""</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_check_training_data</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_training_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">load_path</span><span class="p">),</span> <span class="n">td</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">compile_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">online_pipeline_internal</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
@@ -1004,14 +1016,7 @@
             <span class="s1">'first_step_weight'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_step_weight</span><span class="p">,</span>
             <span class="s1">'step_weights'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_weights</span><span class="p">,</span>
         <span class="p">})</span>
-        <span class="k">return</span> <span class="n">config</span></div>
-
-<div class="viewcode-block" id="RNNModel.from_config"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.from_config">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">'RNNModel'</span><span class="p">:</span>
-        <span class="n">config</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-        <span class="n">config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'physXAI_version'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="n">config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'__class_name__'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">config</span></div></div>
 
 <div class="viewcode-block" id="PCNNModel"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel">[docs]</a><span class="nd">@register_model</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">PCNNModel</span><span class="p">(</span><span class="n">RNNModel</span><span class="p">):</span>

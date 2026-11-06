@@ -85,9 +85,10 @@
              
   <h1>Source code for physXAI.agentlib_mpc_plugin.example</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""</span>
-<span class="sd">Example to demonstrate interplay of physXAI and agentlib_mpc to train a simple ANN for one_room_mpc</span>
-<span class="sd">Training script of the AgentLib-MPC example one_room_mpc (example_ci.py: the same with 10 epochs for its CI).</span>
-<span class="sd">A tutorial on the export is examples/13_agentlib_mpc.py.</span>
+<span class="sd">Training script of the AgentLib-MPC example 'one_room_mpc': a classical ANN of the room temperature (1000 epochs).</span>
+
+<span class="sd">`example.py` is used by the example, `example_ci.py` (the same with 10 epochs) by the CI of AgentLib-MPC. A tutorial</span>
+<span class="sd">on the export is `examples/13_agentlib_mpc.py`.</span>
 <span class="sd">"""</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI</span><span class="w"> </span><span class="kn">import</span> <span class="n">expr</span> <span class="k">as</span> <span class="n">px</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">Run</span>
@@ -97,9 +98,7 @@
 
 <div class="viewcode-block" id="train_model"><a class="viewcode-back" href="../../../code/physXAI.agentlib_mpc_plugin.html#physXAI.agentlib_mpc_plugin.example.train_model">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">train_model</span><span class="p">(</span><span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">folder_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">training_data_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">time_step</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                    <span class="n">output_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'T'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Example to demonstrate interplay of physXAI and agentlib_mpc to train a simple ANN for one_room_mpc</span>
-<span class="sd">    """</span>
+<span class="w">    </span><span class="sd">"""Trains the model of the room temperature, saves it for AgentLib-MPC and returns its name."""</span>
 
     <span class="n">run</span> <span class="o">=</span> <span class="n">Run</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="n">folder_name</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 

@@ -105,6 +105,7 @@ evaluated on data (NumPy / pandas), built into a Keras model and translated to C
 <p>Derived quantities are best placed inside the model. They are recomputed in every step of a recursive
 prediction, and the MPC only needs the raw inputs:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModularANN</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreprocessingSingleStep</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">ModularANN</span><span class="p">(</span><span class="n">px</span><span class="o">.</span><span class="n">Linear</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">mDot</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">load</span><span class="p">,</span> <span class="n">vT</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">T</span><span class="p">]),</span> <span class="n">solver</span><span class="o">=</span><span class="s2">"ols"</span><span class="p">)</span>   <span class="c1"># linear regression in closed form</span>
 <span class="n">prep</span> <span class="o">=</span> <span class="n">PreprocessingSingleStep</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="n">px</span><span class="o">.</span><span class="n">Change</span><span class="p">(</span><span class="s2">"T"</span><span class="p">))</span>
@@ -133,19 +134,19 @@ feature are recomputed in every step.</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">px.Linear(inputs,</span> <span class="pre">monotonicities=None,</span> <span class="pre">normalize=None)</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">px.Linear(inputs,</span> <span class="pre">monotonicities=None,</span> <span class="pre">bias=True,</span> <span class="pre">normalize=False)</span></code></p></td>
 <td><p>weighted sum, optionally with monotonic weights</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">px.MLP(inputs,</span> <span class="pre">n_layers=1,</span> <span class="pre">n_neurons=32,</span> <span class="pre">activation='softplus')</span></code></p></td>
 <td><p>neural network</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">px.MonotoneMLP(inputs,</span> <span class="pre">monotonicities,</span> <span class="pre">activation_split=None)</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">px.MonotoneMLP(inputs,</span> <span class="pre">monotonicities={...},</span> <span class="pre">activation_split=None)</span></code></p></td>
 <td><p>constrained monotonic network (CMNN)</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">px.Polynomial(inputs,</span> <span class="pre">degree=2,</span> <span class="pre">interaction_degree=1)</span></code></p></td>
 <td><p>polynomial features</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">px.RBF(inputs,</span> <span class="pre">units=32)</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">px.RBF(inputs,</span> <span class="pre">units=32,</span> <span class="pre">random_state=None)</span></code></p></td>
 <td><p>radial basis functions (extrapolate to 0, for residual models)</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">px.Mean(inputs)</span></code></p></td>
@@ -163,7 +164,10 @@ feature are recomputed in every step.</p>
 </tbody>
 </table>
 <p>Arithmetic (<code class="docutils literal notranslate"><span class="pre">+</span> <span class="pre">-</span> <span class="pre">*</span> <span class="pre">/</span> <span class="pre">**</span></code>), <code class="docutils literal notranslate"><span class="pre">px.exp</span></code>, <code class="docutils literal notranslate"><span class="pre">px.relu</span></code>, <code class="docutils literal notranslate"><span class="pre">px.sigmoid</span></code>, <code class="docutils literal notranslate"><span class="pre">px.softplus</span></code>, <code class="docutils literal notranslate"><span class="pre">px.tanh</span></code> and constants
-(<code class="docutils literal notranslate"><span class="pre">px.Const</span></code>) combine them. Blocks normalize their inputs; arithmetic works on physical values.</p>
+(<code class="docutils literal notranslate"><span class="pre">px.Const</span></code>) combine them. Arithmetic works on physical values. <code class="docutils literal notranslate"><span class="pre">MLP</span></code>, <code class="docutils literal notranslate"><span class="pre">MonotoneMLP</span></code> and <code class="docutils literal notranslate"><span class="pre">RBF</span></code> normalize their
+inputs with the statistics of the training data; <code class="docutils literal notranslate"><span class="pre">Linear</span></code>, <code class="docutils literal notranslate"><span class="pre">Polynomial</span></code> and <code class="docutils literal notranslate"><span class="pre">Mean</span></code> do not (<code class="docutils literal notranslate"><span class="pre">normalize=True</span></code> turns it
+on), so their weights keep their physical meaning. The second positional argument of every block is its <code class="docutils literal notranslate"><span class="pre">name</span></code>, so
+the other settings are given as keywords.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">v</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Vars</span><span class="p">()</span>
 <span class="n">T</span><span class="p">,</span> <span class="n">T_amb</span><span class="p">,</span> <span class="n">u_hp</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">reaTZon_y</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">weaSta_reaWeaTDryBul_y</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">oveHeaPumY_u</span>
 <span class="n">architecture</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Linear</span><span class="p">([</span>
