@@ -1,0 +1,34 @@
+physXAI.expr package
+====================
+
+.. automodule:: physXAI.expr
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+physXAI.expr.blocks module
+--------------------------
+
+.. automodule:: physXAI.expr.blocks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+physXAI.expr.core module
+------------------------
+
+.. automodule:: physXAI.expr.core
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+physXAI.expr.serialization module
+---------------------------------
+
+.. automodule:: physXAI.expr.serialization
+   :members:
+   :undoc-members:
+   :show-inheritance:
