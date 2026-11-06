@@ -1,12 +1,12 @@
 from physXAI.models.models import LinearRegressionModel
-from physXAI.models.ann.ann_design import ClassicalANNModel
-from physXAI.preprocessing.preprocessing import PreprocessingMultiStep
+from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 from physXAI.utils.logging import Logger
 
 
 """
-Creates a linear regression to predict the air temperature using the Boptest data
-The model is trained as a single step model, but evaluated as a multi step model
+Creates a linear regression to predict the air temperature using the Boptest data.
+The model is trained as a single step model, but also evaluated over a horizon of 48 steps: it is
+applied recursively, as in an MPC, which shows how its error grows over the horizon.
 """
 # Setup up logger for saving
 Logger.setup_logger(folder_name='TAir', override=True)
@@ -15,25 +15,13 @@ Logger.setup_logger(folder_name='TAir', override=True)
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
 
 # List of input features. Lagged inputs ('X_lag1') and changes ('Change(X)') are derived automatically
-inputs = ['reaTZon_y', 'reaTZon_y_lag1', 'reaTZon_y_lag2', 'weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaTDryBul_y_lag1',
-          'weaSta_reaWeaHDirNor_y', 'oveHeaPumY_u', 'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2']
-# Output feature
-output = 'Change(T_zone)'
+inputs = ['weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaTDryBul_y_lag1', 'weaSta_reaWeaHDirNor_y', 'oveHeaPumY_u',
+          'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2', 'reaTZon_y', 'reaTZon_y_lag1', 'reaTZon_y_lag2']
+# Output feature: the change of the air temperature, which is also an input (recursive feature)
+output = 'Change(reaTZon_y)'
 
-# Lagged inputs ('X_lag1', ...) are derived automatically from their names
-
-# Create Training data
-"""
-The model is trained as a single step model and evaluated as a multi step model
-warmup_width should be 0 as initial values cannot be processed by single step models
-init_features: There are two prediction modes for multi-step: 
-(0) Predict change of original variable, (1) Predict original variable
-init_features should contain original variable, can be None in mode (1)
-overlapping_sequence should be False to avoid duplicate labels for single step prediction
-batch_size should be 1 as batches are processes differently in single step models
-"""
-prep = PreprocessingMultiStep(inputs=inputs, output=output, label_width=48, warmup_width=0, init_features=['reaTZon_y'],
-                              overlapping_sequences=False, batch_size=1)
+# Create Training data. eval_horizon adds the recursive evaluation over 48 steps
+prep = PreprocessingSingleStep(inputs=inputs, output=output, eval_horizon=48)
 # Process Training data
 td = prep.pipeline(file_path)
 

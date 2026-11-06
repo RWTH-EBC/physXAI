@@ -1,281 +1,334 @@
+"""
+Construction of recurrent (multi step) models.
+
+Two keras models are built:
+
+- The **step model** `rnn_step` maps `[sequence, *states] -> [prediction, *states]` for a sequence of
+  any length. It is the model that is saved and used in AgentLib-MPC, which applies it one step at a
+  time and warms its states up on the measured past.
+- The **sequence model** wraps the step model for training and evaluation. It starts from zero
+  states, warms up on the first `warmup` steps of a sequence (not part of the loss) and predicts the
+  following `horizon` steps:
+
+  - An output 'Change(T)' is accumulated to the trajectory of T, starting from the measured value
+    T(t0), so the model can be trained on the trajectory.
+  - If a predicted feature is also an input of the model, it is fed back during the prediction
+    (closed loop), as in an MPC. During the warmup the measured values are used.
+"""
+
+from __future__ import annotations
+
 import os
-from typing import Optional, Union
+from dataclasses import dataclass
+
 import numpy as np
-from physXAI.preprocessing.training_data import TrainingDataMultiStep
-from physXAI.models.ann.configs.ann_model_configs import RNNModelConstruction_config
+
 from physXAI.expr import Expr
 from physXAI.expr.core import BuildContext
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-import keras
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+from physXAI.models.ann.configs.ann_model_configs import RNNModelConstruction_config
 
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+import keras  # noqa: E402
 
-def RNNModelConstruction(config: dict, td: TrainingDataMultiStep,
-                         feature_architecture: Optional[list[Expr]] = None):
-    """
-    Constructs a Recurrent Neural Network (RNN) model for multi-step time series forecasting.
-    The model can optionally use a "warmup" sequence to initialize the RNN's hidden state.
-
-    Args:
-        config (dict): A dictionary containing configuration parameters for the RNN model.
-                       Validated against `RNNModelConstruction_config`.
-        td (TrainingDataMultiStep): An object containing the multi-step training data.
-                                    It provides shapes for inputs, outputs, and warmup sequences.
-        feature_architecture (list[Expr], optional): Expressions (physXAI.expr) that build
-                                    the inputs of the recurrent layer out of the input features. If
-                                    None, the normalized input features are used directly.
-
-    An 'init_layer' of None or 'out_model' builds no separate initialization model, but applies
-    the output model to the warmup sequence, starting from zeros. That is what an MPC does.
-
-    Returns:
-        keras.Model: The constructed Keras functional model for RNN-based forecasting.
-    """
-
-    # Validate the input configuration dictionary using the Pydantic model and convert it to a dictionary
-    config = RNNModelConstruction_config.model_validate(config).model_dump()
-
-    # Get boundary conditions from training data
-    # With initialization data
-    if isinstance(td.X_train, tuple):
-        warmup = True
-        out_steps = td.X_train[0].shape[1]
-        warmup_width = td.X_train[1].shape[1]
-        num_features = td.X_train[0].shape[2]
-        num_warmup_features = td.X_train[1].shape[2]
-    # Without initialization data
-    else:
-        warmup = False
-        out_steps = td.X_train.shape[1]
-        warmup_width = 0
-        num_features = td.X_train.shape[2]
-        num_warmup_features = 0
-    num_outputs = td.y_train.shape[2]
-
-    # Get config
-    rnn_units = config['rnn_units']
-    init_layer = config['init_layer']
-    rnn_layer = config['rnn_layer']
-
-    # Rescaling for output layer
-    rescale_mean = keras.ops.cast(keras.ops.mean(td.y_train), dtype="float32")
-    rescale_sigma = keras.ops.cast(keras.ops.std(td.y_train), dtype="float32")
-
-    # Input layer
-    inputs = keras.Input(shape=(out_steps, num_features))
-
-    # Output rnn model
-    o_model = out_model(td.X_train_single, num_features, rnn_layer, rnn_units,  num_outputs,
-                        rescale_mean, rescale_sigma, td=td, feature_architecture=feature_architecture)
-
-    # Warmup
-    if warmup:
-        initial_value_layer = keras.Input(shape=(warmup_width, num_warmup_features))
-        if init_layer is None or init_layer == 'out_model':
-            # No separate initialization model: the states are warmed up by applying the
-            # output model itself to the measured past, starting from zeros.
-            if num_warmup_features != num_features:
-                raise ValueError(
-                    f"Config Error: With init_layer 'out_model' the warmup sequence has to hold the "
-                    f"same features as the input sequence, since the same model is applied to both. "
-                    f"The warmup has {num_warmup_features} features, the input {num_features}. Set "
-                    f"'init_features' of the preprocessing to the inputs of the model."
-                )
-            int_model = init_zeros(num_features, rnn_units, warmup_width)
-            zero_state = [int_model(initial_value_layer) for _ in range(number_of_states(rnn_layer))]
-            _, *state = o_model([initial_value_layer, zero_state])
-        else:
-            # Create warmup model
-            int_model = init_model(td.X_train[1].reshape(-1, num_warmup_features), warmup_width,
-                                   num_warmup_features, init_layer, rnn_layer, rnn_units)
-            state = int_model(initial_value_layer)
-
-    # No warmup
-    else:
-        # Initialize models with zeros
-        initial_value_layer = None
-        int_model = init_zeros(num_features, rnn_units, out_steps)
-        state = [int_model(inputs) for _ in range(number_of_states(rnn_layer))]
-
-    # Get output predictions
-    prediction, *_ = o_model([inputs, state])
-
-    # Reshape output
-    outputs = keras.layers.Reshape((out_steps, num_outputs))(prediction)
-
-    # Define the model
-    if warmup:
-        model = keras.Model([inputs, initial_value_layer], outputs)
-    else:
-        model = keras.Model(inputs, outputs)
-
-    model.summary()
-    if warmup:
-        int_model.summary()
-    o_model.summary()
-
-    return model
+STEP_MODEL_NAME = "rnn_step"
+RNN_LAYERS = {"RNN": keras.layers.SimpleRNN, "GRU": keras.layers.GRU, "LSTM": keras.layers.LSTM}
 
 
 def number_of_states(rnn_layer: str) -> int:
-    """
-    Number of state tensors a recurrent layer carries between two time steps.
-
-    Args:
-        rnn_layer (str): Type of RNN layer ('GRU', 'RNN', 'LSTM').
-
-    Returns:
-        int: 2 for an LSTM, which has a cell state next to its output, 1 otherwise.
-    """
+    """Number of state tensors a recurrent layer carries between two time steps (2 for an LSTM)."""
     return 2 if rnn_layer == "LSTM" else 1
 
 
-def init_model(warmup_df: np.ndarray, warmup_width: int, num_warmup_features: int, init_layer: str,
-               rnn_layer: str, rnn_units: int):
+@dataclass
+class SequenceSpec:
     """
-    Creates a Keras model to initialize the RNN state using a warmup sequence.
+    Describes the in- and outputs of a recurrent model.
+
+    Attributes:
+        n_inputs: Number of input features.
+        difference: Per output, whether it is the change of its feature.
+        feedback: Pairs (input index, output index) of predicted features which are also inputs.
+        absolute: Whether the start values of the features are known (trajectories are absolute).
+    """
+
+    n_inputs: int
+    difference: list[bool]
+    feedback: list[tuple[int, int]]
+    absolute: bool
+
+    @property
+    def n_outputs(self) -> int:
+        return len(self.difference)
+
+    @classmethod
+    def from_training_data(cls, td) -> SequenceSpec:
+        feedback = [(td.inputs.index(f), j) for j, f in enumerate(td.features) if f in td.inputs]
+        return cls(len(td.inputs), list(td.difference), feedback, bool(td.absolute))
+
+
+def build_step_model(
+    config: dict, td, feature_architecture: list[Expr] | None = None, name: str = STEP_MODEL_NAME
+) -> keras.Model:
+    """
+    Builds the step model `[sequence, *states] -> [prediction, *states]`.
 
     Args:
-        warmup_df (np.ndarray): The warmup sequence data  used to adapt the normalization layer.
-                                Shape (samples, warmup_width, num_warmup_features).
-        warmup_width (int): Number of time steps in the warmup sequence.
-        num_warmup_features (int): Number of features in the warmup sequence.
-        init_layer (str): Type of layer to process the warmup sequence ('dense', 'GRU', 'RNN', 'LSTM').
-        rnn_layer (str): Type of the main RNN layer ('LSTM', 'GRU', 'RNN'), used to determine
-                             the number of state tensors needed if init_layer_type is 'dense'.
-        rnn_units (int): Number of units for the RNN/Dense layers used in initialization.
-
-    Returns:
-        keras.Model: A Keras model that takes a warmup sequence and returns the initial RNN state(s).
+        config: Settings, validated by `RNNModelConstruction_config` (rnn_units, rnn_layer).
+        td: `TrainingDataMultiStep`, used for the normalization of in- and outputs.
+        feature_architecture: Expressions (`physXAI.expr`) building the inputs of the recurrent layer
+                              out of the input features. Defaults to the normalized inputs.
+        name: Name of the model.
     """
+    config = RNNModelConstruction_config.model_validate(config).model_dump()
+    units, rnn_layer = config["rnn_units"], config["rnn_layer"]
+    n_inputs, n_outputs = len(td.inputs), len(td.outputs)
+    X = td.X_train_single
+    targets = td.targets("train").reshape(-1, n_outputs)
 
-    # Input layer
-    inputs = keras.Input(shape=(warmup_width, num_warmup_features))
-
-    # Normalization layer
-    normalization_layer = keras.layers.Normalization()
-    normalization_layer.adapt(warmup_df)
-    normalized_inputs = normalization_layer(inputs)
-    normalized_inputs = keras.layers.Reshape((warmup_width, num_warmup_features))(normalized_inputs)
-
-    # Init layer
-    if init_layer == 'dense':
-        dense_init = keras.layers.Dense(units=rnn_units, activation='softplus')
-        normalized_inputs = keras.layers.Flatten()(normalized_inputs)
-        if rnn_layer == 'LSTM':  # For LSTM, creating two Dense layers
-            dense_init2 = keras.layers.Dense(units=rnn_units, activation='softplus')
-            state = [dense_init(normalized_inputs), dense_init2(normalized_inputs)]
-        else:
-            state = [dense_init(normalized_inputs)]
-    elif init_layer == 'GRU':
-        rnn_init = keras.layers.GRU(units=rnn_units, return_state=True)
-        _, *state = rnn_init(normalized_inputs)
-    elif init_layer == 'RNN':
-        rnn_init = keras.layers.SimpleRNN(units=rnn_units, return_state=True)
-        _, *state = rnn_init(normalized_inputs)
-    elif init_layer == "LSTM":
-        rnn_init = keras.layers.LSTM(units=rnn_units, return_state=True)
-        _, *state = rnn_init(normalized_inputs)
-    else:
-        raise NotImplementedError(f'Not implemented {init_layer}')
-
-    return keras.Model(inputs, state, name='init_model')
-
-
-def init_zeros(num_features: int, rnn_units: int, out_steps: int):
-    """
-    Creates a Keras model that generates a zero initial state for an RNN.
-    The state's batch size dimension will match the input batch size.
-
-    Args:
-        num_features (int): Number of features in the main input sequence (used by the input layer).
-        rnn_units (int): The number of units in the RNN, determining the size of the zero state.
-        out_steps (int): Number of time steps in the main input sequence.
-
-    Returns:
-        keras.Model: A Keras model that takes a dummy input (main sequence shape) and
-                     returns a zero tensor suitable as an initial RNN hidden state.
-    """
-    initial_value_layer = keras.Input(shape=(out_steps, num_features))
-    crop = keras.layers.Cropping1D(cropping=(0, out_steps-1))
-    dense_zeros = keras.layers.Dense(rnn_units, activation='linear', use_bias=False,
-                                     kernel_initializer=keras.initializers.Zeros())
-    dense_zeros.trainable = False
-    cropped = crop(initial_value_layer)
-    zeros = keras.layers.Reshape((1, num_features))(cropped)
-    zeros = keras.layers.Flatten()(zeros)
-    zeros = dense_zeros(zeros)
-    return keras.Model(inputs=initial_value_layer, outputs=zeros, name='init_zeros')
-
-
-def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_units: int, num_outputs: int,
-              rescale_mean: float, rescale_sigma: float, td: TrainingDataMultiStep = None,
-              feature_architecture: Optional[list[Expr]] = None):
-    """
-    Creates the main Keras model that processes an input sequence with an initial RNN state
-    to produce predictions and the final RNN state.
-
-    Args:
-        inputs_df (np.ndarray): The main input sequence data used to adapt the normalization layer.
-                                Shape (samples, steps, features).
-        num_features (int): Number of features in the main input sequence.
-        rnn_layer (str): Type of RNN layer to use ('GRU', 'RNN', 'LSTM').
-        rnn_units (int): Number of units in the RNN layer.
-        num_outputs (int): Number of output features to predict at each time step.
-        rescale_mean (float): Mean value for denormalizing the model's normalized predictions back to the original scale (used as the offset in the Rescaling layer; inverse z-score transformation: value * sigma + mean).
-        rescale_sigma (float): Standard deviation for denormalizing the model's normalized predictions back to the original scale (used as the scale in the Rescaling layer; inverse z-score transformation: value * sigma + mean).
-        td (TrainingDataMultiStep, optional): The training data, needed if a feature architecture is used.
-        feature_architecture (list[Expr], optional): Expressions (physXAI.expr) that build the
-                                inputs of the recurrent layer out of the input features. This allows using
-                                physically motivated combinations of features. If None, the normalized input
-                                features are used directly.
-
-    Returns:
-        keras.Model: A Keras model that takes [main_input_sequence, initial_state(s)]
-                     and returns [prediction_sequence, final_state(s)].
-    """
-    # Input layer
-    inputs = keras.Input(shape=(None, num_features))
+    # AgentLib-MPC recognizes input layers by 'input' in their name
+    sequence = keras.Input(shape=(None, n_inputs), name="sequence_input")
+    states = [keras.Input(shape=(units,), name=f"state_input_{i}") for i in range(number_of_states(rnn_layer))]
 
     if feature_architecture is None:
-        # Normalization layer
-        normalization_layer = keras.layers.Normalization()
-        normalization_layer.adapt(inputs_df)
-        normalized_inputs = normalization_layer(inputs)
+        normalization = keras.layers.Normalization(mean=X.mean(axis=0), variance=np.maximum(X.var(axis=0), 1e-12))
+        features = normalization(sequence)
     else:
-        # The modular expressions slice the features they need out of the last axis of the
-        # input, so they work on sequences just as well as on single time steps. Like for
-        # a ModularANN, they bring their own normalization.
-        X = td.X_train_single
-        ctx = BuildContext(inputs, td.columns, {name: X[:, i] for i, name in enumerate(td.columns)})
+        # the expressions slice the features they need out of the last axis, so they work on
+        # sequences as well as on single time steps
+        ctx = BuildContext(sequence, td.inputs, {c: X[:, i] for i, c in enumerate(td.inputs)})
         channels = [ctx.tensor(expression) for expression in feature_architecture]
-        if len(channels) == 1:
-            normalized_inputs = channels[0]
-        else:
-            normalized_inputs = keras.layers.Concatenate()(channels)
+        features = channels[0] if len(channels) == 1 else keras.layers.Concatenate()(channels)
 
-    # RNN layer
-    if rnn_layer == "GRU":
-        input_init = keras.Input(shape=(rnn_units,))
-        rnn = keras.layers.GRU(rnn_units, return_state=True, return_sequences=True)
-    elif rnn_layer == "RNN":
-        input_init = keras.Input(shape=(rnn_units,))
-        rnn = keras.layers.SimpleRNN(rnn_units, return_state=True, return_sequences=True)
-    elif rnn_layer == "LSTM":
-        input_init = [keras.Input(shape=(rnn_units,)) for _ in range(2)]  # List of two inputs for LSTM states
-        rnn = keras.layers.LSTM(rnn_units, return_state=True, return_sequences=True)
+    rnn = RNN_LAYERS[rnn_layer](units, return_sequences=True, return_state=True)
+    hidden, *new_states = rnn(features, initial_state=states)
+    prediction = keras.layers.Dense(n_outputs)(hidden)
+    # plain floats: a Rescaling layer holding tensors cannot be serialized
+    scale = [float(v) for v in np.maximum(targets.std(axis=0), 1e-12)]
+    offset = [float(v) for v in targets.mean(axis=0)]
+    prediction = keras.layers.Rescaling(
+        scale=scale if n_outputs > 1 else scale[0], offset=offset if n_outputs > 1 else offset[0]
+    )(prediction)
+    return keras.Model([sequence, *states], [prediction, *new_states], name=name)
+
+
+def state_sizes(step_model: keras.Model) -> list[int]:
+    """Sizes of the states of a step model."""
+    return [int(t.shape[-1]) for t in step_model.inputs[1:]]
+
+
+@keras.saving.register_keras_serializable(package="physXAI")
+class ZeroStates(keras.layers.Layer):
+    """Zero states (batch, size) for every size, with the batch size of the input."""
+
+    def __init__(self, sizes: list[int], **kwargs):
+        super().__init__(**kwargs)
+        self.sizes = [int(s) for s in sizes]
+
+    def call(self, inputs):
+        batch = keras.ops.shape(inputs)[0]
+        return [keras.ops.zeros((batch, size), dtype=inputs.dtype) for size in self.sizes]
+
+    def get_config(self):
+        return {**super().get_config(), "sizes": self.sizes}
+
+
+@keras.saving.register_keras_serializable(package="physXAI")
+class TimeSlice(keras.layers.Layer):
+    """Steps [start, stop) of a sequence (batch, steps, features)."""
+
+    def __init__(self, start: int = 0, stop: int | None = None, **kwargs):
+        super().__init__(**kwargs)
+        self.start, self.stop = int(start), None if stop is None else int(stop)
+
+    def call(self, inputs):
+        return inputs[:, self.start : self.stop, :]
+
+    def get_config(self):
+        return {**super().get_config(), "start": self.start, "stop": self.stop}
+
+
+@keras.saving.register_keras_serializable(package="physXAI")
+class Accumulate(keras.layers.Layer):
+    """Trajectory of the features: start value plus the accumulated changes (absolute outputs as they are)."""
+
+    def __init__(self, difference: list[bool], **kwargs):
+        super().__init__(**kwargs)
+        self.difference = [bool(d) for d in difference]
+
+    def call(self, prediction, initial):
+        mask = keras.ops.convert_to_tensor(np.asarray(self.difference, dtype="float32").reshape(1, 1, -1))
+        accumulated = initial[:, None, :] + keras.ops.cumsum(prediction, axis=1)
+        return mask * accumulated + (1.0 - mask) * prediction
+
+    def get_config(self):
+        return {**super().get_config(), "difference": self.difference}
+
+
+class ClosedLoopCell(keras.layers.Layer):
+    """
+    RNN cell applying the step model one step at a time and feeding predicted features back.
+
+    State: [values of the predicted features, *states of the step model].
+    Input: one row of input features; the fed back features are replaced by the predicted values.
+    Output: [trajectory of the predicted features, outputs of the step model].
+    """
+
+    def __init__(self, step_model: keras.Model, spec: SequenceSpec, **kwargs):
+        super().__init__(**kwargs)
+        self.step_model = step_model
+        slots = np.zeros((spec.n_outputs, spec.n_inputs), dtype="float32")
+        for i, j in spec.feedback:
+            slots[j, i] = 1.0
+        self.slots = slots
+        self.mask = slots.sum(axis=0, keepdims=True)
+        self.difference = np.asarray(spec.difference, dtype="float32").reshape(1, -1)
+        self.state_size = [spec.n_outputs, *state_sizes(step_model)]
+        self.output_size = 2 * spec.n_outputs
+
+    def call(self, inputs, states):
+        values, *rnn_states = states
+        row = inputs * (1.0 - self.mask) + keras.ops.matmul(values, self.slots)
+        prediction, *rnn_states = self.step_model([row[:, None, :], *rnn_states])
+        prediction = prediction[:, 0, :]
+        values = self.difference * (values + prediction) + (1.0 - self.difference) * prediction
+        return keras.ops.concatenate([values, prediction], axis=-1), [values, *rnn_states]
+
+
+@keras.saving.register_keras_serializable(package="physXAI")
+class TakeFeatures(keras.layers.Layer):
+    """Features [start, stop) of the last axis."""
+
+    def __init__(self, start: int, stop: int, **kwargs):
+        super().__init__(**kwargs)
+        self.start, self.stop = int(start), int(stop)
+
+    def call(self, inputs):
+        return inputs[..., self.start : self.stop]
+
+    def get_config(self):
+        return {**super().get_config(), "start": self.start, "stop": self.stop}
+
+
+def needs_initial(spec: SequenceSpec, trajectory: bool) -> bool:
+    """Whether the sequence model needs the start values of the predicted features."""
+    return bool(spec.feedback) or (trajectory and spec.absolute and any(spec.difference))
+
+
+def build_sequence_model(
+    step_model: keras.Model, spec: SequenceSpec, warmup: int, horizon: int, trajectory: bool = True
+) -> keras.Model:
+    """
+    Wraps the step model for the prediction of sequences (see the module docstring).
+
+    Args:
+        step_model: The step model.
+        spec: In- and outputs of the model.
+        warmup: Number of warmup steps.
+        horizon: Number of predicted steps.
+        trajectory: If True (and the start values are known), the model returns the trajectories of
+                    the predicted features, else the outputs of the step model (e.g. the changes).
+
+    Returns:
+        keras.Model: [sequence (batch, warmup + horizon, inputs), start values (batch, outputs) if
+        `needs_initial`] -> (batch, horizon, outputs).
+    """
+    trajectory = trajectory and spec.absolute
+    sequence = keras.Input(shape=(warmup + horizon, spec.n_inputs), name="sequence")
+    inputs = [sequence]
+    initial = None
+    if needs_initial(spec, trajectory):
+        initial = keras.Input(shape=(spec.n_outputs,), name="initial")
+        inputs.append(initial)
+    states = ZeroStates(state_sizes(step_model))(sequence)
+
+    if not spec.feedback:
+        # open loop: the whole sequence in one pass, starting from zero states
+        prediction, *_ = step_model([sequence, *states])
+        if warmup:
+            prediction = TimeSlice(warmup)(prediction)
+        if trajectory and any(spec.difference):
+            prediction = Accumulate(spec.difference)(prediction, initial)
+        output = prediction
     else:
-        raise NotImplementedError(f'Not implemented {rnn_layer}')
+        # warmup on the measured past, then closed loop over the horizon
+        if warmup:
+            _, *states = step_model([TimeSlice(0, warmup)(sequence), *states])
+        future = TimeSlice(warmup)(sequence) if warmup else sequence
+        cell = ClosedLoopCell(step_model, spec)
+        result = keras.layers.RNN(cell, return_sequences=True)(future, initial_state=[initial, *states])
+        start = 0 if trajectory else spec.n_outputs
+        output = TakeFeatures(start, start + spec.n_outputs)(result)
+    return keras.Model(inputs, output, name="rnn_sequence")
 
-    # Predict outputs and states
-    pred, *state = rnn(normalized_inputs, initial_state=input_init)
 
-    # Final dense Layer
-    dense = keras.layers.Dense(num_outputs)
-    pred = dense(pred)
+def find_step_model(model: keras.Model) -> keras.Model:
+    """The step model of a sequence model (or the model itself, if it is a step model)."""
+    if model.name == STEP_MODEL_NAME:
+        return model
+    try:
+        return model.get_layer(STEP_MODEL_NAME)
+    except ValueError:
+        pass
+    for layer in model.layers:
+        if isinstance(layer, keras.layers.RNN) and isinstance(layer.cell, ClosedLoopCell):
+            return layer.cell.step_model
+    raise ValueError(f"The model '{model.name}' holds no step model '{STEP_MODEL_NAME}'.")
 
-    # Rescaling layer
-    rescaling_layer = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)
-    pred = rescaling_layer(pred)
 
-    return keras.Model([inputs, input_init], [pred, *state], name='out_model')
+def sequence_inputs(td, split: str, spec: SequenceSpec, trajectory: bool, horizon=None, stride=None):
+    """Inputs of the sequence model and the matching truth for a split (None if the split is empty)."""
+    data = td.sequences(split, horizon, stride)
+    if data is None:
+        return None
+    X, targets, initial = data
+    trajectory = trajectory and spec.absolute
+    x = [X, initial] if needs_initial(spec, trajectory) else X
+    y = td.trajectory(targets, initial) if trajectory else targets
+    return x, y
+
+
+def predict_sequences(model: keras.Model, td, horizon: int, stride: int) -> dict:
+    """
+    Predicts the trajectories of all sequences of `horizon` steps.
+
+    Returns:
+        dict: {split: (prediction, truth)}, both of shape (sequences, horizon, outputs).
+    """
+    from physXAI.preprocessing.splitting import SPLITS
+
+    step_model = find_step_model(model)
+    spec = SequenceSpec.from_training_data(td)
+    network = build_sequence_model(step_model, spec, td.warmup_width, horizon, trajectory=True)
+    predictions = dict()
+    for split in SPLITS:
+        data = sequence_inputs(td, split, spec, True, horizon, stride)
+        if data is not None:
+            predictions[split] = (network.predict(data[0], verbose=0, batch_size=1024), data[1])
+    return predictions
+
+
+def evaluate_sequences(model: keras.Model, td) -> None:
+    """
+    Evaluates a recurrent model on the sequences of `td` as it is applied in an MPC: warmup on the
+    measured past, closed loop for fed back features, accumulated changes. Stores the predictions,
+    the metrics (`MetricsMultiStep`) and the errors over the evaluation horizon (`HorizonMetrics`).
+    """
+    from physXAI.evaluation.metrics import MetricsMultiStep
+    from physXAI.evaluation.rollout import HorizonMetrics
+
+    label = predict_sequences(model, td, td.label_width, td.stride)
+
+    def prediction(split):
+        return label[split][0] if split in label else None
+
+    td.add_predictions(prediction("train"), prediction("val"), prediction("test"))
+    td.add_metrics(MetricsMultiStep(td))
+
+    if td.eval_horizon == td.label_width and td.eval_stride == td.stride:
+        horizon = label
+    else:
+        horizon = predict_sequences(model, td, td.eval_horizon, td.eval_stride)
+    td.horizon_predictions = horizon
+    if horizon:
+        features = td.features if td.absolute else td.outputs
+        td.horizon_metrics = HorizonMetrics(horizon, td.time_step, features)

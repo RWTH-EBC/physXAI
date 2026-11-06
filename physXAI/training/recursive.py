@@ -96,18 +96,7 @@ class RecursiveTraining:
 
     def weights(self, horizon: int) -> np.ndarray:
         """Normalized weight per step."""
-        if self.step_weights is not None:
-            if len(self.step_weights) != horizon:
-                raise ValueError(f"step_weights need {horizon} values, got {len(self.step_weights)}.")
-            weights = np.asarray(self.step_weights, dtype=np.float64)
-        elif horizon == 1:
-            weights = np.ones(1)
-        else:
-            weights = np.full(horizon, (1 - self.first_step_weight) / (horizon - 1))
-            weights[0] = self.first_step_weight
-        if np.any(weights < 0) or weights.sum() == 0:
-            raise ValueError("Step weights have to be non negative and not all zero.")
-        return weights / weights.sum()
+        return step_weights(horizon, self.first_step_weight, self.step_weights)
 
     def get_config(self) -> dict:
         return {
@@ -127,12 +116,49 @@ class RecursiveTraining:
         return None if config is None else cls(**config)
 
 
-def weighted_step_loss(weights: np.ndarray):
-    """Mean squared error over the horizon, weighted per step."""
+def step_weights(
+    horizon: int, first_step_weight: float | None = None, weights: list[float] | None = None
+) -> np.ndarray:
+    """
+    Normalized weight per prediction step.
+
+    Args:
+        horizon: Number of steps.
+        first_step_weight: Share of the first step (the other steps share the rest equally).
+                           None weights all steps equally.
+        weights: Optional weight per step, overrides `first_step_weight`.
+    """
+    if weights is not None:
+        if len(weights) != horizon:
+            raise ValueError(f"step_weights need {horizon} values, got {len(weights)}.")
+        result = np.asarray(weights, dtype=np.float64)
+    elif horizon == 1 or first_step_weight is None:
+        result = np.ones(horizon)
+    else:
+        result = np.full(horizon, (1 - first_step_weight) / (horizon - 1))
+        result[0] = first_step_weight
+    if np.any(result < 0) or result.sum() == 0:
+        raise ValueError("Step weights have to be non negative and not all zero.")
+    return result / result.sum()
+
+
+def weighted_step_loss(weights: np.ndarray, scale: np.ndarray | None = None):
+    """
+    Squared error summed over the horizon with a weight per step.
+
+    Args:
+        weights: Weight per step (normalized).
+        scale: Optional scale per output; errors are divided by it, so outputs of different units
+               contribute alike.
+    """
     w = keras.ops.convert_to_tensor(np.asarray(weights, dtype="float32").reshape(1, -1, 1))
+    n_outputs = 1 if scale is None else len(scale)
+    inverse = np.ones(n_outputs) if scale is None else 1.0 / np.maximum(np.asarray(scale, dtype=np.float64), 1e-12)
+    s = keras.ops.convert_to_tensor(inverse.astype("float32").reshape(1, 1, -1))
 
     def step_weighted_mse(y_true, y_pred):
-        return keras.ops.sum(w * keras.ops.square(y_true - y_pred), axis=(1, 2))
+        error = (y_true - y_pred) * s
+        return keras.ops.sum(w * keras.ops.mean(keras.ops.square(error), axis=-1, keepdims=True), axis=(1, 2))
 
     return step_weighted_mse
 
@@ -199,6 +225,7 @@ def fit_recursive(keras_model: keras.Model, td, config: RecursiveTraining, model
         epochs=config.epochs or model_settings.epochs,
         callbacks=callbacks,
         verbose=Logger.verbosity(),
+        shuffle=False,  # the dataset is reshuffled in every epoch
     )
     logger.info("Multi step training over %d steps took %.1f s.", horizon, time.perf_counter() - start)
     return record

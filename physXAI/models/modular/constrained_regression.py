@@ -8,8 +8,14 @@ import numpy as np
 from physXAI.expr import Expr, as_expr, from_config as expr_from_config, to_config as expr_to_config
 from physXAI.expr.core import BuildContext
 from physXAI.models.models import SingleStepModel, register_model
-from physXAI.plotting.plotting import plot_metrics_table, plot_multi_rmse, plot_prediction_correlation, plot_predictions, subplots
-from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneric, TrainingDataMultiStep
+from physXAI.plotting.plotting import (
+    plot_horizon_metrics,
+    plot_metrics_table,
+    plot_prediction_correlation,
+    plot_predictions,
+    subplots,
+)
+from physXAI.preprocessing.training_data import TrainingDataGeneric
 from physXAI.utils.logging import Logger, create_full_path, get_full_path
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
@@ -304,24 +310,15 @@ class ConstrainedRegression(SingleStepModel):
         fig2 = plot_predictions(td)
         fig3 = plot_metrics_table(td)
 
-        if isinstance(td, TrainingData):
-            subplots(
-                "Linear Regression",
-                {"title": "Prediction Correlation", "type": "scatter", "figure": fig1},
-                {"title": "Predictions Sorted", "type": "scatter", "figure": fig2},
-                {"title": "Performance Metrics", "type": "table", "figure": fig3}
-            )
-        elif isinstance(td, TrainingDataMultiStep):
-            fig4 = plot_multi_rmse(td)
-            subplots(
-                "Linear Regression",
-                # {"title": "Prediction Correlation", "type": "scatter", "figure": fig1},
-                {"title": "Predictions Sorted", "type": "scatter", "figure": fig2},
-                {"title": "Prediction Step RMSE", "type": "scatter", "figure": fig4},
-                {"title": "Performance Metrics", "type": "table", "figure": fig3}
-            )
-        else:
-            raise NotImplementedError
+        figures = [
+            {"title": "Prediction Correlation", "type": "scatter", "figure": fig1},
+            {"title": "Predictions Sorted", "type": "scatter", "figure": fig2},
+            {"title": "Performance Metrics", "type": "table", "figure": fig3},
+        ]
+        if getattr(td, "horizon_metrics", None) is not None:
+            figures.insert(2, {"title": "Recursive Prediction Error", "type": "scatter",
+                               "figure": plot_horizon_metrics(td)})
+        subplots("Constrained Regression", *figures)
 
     def save_model(self, model, save_path: str):
         """
