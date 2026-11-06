@@ -456,8 +456,7 @@ minimum, median and maximum. Rows: (score, model).</p>
 <span id="physxai-evaluation-metrics-module"></span><h2>physXAI.evaluation.metrics module<a class="headerlink" href="#module-physXAI.evaluation.metrics" title="Permalink to this heading"></a></h2>
 <p>Metrics of the predictions of a model, per output and split.</p>
 <p><code class="code docutils literal notranslate"><span class="pre">Metrics.by_output</span></code> holds MSE, RMSE, MAE, R2 and bias (mean of prediction - truth) for every output and
-split. The flat dicts <code class="code docutils literal notranslate"><span class="pre">train_kpis</span></code>, <code class="code docutils literal notranslate"><span class="pre">val_kpis</span></code> and <code class="code docutils literal notranslate"><span class="pre">test_kpis</span></code> (‘RMSE Train’, …) are kept for
-compatibility; with several outputs they hold the mean over the outputs.</p>
+split. <code class="code docutils literal notranslate"><span class="pre">MetricsPINN</span></code> additionally holds the disagreement of the prediction with every physics target.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="physXAI.evaluation.metrics.regression_kpis">
 <span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.metrics.</span></span><span class="sig-name descname"><span class="pre">regression_kpis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#regression_kpis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.regression_kpis" title="Permalink to this definition"></a></dt>
@@ -502,41 +501,27 @@ compatibility; with several outputs they hold the mean over the outputs.</p>
 </ul>
 </dd>
 <dt class="field-even">Variables<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>by_output</strong> – {output: {split: {‘mse’, ‘rmse’, ‘mae’, ‘r2’, ‘bias’, ‘n’}}}.</p></li>
-<li><p><strong>test_kpis</strong> (<em>train_kpis</em><em>, </em><em>val_kpis</em><em>,</em>) – {‘MSE Train’: …, ‘RMSE Train’: …, ‘R2 Train’: …} (mean over
-the outputs), None for a split without data.</p></li>
-</ul>
+<dd class="field-even"><p><strong>by_output</strong> – {output: {split: {‘mse’, ‘rmse’, ‘mae’, ‘r2’, ‘bias’, ‘n’}}}. Splits without data are missing.</p>
 </dd>
 </dl>
 <dl class="py method">
-<dt class="sig sig-object py" id="physXAI.evaluation.metrics.Metrics.evaluate">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#Metrics.evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.Metrics.evaluate" title="Permalink to this definition"></a></dt>
-<dd><p>MSE, RMSE and R2 of all values (legacy interface).</p>
+<dt class="sig sig-object py" id="physXAI.evaluation.metrics.Metrics.kpi">
+<span class="sig-name descname"><span class="pre">kpi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rmse'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#Metrics.kpi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.Metrics.kpi" title="Permalink to this definition"></a></dt>
+<dd><p>One metric of one output (default: the first) on a split, None if the split has no data.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">td</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">kpi</span><span class="p">(</span><span class="s1">'test'</span><span class="p">,</span> <span class="s1">'rmse'</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>y_true</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – </p></li>
-<li><p><strong>y_pred</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – </p></li>
-<li><p><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+<li><p><strong>metric</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+<li><p><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – </p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a>]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="physXAI.evaluation.metrics.Metrics.get_metrics">
-<span class="sig-name descname"><span class="pre">get_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nround</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#Metrics.get_metrics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.Metrics.get_metrics" title="Permalink to this definition"></a></dt>
-<dd><p>Labels and rounded values of the flat metrics.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>nround</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – The number of decimal places to round the metric values to.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>], <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a>]]</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a> | None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -555,38 +540,26 @@ the outputs), None for a split without data.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="physXAI.evaluation.metrics.MetricsPINN">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.metrics.</span></span><span class="sig-name descname"><span class="pre">MetricsPINN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pinn_losses</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#MetricsPINN"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.MetricsPINN" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.metrics.</span></span><span class="sig-name descname"><span class="pre">MetricsPINN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">physics</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#MetricsPINN"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.MetricsPINN" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#physXAI.evaluation.metrics.Metrics" title="physXAI.evaluation.metrics.Metrics"><code class="xref py py-class docutils literal notranslate"><span class="pre">Metrics</span></code></a></p>
-<p>A class to calculate and store metrics for Physics-Informed Neural Networks (PINNs).
-It evaluates performance using a list of provided loss functions.</p>
+<p>Metrics of a physics-informed model: the metrics of its output (<code class="code docutils literal notranslate"><span class="pre">by_output</span></code>) and, per physics target,
+the disagreement of the prediction with it.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – </p></li>
-<li><p><strong>pinn_losses</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a>) – </p></li>
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – Training data holding the true values and the predictions.</p></li>
+<li><p><strong>physics</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>numpy.ndarray</em></a><em>]</em><em>]</em>) – {term: {split: physics target values}}, aligned with the predictions of the split.</p></li>
+<li><p><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Characteristic scale of the loss terms (variance of the training targets, 1 if not normalized).</p></li>
 </ul>
+</dd>
+<dt class="field-even">Variables<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>physics</strong> – {term: {split: {‘mse’, ‘rmse’, ‘normalized’}}}, <code class="code docutils literal notranslate"><span class="pre">normalized</span></code> = mse / scale is the term of the loss.</p>
 </dd>
 </dl>
 <dl class="py method">
-<dt class="sig sig-object py" id="physXAI.evaluation.metrics.MetricsPINN.evaluate">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#MetricsPINN.evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.MetricsPINN.evaluate" title="Permalink to this definition"></a></dt>
-<dd><p>Calculates metrics based on the provided list of PINN loss functions.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>y_true</strong> (<em>np.ndarray</em>) – The true target values.</p></li>
-<li><p><strong>y_pred</strong> (<em>np.ndarray</em>) – The predicted target values.</p></li>
-<li><p><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – A label for the dataset being evaluated (e.g., ‘Train’, ‘Test’).
-Defaults to ‘’.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><dl class="simple">
-<dt>A dictionary where keys are loss function names appended with the label,</dt><dd><p>and values are the calculated loss values.</p>
-</dd>
-</dl>
-</p>
-</dd>
+<dt class="sig sig-object py" id="physXAI.evaluation.metrics.MetricsPINN.get_config">
+<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#MetricsPINN.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.MetricsPINN.get_config" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>

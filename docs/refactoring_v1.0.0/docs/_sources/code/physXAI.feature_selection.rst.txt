@@ -9,14 +9,6 @@ physXAI.feature\_selection package
 Submodules
 ----------
 
-physXAI.feature\_selection.recursive\_feature\_elimination module
------------------------------------------------------------------
-
-.. automodule:: physXAI.feature_selection.recursive_feature_elimination
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 physXAI.feature\_selection.selection module
 -------------------------------------------
 

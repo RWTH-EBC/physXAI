@@ -9,10 +9,10 @@ physXAI.models.ann.pinn package
 Submodules
 ----------
 
-physXAI.models.ann.pinn.pinn\_loss module
------------------------------------------
+physXAI.models.ann.pinn.physics module
+--------------------------------------
 
-.. automodule:: physXAI.models.ann.pinn.pinn_loss
+.. automodule:: physXAI.models.ann.pinn.physics
    :members:
    :undoc-members:
    :show-inheritance:

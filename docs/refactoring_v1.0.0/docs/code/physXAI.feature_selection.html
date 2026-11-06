@@ -108,59 +108,6 @@
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
 </section>
-<section id="module-physXAI.feature_selection.recursive_feature_elimination">
-<span id="physxai-feature-selection-recursive-feature-elimination-module"></span><h2>physXAI.feature_selection.recursive_feature_elimination module<a class="headerlink" href="#module-physXAI.feature_selection.recursive_feature_elimination" title="Permalink to this heading"></a></h2>
-<p>Legacy interface of the feature selection, see <code class="code docutils literal notranslate"><span class="pre">physXAI.feature_selection.selection.FeatureSelection</span></code>.</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="physXAI.feature_selection.recursive_feature_elimination.recursive_feature_elimination_pipeline">
-<span class="sig-prename descclassname"><span class="pre">physXAI.feature_selection.recursive_feature_elimination.</span></span><span class="sig-name descname"><span class="pre">recursive_feature_elimination_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocessing</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ascending_lag_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_multi_step_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed_inputs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">automatic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/feature_selection/recursive_feature_elimination.html#recursive_feature_elimination_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.feature_selection.recursive_feature_elimination.recursive_feature_elimination_pipeline" title="Permalink to this definition"></a></dt>
-<dd><p>Backward elimination of inputs (see <code class="code docutils literal notranslate"><span class="pre">FeatureSelection</span></code> for the options in <code class="code docutils literal notranslate"><span class="pre">kwargs</span></code>).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Path to the data.</p></li>
-<li><p><strong>preprocessing</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData" title="physXAI.preprocessing.preprocessing.PreprocessingData"><em>PreprocessingData</em></a>) – Preprocessing holding all candidate inputs. It is not changed.</p></li>
-<li><p><strong>model</strong> – The physXAI model.</p></li>
-<li><p><strong>ascending_lag_order</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Remove the highest lag of a feature first.</p></li>
-<li><p><strong>use_multi_step_error</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Use the error of the recursive prediction, if the preprocessing has an
-<code class="code docutils literal notranslate"><span class="pre">eval_horizon</span></code>, else the single step error.</p></li>
-<li><p><strong>save_models</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Not supported anymore (models of the candidates are not saved).</p></li>
-<li><p><strong>fixed_inputs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – Inputs which are never removed.</p></li>
-<li><p><strong>automatic</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Without effect, the selection never asks for input.</p></li>
-<li><p><strong>run</strong> (<a class="reference internal" href="physXAI.io.html#physXAI.io.run.Run" title="physXAI.io.run.Run"><em>Run</em></a><em> | </em><em>None</em>) – If given, the result is saved into its directory (<code class="code docutils literal notranslate"><span class="pre">feature_selection.json</span></code> and <code class="code docutils literal notranslate"><span class="pre">.html</span></code>).</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>{number of inputs: [{‘inputs’, ‘kpi’, ‘kpi_single_step’}, …]} and the selected inputs.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="physXAI.feature_selection.recursive_feature_elimination.save_result">
-<span class="sig-prename descclassname"><span class="pre">physXAI.feature_selection.recursive_feature_elimination.</span></span><span class="sig-name descname"><span class="pre">save_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'feature_selection'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/feature_selection/recursive_feature_elimination.html#save_result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.feature_selection.recursive_feature_elimination.save_result" title="Permalink to this definition"></a></dt>
-<dd><p>Saves the result of a feature selection into a run directory.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>result</strong> (<a class="reference internal" href="#physXAI.feature_selection.selection.FeatureSelectionResult" title="physXAI.feature_selection.selection.FeatureSelectionResult"><em>FeatureSelectionResult</em></a>) – The result of <code class="code docutils literal notranslate"><span class="pre">FeatureSelection.run</span></code>.</p></li>
-<li><p><strong>run</strong> (<a class="reference internal" href="physXAI.io.html#physXAI.io.run.Run" title="physXAI.io.run.Run"><em>Run</em></a>) – The run directory.</p></li>
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Name of the files: <code class="code docutils literal notranslate"><span class="pre">{name}.json</span></code> (all candidates and their criteria) and <code class="code docutils literal notranslate"><span class="pre">{name}.html</span></code> (plot).</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The paths of the written files.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-</section>
 <section id="module-physXAI.feature_selection.selection">
 <span id="physxai-feature-selection-selection-module"></span><h2>physXAI.feature_selection.selection module<a class="headerlink" href="#module-physXAI.feature_selection.selection" title="Permalink to this heading"></a></h2>
 <p>Feature selection by backward elimination (experimental).</p>
@@ -312,6 +259,27 @@ an MPC, even if its error is small.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><em>Figure</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.feature_selection.selection.FeatureSelectionResult.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'feature_selection'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/feature_selection/selection.html#FeatureSelectionResult.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.feature_selection.selection.FeatureSelectionResult.save" title="Permalink to this definition"></a></dt>
+<dd><p>Saves the result into a run directory: <code class="code docutils literal notranslate"><span class="pre">{name}.json</span></code> (all candidates and their criteria) and
+<code class="code docutils literal notranslate"><span class="pre">{name}.html</span></code> (plot).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>run</strong> – The run directory (<code class="code docutils literal notranslate"><span class="pre">physXAI.io.Run</span></code>).</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Name of the files.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The paths of the written files.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>

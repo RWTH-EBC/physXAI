@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="d_a0ccd84b585279c5_modular_ann_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.4.4">coverage.py v7.4.4</a>,
-            created at 2026-11-06 18:19 +0000
+            created at 2026-11-06 18:20 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"/>
@@ -145,7 +145,7 @@
     <p class="pln"><span class="n"><a id="t61" href="#t61">61</a></span><span class="t"><span class="str">        Generates the keras model and the CasADi optimization problem of the regression.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t62" href="#t62">62</a></span><span class="t"><span class="str">        """</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t63" href="#t63">63</a></span><span class="t">        <span class="nam">td</span> <span class="op">=</span> <span class="nam">kwargs</span><span class="op">[</span><span class="str">'td'</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t64" href="#t64">64</a></span><span class="t">        <span class="nam">columns</span> <span class="op">=</span> <span class="nam">list</span><span class="op">(</span><span class="nam">td</span><span class="op">.</span><span class="nam">columns</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t64" href="#t64">64</a></span><span class="t">        <span class="nam">columns</span> <span class="op">=</span> <span class="nam">list</span><span class="op">(</span><span class="nam">td</span><span class="op">.</span><span class="nam">inputs</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t65" href="#t65">65</a></span><span class="t">        <span class="nam">X_data</span> <span class="op">=</span> <span class="nam">td</span><span class="op">.</span><span class="nam">X_train_single</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t66" href="#t66">66</a></span><span class="t">        <span class="nam">train_values</span> <span class="op">=</span> <span class="op">{</span><span class="nam">name</span><span class="op">:</span> <span class="nam">X_data</span><span class="op">[</span><span class="op">:</span><span class="op">,</span> <span class="nam">i</span><span class="op">]</span> <span class="key">for</span> <span class="nam">i</span><span class="op">,</span> <span class="nam">name</span> <span class="key">in</span> <span class="nam">enumerate</span><span class="op">(</span><span class="nam">columns</span><span class="op">)</span><span class="op">}</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t67" href="#t67">67</a></span><span class="t">        <span class="nam">ctx</span> <span class="op">=</span> <span class="nam">BuildContext</span><span class="op">(</span><span class="nam">keras</span><span class="op">.</span><span class="nam">layers</span><span class="op">.</span><span class="nam">Input</span><span class="op">(</span><span class="nam">shape</span><span class="op">=</span><span class="op">(</span><span class="nam">len</span><span class="op">(</span><span class="nam">columns</span><span class="op">)</span><span class="op">,</span><span class="op">)</span><span class="op">)</span><span class="op">,</span> <span class="nam">columns</span><span class="op">,</span> <span class="nam">train_values</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -421,7 +421,7 @@
             <a id="nextFileLink" class="nav" href="d_a0ccd84b585279c5_modular_ann_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.4.4">coverage.py v7.4.4</a>,
-            created at 2026-11-06 18:19 +0000
+            created at 2026-11-06 18:20 +0000
         </p>
     </div>
 </footer>

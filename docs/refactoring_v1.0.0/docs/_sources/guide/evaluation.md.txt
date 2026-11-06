@@ -5,8 +5,8 @@
 After `model.pipeline(td)`:
 
 - `td.metrics.by_output[output][split]`: MSE, RMSE, MAE, R², bias (mean of prediction − truth) and the
-  number of samples, for every output and split separately. The flat dicts `td.metrics.test_kpis` etc.
-  (`'RMSE Test'`) hold the mean over the outputs.
+  number of samples, for every output and split separately; `td.metrics.kpi('test', 'rmse')` returns one
+  value. Splits without data (`test_size=0`, `val_size=0`) are left out.
 - `td.horizon_metrics`: RMSE, MAE, bias and standard deviation per step of the horizon (see
   [Multi step evaluation](multi_step.md)), per predicted feature in `by_feature`.
 
@@ -99,7 +99,6 @@ See `executables/bestest_hydronic_heat_pump/TAir_compare.py`.
 `FeatureSelection` removes inputs one by one (backward elimination) and keeps the best set:
 
 ```python
-from physXAI.feature_selection.recursive_feature_elimination import save_result
 from physXAI.feature_selection.selection import FeatureSelection
 
 prep = PreprocessingSingleStep(inputs=candidates, output="Change(reaTZon_y)", eval_horizon=48)
@@ -108,7 +107,7 @@ selection = FeatureSelection(prep, LinearRegressionModel(), first_step_weight=0.
 result = selection.run(path)
 result.selected.inputs
 result.table()
-save_result(result, run)      # feature_selection.json and .html
+result.save(run)              # feature_selection.json and .html
 ```
 
 - The criterion is the step weighted RMSE of the recursive prediction over `eval_horizon` (optionally plus

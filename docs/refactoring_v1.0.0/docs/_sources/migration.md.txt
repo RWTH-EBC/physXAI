@@ -24,7 +24,10 @@ script signature and the saved files are the same.
 | `RNNModel(init_layer=...)`, `PreprocessingMultiStep(init_features=...)` | warmup from zero states: `warmup_width` |
 | `PreprocessingMultiStep(batch_size=...)` | `RNNModel(batch_size=...)` |
 | single step model on `PreprocessingMultiStep` data (`evaluate_multi`) | `PreprocessingSingleStep(eval_horizon='24h')` |
-| `recursive_feature_elimination_pipeline` with `input()` prompts | `FeatureSelection(...).run(path)` |
+| `recursive_feature_elimination_pipeline`, `save_result` | `FeatureSelection(...).run(path)`, `result.save(run)` |
+| `PINNModel(pinn_weights=[...])` with `output=['y', 'pinn']` | `PINNModel(physics_targets={'pinn': w})`, `output='y'`, `prep.pipeline(path, model=m)` |
+| `td.metrics.test_kpis['RMSE Test']`, `get_metrics()` | `td.metrics.by_output[output]['test']['rmse']` or `td.metrics.kpi('test', 'rmse')` |
+| `td.columns`, `td.output` | `td.inputs`, `td.outputs` |
 | plots open in the browser | saved as html; `show_plot=True` opens them |
 | random row split | block split without leakage (`split='random_rows'` for the old behaviour) |
 | `np.random.seed(); random_state=np.random.randint(...)` | `random_state=None` (a seed is drawn and stored) |
@@ -110,7 +113,11 @@ return run.save_for_agentlib(output_name, prep, model, td)
 - **Gaps:** data is put onto a regular time grid; targets are never taken across gaps.
 - **Saving:** `pipeline` saves nothing without a `save_path`. Use `run.save`.
 - **Plots:** not opened by default.
-- **Metrics:** per output (`td.metrics.by_output`); the flat keys stay and hold the mean over the outputs.
+- **Metrics:** per output (`td.metrics.by_output`); the flat keys of 0.x are removed.
+- **PINN:** one model output (exportable); the loss is normalized by the variance of the training targets and no
+  longer averaged over the terms, so weights of 0.x runs are not comparable one to one.
+- **Arguments of 0.x** (`init_layer`, `init_features`, `batch_size` of the preprocessing, `pinn_weights`) are not
+  accepted anymore.
 - **RNNs:** the saved `.keras` file is the step model used by AgentLib-MPC; RNNs with initialization
   models have to be retrained.
 - **Old runs** can still be compared with new ones: `ModelComparison.load` reads training data files of 0.x.

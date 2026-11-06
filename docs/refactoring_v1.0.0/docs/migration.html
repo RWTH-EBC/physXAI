@@ -152,16 +152,25 @@ script signature and the saved files are the same.</p>
 <tr class="row-even"><td><p>single step model on <code class="docutils literal notranslate"><span class="pre">PreprocessingMultiStep</span></code> data (<code class="docutils literal notranslate"><span class="pre">evaluate_multi</span></code>)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">PreprocessingSingleStep(eval_horizon='24h')</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">recursive_feature_elimination_pipeline</span></code> with <code class="docutils literal notranslate"><span class="pre">input()</span></code> prompts</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">FeatureSelection(...).run(path)</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">recursive_feature_elimination_pipeline</span></code>, <code class="docutils literal notranslate"><span class="pre">save_result</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">FeatureSelection(...).run(path)</span></code>, <code class="docutils literal notranslate"><span class="pre">result.save(run)</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p>plots open in the browser</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PINNModel(pinn_weights=[...])</span></code> with <code class="docutils literal notranslate"><span class="pre">output=['y',</span> <span class="pre">'pinn']</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">PINNModel(physics_targets={'pinn':</span> <span class="pre">w})</span></code>, <code class="docutils literal notranslate"><span class="pre">output='y'</span></code>, <code class="docutils literal notranslate"><span class="pre">prep.pipeline(path,</span> <span class="pre">model=m)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">td.metrics.test_kpis['RMSE</span> <span class="pre">Test']</span></code>, <code class="docutils literal notranslate"><span class="pre">get_metrics()</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">td.metrics.by_output[output]['test']['rmse']</span></code> or <code class="docutils literal notranslate"><span class="pre">td.metrics.kpi('test',</span> <span class="pre">'rmse')</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">td.columns</span></code>, <code class="docutils literal notranslate"><span class="pre">td.output</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">td.inputs</span></code>, <code class="docutils literal notranslate"><span class="pre">td.outputs</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>plots open in the browser</p></td>
 <td><p>saved as html; <code class="docutils literal notranslate"><span class="pre">show_plot=True</span></code> opens them</p></td>
 </tr>
-<tr class="row-odd"><td><p>random row split</p></td>
+<tr class="row-even"><td><p>random row split</p></td>
 <td><p>block split without leakage (<code class="docutils literal notranslate"><span class="pre">split='random_rows'</span></code> for the old behaviour)</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">np.random.seed();</span> <span class="pre">random_state=np.random.randint(...)</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">np.random.seed();</span> <span class="pre">random_state=np.random.randint(...)</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">random_state=None</span></code> (a seed is drawn and stored)</p></td>
 </tr>
 </tbody>
@@ -244,7 +253,11 @@ errors in operation.</p></li>
 <li><p><strong>Gaps:</strong> data is put onto a regular time grid; targets are never taken across gaps.</p></li>
 <li><p><strong>Saving:</strong> <code class="docutils literal notranslate"><span class="pre">pipeline</span></code> saves nothing without a <code class="docutils literal notranslate"><span class="pre">save_path</span></code>. Use <code class="docutils literal notranslate"><span class="pre">run.save</span></code>.</p></li>
 <li><p><strong>Plots:</strong> not opened by default.</p></li>
-<li><p><strong>Metrics:</strong> per output (<code class="docutils literal notranslate"><span class="pre">td.metrics.by_output</span></code>); the flat keys stay and hold the mean over the outputs.</p></li>
+<li><p><strong>Metrics:</strong> per output (<code class="docutils literal notranslate"><span class="pre">td.metrics.by_output</span></code>); the flat keys of 0.x are removed.</p></li>
+<li><p><strong>PINN:</strong> one model output (exportable); the loss is normalized by the variance of the training targets and no
+longer averaged over the terms, so weights of 0.x runs are not comparable one to one.</p></li>
+<li><p><strong>Arguments of 0.x</strong> (<code class="docutils literal notranslate"><span class="pre">init_layer</span></code>, <code class="docutils literal notranslate"><span class="pre">init_features</span></code>, <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> of the preprocessing, <code class="docutils literal notranslate"><span class="pre">pinn_weights</span></code>) are not
+accepted anymore.</p></li>
 <li><p><strong>RNNs:</strong> the saved <code class="docutils literal notranslate"><span class="pre">.keras</span></code> file is the step model used by AgentLib-MPC; RNNs with initialization
 models have to be retrained.</p></li>
 <li><p><strong>Old runs</strong> can still be compared with new ones: <code class="docutils literal notranslate"><span class="pre">ModelComparison.load</span></code> reads training data files of 0.x.</p></li>

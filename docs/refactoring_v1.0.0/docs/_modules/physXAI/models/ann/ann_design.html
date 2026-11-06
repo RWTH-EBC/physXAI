@@ -106,8 +106,9 @@
     <span class="n">find_step_model</span><span class="p">,</span>
     <span class="n">sequence_inputs</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.pinn.pinn_loss</span><span class="w"> </span><span class="kn">import</span> <span class="n">multi_y_loss</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.pinn.physics</span><span class="w"> </span><span class="kn">import</span> <span class="n">PhysicsLoss</span><span class="p">,</span> <span class="n">physics_metrics</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegressionModel</span><span class="p">,</span> <span class="n">MultiStepModel</span><span class="p">,</span> <span class="n">SingleStepModel</span><span class="p">,</span> <span class="n">register_model</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TARGET_PREFIX</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.training_data</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingData</span><span class="p">,</span> <span class="n">TrainingDataGeneric</span><span class="p">,</span> <span class="n">TrainingDataMultiStep</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.training.recursive</span><span class="w"> </span><span class="kn">import</span> <span class="n">step_weights</span><span class="p">,</span> <span class="n">weighted_step_loss</span>
 
@@ -212,12 +213,23 @@
         <span class="k">if</span> <span class="n">td</span><span class="o">.</span><span class="n">training_record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">td</span><span class="o">.</span><span class="n">add_training_record</span><span class="p">(</span><span class="n">record</span><span class="p">)</span></div>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fit_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">,</span> <span class="n">split</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Inputs and targets the model is fitted on, None for a split without data."""</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="sa">f</span><span class="s1">'X_</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s1">_single'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">X</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="sa">f</span><span class="s1">'y_</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s1">_single'</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_early_stopping_monitor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Validation metric of the early stopping."""</span>
+        <span class="k">return</span> <span class="s1">'val_loss'</span>
+
 <div class="viewcode-block" id="ANNModel.fit_single_step"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.fit_single_step">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit_single_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Fits the Keras model on the single step error."""</span>
+        <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_data</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="s1">'train'</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_data</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="s1">'val'</span><span class="p">)</span>
         <span class="c1"># Early stopping (only possible with validation data)</span>
         <span class="n">callbacks</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_epochs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">td</span><span class="o">.</span><span class="n">y_val_single</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">es</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="n">monitor</span><span class="o">=</span><span class="s1">'val_loss'</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">'min'</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_epochs</span><span class="p">,</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_epochs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">es</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="n">monitor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_early_stopping_monitor</span><span class="p">(),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">'min'</span><span class="p">,</span>
+                                               <span class="n">patience</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_epochs</span><span class="p">,</span>
                                                <span class="n">restore_best_weights</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">keras_verbosity_int</span><span class="p">())</span>
             <span class="n">callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">es</span><span class="p">)</span>
 
@@ -225,18 +237,18 @@
         <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
 
         <span class="c1"># Create tf.data.Dataset for better performance</span>
-        <span class="n">train_ds</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_tensor_slices</span><span class="p">((</span><span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="p">,</span> <span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">))</span>
+        <span class="n">train_ds</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_tensor_slices</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
         <span class="n">train_ds</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">train_ds</span>
-            <span class="o">.</span><span class="n">cache</span><span class="p">()</span>                                                                                       <span class="c1"># 1. Cache first so data is not reloaded, may need to be removed for large datasets</span>
-            <span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">buffer_size</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">reshuffle_each_iteration</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>    <span class="c1"># 2. Shuffle randomly every epoch</span>
-            <span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>                                                                        <span class="c1"># 3. Group into batches</span>
-            <span class="o">.</span><span class="n">prefetch</span><span class="p">(</span><span class="n">buffer_size</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">AUTOTUNE</span><span class="p">)</span>                                                        <span class="c1"># 4. Prepare next batch in background</span>
+            <span class="o">.</span><span class="n">cache</span><span class="p">()</span>                                                                     <span class="c1"># 1. Cache first so data is not reloaded, may need to be removed for large datasets</span>
+            <span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">buffer_size</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="n">train</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">reshuffle_each_iteration</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># 2. Shuffle randomly every epoch</span>
+            <span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>                                                      <span class="c1"># 3. Group into batches</span>
+            <span class="o">.</span><span class="n">prefetch</span><span class="p">(</span><span class="n">buffer_size</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">AUTOTUNE</span><span class="p">)</span>                                      <span class="c1"># 4. Prepare next batch in background</span>
         <span class="p">)</span>
 
         <span class="c1"># Check for validation data</span>
-        <span class="k">if</span> <span class="n">td</span><span class="o">.</span><span class="n">y_val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">val_ds</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_tensor_slices</span><span class="p">((</span><span class="n">td</span><span class="o">.</span><span class="n">X_val_single</span><span class="p">,</span> <span class="n">td</span><span class="o">.</span><span class="n">y_val_single</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">val_ds</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_tensor_slices</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
             <span class="n">val_ds</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="n">val_ds</span>
                 <span class="o">.</span><span class="n">cache</span><span class="p">()</span>                                        <span class="c1"># 1. Cache first so data is not reloaded, may need to be removed for large datasets</span>
@@ -553,22 +565,40 @@
 <div class="viewcode-block" id="PINNModel"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel">[docs]</a><span class="nd">@register_model</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">PINNModel</span><span class="p">(</span><span class="n">ANNModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    A Physics-Informed Neural Network (PINN) model.</span>
-<span class="sd">    This implementation uses a CMNN as its base architecture and incorporates</span>
-<span class="sd">    a custom multi-component loss function.</span>
+<span class="sd">    Physics-informed neural network: a CMNN trained on the data and on physics targets.</span>
+
+<span class="sd">    A physics target is a data column computed from a physical model of the output, e.g. a simplified</span>
+<span class="sd">    heat pump model `columns={'pinn': expression}` in the preprocessing. The model has a single output</span>
+<span class="sd">    (the data output) and is used and exported like any other model; the physics targets only enter the loss</span>
+<span class="sd">    (see `physXAI.models.ann.pinn.physics`):</span>
+
+<span class="sd">        L = mse(y_hat, y) / s + sum_i w_i * mse(y_hat, p_i) / s,   s = var(y_train)</span>
+
+<span class="sd">    Physics targets are taken at the predicted time, like the output. For a model predicting `Change(T)`</span>
+<span class="sd">    with a physics model of the step `T(t) -&gt; T(t+1)`, the column of the physics prediction computed from the</span>
+<span class="sd">    data at time t has to be shifted back by one step: `columns={'dT_rc': expression.lag(1)}`.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; prep = PreprocessingSingleStep(inputs=[...], output='P_el', columns={'pinn': physics})</span>
+<span class="sd">        &gt;&gt;&gt; m = PINNModel(physics_targets={'pinn': 0.5})</span>
+<span class="sd">        &gt;&gt;&gt; td = prep.pipeline(path, model=m)   # adds the physics targets as loss columns</span>
+<span class="sd">        &gt;&gt;&gt; m.pipeline(td)</span>
 <span class="sd">    """</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_neurons</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
-                 <span class="n">activation_function</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'softplus'</span><span class="p">,</span> <span class="n">pinn_weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">rescale_output</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">monotonies</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">activation_split</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">plot_title</span> <span class="o">=</span> <span class="s2">"Physics-Informed Neural Network"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">physics_targets</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_neurons</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
+                 <span class="n">activation_function</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'softplus'</span><span class="p">,</span> <span class="n">rescale_output</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                 <span class="n">monotonies</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">activation_split</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">normalize_terms</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">early_stopping_on</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'data'</span><span class="p">,</span>
                  <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
                  <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Initializes the PINNModel.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            pinn_weights (list[float]): Weights for the additional components in the multi_y_loss.</span>
-<span class="sd">                                       The length should be `num_target_components - 1`.</span>
+<span class="sd">            physics_targets (dict[str, float]): {column: weight} of the physics targets. The weight is the</span>
+<span class="sd">                                                relative importance of the term compared to the data.</span>
 <span class="sd">            n_layers (int): Number of hidden layers.</span>
 <span class="sd">            n_neurons (int or list[int]): Number of neurons per layer.</span>
 <span class="sd">            activation_function (str or list[str]): Activation function(s).</span>
@@ -577,6 +607,9 @@
 <span class="sd">                                         (-1 for decreasing, 0 for no constraint, 1 for increasing).</span>
 <span class="sd">            activation_split (list[float]): Proportions for splitting neurons into convex,</span>
 <span class="sd">                                            concave, and saturated activation paths. E.g., [0.5, 0.25, 0.25].</span>
+<span class="sd">            normalize_terms (bool): Divide all terms of the loss by the variance of the training targets.</span>
+<span class="sd">            early_stopping_on (str): 'data' (validation data loss, default) or 'total' (validation loss</span>
+<span class="sd">                                     including the weighted physics terms).</span>
 <span class="sd">            batch_size (int): Number of samples per gradient update.</span>
 <span class="sd">            epochs (int): Number of times to iterate over the entire training dataset.</span>
 <span class="sd">            learning_rate (float): Learning rate for the Adam optimizer.</span>
@@ -585,14 +618,20 @@
 <span class="sd">            random_seed (int): Seed for random number generators to ensure reproducibility.</span>
 <span class="sd">        """</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">epochs</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">,</span> <span class="n">early_stopping_epochs</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">physics_targets</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"PINNModel needs physics targets, e.g. physics_targets={'pinn': 1.0}."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">early_stopping_on</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'data'</span><span class="p">,</span> <span class="s1">'total'</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"early_stopping_on has to be 'data' or 'total'."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">physics_targets</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="nb">float</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">physics_targets</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">n_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_neurons</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">n_neurons</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">activation_function</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">activation_function</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rescale_output</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">rescale_output</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">monotonies</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">monotonies</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">activation_split</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">activation_split</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">pinn_weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">pinn_weights</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalize_terms</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">normalize_terms</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_on</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">early_stopping_on</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
             <span class="s2">"n_layers"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span><span class="p">,</span>
@@ -603,100 +642,60 @@
             <span class="s2">"activation_split"</span><span class="p">:</span> <span class="n">activation_split</span><span class="p">,</span>
         <span class="p">})</span>
 
-        <span class="c1"># Create pinn loss based on standard losses</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pinn_loss</span> <span class="o">=</span> <span class="n">multi_y_loss</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">MeanSquaredError</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'MSE'</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">pinn_weights</span><span class="p">,</span> <span class="s1">'mse'</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pinn_metrics</span> <span class="o">=</span> <span class="p">[</span><span class="n">multi_y_loss</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">RootMeanSquaredError</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'rmse'</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">pinn_weights</span><span class="p">,</span>
-                                          <span class="s1">'rmse'</span><span class="p">)]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">required_loss_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The physics targets at the predicted time, added to the loss columns of the preprocessing."""</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">TARGET_PREFIX</span> <span class="o">+</span> <span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">physics_targets</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_training_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_check_training_data</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_loss_columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">td</span><span class="o">.</span><span class="n">loss_columns</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"The training data holds no physics targets </span><span class="si">{</span><span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">TARGET_PREFIX</span><span class="p">):]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">missing</span><span class="p">]</span><span class="si">}</span><span class="s2">. "</span>
+                <span class="s2">"Pass the model to the preprocessing, prep.pipeline(path, model=model), so it adds them."</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">outputs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"PINNModel predicts one output, got </span><span class="si">{</span><span class="n">td</span><span class="o">.</span><span class="n">outputs</span><span class="si">}</span><span class="s2">. Physics targets are no outputs."</span><span class="p">)</span>
+        <span class="n">variance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]))</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize_terms</span> <span class="k">else</span> <span class="mf">1.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scale</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="mf">1e-12</span><span class="p">)</span>
 
 <div class="viewcode-block" id="PINNModel.generate_model"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.generate_model">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Generates the Keras model (typically a CMNN) to be used as the PINN.</span>
+<span class="sd">        Generates the Keras model (a CMNN) with one output.</span>
 <span class="sd">        """</span>
-
         <span class="n">td</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">'td'</span><span class="p">]</span>
-        <span class="n">model</span> <span class="o">=</span> <span class="n">CMNNModelConstruction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">model</span></div>
+        <span class="k">return</span> <span class="n">CMNNModelConstruction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="PINNModel.compile_model"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.compile_model">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compile_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Compiles the PINN model with the custom multi_y_loss and corresponding metrics.</span>
+<span class="sd">        Compiles the model with the physics loss and the metrics of every term (`data_loss`, `&lt;target&gt;_loss`).</span>
 <span class="sd">        """</span>
-
         <span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">),</span>
-                      <span class="n">loss</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pinn_loss</span><span class="p">,</span>
-                      <span class="n">metrics</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pinn_metrics</span><span class="p">)</span></div>
+                      <span class="n">loss</span><span class="o">=</span><span class="n">PhysicsLoss</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">physics_targets</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scale</span><span class="p">),</span>
+                      <span class="n">metrics</span><span class="o">=</span><span class="n">physics_metrics</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">physics_targets</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scale</span><span class="p">))</span></div>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_check_pinn_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Checks and sets default PINN weights if not provided, based on the shape of y_train.</span>
-<span class="sd">        y_train is expected to have multiple components: y_train[:, 0] for data-driven loss,</span>
-<span class="sd">        and y_train[:, 1:] for physics-informed/residual losses.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fit_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">,</span> <span class="n">split</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_fit_data</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="n">split</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">targets</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">split</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_loss_columns</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">targets</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-<span class="sd">        Args:</span>
-<span class="sd">            td (TrainingDataGeneric): The training data, used to infer the number of target components.</span>
-<span class="sd">        """</span>
-
-        <span class="n">yn</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pinn_weights</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">yn</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">pinn_weights</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>  <span class="c1"># pragma: no cover</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">pinn_weights</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">yn</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">pinn_loss</span> <span class="o">=</span> <span class="n">multi_y_loss</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">MeanSquaredError</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'MSE'</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">pinn_weights</span><span class="p">,</span> <span class="s1">'mse'</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">pinn_metrics</span> <span class="o">=</span> <span class="p">[</span><span class="n">multi_y_loss</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">RootMeanSquaredError</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'rmse'</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">pinn_weights</span><span class="p">,</span>
-                                              <span class="s1">'rmse'</span><span class="p">)]</span>
-        <span class="k">assert</span> <span class="n">yn</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pinn_weights</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> \
-            <span class="s1">'Shape of y values does not match length of pinn weights'</span>
-
-<div class="viewcode-block" id="PINNModel.pipeline"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.pipeline">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">,</span>
-                 <span class="n">save_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">save_model</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">show_plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Overrides the base pipeline to include PINN weight checking.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            td (TrainingData): The training data, used to infer the number of target components.</span>
-<span class="sd">            save_path (str): Path to save the model.</span>
-<span class="sd">            plot (bool, optional): Whether to plot the results. Defaults to True.</span>
-<span class="sd">            save_model (bool, optional): Whether to save the trained model. Defaults to True.</span>
-<span class="sd">        """</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_check_pinn_weights</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="n">save_path</span><span class="p">,</span> <span class="n">plot</span><span class="p">,</span> <span class="n">save_model</span><span class="p">,</span> <span class="n">show_plot</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="PINNModel.online_pipeline"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.online_pipeline">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">online_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">,</span> <span class="n">load_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">save_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                        <span class="n">plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">save_model</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">show_plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Overrides the online pipeline to include PINN weight checking.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            td (TrainingData): The training data, used to infer the number of target components.</span>
-<span class="sd">            load_path (str): Path to load the model.</span>
-<span class="sd">            save_path (str): Path to save the model (not saved without a path).</span>
-<span class="sd">            plot (bool, optional): Whether to plot the results. Defaults to True.</span>
-<span class="sd">            save_model (bool, optional): Whether to save the trained model. Defaults to True.</span>
-<span class="sd">        """</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_check_pinn_weights</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">online_pipeline</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="n">load_path</span><span class="p">,</span> <span class="n">save_path</span><span class="p">,</span> <span class="n">plot</span><span class="p">,</span> <span class="n">save_model</span><span class="p">,</span> <span class="n">show_plot</span><span class="p">)</span></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_early_stopping_monitor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'val_data_loss'</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_on</span> <span class="o">==</span> <span class="s1">'data'</span> <span class="k">else</span> <span class="s1">'val_loss'</span>
 
 <div class="viewcode-block" id="PINNModel.evaluate"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.evaluate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Evaluates the PINN model using custom MetricsPINN.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            model: The keras model to be evaluated.</span>
-<span class="sd">            td (TrainingData): The training data</span>
+<span class="sd">        Evaluates the model like any single step model and adds the disagreement with the physics targets</span>
+<span class="sd">        (`MetricsPINN`).</span>
 <span class="sd">        """</span>
-
-        <span class="n">y_pred_train</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">keras_verbosity</span><span class="p">())</span>
-        <span class="n">y_pred_test</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_test_single</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">keras_verbosity</span><span class="p">())</span>
-        <span class="k">if</span> <span class="n">td</span><span class="o">.</span><span class="n">X_val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">y_pred_val</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_val_single</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">keras_verbosity</span><span class="p">())</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">y_pred_val</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="n">td</span><span class="o">.</span><span class="n">add_predictions</span><span class="p">(</span><span class="n">y_pred_train</span><span class="p">,</span> <span class="n">y_pred_val</span><span class="p">,</span> <span class="n">y_pred_test</span><span class="p">)</span>
-
-        <span class="n">metrics</span> <span class="o">=</span> <span class="n">MetricsPINN</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pinn_loss</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pinn_metrics</span><span class="p">])</span>
-        <span class="n">td</span><span class="o">.</span><span class="n">add_metrics</span><span class="p">(</span><span class="n">metrics</span><span class="p">)</span></div>
+        <span class="n">SingleStepModel</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span>
+        <span class="n">physics</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="p">{</span><span class="n">split</span><span class="p">:</span> <span class="n">td</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">split</span><span class="p">,</span> <span class="p">[</span><span class="n">column</span><span class="p">])</span> <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'train'</span><span class="p">,</span> <span class="s1">'val'</span><span class="p">,</span> <span class="s1">'test'</span><span class="p">)</span> <span class="k">if</span> <span class="n">td</span><span class="o">.</span><span class="n">has_split</span><span class="p">(</span><span class="n">split</span><span class="p">)}</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">physics_targets</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_loss_columns</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">td</span><span class="o">.</span><span class="n">add_metrics</span><span class="p">(</span><span class="n">MetricsPINN</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="n">physics</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scale</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="PINNModel.load_model"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.load_model">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">load_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">load_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
@@ -719,7 +718,9 @@
             <span class="s2">"n_layers"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span><span class="p">,</span>
             <span class="s2">"n_neurons"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_neurons</span><span class="p">,</span>
             <span class="s2">"activation_function"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation_function</span><span class="p">,</span>
-            <span class="s2">"pinn_weights"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pinn_weights</span><span class="p">,</span>
+            <span class="s2">"physics_targets"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">physics_targets</span><span class="p">,</span>
+            <span class="s2">"normalize_terms"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize_terms</span><span class="p">,</span>
+            <span class="s2">"early_stopping_on"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_on</span><span class="p">,</span>
             <span class="s2">"rescale_output"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">rescale_output</span><span class="p">,</span>
             <span class="s2">"monotonies"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">monotonies</span><span class="p">,</span>
             <span class="s2">"activation_split"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation_split</span>
@@ -778,12 +779,6 @@
         <span class="n">step_weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="n">init_layer</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"init_layer"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">init_layer</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">"out_model"</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">"'init_layer' was removed in physXAI 1.0: the model warms itself up on the warmup sequence "</span>
-                <span class="s2">"(as in AgentLib-MPC) instead of using a separate initialization model."</span>
-            <span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">loss_on</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"trajectory"</span><span class="p">,</span> <span class="s2">"outputs"</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown loss_on '</span><span class="si">{</span><span class="n">loss_on</span><span class="si">}</span><span class="s2">', use 'trajectory' or 'outputs'."</span><span class="p">)</span>

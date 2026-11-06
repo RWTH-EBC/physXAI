@@ -110,38 +110,114 @@
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
 </section>
-<section id="module-physXAI.models.ann.pinn.pinn_loss">
-<span id="physxai-models-ann-pinn-pinn-loss-module"></span><h2>physXAI.models.ann.pinn.pinn_loss module<a class="headerlink" href="#module-physXAI.models.ann.pinn.pinn_loss" title="Permalink to this heading"></a></h2>
-<dl class="py function">
-<dt class="sig sig-object py" id="physXAI.models.ann.pinn.pinn_loss.multi_y_loss">
-<span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.pinn.pinn_loss.</span></span><span class="sig-name descname"><span class="pre">multi_y_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loss</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">additional_losses</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/pinn_loss.html#multi_y_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.pinn_loss.multi_y_loss" title="Permalink to this definition"></a></dt>
-<dd><p>Creates a custom loss function that computes a weighted average of a base loss
-applied to a primary target and several additional targets.</p>
-<p>This is useful for PINNs. The <code class="code docutils literal notranslate"><span class="pre">y</span></code> tensor is expected to have its first column (<code class="code docutils literal notranslate"><span class="pre">y[:,</span> <span class="pre">0]</span></code>) as the primary target,
-and subsequent columns (<code class="code docutils literal notranslate"><span class="pre">y[:,</span> <span class="pre">1]</span></code>, <code class="code docutils literal notranslate"><span class="pre">y[:,</span> <span class="pre">2]</span></code>, etc.) as additional targets.</p>
+<section id="module-physXAI.models.ann.pinn.physics">
+<span id="physxai-models-ann-pinn-physics-module"></span><h2>physXAI.models.ann.pinn.physics module<a class="headerlink" href="#module-physXAI.models.ann.pinn.physics" title="Permalink to this heading"></a></h2>
+<p>Loss and metrics of physics-informed training.</p>
+<p>The loss of a model with one output y and physics targets p_1, …, p_n (e.g. the prediction of a
+physical model of the same quantity) is</p>
+<blockquote>
+<div><p>L = mse(y_hat, y) / s + sum_i w_i * mse(y_hat, p_i) / s</p>
+</div></blockquote>
+<p>with the characteristic scale s = var(y_train) (<code class="code docutils literal notranslate"><span class="pre">normalize_terms=True</span></code>, else s = 1). The scale makes the
+terms dimensionless: the data term is 1 - R^2 on the training data and w_i is the relative importance of
+physics target i. The terms are not averaged, so adding a physics term does not change the weight of the
+data term. The weights encode the trust in the physics and are chosen by validation (e.g. the error over
+the prediction horizon); they are not adapted during the training.</p>
+<p>The targets passed to keras are <code class="code docutils literal notranslate"><span class="pre">[y,</span> <span class="pre">p_1,</span> <span class="pre">...,</span> <span class="pre">p_n]</span></code> (columns), the model predicts y only, so the trained
+model can be used (and exported to AgentLib-MPC) like any other single output model.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.PhysicsLoss">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.pinn.physics.</span></span><span class="sig-name descname"><span class="pre">PhysicsLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'physics_loss'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#PhysicsLoss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.PhysicsLoss" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Loss</span></code></p>
+<p>Data loss plus weighted physics terms, all divided by the characteristic scale.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>loss</strong> (<em>callable</em>) – The base loss function (e.g., keras.losses.MeanSquaredError())
-that takes <code class="code docutils literal notranslate"><span class="pre">y_true</span></code> and <code class="code docutils literal notranslate"><span class="pre">y_pred</span></code> and returns a scalar loss.</p></li>
-<li><p><strong>additional_losses</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – A list of weights.
-Each weight <code class="code docutils literal notranslate"><span class="pre">additional_losses[i]</span></code> corresponds
-to the loss calculated between <code class="code docutils literal notranslate"><span class="pre">y_pred</span></code> and
-the (i+1)-th additional target <code class="code docutils literal notranslate"><span class="pre">y[:,</span> <span class="pre">i+1]</span></code>.</p></li>
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – An optional name for the returned loss function.
-Defaults to None, in which case the inner function’s
-default name (<code class="code docutils literal notranslate"><span class="pre">loss_function</span></code>) is used.</p></li>
+<li><p><strong>weights</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>]</em>) – Weight of each physics target (columns 1, 2, … of y_true).</p></li>
+<li><p><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Characteristic scale (variance of the training targets).</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><dl class="simple">
-<dt>A custom loss function that takes <code class="code docutils literal notranslate"><span class="pre">y</span></code> (true multi-component targets)</dt><dd><p>and <code class="code docutils literal notranslate"><span class="pre">y_pred</span></code> (model predictions) and returns a single scalar loss value.</p>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.PhysicsLoss.call">
+<span class="sig-name descname"><span class="pre">call</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#PhysicsLoss.call"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.PhysicsLoss.call" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.PhysicsLoss.get_config">
+<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#PhysicsLoss.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.PhysicsLoss.get_config" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 </dl>
-</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.TermLoss">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.pinn.physics.</span></span><span class="sig-name descname"><span class="pre">TermLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'data_loss'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#TermLoss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.TermLoss" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Mean</span></code></p>
+<p>One unweighted term of the loss: mean of (y_hat - y_true[:, column])^2 / scale.
+Column 0 is the data term (‘data_loss’), columns 1, … the physics targets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>column</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
+<li><p><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – </p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+</ul>
 </dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.TermLoss.update_state">
+<span class="sig-name descname"><span class="pre">update_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#TermLoss.update_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.TermLoss.update_state" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.TermLoss.get_config">
+<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#TermLoss.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.TermLoss.get_config" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>callable</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.OutputRMSE">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.pinn.physics.</span></span><span class="sig-name descname"><span class="pre">OutputRMSE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rmse'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#OutputRMSE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.OutputRMSE" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">RootMeanSquaredError</span></code></p>
+<p>RMSE of the prediction with respect to the data (column 0 of the targets), in output units.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.OutputRMSE.update_state">
+<span class="sig-name descname"><span class="pre">update_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#OutputRMSE.update_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.OutputRMSE.update_state" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.physics_metrics">
+<span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.pinn.physics.</span></span><span class="sig-name descname"><span class="pre">physics_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">terms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#physics_metrics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.physics_metrics" title="Permalink to this definition"></a></dt>
+<dd><p>Metrics of all terms (<code class="code docutils literal notranslate"><span class="pre">data_loss</span></code>, <code class="code docutils literal notranslate"><span class="pre">&lt;term&gt;_loss</span></code>) and the RMSE of the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>terms</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – </p></li>
+<li><p><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[keras.src.metrics.metric.Metric]</p>
 </dd>
 </dl>
 </dd></dl>

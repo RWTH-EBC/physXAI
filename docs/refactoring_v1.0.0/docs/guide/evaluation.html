@@ -100,8 +100,8 @@
 <p>After <code class="docutils literal notranslate"><span class="pre">model.pipeline(td)</span></code>:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">td.metrics.by_output[output][split]</span></code>: MSE, RMSE, MAE, R², bias (mean of prediction − truth) and the
-number of samples, for every output and split separately. The flat dicts <code class="docutils literal notranslate"><span class="pre">td.metrics.test_kpis</span></code> etc.
-(<code class="docutils literal notranslate"><span class="pre">'RMSE</span> <span class="pre">Test'</span></code>) hold the mean over the outputs.</p></li>
+number of samples, for every output and split separately; <code class="docutils literal notranslate"><span class="pre">td.metrics.kpi('test',</span> <span class="pre">'rmse')</span></code> returns one
+value. Splits without data (<code class="docutils literal notranslate"><span class="pre">test_size=0</span></code>, <code class="docutils literal notranslate"><span class="pre">val_size=0</span></code>) are left out.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">td.horizon_metrics</span></code>: RMSE, MAE, bias and standard deviation per step of the horizon (see
 <a class="reference internal" href="multi_step.html"><span class="std std-doc">Multi step evaluation</span></a>), per predicted feature in <code class="docutils literal notranslate"><span class="pre">by_feature</span></code>.</p></li>
 </ul>
@@ -187,8 +187,7 @@ See <code class="docutils literal notranslate"><span class="pre">executables/bes
 <section id="feature-selection-experimental">
 <h2>Feature selection (experimental)<a class="headerlink" href="#feature-selection-experimental" title="Permalink to this heading"></a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">FeatureSelection</span></code> removes inputs one by one (backward elimination) and keeps the best set:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.feature_selection.recursive_feature_elimination</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_result</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.feature_selection.selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureSelection</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.feature_selection.selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureSelection</span>
 
 <span class="n">prep</span> <span class="o">=</span> <span class="n">PreprocessingSingleStep</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="n">candidates</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">"Change(reaTZon_y)"</span><span class="p">,</span> <span class="n">eval_horizon</span><span class="o">=</span><span class="mi">48</span><span class="p">)</span>
 <span class="n">selection</span> <span class="o">=</span> <span class="n">FeatureSelection</span><span class="p">(</span><span class="n">prep</span><span class="p">,</span> <span class="n">LinearRegressionModel</span><span class="p">(),</span> <span class="n">first_step_weight</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">n_repeats</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
@@ -196,7 +195,7 @@ See <code class="docutils literal notranslate"><span class="pre">executables/bes
 <span class="n">result</span> <span class="o">=</span> <span class="n">selection</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 <span class="n">result</span><span class="o">.</span><span class="n">selected</span><span class="o">.</span><span class="n">inputs</span>
 <span class="n">result</span><span class="o">.</span><span class="n">table</span><span class="p">()</span>
-<span class="n">save_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">run</span><span class="p">)</span>      <span class="c1"># feature_selection.json and .html</span>
+<span class="n">result</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>              <span class="c1"># feature_selection.json and .html</span>
 </pre></div>
 </div>
 <ul class="simple">
