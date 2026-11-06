@@ -1,0 +1,367 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>physXAI.models.ann.configs package &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../_static/jquery.js"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+      <script src="../_static/doctools.js"></script>
+      <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="physXAI.models.ann.keras_models package" href="physXAI.models.ann.keras_models.html" />
+    <link rel="prev" title="physXAI.models.ann package" href="physXAI.models.ann.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">physXAI</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="physXAI.html">physXAI package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="physXAI.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="physXAI.agentlib_mpc_plugin.html">physXAI.agentlib_mpc_plugin package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html">physXAI.evaluation package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html">physXAI.expr package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html">physXAI.feature_selection package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.io.html">physXAI.io package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="physXAI.models.html">physXAI.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.plotting.html">physXAI.plotting package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html">physXAI.preprocessing package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html">physXAI.training package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.utils.html">physXAI.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">physXAI</a></li>
+          <li class="breadcrumb-item"><a href="physXAI.html">physXAI package</a></li>
+          <li class="breadcrumb-item"><a href="physXAI.models.html">physXAI.models package</a></li>
+          <li class="breadcrumb-item"><a href="physXAI.models.ann.html">physXAI.models.ann package</a></li>
+      <li class="breadcrumb-item active">physXAI.models.ann.configs package</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-physXAI.models.ann.configs">
+<span id="physxai-models-ann-configs-package"></span><h1>physXAI.models.ann.configs package<a class="headerlink" href="#module-physXAI.models.ann.configs" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-physXAI.models.ann.configs.ann_model_configs">
+<span id="physxai-models-ann-configs-ann-model-configs-module"></span><h2>physXAI.models.ann.configs.ann_model_configs module<a class="headerlink" href="#module-physXAI.models.ann.configs.ann_model_configs" title="Permalink to this heading"></a></h2>
+<dl class="py class pydantic_model">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config">
+<em class="property"><span class="pre">pydantic</span> <span class="pre">model</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.configs.ann_model_configs.</span></span><span class="sig-name descname"><span class="pre">ClassicalANNConstruction_config</span></span><a class="reference internal" href="../_modules/physXAI/models/ann/configs/ann_model_configs.html#ClassicalANNConstruction_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Fields<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.activation_function" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.activation_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">activation_function</span> <span class="pre">(str</span> <span class="pre">|</span> <span class="pre">list[str])</span></code></a></p></li>
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_features" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_features"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_features</span> <span class="pre">(int</span> <span class="pre">|</span> <span class="pre">None)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_layers" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_layers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_layers</span> <span class="pre">(int)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_neurons" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_neurons"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_neurons</span> <span class="pre">(int</span> <span class="pre">|</span> <span class="pre">list[int])</span></code></a></p></li>
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.normalize" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.normalize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalize</span> <span class="pre">(bool)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.rescale_output" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.rescale_output"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rescale_output</span> <span class="pre">(bool)</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Validators<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_activation" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_activation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_activation</span></code></a> » <a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.activation_function" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.activation_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">activation_function</span></code></a></p></li>
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_n_neurons" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_n_neurons"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_n_neurons</span></code></a> » <a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_neurons" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_neurons"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_neurons</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.activation_function">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">activation_function</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'softplus'</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.activation_function" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_activation" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_activation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_activation</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_features">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_features</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_features" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_layers">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_layers</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></em><em class="property"> <span class="pre">[Required]</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_layers" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Constraints<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ge</strong> = 0</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_neurons">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_neurons</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">32</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_neurons" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_n_neurons" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_n_neurons"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_n_neurons</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.normalize">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">normalize</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.normalize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.rescale_output">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">rescale_output</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.rescale_output" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method pydantic_validator">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_activation">
+<em class="property"><span class="pre">validator</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate_activation</span></span><em class="autodoc_pydantic_validator_arrow property">&#160; <span class="pre">»</span>&#160; </em><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.activation_function" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.activation_function"><em class="xref py py-obj"><span class="pre">activation_function</span></em></a><a class="reference internal" href="../_modules/physXAI/models/ann/configs/ann_model_configs.html#ClassicalANNConstruction_config.validate_activation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_activation" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method pydantic_validator">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_n_neurons">
+<em class="property"><span class="pre">validator</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate_n_neurons</span></span><em class="autodoc_pydantic_validator_arrow property">&#160; <span class="pre">»</span>&#160; </em><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_neurons" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_neurons"><em class="xref py py-obj"><span class="pre">n_neurons</span></em></a><a class="reference internal" href="../_modules/physXAI/models/ann/configs/ann_model_configs.html#ClassicalANNConstruction_config.validate_n_neurons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_n_neurons" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class pydantic_model">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config">
+<em class="property"><span class="pre">pydantic</span> <span class="pre">model</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.configs.ann_model_configs.</span></span><span class="sig-name descname"><span class="pre">RBFConstruction_config</span></span><a class="reference internal" href="../_modules/physXAI/models/ann/configs/ann_model_configs.html#RBFConstruction_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassicalANNConstruction_config</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Fields<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.n_layers" title="physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.n_layers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_layers</span> <span class="pre">(int)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.random_state" title="physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.random_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">random_state</span> <span class="pre">(int)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.rescale_mean" title="physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.rescale_mean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rescale_mean</span> <span class="pre">(float</span> <span class="pre">|</span> <span class="pre">None)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.rescale_sigma" title="physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.rescale_sigma"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rescale_sigma</span> <span class="pre">(float</span> <span class="pre">|</span> <span class="pre">None)</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Validators<span class="colon">:</span></dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.n_layers">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_layers</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></em><em class="property"> <span class="pre">[Required]</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.n_layers" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Constraints<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ge</strong> = 1</p></li>
+<li><p><strong>le</strong> = 1</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.random_state">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">random_state</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">42</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.random_state" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.rescale_mean">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">rescale_mean</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.rescale_mean" title="Permalink to this definition"></a></dt>
+<dd><p>Mean value for z-score normalization of outputs</p>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.rescale_sigma">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">rescale_sigma</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.rescale_sigma" title="Permalink to this definition"></a></dt>
+<dd><p>Standard deviation for z-score normalization of outputs</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class pydantic_model">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config">
+<em class="property"><span class="pre">pydantic</span> <span class="pre">model</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.configs.ann_model_configs.</span></span><span class="sig-name descname"><span class="pre">CMNNModelConstruction_config</span></span><a class="reference internal" href="../_modules/physXAI/models/ann/configs/ann_model_configs.html#CMNNModelConstruction_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassicalANNConstruction_config</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Fields<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.activation_split" title="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.activation_split"><code class="xref py py-obj docutils literal notranslate"><span class="pre">activation_split</span> <span class="pre">(list[float]</span> <span class="pre">|</span> <span class="pre">None)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.monotonicities" title="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.monotonicities"><code class="xref py py-obj docutils literal notranslate"><span class="pre">monotonicities</span> <span class="pre">(dict[str,</span> <span class="pre">int]</span> <span class="pre">|</span> <span class="pre">None)</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Validators<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_activation_split" title="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_activation_split"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_activation_split</span></code></a> » <a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.activation_split" title="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.activation_split"><code class="xref py py-obj docutils literal notranslate"><span class="pre">activation_split</span></code></a></p></li>
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_monotonicities" title="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_monotonicities"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_monotonicities</span></code></a> » <a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.monotonicities" title="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.monotonicities"><code class="xref py py-obj docutils literal notranslate"><span class="pre">monotonicities</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.activation_split">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">activation_split</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[1,</span> <span class="pre">1,</span> <span class="pre">1]</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.activation_split" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_activation_split" title="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_activation_split"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_activation_split</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.monotonicities">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">monotonicities</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.monotonicities" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_monotonicities" title="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_monotonicities"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_monotonicities</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method pydantic_validator">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_activation_split">
+<em class="property"><span class="pre">validator</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate_activation_split</span></span><em class="autodoc_pydantic_validator_arrow property">&#160; <span class="pre">»</span>&#160; </em><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.activation_split" title="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.activation_split"><em class="xref py py-obj"><span class="pre">activation_split</span></em></a><a class="reference internal" href="../_modules/physXAI/models/ann/configs/ann_model_configs.html#CMNNModelConstruction_config.validate_activation_split"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_activation_split" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method pydantic_validator">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_monotonicities">
+<em class="property"><span class="pre">validator</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate_monotonicities</span></span><em class="autodoc_pydantic_validator_arrow property">&#160; <span class="pre">»</span>&#160; </em><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.monotonicities" title="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.monotonicities"><em class="xref py py-obj"><span class="pre">monotonicities</span></em></a><a class="reference internal" href="../_modules/physXAI/models/ann/configs/ann_model_configs.html#CMNNModelConstruction_config.validate_monotonicities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_monotonicities" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class pydantic_model">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.RNNModelConstruction_config">
+<em class="property"><span class="pre">pydantic</span> <span class="pre">model</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.configs.ann_model_configs.</span></span><span class="sig-name descname"><span class="pre">RNNModelConstruction_config</span></span><a class="reference internal" href="../_modules/physXAI/models/ann/configs/ann_model_configs.html#RNNModelConstruction_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.RNNModelConstruction_config" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Fields<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.RNNModelConstruction_config.rnn_layer" title="physXAI.models.ann.configs.ann_model_configs.RNNModelConstruction_config.rnn_layer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rnn_layer</span> <span class="pre">(Literal['RNN',</span> <span class="pre">'GRU',</span> <span class="pre">'LSTM'])</span></code></a></p></li>
+<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.RNNModelConstruction_config.rnn_units" title="physXAI.models.ann.configs.ann_model_configs.RNNModelConstruction_config.rnn_units"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rnn_units</span> <span class="pre">(int)</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.RNNModelConstruction_config.rnn_layer">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">rnn_layer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.15)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'RNN'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'GRU'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'LSTM'</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'RNN'</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.RNNModelConstruction_config.rnn_layer" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.RNNModelConstruction_config.rnn_units">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">rnn_units</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">32</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.RNNModelConstruction_config.rnn_units" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Constraints<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gt</strong> = 0</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="physXAI.models.ann.html" class="btn btn-neutral float-left" title="physXAI.models.ann package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="physXAI.models.ann.keras_models.html" class="btn btn-neutral float-right" title="physXAI.models.ann.keras_models package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

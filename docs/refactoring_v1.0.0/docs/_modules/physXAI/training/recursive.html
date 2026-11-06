@@ -1,0 +1,345 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>physXAI.training.recursive &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../../../_static/jquery.js"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+      <script src="../../../_static/doctools.js"></script>
+      <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">physXAI.training.recursive</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for physXAI.training.recursive</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Training of single step models on the multi step (recursive) error.</span>
+
+<span class="sd">A single step model trained on the single step error can still drift when it is applied</span>
+<span class="sd">recursively in an MPC. Training the recursive rollout (`physXAI.evaluation.rollout`) directly on</span>
+<span class="sd">the error over a horizon counters that. The first step is weighted more, since it is the most</span>
+<span class="sd">relevant one for the MPC (it is applied to the plant); the following steps keep the model stable</span>
+<span class="sd">over the horizon.</span>
+
+<span class="sd">    &gt;&gt;&gt; m = ClassicalANNModel(recursive_training=RecursiveTraining(horizon='24h', first_step_weight=0.25))</span>
+
+<span class="sd">Only the weights of the step model are trained, so the saved model stays a single step model,</span>
+<span class="sd">which AgentLib-MPC uses as before.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"TF_CPP_MIN_LOG_LEVEL"</span><span class="p">,</span> <span class="s2">"2"</span><span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">keras</span>  <span class="c1"># noqa: E402</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"physXAI"</span><span class="p">)</span>
+
+<span class="n">Mode</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"single_step"</span><span class="p">,</span> <span class="s2">"multi_step"</span><span class="p">,</span> <span class="s2">"single_then_multi"</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="RecursiveTraining"><a class="viewcode-back" href="../../../code/physXAI.training.html#physXAI.training.recursive.RecursiveTraining">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RecursiveTraining</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Settings of the training on the multi step error.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        horizon: Training horizon in steps or as time delta string ('24h'). Defaults to the</span>
+<span class="sd">                 evaluation horizon of the training data.</span>
+<span class="sd">        first_step_weight: Share of the first step in the loss (the other steps share the rest</span>
+<span class="sd">                           equally). Ignored if `step_weights` is given.</span>
+<span class="sd">        step_weights: Optional weight per step (normalized to a sum of one).</span>
+<span class="sd">        mode: 'single_then_multi' (default: train on the single step error first, then fine-tune on</span>
+<span class="sd">              the multi step error) or 'multi_step' (only the multi step error).</span>
+<span class="sd">        epochs: Epochs of the multi step training. Defaults to the epochs of the model.</span>
+<span class="sd">        learning_rate: Learning rate of the multi step training. Defaults to the one of the model, for</span>
+<span class="sd">                       the fine-tuning of 'single_then_multi' to a tenth of it. After a least squares</span>
+<span class="sd">                       solution (`ModularANN(solver='ols')`) of an unnormalized `Linear` block, the weights are</span>
+<span class="sd">                       small and need a much smaller learning rate (e.g. 1e-6).</span>
+<span class="sd">        batch_size: Windows per batch. Defaults to the batch size of the model.</span>
+<span class="sd">        stride: Distance between two training windows in steps.</span>
+<span class="sd">        early_stopping_epochs: Patience of the early stopping on the validation loss. Defaults to</span>
+<span class="sd">                               the one of the model.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">first_step_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span>
+        <span class="n">step_weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mode</span><span class="p">:</span> <span class="n">Mode</span> <span class="o">=</span> <span class="s2">"single_then_multi"</span><span class="p">,</span>
+        <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"multi_step"</span><span class="p">,</span> <span class="s2">"single_then_multi"</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown mode '</span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="s2">', use 'multi_step' or 'single_then_multi'."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">first_step_weight</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"first_step_weight has to be in (0, 1]."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">horizon</span> <span class="o">=</span> <span class="n">horizon</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_step_weight</span> <span class="o">=</span> <span class="n">first_step_weight</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_weights</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">step_weights</span><span class="p">)</span> <span class="k">if</span> <span class="n">step_weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">:</span> <span class="n">Mode</span> <span class="o">=</span> <span class="n">mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epochs</span> <span class="o">=</span> <span class="n">epochs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span> <span class="o">=</span> <span class="n">learning_rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stride</span> <span class="o">=</span> <span class="n">stride</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_epochs</span> <span class="o">=</span> <span class="n">early_stopping_epochs</span>
+
+<div class="viewcode-block" id="RecursiveTraining.resolve_horizon"><a class="viewcode-back" href="../../../code/physXAI.training.html#physXAI.training.recursive.RecursiveTraining.resolve_horizon">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_horizon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">horizon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizon</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">horizon</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">td</span><span class="o">.</span><span class="n">time_step</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"A horizon given as time delta requires the time step of the data."</span><span class="p">)</span>
+            <span class="n">horizon</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="n">horizon</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">/</span> <span class="n">td</span><span class="o">.</span><span class="n">time_step</span><span class="p">))</span>
+        <span class="n">horizon</span> <span class="o">=</span> <span class="n">horizon</span> <span class="ow">or</span> <span class="n">td</span><span class="o">.</span><span class="n">eval_horizon</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">horizon</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"No horizon for the multi step training: set RecursiveTraining(horizon=...) or "</span>
+                <span class="s2">"eval_horizon of the preprocessing."</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">horizon</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RecursiveTraining.weights"><a class="viewcode-back" href="../../../code/physXAI.training.html#physXAI.training.recursive.RecursiveTraining.weights">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Normalized weight per step."""</span>
+        <span class="k">return</span> <span class="n">step_weights</span><span class="p">(</span><span class="n">horizon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_step_weight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_weights</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RecursiveTraining.get_config"><a class="viewcode-back" href="../../../code/physXAI.training.html#physXAI.training.recursive.RecursiveTraining.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"horizon"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizon</span><span class="p">,</span>
+            <span class="s2">"first_step_weight"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_step_weight</span><span class="p">,</span>
+            <span class="s2">"step_weights"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_weights</span><span class="p">,</span>
+            <span class="s2">"mode"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
+            <span class="s2">"epochs"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
+            <span class="s2">"learning_rate"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span>
+            <span class="s2">"batch_size"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+            <span class="s2">"stride"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">stride</span><span class="p">,</span>
+            <span class="s2">"early_stopping_epochs"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_epochs</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="RecursiveTraining.from_config"><a class="viewcode-back" href="../../../code/physXAI.training.html#physXAI.training.recursive.RecursiveTraining.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RecursiveTraining</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="step_weights"><a class="viewcode-back" href="../../../code/physXAI.training.html#physXAI.training.recursive.step_weights">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">step_weights</span><span class="p">(</span>
+    <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">first_step_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Normalized weight per prediction step.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        horizon: Number of steps.</span>
+<span class="sd">        first_step_weight: Share of the first step (the other steps share the rest equally).</span>
+<span class="sd">                           None weights all steps equally.</span>
+<span class="sd">        weights: Optional weight per step, overrides `first_step_weight`.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span> <span class="o">!=</span> <span class="n">horizon</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"step_weights need </span><span class="si">{</span><span class="n">horizon</span><span class="si">}</span><span class="s2"> values, got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">horizon</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">first_step_weight</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">horizon</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">horizon</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">first_step_weight</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">horizon</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">first_step_weight</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">result</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="n">result</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Step weights have to be non negative and not all zero."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span> <span class="o">/</span> <span class="n">result</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="weighted_step_loss"><a class="viewcode-back" href="../../../code/physXAI.training.html#physXAI.training.recursive.weighted_step_loss">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">weighted_step_loss</span><span class="p">(</span><span class="n">weights</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">scale</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Squared error summed over the horizon with a weight per step.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        weights: Weight per step (normalized).</span>
+<span class="sd">        scale: Optional scale per output; errors are divided by it, so outputs of different units</span>
+<span class="sd">               contribute alike.</span>
+<span class="sd">    """</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">"float32"</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">n_outputs</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">scale</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span>
+    <span class="n">inverse</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_outputs</span><span class="p">)</span> <span class="k">if</span> <span class="n">scale</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="mf">1e-12</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">inverse</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">step_weighted_mse</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_true</span> <span class="o">-</span> <span class="n">y_pred</span><span class="p">)</span> <span class="o">*</span> <span class="n">s</span>
+        <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">w</span> <span class="o">*</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">error</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">step_weighted_mse</span></div>
+
+
+<div class="viewcode-block" id="fit_recursive"><a class="viewcode-back" href="../../../code/physXAI.training.html#physXAI.training.recursive.fit_recursive">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">fit_recursive</span><span class="p">(</span><span class="n">keras_model</span><span class="p">:</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">,</span> <span class="n">td</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">RecursiveTraining</span><span class="p">,</span> <span class="n">model_settings</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">keras</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">History</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Trains the weights of `keras_model` (a single step model) on the multi step error.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        keras_model: The step model, trained in place.</span>
+<span class="sd">        td: `TrainingData` with the single step data.</span>
+<span class="sd">        config: Settings of the multi step training.</span>
+<span class="sd">        model_settings: The physXAI model, providing defaults (epochs, learning rate, ...).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The keras training history of the rollout model.</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">tensorflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tf</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.evaluation.rollout</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_rollout_model</span><span class="p">,</span> <span class="n">recursion_spec</span><span class="p">,</span> <span class="n">rollout_data</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.io.run</span><span class="w"> </span><span class="kn">import</span> <span class="n">keras_verbosity</span>
+
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">recursion_spec</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"Multi step training requires a model that predicts one of its own inputs "</span>
+            <span class="s2">"(e.g. output 'Change(T)' with input 'T')."</span>
+        <span class="p">)</span>
+    <span class="n">horizon</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">resolve_horizon</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+    <span class="n">rollout</span> <span class="o">=</span> <span class="n">build_rollout_model</span><span class="p">(</span><span class="n">keras_model</span><span class="p">,</span> <span class="n">td</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">horizon</span><span class="p">)</span>
+    <span class="n">learning_rate</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">learning_rate</span>
+    <span class="k">if</span> <span class="n">learning_rate</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">learning_rate</span> <span class="o">=</span> <span class="n">model_settings</span><span class="o">.</span><span class="n">learning_rate</span> <span class="o">*</span> <span class="p">(</span><span class="mf">0.1</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">"single_then_multi"</span> <span class="k">else</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">rollout</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+        <span class="n">keras</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="n">learning_rate</span><span class="p">),</span> <span class="n">loss</span><span class="o">=</span><span class="n">weighted_step_loss</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">weights</span><span class="p">(</span><span class="n">horizon</span><span class="p">))</span>
+    <span class="p">)</span>
+
+    <span class="n">train</span> <span class="o">=</span> <span class="n">rollout_data</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="s2">"train"</span><span class="p">,</span> <span class="n">horizon</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">stride</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">train</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No training window of </span><span class="si">{</span><span class="n">horizon</span><span class="si">}</span><span class="s2"> steps fits into the training data."</span><span class="p">)</span>
+    <span class="n">batch_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">batch_size</span> <span class="ow">or</span> <span class="n">model_settings</span><span class="o">.</span><span class="n">batch_size</span>
+    <span class="n">rows</span><span class="p">,</span> <span class="n">history</span><span class="p">,</span> <span class="n">truth</span> <span class="o">=</span> <span class="n">train</span>
+    <span class="n">train_ds</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_tensor_slices</span><span class="p">(((</span><span class="n">rows</span><span class="p">,</span> <span class="n">history</span><span class="p">),</span> <span class="n">truth</span><span class="p">))</span>
+        <span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">truth</span><span class="p">),</span> <span class="n">seed</span><span class="o">=</span><span class="n">model_settings</span><span class="o">.</span><span class="n">random_seed</span><span class="p">,</span> <span class="n">reshuffle_each_iteration</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">prefetch</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">AUTOTUNE</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">val</span> <span class="o">=</span> <span class="n">rollout_data</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="s2">"val"</span><span class="p">,</span> <span class="n">horizon</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">stride</span><span class="p">)</span>
+    <span class="n">val_ds</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">val_ds</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_tensor_slices</span><span class="p">(((</span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">val</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+
+    <span class="n">callbacks</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="n">patience</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">early_stopping_epochs</span> <span class="ow">or</span> <span class="n">model_settings</span><span class="o">.</span><span class="n">early_stopping_epochs</span>
+    <span class="k">if</span> <span class="n">patience</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">val_ds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">keras</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="n">monitor</span><span class="o">=</span><span class="s2">"val_loss"</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="n">patience</span><span class="p">,</span> <span class="n">restore_best_weights</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="n">record</span> <span class="o">=</span> <span class="n">rollout</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+        <span class="n">train_ds</span><span class="p">,</span>
+        <span class="n">validation_data</span><span class="o">=</span><span class="n">val_ds</span><span class="p">,</span>
+        <span class="n">epochs</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">epochs</span> <span class="ow">or</span> <span class="n">model_settings</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
+        <span class="n">callbacks</span><span class="o">=</span><span class="n">callbacks</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="o">=</span><span class="n">keras_verbosity</span><span class="p">(),</span>
+        <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># the dataset is reshuffled in every epoch</span>
+    <span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Multi step training over </span><span class="si">%d</span><span class="s2"> steps took </span><span class="si">%.1f</span><span class="s2"> s."</span><span class="p">,</span> <span class="n">horizon</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">record</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
