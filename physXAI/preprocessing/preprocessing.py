@@ -164,7 +164,10 @@ class PreprocessingData(ABC):
         block_length: Block length of the split in steps or as time delta string ('7D').
         gap_steps: Embargo between splits in steps. Defaults to the maximum lag + shift.
         time_index_col: Name or index of the time column of the csv file.
-        csv_delimiter, csv_encoding, csv_header, csv_skiprows: Options of `pandas.read_csv`.
+        csv_delimiter: Delimiter of the csv file (`pandas.read_csv`).
+        csv_encoding: Encoding of the csv file.
+        csv_header: Row of the column names.
+        csv_skiprows: Rows to skip.
         ignore_nan: If False, missing values between valid rows raise an error. If True, rows
                     with missing values are left out.
         transform: Optional function `df -> df` applied after loading, e.g. to add columns that are

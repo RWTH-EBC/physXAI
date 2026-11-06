@@ -21,26 +21,41 @@ theme:
 
 nav:
   - Home: index.md
+  - User Guide:
+    - Getting Started: guide/getting_started.md
+    - Expressions: guide/expressions.md
+    - Data Pipeline and Split: guide/data.md
+    - Models: guide/models.md
+    - Multi Step Evaluation and Training: guide/multi_step.md
+    - Recurrent Models: guide/rnn.md
+    - Evaluation and Comparison: guide/evaluation.md
+    - AgentLib-MPC Export: guide/agentlib.md
+  - Migration to 1.0: migration.md
   - API Reference:
     - Overview: api/index.md
+    - Expressions: api/expr.md
     - Preprocessing:
         - Overview: api/preprocessing.md
         - Methods:
-          - Constructed: api/preprocessing/constructed.md
           - Preprocessing: api/preprocessing/preprocessing.md
+          - Split: api/preprocessing/splitting.md
+          - Windows: api/preprocessing/windows.md
           - Training Data: api/preprocessing/training_data.md
-    - Feature Selection: api/feature_selection.md
     - Models:
       - Overview: api/models.md
       - Methods:
           - Core Models: api/models/core_models.md
           - ANN Models: api/models/ann_models.md
+          - Modular Models: api/models/modular.md
           - Configs: api/models/configs.md
           - Model Construction: api/models/model_construction.md
           - Keras Models: api/models/keras_models.md
           - PINNs: api/models/pinn.md
+    - Training: api/training.md
     - Evaluation: api/evaluation.md
+    - Feature Selection: api/feature_selection.md
     - Plotting: api/plotting.md
+    - Input / Output: api/io.md
     - Utils: api/utils.md
 
 plugins:
@@ -50,6 +65,8 @@ plugins:
         python:
           options:
             docstring_style: google
+            docstring_options:
+              warn_missing_types: false
             show_source: true
             show_root_heading: true
             show_bases: true
@@ -72,3 +89,6 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.snippets
   - admonition
+  - tables
+  - toc:
+      permalink: true

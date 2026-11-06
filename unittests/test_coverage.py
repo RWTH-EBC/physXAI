@@ -2,20 +2,18 @@ import json
 import os
 import pathlib
 from unittest.mock import patch
+
 import keras
 import pytest
-######################################################################################################################
-from physXAI.utils.logging import Logger, get_parent_working_directory
-from physXAI.preprocessing.preprocessing import PreprocessingSingleStep, PreprocessingMultiStep, \
-    PreprocessingData
+
 from physXAI import expr as px
 from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
-from physXAI.models.models import LinearRegressionModel, AbstractModel
-from physXAI.models.ann.ann_design import ClassicalANNModel, CMNNModel, LinANNModel, PINNModel, RNNModel, \
-    RBFModel
 
-
-base_path = os.path.join(pathlib.Path(__file__).resolve().parent.parent, 'stored_data')
+######################################################################################################################
+from physXAI.io import Run
+from physXAI.models.ann.ann_design import ClassicalANNModel, CMNNModel, LinANNModel, PINNModel, RBFModel, RNNModel
+from physXAI.models.models import AbstractModel, LinearRegressionModel
+from physXAI.preprocessing.preprocessing import PreprocessingData, PreprocessingMultiStep, PreprocessingSingleStep
 
 
 @pytest.fixture(autouse=True)
@@ -23,6 +21,13 @@ def disable_plotly_show():
     """Automatically disable plotly show() for all tests"""
     with patch('plotly.graph_objects.Figure.show'):
         yield
+
+
+@pytest.fixture
+def run(tmp_path):
+    """Every test writes into its own run directory."""
+    return Run(tmp_path, 'test_coverage', overwrite=True)
+
 
 @pytest.fixture(scope='module')
 def file_path():
@@ -44,16 +49,16 @@ def output_php():
 def output_tair():
     return 'Change(T_zone)'
 
-def test_path_setup():
-    get_parent_working_directory()
 
-def test_preprocessing(monkeypatch, file_path, inputs_php, output_php):
-    monkeypatch.setattr('builtins.input', lambda _: "Y")
+def check_saved_configs(run: Run, name: str):
+    """The saved configs recreate the preprocessing and the model."""
+    with open(run.path / f'{name}_preprocessing.json') as f:
+        PreprocessingData.from_config(json.load(f))
+    with open(run.path / f'{name}_model.json') as f:
+        AbstractModel.model_from_config(json.load(f))
 
-    # Setup up logger for saving
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=False)
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
 
+def test_preprocessing(file_path, inputs_php, output_php):
     # Derived data columns (expressions evaluated with pandas)
     v = px.Vars()
     x, y = v.oveHeaPumY_u, v.weaSta_reaWeaTDryBul_y
@@ -67,9 +72,6 @@ def test_preprocessing(monkeypatch, file_path, inputs_php, output_php):
     prep.pipeline(file_path)
 
 def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-
-
     # Sequences of a recurrent model
     prep = PreprocessingMultiStep(inputs=inputs_tair, output=px.Change('reaTZon_y'), label_width=6, warmup_width=6,
                                   overlapping_sequences=False, eval_horizon='1h', time_index_col='time')
@@ -78,8 +80,6 @@ def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
 
 @pytest.fixture(scope='module')
 def p_hp_data(file_path, inputs_php, output_php):
-    # Setup up logger for saving
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
     # Create & process Training data
     prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php)
     td = prep.pipeline(file_path)
@@ -87,7 +87,6 @@ def p_hp_data(file_path, inputs_php, output_php):
 
 @pytest.fixture(scope='module')
 def tair_data_delta(file_path, inputs_tair, output_tair):
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
     # single step model, evaluated over a horizon of 3 steps
     prep = PreprocessingSingleStep(inputs=inputs_tair, output='Change(reaTZon_y)', eval_horizon=3)
     td = prep.pipeline(file_path)
@@ -95,7 +94,6 @@ def tair_data_delta(file_path, inputs_tair, output_tair):
 
 @pytest.fixture(scope='module')
 def tair_data_noval(file_path, inputs_tair, output_tair):
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
     prep = PreprocessingSingleStep(inputs=inputs_tair, output='Change(reaTZon_y)', eval_horizon=3, val_size=0)
     td = prep.pipeline(file_path)
     return prep, td
@@ -103,15 +101,11 @@ def tair_data_noval(file_path, inputs_tair, output_tair):
 
 @pytest.fixture(scope='module')
 def tair_data_total(file_path, inputs_tair, output_tair):
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
     prep = PreprocessingSingleStep(inputs=inputs_tair, output='reaTZon_y', eval_horizon=3)
     td = prep.pipeline(file_path)
     return prep, td
 
-def test_model_linReg(inputs_php, output_php, file_path):
-    # Setup up logger for saving
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-
+def test_model_linReg(inputs_php, output_php, file_path, run):
     # Create & process Training data
     prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php, val_size=0)
     td = prep.pipeline(file_path)
@@ -120,32 +114,26 @@ def test_model_linReg(inputs_php, output_php, file_path):
     m = LinearRegressionModel()  # Linear Regression
     m.pipeline(td)
 
-    # Log setup
-    Logger.log_setup(prep, m, save_name_model='model_linReg.json')
-    Logger.save_training_data(td, path=os.path.join(Logger._logger, 'training_data2'))
+    files = run.save('linReg', prep, m, td)
+    assert set(files) == {'preprocessing', 'model_config', 'training_data', 'model', 'plot'}
+    check_saved_configs(run, 'linReg')
+    m.load_model(files['model'])
 
-def test_model_ann(p_hp_data, inputs_php, output_php, file_path):
-    # Setup up logger for saving
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-
+def test_model_ann(p_hp_data, inputs_php, output_php, file_path, run):
     prep = p_hp_data[0]
     td = p_hp_data[1]
 
     m = ClassicalANNModel(epochs=1, n_neurons=[4, 4], n_layers=2, activation_function=['softplus', 'softplus'],
                           early_stopping_epochs=None, rescale_output=False)
-    m.pipeline(td)
+    m.pipeline(td, save_path=str(run.path / 'model.keras'))
 
     m.epochs = 1
-    m.online_pipeline(td, os.path.join(Logger._logger, 'model.keras'))
+    m.online_pipeline(td, str(run.path / 'model.keras'))
 
-    # Log setup
-    Logger.log_setup(None, m)
-    Logger.save_training_data(td)
+    run.save('ann', prep, m, td)
+    check_saved_configs(run, 'ann')
 
-def test_model_cmnn(p_hp_data, inputs_php, output_php, file_path):
-    # Setup up logger for saving
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-
+def test_model_cmnn(p_hp_data, inputs_php, output_php, file_path, run):
     prep = p_hp_data[0]
     td = p_hp_data[1]
 
@@ -156,8 +144,8 @@ def test_model_cmnn(p_hp_data, inputs_php, output_php, file_path):
         'reaTZon_y': 1,
     }, activation_split=[1, 1, 1],  # Proportions for splitting neurons into convex, concave, and saturated activation
     epochs=1)
-    m.pipeline(td, save_model=True, plot=False, save_path=os.path.join(Logger._logger, 'model2.keras'))
-    keras.saving.load_model(os.path.join(Logger._logger, 'model2.keras'))
+    m.pipeline(td, save_model=True, plot=False, save_path=str(run.path / 'model2.keras'))
+    keras.saving.load_model(run.path / 'model2.keras')
     m = CMNNModel(n_layers=2, n_neurons=[4, 4], activation_function=['softplus', 'softplus'], monotonies={  # CMNN
         'oveHeaPumY_u': 1,
         'Func(logistic)': 1,
@@ -176,36 +164,25 @@ def test_model_cmnn(p_hp_data, inputs_php, output_php, file_path):
     epochs=1)
     m.pipeline(td, save_model=False, plot=False)
 
-    # Log setup
-    Logger.log_setup(prep, m)
-    Logger.save_training_data(td)
+    run.save('cmnn', prep, m, td, plot=False)
+    check_saved_configs(run, 'cmnn')
 
-def test_model_linANN(p_hp_data, inputs_php, output_php, file_path):
-    # Setup up logger for saving
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-
+def test_model_linANN(p_hp_data, inputs_php, output_php, file_path, run):
     prep = p_hp_data[0]
     td = p_hp_data[1]
 
     m = LinANNModel(epochs=1,  n_neurons=4)  # Residual model
     m.pipeline(td, save_model=False, plot=False)
-
-    # Log setup
-    Logger.log_setup(prep, m)
-    Logger.save_training_data(td)
+    run.save('linANN', prep, m, td, plot=False)
+    check_saved_configs(run, 'linANN')
 
     m = RBFModel(epochs=1, n_neurons=4, rescale_output=False)
-    m.pipeline(td, save_model=True, plot=False, save_path=os.path.join(Logger._logger, 'model2.keras'))
-    keras.saving.load_model(os.path.join(Logger._logger, 'model2.keras'))
+    m.pipeline(td, save_model=True, plot=False, save_path=str(run.path / 'model2.keras'))
+    keras.saving.load_model(run.path / 'model2.keras')
+    run.save('rbf', prep, m, td, plot=False)
+    check_saved_configs(run, 'rbf')
 
-    # Log setup
-    Logger.log_setup(prep, m)
-    Logger.save_training_data(td)
-
-def test_model_pinn(inputs_php, output_php, file_path):
-    # Setup up logger for saving
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-
+def test_model_pinn(inputs_php, output_php, file_path, run):
     # Check PINNs
     # PINN: Prepare preprocessing
     output_php = [output_php] + ['pinn']
@@ -223,30 +200,26 @@ def test_model_pinn(inputs_php, output_php, file_path):
     prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php, val_size=0, columns={'pinn': pinn})
     td = prep.pipeline(file_path)
     m = PINNModel(pinn_weights=None, epochs=1, n_neurons=4)
-    m.pipeline(td, save_model=True, plot=False)
+    m.pipeline(td, save_model=True, plot=False, save_path=str(run.path / 'model.keras'))
 
     m.epochs = 1
-    m.online_pipeline(td, os.path.join(Logger._logger, 'model.keras'))
+    m.online_pipeline(td, str(run.path / 'model.keras'))
 
-    # Log setup
-    Logger.log_setup(prep, m)
-    Logger.save_training_data(td)
+    run.save('pinn', prep, m, td)
 
-def test_models_rnn(file_path):
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-
+def test_models_rnn(file_path, run):
     # RNN predicting the change of the air temperature, warmed up on the measured past
     inputs = ['weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaHDirNor_y', 'oveHeaPumY_u']
     prep = PreprocessingMultiStep(inputs=inputs, output=px.Change('reaTZon_y'), label_width=4, warmup_width=2)
     td = prep.pipeline(file_path)
 
     m = RNNModel(epochs=1, rnn_layer='LSTM', rnn_units=8)
-    m.pipeline(td, os.path.join(Logger._logger, 'model2.keras'))
-    Logger.log_setup(prep, m, 'preprocessing_config2.json')
-    Logger.save_training_data(td)
+    m.pipeline(td, str(run.path / 'model2.keras'))
+    run.save('rnn', prep, m, td)
+    check_saved_configs(run, 'rnn')
 
     m.epochs = 1
-    m.online_pipeline(td, os.path.join(Logger._logger, 'model2.keras'), plot=False, save_model=False)
+    m.online_pipeline(td, str(run.path / 'model2.keras'), plot=False, save_model=False)
 
     for layer in ('RNN', 'GRU'):
         m = RNNModel(epochs=1, rnn_layer=layer, rnn_units=8)
@@ -257,64 +230,27 @@ def test_models_rnn(file_path):
                                   warmup_width=0, val_size=0)
     td = prep.pipeline(file_path)
     m = RNNModel(epochs=1, rnn_layer='GRU', rnn_units=8, early_stopping_epochs=None)
-    m.pipeline(td, save_model=True, plot=False)
+    m.pipeline(td, save_model=True, plot=False, save_path=str(run.path / 'model3'))
+    assert (run.path / 'model3.keras').exists()
 
-def test_read_setup():
-
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-
-    # Read setup
-    save_name_preprocessing = Logger.save_name_preprocessing
-    path = os.path.join(Logger._logger, save_name_preprocessing)
-    with open(path, "r") as f:
-        config_prep = json.load(f)
-    PreprocessingData.from_config(config_prep)
-
-    save_name_preprocessing = 'preprocessing_config2.json'
-    path = os.path.join(Logger._logger, save_name_preprocessing)
-    with open(path, "r") as f:
-        config_prep = json.load(f)
-    PreprocessingData.from_config(config_prep)
-
-    save_name_model = Logger.save_name_model_config
-    path = os.path.join(Logger._logger, save_name_model)
-    with open(path, "r") as f:
-        config_model = json.load(f)
-    AbstractModel.model_from_config(config_model)
-
-    save_name_model = 'model_linReg.json'
-    path = os.path.join(Logger._logger, save_name_model)
-    with open(path, "r") as f:
-        config_model = json.load(f)
-    AbstractModel.model_from_config(config_model)
-
-def test_feature_selection(monkeypatch, p_hp_data, file_path):
-    # Setup up logger for saving
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-    monkeypatch.setattr('builtins.input', lambda _: "2")
-
+def test_feature_selection(p_hp_data, file_path, run):
     prep = p_hp_data[0]
 
     m = LinearRegressionModel()
 
     recursive_feature_elimination_pipeline(file_path, prep, m, ascending_lag_order=False)
 
-    monkeypatch.setattr('builtins.input', lambda _: "")
     recursive_feature_elimination_pipeline(file_path, prep, m, ascending_lag_order=True,
-                                           fixed_inputs=['weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u'])
+                                           fixed_inputs=['weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u'], run=run)
+    assert (run.path / 'feature_selection.json').exists() and (run.path / 'feature_selection.html').exists()
 
-def test_feature_selection_multi(monkeypatch, tair_data_delta, tair_data_noval ,tair_data_total, file_path):
-    # Setup up logger for saving
-    Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-    monkeypatch.setattr('builtins.input', lambda _: "2")
-
+def test_feature_selection_multi(tair_data_delta, tair_data_noval, tair_data_total, file_path, run):
     prep = tair_data_delta[0]
     td = tair_data_delta[1]
 
     prep2 = tair_data_total[0]
     td2 = tair_data_total[1]
 
-    prep3 = tair_data_noval[0]
     td3 = tair_data_noval[1]
 
     # EvaluateMultiStep
@@ -324,8 +260,8 @@ def test_feature_selection_multi(monkeypatch, tair_data_delta, tair_data_noval ,
     recursive_feature_elimination_pipeline(file_path, prep, m, use_multi_step_error=True)
     recursive_feature_elimination_pipeline(file_path, prep2, m, use_multi_step_error=True)
     m.pipeline(td2, save_model=False, plot=False)
-    m.pipeline(td3, save_model=True, save_path=os.path.join(Logger._logger, 'model2.joblib'))
-    m.load_model(os.path.join(Logger._logger, 'model.joblib'))
+    m.pipeline(td3, save_model=True, save_path=str(run.path / 'model2.joblib'))
+    m.load_model(run.path / 'model2.joblib')
 
     m = ClassicalANNModel(epochs=1, n_neurons=4)
     recursive_feature_elimination_pipeline(file_path, prep, m, use_multi_step_error=False)
@@ -333,5 +269,4 @@ def test_feature_selection_multi(monkeypatch, tair_data_delta, tair_data_noval ,
     m = ClassicalANNModel(epochs=1, n_neurons=4)
     recursive_feature_elimination_pipeline(file_path, prep2, m, use_multi_step_error=False)
     m.pipeline(td2, save_model=False, plot=False)
-    Logger.log_setup(prep, None)
-    Logger.save_training_data(td, path=os.path.join(Logger._logger, 'training_data2.json'))
+    run.save('training_data2', prep, None, td)

@@ -1,9 +1,8 @@
 from physXAI.feature_selection.recursive_feature_elimination import save_result
 from physXAI.feature_selection.selection import FeatureSelection
+from physXAI.io import Run
 from physXAI.models.models import LinearRegressionModel
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
-from physXAI.utils.logging import Logger
-
 
 """
 Feature selection (experimental) for a linear regression predicting the air temperature using the Boptest data.
@@ -14,8 +13,8 @@ Feature selection (experimental) for a linear regression predicting the air temp
 - The heat pump is the control of the MPC: a candidate whose prediction does not increase with the heat pump
   signal on (almost) all validation samples is marked implausible and not selected.
 """
-# Setup up logger for saving
-Logger.setup_logger(folder_name='TAir_feature', override=True)
+# Directory of the run (stored_data/TAir_feature)
+run = Run('stored_data', 'TAir_feature', overwrite=True)
 
 # File path to data
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
@@ -40,4 +39,4 @@ print('Selected inputs:', result.selected.inputs)
 print(result.table()[['n_inputs', 'score', 'score_std', 'single_step_rmse', 'plausible']].to_string())
 
 # Save the result (json) and its plot (html) into the run directory
-save_result(result)
+save_result(result, run)

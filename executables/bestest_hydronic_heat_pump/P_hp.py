@@ -1,18 +1,14 @@
-import os
-
-from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 from physXAI import expr as px
-from physXAI.models.models import LinearRegressionModel
-from physXAI.models.ann.ann_design import ClassicalANNModel, CMNNModel, LinANNModel
-from physXAI.utils.logging import Logger
-
+from physXAI.io import Run
+from physXAI.models.ann.ann_design import ClassicalANNModel
+from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 
 """
 Creates standard models to predict the power of the heat pump using the Boptest data.
 """
 
-# Setup up logger for saving
-Logger.setup_logger(folder_name='P_hp', override=True, print_level='warning')
+# Directory of the run (stored_data/P_hp)
+run = Run('stored_data', 'P_hp', overwrite=True, log_level='warning')
 
 # File path to data
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
@@ -50,11 +46,10 @@ m = ClassicalANNModel(epochs=50)  # Classical ANN
 # Training pipeline
 model = m.pipeline(td)
 
-"""Example usage of online learning"""
-m.epochs = 5
-model_ol = m.online_pipeline(td, os.path.join(Logger._logger, 'model.keras'))
+# Save the configs of preprocessing and model, the metrics (training_data.json), the model and its report
+run.save('model', prep, m, td)
 
-# Log setup of preprocessing and model as json
-Logger.log_setup(prep, m)
-# Log training data as pickle
-Logger.save_training_data(td)
+"""Example usage of online learning: the saved model is trained further"""
+m.epochs = 5
+model_ol = m.online_pipeline(td, run.path / 'model.keras')
+run.save('model_ol', prep, m, td)

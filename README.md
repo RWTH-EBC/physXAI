@@ -52,23 +52,45 @@ If you have any questions regarding physXAI, feel free to contact us at ebc-tool
 	```
 
 ## Getting Started
-Executable and commented examples demonstrating the use of the physXAI Toolbox can be found in the `executables` directory. <br />
-These examples serve as a starting point for new projects and showcase how to configure and run the models.
-New executable scripts should be added to the `executables` directory.
+The [documentation](https://rwth-ebc.github.io/physXAI/) contains a user guide, the API reference and a
+[migration guide from physXAI 0.x to 1.0](https://rwth-ebc.github.io/physXAI/migration/). <br />
+Executable and commented examples can be found in the `executables` directory. They serve as a starting point
+for new projects. New executable scripts should be added there.
+
+```python
+from physXAI import expr as px
+from physXAI.io import Run
+from physXAI.models import LinearRegressionModel
+from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
+
+run = Run('stored_data', 'TAir', overwrite=True)
+prep = PreprocessingSingleStep(inputs=['weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u', 'reaTZon_y'],
+                               output=px.Change('reaTZon_y'), time_index_col='time', eval_horizon='12h')
+td = prep.pipeline('data/bestest_hydronic_heat_pump/pid_data.csv')
+model = LinearRegressionModel()
+model.pipeline(td)                    # train, evaluate (single step and recursively over 12 h)
+run.save('model', prep, model, td)    # configs, metrics, model and report (html)
+```
 
 ## Current Model Types
 The physXAI currently focuses on physics-guided neural networks build with Keras and Tensorflow.
 Models in this repository are categorized into two main types:
 
-- Single-Step Models: Predicting one step ahead. Can be used recursivly in the MPC.
-	- Linear Regression (sicit-learn)
+- Single-Step Models: Predicting one step ahead. Applied recursively in the MPC, evaluated and optionally
+  trained on the error over the prediction horizon.
+	- Linear Regression (scikit-learn)
 	- Classical ANN
 	- Radial Basis Function Network (RBF): RBF Models extrapolate to 0. Useful for residual models.
 	- Residual Model: hybrid model combining a Linear Regression model with an RBF, that models the residuals of the linear regression.
 	- Constrained Monotonic Neural Network (CMNN): Allows enforcing monotonicity, convex and concave constraints on input features.
 	- Physics-Informed Neural Network (PINN): Allows to add physics-informed loss functions
-- Multi-Step Models: Predictiing a trajectory.
-	- Recurrent Neural Network: Currently allow SimpleRNN, GRU and LSTM.
+	- Modular ANN: physically motivated expressions and trainable blocks (linear, MLP, CMNN, RBF, ...) in one model
+	- Constrained Regression: linear regression on expressions with monotonicity and convexity constraints
+- Multi-Step Models: Predicting a trajectory.
+	- Recurrent Neural Network: SimpleRNN, GRU and LSTM, warmed up on the measured past.
+
+Trained models can be used in [AgentLib-MPC](https://github.com/RWTH-EBC/AgentLib-MPC).
+Several models, each trained with several seeds, can be compared with `physXAI.evaluation.comparison`.
 
 ## Project Structure
 The project is organized into the following directories:
@@ -76,16 +98,17 @@ The project is organized into the following directories:
 - `executables`: Contains executable scripts and configuration files. This is the primary location for users to run and test models.
 	- The base example uses data from the BOPTEST 'Bestest Hydronic Heat Pump' test case: https://ibpsa.github.io/project1-boptest/testcases/ibpsa/testcases_ibpsa_bestest_hydronic_heat_pump/
 - `data`: Storage for input data, typically in `.csv` format. Datasets required for training and evaluating models should be placed here.
-- `stored_data`: This directory is used to save trained models, model parameters, and any relevant metadata generated during the modeling process.
+- `stored_data`: Default directory of the runs: trained models, configs, metrics and reports.
 - `physXAI`: Contains the core logic and main functionalities of the physXAI Toolbox.
-	- `preprocessing`: Modules and scripts for data preprocessing tasks (e.g., cleaning, normalization, feature engineering).
-	- `feature_selection`: Pipelines for (automatic) feature selection. Currently supports recursive feature elimination.
-	- `models`: Modules related to model creation and definition.
-		- `models.py`: Contains base model architectures and generic model components.
-		- `ann`: Specific components, layers, or utilities tailored for Artificial Neural Network (ANN) based models.
-	- `plotting`: Scripts and functions for generating plots and visualizations of data, model results, etc.
-	- `evaluation`: Modules for evaluating model performance using various metrics.
-	- `utils`: Utility functions and helper scripts used across different parts of the toolbox.
+	- `expr`: Expression language for physically motivated terms and trainable blocks (NumPy, Keras and CasADi).
+	- `preprocessing`: Loading, derived columns, leakage free split and training data.
+	- `models`: Model definitions (linear regression, ANNs, modular models, RNNs).
+	- `training`: Training on the error over the prediction horizon.
+	- `evaluation`: Metrics, errors over the horizon and the comparison of models.
+	- `feature_selection`: (Automatic) feature selection.
+	- `plotting`: Reports of trained models.
+	- `io`: Run directories and the export for AgentLib-MPC.
+	- `agentlib_mpc_plugin`: Example training scripts for AgentLib-MPC.
 - `docs`: Contains documentation for the project.
 - `build`: Contains saved test reports.
 - `unittests`: Contains unittests for physXAI.

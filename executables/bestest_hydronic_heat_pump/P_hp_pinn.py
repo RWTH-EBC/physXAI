@@ -1,14 +1,13 @@
-from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 from physXAI import expr as px
+from physXAI.io import Run
 from physXAI.models.ann.ann_design import PINNModel
-from physXAI.utils.logging import Logger
-
+from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 
 """
 Creates a physics-informed model (PINN) to predict the power of the heat pump using the Boptest data
 """
-# Setup up logger for saving
-Logger.setup_logger(folder_name='P_hp_pinn', override=True)
+# Directory of the run (stored_data/P_hp_pinn)
+run = Run('stored_data', 'P_hp_pinn', overwrite=True)
 
 # File path to data
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
@@ -17,7 +16,7 @@ file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
 inputs = ['oveHeaPumY_u', 'Func(logistic)', 'weaSta_reaWeaTDryBul_y', 'reaTZon_y']
 
 """
-Output feature(s). In addition to the standard data-driven loss, the PINN includes a physical loss function, 
+Output feature(s). In addition to the standard data-driven loss, the PINN includes a physical loss function,
 which is computed from the data as an expression
 """
 output = ['reaPHeaPum_y', 'pinn']
@@ -37,7 +36,7 @@ prep = PreprocessingSingleStep(inputs=inputs, output=output, columns={'pinn': pi
 td = prep.pipeline(file_path)
 
 """
-Create PINN model. 
+Create PINN model.
 pinn_weights are used to balance the individual loss therms of the PINN, their length should be `num_outputs - 1`
 This ´PINN implementation uses a CMNN as its base architecture
 """
@@ -46,7 +45,5 @@ m = PINNModel(pinn_weights=[1], epochs=50)
 # Training pipeline
 model = m.pipeline(td)
 
-# Log setup of preprocessing and model as json
-Logger.log_setup(prep, m)
-# Log training data as pickle
-Logger.save_training_data(td)
+# Save the configs of preprocessing and model, the metrics (training_data.json), the model and its report
+run.save('model', prep, m, td)

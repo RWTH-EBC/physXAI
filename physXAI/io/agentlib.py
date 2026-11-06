@@ -133,19 +133,10 @@ def save_for_agentlib(run: Run, name: str, preprocessing, model, training_data=N
         str: `name`, the return value expected from a training script.
     """
     check_agentlib_compatibility(preprocessing)
-
-    preprocessing_config = {**preprocessing.get_config(), **Run.version_info()}
-    run.save_json(f"{name}_preprocessing.json", preprocessing_config)
-    run.save_json(f"{name}_model.json", {**model.get_config(), **Run.version_info()})
-    if training_data is not None:
-        run.save_json(f"{name}_training_data.json", training_data.get_config())
-
     if trained_model is None:
         trained_model = getattr(model, "trained_model", None)
     if trained_model is None:
         raise ValueError("No trained model given. Pass the model returned by the training pipeline as 'trained_model'.")
-    model.save_model(trained_model, str(run.file(name)))
-
+    run.save(name, preprocessing, model, training_data, trained_model, plot=False)
     logger.info("Saved model '%s' for AgentLib-MPC in %s", name, run.path)
     return name
-

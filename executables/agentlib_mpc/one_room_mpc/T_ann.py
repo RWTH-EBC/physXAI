@@ -2,11 +2,10 @@
 Example to demonstrate interplay of physXAI and agentlib_mpc to train a simple ANN for one_room_mpc
 Keep synchronized with physXAI.agentlib_mpc_plugin.example
 """
-import numpy as np
-from physXAI.models.ann.ann_design import ClassicalANNModel
 from physXAI import expr as px
-from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 from physXAI.io import Run
+from physXAI.models.ann.ann_design import ClassicalANNModel
+from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 
 
 def train_model(base_path: str, folder_name: str, training_data_path: str, time_step: int,

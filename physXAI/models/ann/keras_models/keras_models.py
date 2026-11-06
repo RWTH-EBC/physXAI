@@ -1,8 +1,10 @@
 import os
-from typing import Union
+
 import numpy as np
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 
@@ -383,7 +385,7 @@ class RBFLayer(keras.Layer):
         if initial_centers_list is not None:
             config["initial_centers"] = np.array(initial_centers_list)
         return cls(**config)
-    
+
 
 @keras.saving.register_keras_serializable(package='custom_layer', name='InputSliceLayer')
 class InputSliceLayer(keras.Layer):
@@ -391,7 +393,7 @@ class InputSliceLayer(keras.Layer):
     A simple layer to select specific features from the last axis.
     """
 
-    def __init__(self, feature_indices: Union[int, list[int]], **kwargs):
+    def __init__(self, feature_indices: int | list[int], **kwargs):
         """
         Initializes the layer.
 
@@ -407,38 +409,38 @@ class InputSliceLayer(keras.Layer):
 
     def call(self, inputs):
         return keras.ops.take(inputs, self.feature_indices, axis=-1)
-    
+
     def get_config(self):
         config = super().get_config()
         config.update({
             "feature_indices": self.feature_indices
         })
         return config
-    
+
     @classmethod
     def from_config(cls, config):
         return cls(**config)
-    
+
     def compute_output_shape(self, input_shape):
         output_shape = list(input_shape)
-        
+
         if isinstance(self.feature_indices, int):
             output_shape.pop(-1)
-        
+
         elif isinstance(self.feature_indices, (list, tuple)):
             output_shape[-1] = len(self.feature_indices)
-        
+
         return tuple(output_shape)
-    
+
 
 @keras.saving.register_keras_serializable(package='custom_layer', name='ConstantLayer')
 class ConstantLayer(keras.Layer):
     """
     A layer that returns a constant tensor, broadcasted to the batch size.
-    
+
     This layer ignores its input and simply returns a tensor of a
     pre-defined shape, initialized with a constant value.
-    
+
     The constant is created as a Keras weight, which can be
     trainable or non-trainable.
     """
@@ -448,7 +450,7 @@ class ConstantLayer(keras.Layer):
         Initializes the layer.
 
         Args:
-            initial_value (float): The value to initialize the constant tensor with.
+            value (float): The value to initialize the constant tensor with.
             shape (tuple): The shape of the constant, *excluding* the batch
                 dimension. For a single number to be added, use (1,).
             trainable (bool): Whether this constant is a learnable parameter.
@@ -490,7 +492,7 @@ class ConstantLayer(keras.Layer):
             "shape": self.target_shape,
         })
         return config
-    
+
     @classmethod
     def from_config(cls, config):
         return cls(**config)
@@ -507,10 +509,10 @@ class DivideLayer(keras.Layer):
 
     def call(self, inputs):
         return keras.ops.divide(inputs[0], inputs[1])
-    
+
     def compute_output_shape(self, input_shape):
         return input_shape[0]
-    
+
     def get_config(self):
         config = super().get_config()
         return config
@@ -534,7 +536,7 @@ class PowerLayer(keras.Layer):
 
     def compute_output_shape(self, input_shape):
         return input_shape[0]
-    
+
     def get_config(self):
         config = super().get_config()
         return config

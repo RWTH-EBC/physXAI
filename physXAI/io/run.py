@@ -23,9 +23,21 @@ logger = logging.getLogger("physXAI")
 _LOG_LEVELS = {"debug": logging.DEBUG, "info": logging.INFO, "warning": logging.WARNING, "error": logging.ERROR}
 
 
+class _ConsoleHandler(logging.StreamHandler):
+    """Prints physXAI messages, unless the application configured logging itself (then the root logger does)."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if logging.getLogger().handlers:
+            return
+        super().emit(record)
+
+
 def set_log_level(level: str | int) -> None:
     """
-    Sets the log level of physXAI and attaches a console handler if none is configured.
+    Sets the log level of physXAI. The default is 'info', which shows metrics and the progress of the training.
+
+    Messages are printed to the console, unless the application configured logging (e.g. with
+    `logging.basicConfig`), then they are passed on to the root logger.
 
     Args:
         level: 'debug', 'info', 'warning', 'error' (case insensitive) or a `logging` level.
@@ -36,10 +48,48 @@ def set_log_level(level: str | int) -> None:
         except KeyError:
             raise ValueError(f"Invalid log level '{level}'. Valid options are: {list(_LOG_LEVELS)}") from None
     logger.setLevel(level)
-    if not logger.handlers:
-        handler = logging.StreamHandler()
+    if not any(isinstance(h, _ConsoleHandler) for h in logger.handlers):
+        handler = _ConsoleHandler()
         handler.setFormatter(logging.Formatter("%(levelname)s physXAI: %(message)s"))
         logger.addHandler(handler)
+
+
+def keras_verbosity() -> int | str:
+    """Verbosity of keras `fit` and `predict`: progress bars only on log level 'info' or lower."""
+    return "auto" if logger.isEnabledFor(logging.INFO) else 0
+
+
+def keras_verbosity_int() -> int:
+    """Verbosity of keras callbacks: 1 on log level 'info' or lower, else 0."""
+    return 1 if logger.isEnabledFor(logging.INFO) else 0
+
+
+def output_path(path: str | Path, suffix: str | None = None) -> Path:
+    """
+    Path of a file to be written, with its directory created.
+
+    Args:
+        path: Absolute or relative to the current working directory.
+        suffix: Appended if the path does not end with it yet (e.g. '.keras').
+    """
+    path = Path(path)
+    if suffix is not None and path.suffix != suffix:
+        path = path.with_name(path.name + suffix)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def input_path(path: str | Path) -> Path:
+    """
+    Path of a file to be read.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+    """
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"'{path}' does not exist (relative paths start at '{Path.cwd()}').")
+    return path
 
 
 class Run:
@@ -96,6 +146,65 @@ class Run:
             json.dump(data, f, indent=4, default=_json_default)
         logger.debug("Saved %s", path)
         return path
+
+    def save(
+        self,
+        name: str,
+        preprocessing=None,
+        model=None,
+        training_data=None,
+        trained_model=None,
+        plot: bool = True,
+    ) -> dict[str, Path]:
+        """
+        Saves a trained model with everything needed to reproduce, compare and use it.
+
+        Files (all optional, depending on the arguments):
+
+        - `{name}_preprocessing.json`: config of the preprocessing (`PreprocessingData.from_config`).
+        - `{name}_model.json`: config of the model (`AbstractModel.model_from_config`).
+        - `{name}_training_data.json`: metrics, horizon metrics, training time and history.
+        - `{name}.keras` or `{name}.joblib`: the trained model.
+        - `{name}.html`: the model report (`plot=True`).
+
+        The files follow the layout AgentLib-MPC reads (see `save_for_agentlib`), and
+        `physXAI.evaluation.comparison.ModelComparison` compares saved runs.
+
+        Args:
+            name: Name of the model, the prefix of all files.
+            preprocessing: The preprocessing object.
+            model: The physXAI model object.
+            training_data: The evaluated training data.
+            trained_model: The trained model. Defaults to `model.trained_model`, set by `model.pipeline`.
+            plot: Whether to save the model report (needs the model and the evaluated training data).
+
+        Returns:
+            dict: The written files by kind ('preprocessing', 'model_config', 'training_data', 'model', 'plot').
+        """
+        files: dict[str, Path] = dict()
+        version = self.version_info()
+        if preprocessing is not None:
+            files["preprocessing"] = self.save_json(f"{name}_preprocessing.json", {**preprocessing.get_config(), **version})
+        if model is not None:
+            files["model_config"] = self.save_json(f"{name}_model.json", {**model.get_config(), **version})
+        if training_data is not None:
+            files["training_data"] = self.save_json(f"{name}_training_data.json", {**training_data.get_config(), **version})
+        if model is not None:
+            if trained_model is None:
+                trained_model = getattr(model, "trained_model", None)
+            if trained_model is not None:
+                for suffix in (".keras", ".joblib"):
+                    self.file(name + suffix)  # raises if the model exists and the run does not overwrite
+                model.save_model(trained_model, str(self.path / name))
+                saved = [self.path / (name + s) for s in (".keras", ".joblib") if (self.path / (name + s)).exists()]
+                if saved:
+                    files["model"] = saved[0]
+            if plot and training_data is not None and getattr(training_data, "metrics", None) is not None:
+                from physXAI.plotting.plotting import save_figure
+
+                files["plot"] = save_figure(model.plot(training_data), self.file(f"{name}.html"))
+        logger.info("Saved '%s' in %s", name, self.path)
+        return files
 
     def save_for_agentlib(self, name: str, preprocessing, model, training_data=None, trained_model=None) -> str:
         """

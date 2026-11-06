@@ -1,8 +1,8 @@
 from physXAI import expr as px
+from physXAI.io import Run
 from physXAI.models import ModularANN
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 from physXAI.training import RecursiveTraining
-from physXAI.utils.logging import Logger
 
 """
 Single step model of the air temperature change, evaluated and trained over a horizon.
@@ -15,7 +15,8 @@ Single step model of the air temperature change, evaluated and trained over a ho
   more than the following ones.
 """
 
-Logger.setup_logger(folder_name='TAir_recursive', override=True)
+# Directory of the run (stored_data/TAir_recursive)
+run = Run('stored_data', 'TAir_recursive', overwrite=True)
 
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
 
@@ -43,7 +44,5 @@ td = prep.pipeline(file_path, model=model)
 # Training pipeline: single step training, recursive fine-tuning, single step and horizon evaluation
 model.pipeline(td)
 
-# Log setup of preprocessing and model as json
-Logger.log_setup(prep, model)
-# Log training data
-Logger.save_training_data(td)
+# Save the configs of preprocessing and model, the metrics (training_data.json), the model and its report
+run.save('model', prep, model, td)

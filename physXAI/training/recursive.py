@@ -179,7 +179,7 @@ def fit_recursive(keras_model: keras.Model, td, config: RecursiveTraining, model
     import tensorflow as tf
 
     from physXAI.evaluation.rollout import build_rollout_model, recursion_spec, rollout_data
-    from physXAI.utils.logging import Logger
+    from physXAI.io.run import keras_verbosity
 
     spec = recursion_spec(td)
     if spec is None:
@@ -224,7 +224,7 @@ def fit_recursive(keras_model: keras.Model, td, config: RecursiveTraining, model
         validation_data=val_ds,
         epochs=config.epochs or model_settings.epochs,
         callbacks=callbacks,
-        verbose=Logger.verbosity(),
+        verbose=keras_verbosity(),
         shuffle=False,  # the dataset is reshuffled in every epoch
     )
     logger.info("Multi step training over %d steps took %.1f s.", horizon, time.perf_counter() - start)

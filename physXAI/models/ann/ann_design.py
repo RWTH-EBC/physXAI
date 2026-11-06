@@ -1,26 +1,41 @@
-from logging import warning
+import logging
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Union
+
 import numpy as np
 import tensorflow as tf
 
-from physXAI.utils.logging import create_full_path, get_full_path, Logger
-from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
-from physXAI.models.models import SingleStepModel, LinearRegressionModel, MultiStepModel, register_model
+from physXAI.evaluation.metrics import MetricsPINN
+from physXAI.expr import Expr
+from physXAI.expr import from_config as expr_from_config
+from physXAI.expr import to_config as expr_to_config
+from physXAI.io.run import input_path, keras_verbosity, keras_verbosity_int, output_path
 from physXAI.models.ann.model_construction.ann_models import ClassicalANNConstruction, CMNNModelConstruction
 from physXAI.models.ann.model_construction.rbf_models import RBFModelConstruction
 from physXAI.models.ann.model_construction.residual_models import LinResidualANNConstruction
-from physXAI.models.ann.model_construction.rnn_models import (SequenceSpec, build_sequence_model, build_step_model,
-                                                             find_step_model, sequence_inputs)
-from physXAI.training.recursive import step_weights, weighted_step_loss
-from physXAI.expr import Expr, from_config as expr_from_config, to_config as expr_to_config
+from physXAI.models.ann.model_construction.rnn_models import (
+    SequenceSpec,
+    build_sequence_model,
+    build_step_model,
+    find_step_model,
+    sequence_inputs,
+)
 from physXAI.models.ann.pinn.pinn_loss import multi_y_loss
-from physXAI.evaluation.metrics import MetricsPINN
+from physXAI.models.models import LinearRegressionModel, MultiStepModel, SingleStepModel, register_model
+from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneric, TrainingDataMultiStep
+from physXAI.training.recursive import step_weights, weighted_step_loss
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+
+if TYPE_CHECKING:  # pragma: no cover
+    from physXAI.training import RecursiveTraining
+
+logger = logging.getLogger("physXAI")
 
 
 class ANNModel(SingleStepModel, ABC):
@@ -33,8 +48,8 @@ class ANNModel(SingleStepModel, ABC):
     plot_title = "Artificial Neural Network"
 
     def __init__(self, batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: Optional[int] = 100, random_seed: int = 42,
-                 recursive_training: Optional[Union['RecursiveTraining', dict]] = None, **kwargs):
+                 early_stopping_epochs: int | None = 100, random_seed: int = 42,
+                 recursive_training: Union['RecursiveTraining', dict] | None = None, **kwargs):
         """
         Initializes common hyperparameters for ANN training.
 
@@ -53,12 +68,12 @@ class ANNModel(SingleStepModel, ABC):
         self.batch_size: int = batch_size
         self.epochs: int = epochs
         self.learning_rate: float = learning_rate
-        self.early_stopping_epochs: Optional[int] = early_stopping_epochs
+        self.early_stopping_epochs: int | None = early_stopping_epochs
         self.random_seed: int = random_seed
         from physXAI.training.recursive import RecursiveTraining
         if isinstance(recursive_training, dict):
             recursive_training = RecursiveTraining.from_config(recursive_training)
-        self.recursive_training: Optional[RecursiveTraining] = recursive_training
+        self.recursive_training: RecursiveTraining | None = recursive_training
 
         self.model_config = dict()
 
@@ -119,7 +134,7 @@ class ANNModel(SingleStepModel, ABC):
         callbacks = list()
         if self.early_stopping_epochs is not None and td.y_val_single is not None:
             es = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', patience=self.early_stopping_epochs,
-                                               restore_best_weights=True, verbose=Logger.verbosity_int())
+                                               restore_best_weights=True, verbose=keras_verbosity_int())
             callbacks.append(es)
 
         # Fit model, track training time
@@ -151,7 +166,7 @@ class ANNModel(SingleStepModel, ABC):
                                      validation_data=val_ds,
                                      epochs=self.epochs,
                                      callbacks=callbacks,
-                                     verbose=Logger.verbosity(),
+                                     verbose=keras_verbosity(),
                                      shuffle=False)  # the dataset is reshuffled in every epoch
         stop_time = time.perf_counter()
 
@@ -159,7 +174,7 @@ class ANNModel(SingleStepModel, ABC):
         td.add_training_time(stop_time - start_time)
         td.add_training_record(training_history)
 
-        if Logger.check_print_level('info'):
+        if logger.isEnabledFor(logging.INFO):
             model.summary()
 
     def save_model(self, model, save_path: str):
@@ -170,14 +185,7 @@ class ANNModel(SingleStepModel, ABC):
             model (keras.Model): The Keras model to save.
             save_path (str): The directory or full path where the model should be saved.
         """
-
-        if save_path is None:
-            save_path = Logger.get_model_savepath()
-
-        if not save_path.endswith('.keras'):
-            save_path += '.keras'
-
-        save_path = create_full_path(save_path)
+        save_path = output_path(save_path, '.keras')
         model.save(save_path)
 
     def load_model(self, load_path: str):
@@ -191,7 +199,7 @@ class ANNModel(SingleStepModel, ABC):
             keras.Model: The loaded Keras model.
         """
 
-        load_path = get_full_path(load_path)
+        load_path = input_path(load_path)
         model = keras.saving.load_model(load_path)
         return model
 
@@ -214,10 +222,10 @@ class ClassicalANNModel(ANNModel):
     A classical (standard feed-forward) Artificial Neural Network model.
     """
 
-    def __init__(self, n_layers: int = 1, n_neurons: Union[int, list[int]] = 32,
-                 activation_function: Union[str, list[str]] = 'softplus', rescale_output: bool = True,
+    def __init__(self, n_layers: int = 1, n_neurons: int | list[int] = 32,
+                 activation_function: str | list[str] = 'softplus', rescale_output: bool = True,
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: Optional[int] = 100, random_seed: int = 42, **kwargs):
+                 early_stopping_epochs: int | None = 100, random_seed: int = 42, **kwargs):
         """
           Initializes the ClassicalANNModel.
 
@@ -238,8 +246,8 @@ class ClassicalANNModel(ANNModel):
 
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         self.n_layers: int = n_layers
-        self.n_neurons: Union[int, list[int]] = n_neurons
-        self.activation_function: Union[str, list[str]] = activation_function
+        self.n_neurons: int | list[int] = n_neurons
+        self.activation_function: str | list[str] = activation_function
         self.rescale_output: bool = rescale_output
 
         self.model_config.update({
@@ -276,7 +284,7 @@ class LinANNModel(ANNModel):
     that models the residuals of the linear regression.
     """
 
-    def __init__(self, n_layers: int = 1, n_neurons: Union[int, list[int]] = 32, rescale_output: bool = True,
+    def __init__(self, n_layers: int = 1, n_neurons: int | list[int] = 32, rescale_output: bool = True,
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
                  early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
         """
@@ -295,7 +303,7 @@ class LinANNModel(ANNModel):
         """
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         self.n_layers: int = n_layers
-        self.n_neurons: Union[int, list[int]] = n_neurons
+        self.n_neurons: int | list[int] = n_neurons
         self.rescale_output: bool = rescale_output
 
         self.model_config.update({
@@ -340,7 +348,7 @@ class RBFModel(ANNModel):
     A Radial Basis Function (RBF) Network model.
     """
 
-    def __init__(self, n_layers: int = 1, n_neurons: Union[int, list[int]] = 32, rescale_output: bool = True,
+    def __init__(self, n_layers: int = 1, n_neurons: int | list[int] = 32, rescale_output: bool = True,
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
                  early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
         """
@@ -359,7 +367,7 @@ class RBFModel(ANNModel):
         """
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         self.n_layers: int = n_layers
-        self.n_neurons: Union[int, list[int]] = n_neurons
+        self.n_neurons: int | list[int] = n_neurons
         self.rescale_output: bool = rescale_output
 
         self.model_config.update({
@@ -395,8 +403,8 @@ class CMNNModel(ANNModel):
     Allows enforcing monotonicity constraints on input features.
     """
 
-    def __init__(self, n_layers: int = 1, n_neurons: Union[int, list[int]] = 32,
-                 activation_function: Union[str, list[str]] = 'softplus', rescale_output: bool = True,
+    def __init__(self, n_layers: int = 1, n_neurons: int | list[int] = 32,
+                 activation_function: str | list[str] = 'softplus', rescale_output: bool = True,
                  monotonies: dict[str, int] = None, activation_split: list[float] = None,
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
                  early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
@@ -421,8 +429,8 @@ class CMNNModel(ANNModel):
         """
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         self.n_layers: int = n_layers
-        self.n_neurons: Union[int, list[int]] = n_neurons
-        self.activation_function: Union[str, list[str]] = activation_function
+        self.n_neurons: int | list[int] = n_neurons
+        self.activation_function: str | list[str] = activation_function
         self.rescale_output: bool = rescale_output
         self.monotonies: dict[str, int] = monotonies
         self.activation_split: list[float] = activation_split
@@ -466,8 +474,8 @@ class PINNModel(ANNModel):
     a custom multi-component loss function.
     """
 
-    def __init__(self, n_layers: int = 1, n_neurons: Union[int, list[int]] = 32,
-                 activation_function: Union[str, list[str]] = 'softplus', pinn_weights: list[float] = None,
+    def __init__(self, n_layers: int = 1, n_neurons: int | list[int] = 32,
+                 activation_function: str | list[str] = 'softplus', pinn_weights: list[float] = None,
                  rescale_output: bool = True, monotonies: dict[str, int] = None, activation_split: list[float] = None,
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
                  early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
@@ -494,8 +502,8 @@ class PINNModel(ANNModel):
         """
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         self.n_layers: int = n_layers
-        self.n_neurons: Union[int, list[int]] = n_neurons
-        self.activation_function: Union[str, list[str]] = activation_function
+        self.n_neurons: int | list[int] = n_neurons
+        self.activation_function: str | list[str] = activation_function
         self.rescale_output: bool = rescale_output
         self.monotonies: dict[str, int] = monotonies
         self.activation_split: list[float] = activation_split
@@ -554,7 +562,7 @@ class PINNModel(ANNModel):
             self.pinn_metrics = [multi_y_loss(keras.metrics.RootMeanSquaredError(name='rmse'), self.pinn_weights,
                                               'rmse')]
         assert yn == len(self.pinn_weights) + 1, \
-            f'Shape of y values does not match length of pinn weights'
+            'Shape of y values does not match length of pinn weights'
 
     def pipeline(self, td: TrainingDataGeneric,
                  save_path: str = None, plot: bool = True, save_model: bool = True, show_plot: bool = False):
@@ -579,7 +587,7 @@ class PINNModel(ANNModel):
         Args:
             td (TrainingData): The training data, used to infer the number of target components.
             load_path (str): Path to load the model.
-            save_path (str): Path to save the model (If None, standard save path of Logger is used).
+            save_path (str): Path to save the model (not saved without a path).
             plot (bool, optional): Whether to plot the results. Defaults to True.
             save_model (bool, optional): Whether to save the trained model. Defaults to True.
         """
@@ -595,10 +603,10 @@ class PINNModel(ANNModel):
             td (TrainingData): The training data
         """
 
-        y_pred_train = model.predict(td.X_train_single, verbose=Logger.verbosity())
-        y_pred_test = model.predict(td.X_test_single, verbose=Logger.verbosity())
+        y_pred_train = model.predict(td.X_train_single, verbose=keras_verbosity())
+        y_pred_test = model.predict(td.X_test_single, verbose=keras_verbosity())
         if td.X_val is not None:
-            y_pred_val = model.predict(td.X_val_single, verbose=Logger.verbosity())
+            y_pred_val = model.predict(td.X_val_single, verbose=keras_verbosity())
         else:
             y_pred_val = None
         td.add_predictions(y_pred_train, y_pred_val, y_pred_test)
@@ -617,7 +625,7 @@ class PINNModel(ANNModel):
             keras.Model: The loaded Keras model.
         """
 
-        load_path = get_full_path(load_path)
+        load_path = input_path(load_path)
         model = keras.saving.load_model(load_path, compile=False)
         return model
 
@@ -678,12 +686,12 @@ class RNNModel(MultiStepModel):
         epochs: int = 1000,
         learning_rate: float = 0.001,
         batch_size: int = 32,
-        early_stopping_epochs: Optional[int] = 100,
+        early_stopping_epochs: int | None = 100,
         random_seed: int = 42,
-        feature_architecture: Optional[Union[Expr, list[Expr], dict]] = None,
+        feature_architecture: Expr | list[Expr] | dict | None = None,
         loss_on: str = "trajectory",
-        first_step_weight: Optional[float] = None,
-        step_weights: Optional[list[float]] = None,
+        first_step_weight: float | None = None,
+        step_weights: list[float] | None = None,
         **kwargs,
     ):
         init_layer = kwargs.pop("init_layer", None)
@@ -703,21 +711,21 @@ class RNNModel(MultiStepModel):
         self.epochs: int = epochs
         self.learning_rate: float = learning_rate
         self.batch_size: int = batch_size
-        self.early_stopping_epochs: Optional[int] = early_stopping_epochs
+        self.early_stopping_epochs: int | None = early_stopping_epochs
         self.random_seed: int = random_seed
         if isinstance(feature_architecture, dict):
             feature_architecture = expr_from_config(feature_architecture)
         if isinstance(feature_architecture, Expr):
             feature_architecture = [feature_architecture]
-        self.feature_architecture: Optional[list[Expr]] = feature_architecture
+        self.feature_architecture: list[Expr] | None = feature_architecture
         self.loss_on: str = loss_on
-        self.first_step_weight: Optional[float] = first_step_weight
-        self.step_weights: Optional[list[float]] = list(step_weights) if step_weights is not None else None
+        self.first_step_weight: float | None = first_step_weight
+        self.step_weights: list[float] | None = list(step_weights) if step_weights is not None else None
 
         self.model_config = {"rnn_units": rnn_units, "rnn_layer": rnn_layer}
 
     @property
-    def required_inputs(self) -> Optional[list[str]]:
+    def required_inputs(self) -> list[str] | None:
         """Inputs required by the feature architecture (None without one)."""
         if self.feature_architecture is None:
             return None
@@ -739,9 +747,8 @@ class RNNModel(MultiStepModel):
 
     def _trajectory_loss(self, td: TrainingDataMultiStep, warn: bool = False) -> bool:
         if warn and self.loss_on == "trajectory" and not td.absolute and any(td.difference):
-            Logger.print(
-                "The data holds no start values of the predicted features, the loss is computed on the outputs.",
-                "warning",
+            logger.warning(
+                "The data holds no start values of the predicted features, the loss is computed on the outputs."
             )
         return self.loss_on == "trajectory"
 
@@ -760,7 +767,7 @@ class RNNModel(MultiStepModel):
         # the loss is scaled per output, so outputs of different units contribute alike
         truth = sequence_inputs(td, "train", spec, trajectory)[1]
         self._scale = np.maximum(truth.reshape(-1, truth.shape[-1]).std(axis=0), 1e-6)
-        if Logger.check_print_level("info"):
+        if logger.isEnabledFor(logging.INFO):
             step_model.summary()
         return model
 
@@ -799,7 +806,7 @@ class RNNModel(MultiStepModel):
         if self.early_stopping_epochs is not None and val is not None:
             callbacks.append(keras.callbacks.EarlyStopping(
                 monitor="val_loss", mode="min", patience=self.early_stopping_epochs,
-                restore_best_weights=True, verbose=Logger.verbosity_int()))
+                restore_best_weights=True, verbose=keras_verbosity_int()))
 
         start_time = time.perf_counter()
         training_history = model.fit(
@@ -807,7 +814,7 @@ class RNNModel(MultiStepModel):
             validation_data=dataset(val, shuffle=False) if val is not None else None,
             epochs=self.epochs,
             callbacks=callbacks,
-            verbose=Logger.verbosity(),
+            verbose=keras_verbosity(),
             shuffle=False,  # the dataset is reshuffled in every epoch
         )
         td.add_training_time(time.perf_counter() - start_time)
@@ -820,10 +827,7 @@ class RNNModel(MultiStepModel):
         model = self._training_model(self.load_model(load_path), td)
         self.compile_model(model)
         model = self.online_pipeline_internal(td, model)
-        if plot:
-            self.save_plot(self.plot(td, show=show_plot), save_path)
-        if save_model:
-            self.save_model(model, save_path=save_path)
+        self._finish(model, td, save_path, plot, save_model, show_plot)
         return model
 
     def save_model(self, model, save_path: str):
@@ -834,12 +838,7 @@ class RNNModel(MultiStepModel):
             model (keras.Model): The sequence model returned by the pipeline, or the step model.
             save_path (str): The path of the file ('.keras' is appended if missing).
         """
-        if save_path is None:
-            save_path = Logger.get_model_savepath()
-        if not save_path.endswith('.keras'):
-            save_path += '.keras'
-        save_path = create_full_path(save_path)
-        find_step_model(model).save(save_path)
+        find_step_model(model).save(output_path(save_path, '.keras'))
 
     def load_model(self, load_path: str):
         """
@@ -851,7 +850,7 @@ class RNNModel(MultiStepModel):
         Returns:
             keras.Model: The step model.
         """
-        load_path = get_full_path(load_path)
+        load_path = input_path(load_path)
         return find_step_model(keras.saving.load_model(load_path, compile=False))
 
     def get_config(self) -> dict:

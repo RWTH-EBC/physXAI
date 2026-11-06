@@ -1,20 +1,26 @@
+import logging
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import Type
+
 import joblib
 from joblib import dump
 from sklearn.linear_model import LinearRegression
-from physXAI.utils.logging import get_full_path, create_full_path, Logger
-from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
+
 from physXAI.evaluation.metrics import Metrics
+from physXAI.io.run import input_path, keras_verbosity, output_path
 from physXAI.plotting.plotting import model_report, save_figure
+from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneric, TrainingDataMultiStep
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 import keras
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 
-MODEL_CLASS_REGISTRY: dict[str, Type['AbstractModel']] = dict()
+logger = logging.getLogger("physXAI")
+
+MODEL_CLASS_REGISTRY: dict[str, type['AbstractModel']] = dict()
 
 
 class AbstractModel(ABC):
@@ -72,15 +78,14 @@ class AbstractModel(ABC):
     @staticmethod
     def save_plot(figure, save_path: str | None = None):
         """
-        Saves the figure of `plot` as html file next to the model: `<save_path>.html`, or in the run
-        directory of the Logger if no path is given. Nothing is saved without any of both.
+        Saves the figure of `plot` as html file next to the model: `<save_path>.html`.
+        Nothing is saved without a path (use `Run.save` to save a model with its report).
         """
         if save_path is None:
-            if Logger._logger is None:
-                return None
-            save_path = Logger.get_model_savepath()
+            return None
+        save_path = str(save_path)
         stem = os.path.splitext(save_path)[0] if save_path.endswith((".keras", ".joblib")) else save_path
-        return save_figure(figure, create_full_path(stem + ".html"))
+        return save_figure(figure, output_path(stem + ".html"))
 
     @abstractmethod
     def save_model(self, model, save_path: str):
@@ -106,33 +111,39 @@ class AbstractModel(ABC):
         """
         pass
 
-    def prepare(self):
+    def prepare(self):  # noqa: B027 - optional hook
         """Hook called before the model is generated (e.g. to set random seeds)."""
 
-    def _check_training_data(self, td: TrainingDataGeneric):
+    def _check_training_data(self, td: TrainingDataGeneric):  # noqa: B027 - optional hook
         """Hook checking that the training data fits the model, called before the model is generated."""
+
+    #: The trained model of the last `pipeline` or `online_pipeline` (used by `Run.save`)
+    trained_model = None
 
     def pipeline(self, td: TrainingDataGeneric, save_path: str = None, plot: bool = True, save_model: bool = True,
                  show_plot: bool = False):
         """
-          Defines a standard pipeline for single-step models:
-          1. Generate model
-          2. Compile model (if applicable)
-          3. Fit model
-          4. Evaluate model
-          5. Plot results
-          6. Save model (if save_path is provided)
+        Trains and evaluates the model:
 
-          Args:
-              td (TrainingDataGeneric): The training data.
-              save_path (str, optional): Path to save the trained model. Defaults to None (Saving path from Logger).
-              plot (bool, optional): Whether to plot the results (saved as html next to the model). Defaults to True.
-              save_model (bool, optional): Whether to save the trained model. Defaults to True.
-              show_plot (bool, optional): Whether to open the plot. Defaults to False.
+        1. Generate the model
+        2. Compile the model (if applicable)
+        3. Fit the model
+        4. Evaluate the model, the metrics are stored in `td`
+        5. Save the model and its report, if a `save_path` is given, and show the report if requested
 
-          Returns:
-              The trained model instance.
-          """
+        To save the model together with its configs and metrics, use `Run.save(name, preprocessing, model, td)`
+        after the pipeline instead of `save_path`.
+
+        Args:
+            td (TrainingDataGeneric): The training data.
+            save_path (str, optional): Path of the model file. Without a path nothing is saved.
+            plot (bool, optional): Whether to save the report as html next to the model. Defaults to True.
+            save_model (bool, optional): Whether to save the trained model (if `save_path` is given). Defaults to True.
+            show_plot (bool, optional): Whether to open the report. Defaults to False.
+
+        Returns:
+            The trained model instance (also available as `self.trained_model`).
+        """
 
         self._check_training_data(td)
         self.prepare()
@@ -141,28 +152,25 @@ class AbstractModel(ABC):
         self.fit_model(model, td)
 
         self.evaluate(model, td)
-        if plot:
-            self.save_plot(self.plot(td, show=show_plot), save_path)
-        if save_model:
-            self.save_model(model, save_path=save_path)
-
+        self.trained_model = model
+        self._finish(model, td, save_path, plot, save_model, show_plot)
         return model
 
     def online_pipeline(self, td: TrainingDataGeneric, load_path: str, save_path: str = None,
                         plot: bool = True, save_model: bool = True, show_plot: bool = False):
         """
-        Implements an "online" training pipeline: loads a pre-existing model,
-        further trains it on new data, evaluates, plots, and saves it back.
+        Loads a saved model, trains it further on new data, evaluates and (optionally) saves it.
 
         Args:
             td (TrainingDataGeneric): New training data.
-            load_path (str): Path to the pre-existing model.
-            save_path (str, optional): Path to save the trained model. Defaults to None (Saving path from Logger).
-            plot (bool, optional): Whether to plot the results. Defaults to True.
-            save_model (bool, optional): Whether to save the trained model. Defaults to True.
+            load_path (str): Path to the saved model.
+            save_path (str, optional): Path of the model file. Without a path nothing is saved.
+            plot (bool, optional): Whether to save the report as html next to the model. Defaults to True.
+            save_model (bool, optional): Whether to save the trained model (if `save_path` is given). Defaults to True.
+            show_plot (bool, optional): Whether to open the report. Defaults to False.
 
         Returns:
-            The updated and saved model.
+            The trained model.
         """
 
         self._check_training_data(td)
@@ -170,29 +178,32 @@ class AbstractModel(ABC):
         self.compile_model(model)
 
         model = self.online_pipeline_internal(td, model)
-
-        if plot:
-            self.save_plot(self.plot(td, show=show_plot), save_path)
-        if save_model:
-            self.save_model(model, save_path=save_path)
-
+        self._finish(model, td, save_path, plot, save_model, show_plot)
         return model
 
     def online_pipeline_internal(self, td: TrainingDataGeneric, model):
         """
-        Implements an "online" training pipeline: trains a pre-existing model on new data
+        Trains a loaded model on new data and evaluates it.
 
         Args:
             td (TrainingDataGeneric): New training data.
             model: The model to train.
 
         Returns:
-            The updated and saved model.
+            The trained model.
         """
         self.fit_model(model, td)
         self.evaluate(model, td)
-
+        self.trained_model = model
         return model
+
+    def _finish(self, model, td: TrainingDataGeneric, save_path: str | None, plot: bool, save_model: bool,
+                show_plot: bool):
+        """Saves the model and its report next to it (with a `save_path`) and shows the report if requested."""
+        if show_plot or (plot and save_path is not None):
+            self.save_plot(self.plot(td, show=show_plot), save_path if plot else None)
+        if save_model and save_path is not None:
+            self.save_model(model, save_path=save_path)
 
     def get_config(self) -> dict:
         return {
@@ -231,7 +242,7 @@ def register_model(cls):  # pragma: no cover
     The class is registered using its __name__.
     """
     if cls.__name__ in MODEL_CLASS_REGISTRY:
-        Logger.print(f"Warning: Class '{cls.__name__}' is already registered. Overwriting.", 'warning')
+        logger.warning("Class '%s' is already registered. Overwriting.", cls.__name__)
     MODEL_CLASS_REGISTRY[cls.__name__] = cls
     return cls  # Decorators must return the class (or a replacement)
 
@@ -258,7 +269,7 @@ class SingleStepModel(AbstractModel, ABC):
         """
         kwargs = {}
         if isinstance(model, keras.Model):
-            kwargs['verbose'] = Logger.verbosity()
+            kwargs['verbose'] = keras_verbosity()
 
         y_pred_train = model.predict(td.X_train_single, **kwargs)
         y_pred_test = model.predict(td.X_test_single, **kwargs)
@@ -314,11 +325,9 @@ class LinearRegressionModel(SingleStepModel):
         stop_time = time.perf_counter()
         td.add_training_time(stop_time - start_time)
 
-        if Logger.check_print_level('INFO'):
-            print("Trained Linear Regression Coefficients:")
-            print("Bias:", model.intercept_[0])
-            for i, inp in enumerate(td.columns):
-                print(f"Weight for {inp}:", model.coef_[0][i])
+        if logger.isEnabledFor(logging.INFO):
+            weights = "\n".join(f"  {inp}: {model.coef_[0][i]:.6g}" for i, inp in enumerate(td.columns))
+            logger.info("Linear regression bias: %.6g, weights:\n%s", model.intercept_[0], weights)
 
     def compile_model(self, model):
         """
@@ -335,14 +344,7 @@ class LinearRegressionModel(SingleStepModel):
             save_path (str): The path to save the model.
         """
 
-        if save_path is None:
-            save_path = Logger.get_model_savepath()
-
-        if not save_path.endswith('.joblib'):
-            save_path += '.joblib'
-
-        save_path = create_full_path(save_path)
-        dump(model, save_path)
+        dump(model, output_path(save_path, '.joblib'))
 
     def load_model(self, load_path: str):
         """
@@ -355,8 +357,7 @@ class LinearRegressionModel(SingleStepModel):
             LinearRegression: The loaded scikit-learn model.
         """
 
-        load_path = get_full_path(load_path)
-        model = joblib.load(load_path)
+        model = joblib.load(input_path(load_path))
         return model
 
 
