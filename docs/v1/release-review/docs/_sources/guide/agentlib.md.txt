@@ -48,4 +48,5 @@ the model is trained.
 - Linear regression (`.joblib`), all keras models and `ModularANN` (translated to CasADi layer by layer;
   expressions inside the model are part of it, the MPC only needs raw inputs).
 - Recurrent models (`RNNModel`, `PCNNModel`): the step model, with AgentLib-MPC versions supporting recurrent
-  models (branch `143-feature-multistep-model-support`; the released AgentLib-MPC 1.1.1 does not support them yet).
+  models (branch `143-feature-multistep-model-support`; the released AgentLib-MPC 1.1.1 does not support them yet,
+  `check_agentlib_compatibility` warns if the installed AgentLib-MPC cannot load them).
