@@ -1,3 +1,5 @@
+"""Construction of `LinANNModel`: a frozen linear regression plus an RBF network on its residuals."""
+
 import os
 
 import numpy as np

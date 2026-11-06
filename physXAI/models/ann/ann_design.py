@@ -1,3 +1,11 @@
+"""
+Keras models of physXAI: single step networks (`ClassicalANNModel`, `CMNNModel`, `RBFModel`, `LinANNModel`,
+`PINNModel`, base class `ANNModel`) and recurrent multi step models (`RNNModel`, `PCNNModel`).
+
+All of them share the training settings (epochs, learning rate, batch size, early stopping, seed); single step networks
+can additionally be trained on the multi step error (`recursive_training`) and with a physics residual (`physics`).
+"""
+
 import logging
 import os
 import time

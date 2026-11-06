@@ -46,6 +46,7 @@ PREPROCESSING_CLASS_REGISTRY: dict[str, type[PreprocessingData]] = dict()
 
 
 def register_preprocessing(cls):
+    """Registers a preprocessing class by name, so `PreprocessingData.from_config` can create it."""
     PREPROCESSING_CLASS_REGISTRY[cls.__name__] = cls
     return cls
 

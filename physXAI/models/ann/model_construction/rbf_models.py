@@ -1,3 +1,5 @@
+"""Construction of radial basis function networks (`RBFModel`): k-means centers and the width of the gaussians."""
+
 import logging
 
 import keras

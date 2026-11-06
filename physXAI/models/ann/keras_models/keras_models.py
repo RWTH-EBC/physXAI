@@ -1,3 +1,10 @@
+"""
+Custom keras layers, activations and constraints of physXAI.
+
+They are registered under fixed names (`custom_layer>...`, `custom_activation>...`, `custom_constraint>...`), which
+saved models and the CasADi converter of AgentLib-MPC rely on: the names and attributes must not change.
+"""
+
 import os
 
 import numpy as np
