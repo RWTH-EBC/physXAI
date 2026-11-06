@@ -123,38 +123,34 @@ def test_training_data_save_and_load(frame, tmp_path):
     assert loaded.outputs == td.outputs
 
 
-def test_multi_step_windows_do_not_leak(frame, tmp_path):
-    prep = PreprocessingMultiStep(
-        inputs=["mDot", "load"],
-        output="T",
-        label_width=6,
-        warmup_width=4,
-        init_features=["mDot", "load", "T"],
-        random_state=0,
-    )
+def test_multi_step_sequences_do_not_leak(frame, tmp_path):
+    prep = PreprocessingMultiStep(inputs=["mDot", "load"], output="T", label_width=6, warmup_width=4, random_state=0)
     td = prep.pipeline(_csv(frame, tmp_path))
-    main, warm = td.X_train
-    assert main.shape[1:] == (6, 2)
-    assert warm.shape[1:] == (4, 3)
+    # one sequence of warmup and prediction, starting from a zero state
+    assert td.X_train.shape[1:] == (10, 2)
     assert td.y_train.shape[1:] == (6, 1)
 
-    # 'load' is random, so its values identify the rows of a window
-    rows = {
-        split: set(np.round(getattr(td, f"X_{split}")[0][:, :, 1].ravel(), 6).tolist())
-        for split in ("train", "val", "test")
-    }
+    # 'load' is random, so its values identify the rows of a sequence
+    rows = {split: set(np.round(td.X(split)[:, :, 1].ravel(), 6).tolist()) for split in ("train", "val", "test")}
     assert not rows["train"] & rows["test"]
     assert not rows["train"] & rows["val"]
 
-    # label k is T at the step after input k
+    # label k is T at the step after the k-th predicted input
     T = frame["T"].to_numpy()
-    first = int(np.argmin(np.abs(frame["load"].to_numpy() - main[0, 0, 1])))
+    first = int(np.argmin(np.abs(frame["load"].to_numpy() - td.X_train[0, 4, 1])))
     np.testing.assert_allclose(td.y_train[0, :, 0], T[first + 1 : first + 7], rtol=1e-5)
-    # the warmup of features which are no inputs is shifted like the labels
-    np.testing.assert_allclose(warm[0, :, 2], T[first - 3 : first + 1], rtol=1e-5)
 
-    batch = next(iter(td.train_ds))
-    assert batch[0][0].shape[0] == prep.batch_size
+
+def test_multi_step_trajectory_of_changes(frame, tmp_path):
+    prep = PreprocessingMultiStep(inputs=["mDot", "load"], output="Change(T)", label_width=5, warmup_width=3)
+    td = prep.pipeline(_csv(frame, tmp_path))
+    assert td.absolute and td.difference == [True]
+    T = frame["T"].to_numpy()
+    first = int(np.argmin(np.abs(frame["load"].to_numpy() - td.X_train[0, 3, 1])))
+    # the targets are the changes, the trajectory starts at the measured value T(t0)
+    np.testing.assert_allclose(td.targets("train")[0, :, 0], np.diff(T[first : first + 6]), rtol=1e-4, atol=1e-6)
+    np.testing.assert_allclose(td.initial("train")[0], T[first], rtol=1e-6)
+    np.testing.assert_allclose(td.y_train[0, :, 0], T[first + 1 : first + 6], rtol=1e-5)
 
 
 def test_multi_step_without_validation(frame, tmp_path):
@@ -162,5 +158,13 @@ def test_multi_step_without_validation(frame, tmp_path):
         inputs=["mDot", "T"], output="Change(T)", label_width=3, warmup_width=0, val_size=0
     ).pipeline(_csv(frame, tmp_path))
     assert td.X_val is None
-    assert td.val_ds is None
     assert td.X_train.shape[1:] == (3, 2)
+
+
+def test_multi_step_legacy_arguments(frame, tmp_path):
+    with pytest.raises(ValueError, match="init_features"):
+        PreprocessingMultiStep(inputs=["mDot"], output="T", label_width=3, init_features=["T"])
+    # old configs stored the inputs as init_features, which is still accepted
+    prep = PreprocessingMultiStep(inputs=["mDot"], output="T", label_width=3, init_features=["mDot"], batch_size=4)
+    restored = PreprocessingData.from_config(prep.get_config())
+    assert restored.label_width == 3 and "init_features" not in restored.get_config()

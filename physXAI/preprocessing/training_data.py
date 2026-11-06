@@ -366,139 +366,180 @@ class TrainingData(TrainingDataGeneric):
 
 class TrainingDataMultiStep(TrainingDataGeneric):
     """
-    Multi step windows of a run, as used by recurrent models.
+    Sequences of a run, as used by recurrent (multi step) models.
 
-    The windows are stored as NumPy arrays. `train_ds`, `val_ds` and `test_ds` build batched
-    `tf.data` pipelines on demand; the training data is reshuffled in every epoch.
+    A sequence starts `warmup_width` steps before the prediction: the model starts from a zero state
+    and warms up on the measured past, as it does in an MPC. Only the following `label_width` steps
+    are predicted (the warmup is not part of the loss). The sequences are views on the time series
+    (`series`), so evaluation sequences can be longer than the training sequences (`eval_horizon`).
+
+    For an output 'Change(T)' the model predicts the change of T. Its trajectory is the measured
+    start value T(t0) plus the accumulated changes; the `y_*` attributes hold this trajectory, the
+    targets of the outputs themselves are available via `targets(split)`.
 
     Args:
-        X_train, X_val, X_test: Input windows (windows, steps, features), or a tuple of input
-            windows and warmup windows.
-        y_train, y_val, y_test: Target windows (windows, steps, outputs).
-        columns: Input names.
-        output: Output names.
-        init_columns: Names of the warmup features.
-        batch_size: Batch size of the tf.data pipelines.
-        seed: Seed of the shuffling.
+        series: The preprocessed time series (`TrainingData`).
+        warmup_width: Number of warmup steps.
+        label_width: Number of predicted steps (training horizon).
+        stride: Distance between two training sequences.
+        eval_horizon: Number of predicted steps of the evaluation. Defaults to `label_width`.
+        eval_stride: Distance between two evaluation sequences. Defaults to `stride`.
     """
 
     def __init__(
         self,
-        X_train,
-        X_val,
-        X_test,
-        y_train,
-        y_val,
-        y_test,
-        columns: list[str],
-        output: list[str],
-        init_columns: list[str],
-        batch_size: int = 32,
-        seed: int | None = None,
+        series: TrainingData,
+        warmup_width: int,
+        label_width: int,
+        stride: int = 1,
+        eval_horizon: int | None = None,
+        eval_stride: int | None = None,
     ):
         super().__init__()
-        self.X_train, self.X_val, self.X_test = X_train, X_val, X_test
-        self.y_train, self.y_val, self.y_test = y_train, y_val, y_test
-        self.columns = columns
-        self.output = output
-        self.init_columns = init_columns
-        self.batch_size = batch_size
-        self.seed = seed
+        from physXAI.preprocessing.preprocessing import CHANGE_PATTERN, output_feature
 
-        self.single_step_metrics = None
-        self.closed_loop_metrics = None
-        self.y_train_pred_closed_loop = None
-        self.y_val_pred_closed_loop = None
-        self.y_test_pred_closed_loop = None
+        self.series = series
+        self.warmup_width = int(warmup_width)
+        self.label_width = int(label_width)
+        self.stride = int(stride)
+        self.eval_horizon = int(eval_horizon or label_width)
+        self.eval_stride = int(eval_stride or stride)
+        self.inputs: list[str] = list(series.inputs)
+        self.outputs: list[str] = list(series.outputs)
+        #: Predicted feature of every output ('T' for 'Change(T)')
+        self.features: list[str] = [output_feature(o) for o in self.outputs]
+        #: Whether an output is the change of its feature
+        self.difference: list[bool] = [CHANGE_PATTERN.match(o) is not None for o in self.outputs]
+        #: Whether the start values of the features are known, then trajectories are absolute
+        self.absolute: bool = all(f in series.all_columns for f in self.features)
+        self.time_step = series.time_step
+        self._cache: dict = dict()
 
-    def _dataset(self, X, y, shuffle: bool):
-        if X is None or y is None:
+        #: Results of the evaluation over `eval_horizon` steps (`physXAI.evaluation.rollout.HorizonMetrics`)
+        self.horizon_metrics = None
+        self.horizon_predictions: dict | None = None
+
+    # --- sequences ------------------------------------------------------------------------------
+    def sequences(self, split: str, horizon: int | None = None, stride: int | None = None):
+        """
+        Sequences of a split.
+
+        Args:
+            split: 'train', 'val' or 'test'.
+            horizon: Number of predicted steps. Defaults to `label_width`.
+            stride: Distance between two sequences. Defaults to `stride`.
+
+        Returns:
+            tuple: inputs (n, warmup + horizon, inputs), targets of the outputs (n, horizon, outputs)
+                   and start values of the features (n, outputs) or None, if `absolute` is False.
+                   None, if the split holds no sequence.
+        """
+        horizon = horizon or self.label_width
+        stride = stride or self.stride
+        key = (split, horizon, stride)
+        if key not in self._cache:
+            self._cache[key] = self._sequences(split, horizon, stride)
+        return self._cache[key]
+
+    def _sequences(self, split: str, horizon: int, stride: int):
+        series = self.series
+        length = self.warmup_width + horizon
+        starts = series.window_starts(split, length, stride)
+        initial = None
+        if self.absolute:
+            first = starts + self.warmup_width
+            initial = np.stack([series.column(f)[first] for f in self.features], axis=1)
+            keep = np.all(np.isfinite(initial), axis=1)
+            starts, initial = starts[keep], initial[keep].astype(np.float32)
+        if len(starts) == 0:
             return None
-        import tensorflow as tf
+        X = gather_windows(series.data[:, series._input_index], starts, length).astype(np.float32)
+        targets = gather_windows(series.data[:, series._output_index], starts + self.warmup_width, horizon)
+        return X, targets.astype(np.float32), initial
 
-        ds = tf.data.Dataset.from_tensor_slices((X, y))
-        if shuffle:
-            ds = ds.shuffle(buffer_size=len(y), seed=self.seed, reshuffle_each_iteration=True)
-        return ds.batch(self.batch_size)
+    def trajectory(self, targets: np.ndarray, initial: np.ndarray | None) -> np.ndarray:
+        """True trajectory of the features: accumulated changes plus start value (if known)."""
+        if initial is None:
+            return targets
+        result = targets.astype(np.float64).copy()
+        for j, difference in enumerate(self.difference):
+            if difference:
+                result[..., j] = initial[:, None, j] + np.cumsum(targets[..., j], axis=1)
+        return result.astype(np.float32)
+
+    def has_split(self, split: str) -> bool:
+        return self.sequences(split) is not None
+
+    def X(self, split: str):
+        """Input sequences (warmup and prediction) of a split."""
+        data = self.sequences(split)
+        return None if data is None else data[0]
+
+    def targets(self, split: str):
+        """Targets of the outputs (e.g. the changes) over the prediction steps of a split."""
+        data = self.sequences(split)
+        return None if data is None else data[1]
+
+    def initial(self, split: str):
+        """Start values of the predicted features of a split (None if unknown)."""
+        data = self.sequences(split)
+        return None if data is None else data[2]
+
+    def y(self, split: str):
+        """True trajectories of the predicted features over the prediction steps of a split."""
+        data = self.sequences(split)
+        return None if data is None else self.trajectory(data[1], data[2])
 
     @property
-    def train_ds(self):
-        return self._dataset(self.X_train, self.y_train, shuffle=True)
+    def X_train(self):
+        return self.X("train")
 
     @property
-    def val_ds(self):
-        return self._dataset(self.X_val, self.y_val, shuffle=False)
+    def X_val(self):
+        return self.X("val")
 
     @property
-    def test_ds(self):
-        return self._dataset(self.X_test, self.y_test, shuffle=False)
+    def X_test(self):
+        return self.X("test")
 
-    def add_closed_loop_predictions(self, y_train_pred, y_val_pred, y_test_pred):
-        """Stores the closed loop predictions (the model gets its own predictions as inputs)."""
-        self.y_train_pred_closed_loop = y_train_pred
-        self.y_val_pred_closed_loop = y_val_pred
-        self.y_test_pred_closed_loop = y_test_pred
+    @property
+    def y_train(self):
+        return self.y("train")
 
-    def add_closed_loop_metrics(self, metrics):
-        self.closed_loop_metrics = metrics
+    @property
+    def y_val(self):
+        return self.y("val")
 
-    def add_single_step_metrics(self, metrics):
-        self.single_step_metrics = metrics
+    @property
+    def y_test(self):
+        return self.y("test")
 
-    def get_config(self) -> dict:
-        config = self._results_config()
-        config["closed_loop_metrics"] = (
-            self.closed_loop_metrics.get_config() if self.closed_loop_metrics is not None else None
-        )
-        return config
+    # legacy names
+    @property
+    def columns(self) -> list[str]:
+        """Input names (legacy name, use `inputs`)."""
+        return self.inputs
 
-    @staticmethod
-    def _main(X):
-        return X[0] if isinstance(X, tuple) else X
-
-    @staticmethod
-    def _init(X):
-        return X[1] if isinstance(X, tuple) else None
+    @property
+    def output(self) -> list[str]:
+        """Output names (legacy name, use `outputs`)."""
+        return self.outputs
 
     @staticmethod
     def _single(X):
         return X.reshape(-1, *X.shape[2:]) if X is not None else None
 
     @property
-    def X_train_features(self):
-        return self._main(self.X_train)
-
-    @property
-    def X_val_features(self):
-        return self._main(self.X_val)
-
-    @property
-    def X_test_features(self):
-        return self._main(self.X_test)
-
-    @property
-    def X_train_init(self):
-        return self._init(self.X_train)
-
-    @property
-    def X_val_init(self):
-        return self._init(self.X_val)
-
-    @property
-    def X_test_init(self):
-        return self._init(self.X_test)
-
-    @property
     def X_train_single(self):
-        return self._single(self.X_train_features)
+        return self._single(self.X_train)
 
     @property
     def X_val_single(self):
-        return self._single(self.X_val_features)
+        return self._single(self.X_val)
 
     @property
     def X_test_single(self):
-        return self._single(self.X_test_features)
+        return self._single(self.X_test)
 
     @property
     def y_train_single(self):
@@ -511,3 +552,25 @@ class TrainingDataMultiStep(TrainingDataGeneric):
     @property
     def y_test_single(self):
         return self._single(self.y_test)
+
+    def summary(self) -> dict:
+        sequences = dict()
+        for split in SPLITS:
+            data = self.sequences(split)
+            sequences[split] = 0 if data is None else len(data[0])
+        return {**self.series.summary(), "sequences": sequences}
+
+    def get_config(self) -> dict:
+        return {
+            **self._results_config(),
+            "warmup_width": self.warmup_width,
+            "label_width": self.label_width,
+            "eval_horizon": self.eval_horizon,
+            "horizon_metrics": self.horizon_metrics.get_config() if self.horizon_metrics is not None else None,
+            "summary": self.summary(),
+        }
+
+    def __getstate__(self):
+        state = super().__getstate__()
+        state["_cache"] = dict()
+        return state

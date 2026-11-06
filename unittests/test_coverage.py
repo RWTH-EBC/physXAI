@@ -70,10 +70,11 @@ def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
     Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
 
 
-    # EvaluateMultiStep: Prepare Preprocessing
-    prep = PreprocessingMultiStep(inputs=inputs_tair, output=output_tair, label_width=6, warmup_width=6, init_features=['reaTZon_y'],
-                                  overlapping_sequences=False, batch_size=1)
-    prep.pipeline(file_path)
+    # Sequences of a recurrent model
+    prep = PreprocessingMultiStep(inputs=inputs_tair, output=px.Change('reaTZon_y'), label_width=6, warmup_width=6,
+                                  overlapping_sequences=False, eval_horizon='1h', time_index_col='time')
+    td = prep.pipeline(file_path)
+    assert td.X_train.shape[1] == 12 and td.eval_horizon == 4
 
 @pytest.fixture(scope='module')
 def p_hp_data(file_path, inputs_php, output_php):
@@ -87,16 +88,15 @@ def p_hp_data(file_path, inputs_php, output_php):
 @pytest.fixture(scope='module')
 def tair_data_delta(file_path, inputs_tair, output_tair):
     Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-    prep = PreprocessingMultiStep(inputs=inputs_tair, output=output_tair, label_width=3, warmup_width=0, init_features=['reaTZon_y'],
-                                  overlapping_sequences=False, batch_size=1)
+    # single step model, evaluated over a horizon of 3 steps
+    prep = PreprocessingSingleStep(inputs=inputs_tair, output='Change(reaTZon_y)', eval_horizon=3)
     td = prep.pipeline(file_path)
     return prep, td
 
 @pytest.fixture(scope='module')
 def tair_data_noval(file_path, inputs_tair, output_tair):
     Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-    prep = PreprocessingMultiStep(inputs=inputs_tair, output=output_tair, label_width=3, warmup_width=0, init_features=['reaTZon_y'],
-                                  overlapping_sequences=False, batch_size=1, val_size=0)
+    prep = PreprocessingSingleStep(inputs=inputs_tair, output='Change(reaTZon_y)', eval_horizon=3, val_size=0)
     td = prep.pipeline(file_path)
     return prep, td
 
@@ -104,8 +104,7 @@ def tair_data_noval(file_path, inputs_tair, output_tair):
 @pytest.fixture(scope='module')
 def tair_data_total(file_path, inputs_tair, output_tair):
     Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-    prep = PreprocessingMultiStep(inputs=inputs_tair, output='reaTZon_y', label_width=3, warmup_width=0, init_features=['reaTZon_y'],
-                                  overlapping_sequences=False, batch_size=1)
+    prep = PreprocessingSingleStep(inputs=inputs_tair, output='reaTZon_y', eval_horizon=3)
     td = prep.pipeline(file_path)
     return prep, td
 
@@ -236,37 +235,29 @@ def test_model_pinn(inputs_php, output_php, file_path):
 def test_models_rnn(file_path):
     Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
 
-    # RNN
+    # RNN predicting the change of the air temperature, warmed up on the measured past
     inputs = ['weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaHDirNor_y', 'oveHeaPumY_u']
-    inits = ['reaTZon_y']
-    output = 'reaTZon_y'
-    prep = PreprocessingMultiStep(inputs=inputs, output=output, label_width=4, warmup_width=2, init_features=inits)
+    prep = PreprocessingMultiStep(inputs=inputs, output=px.Change('reaTZon_y'), label_width=4, warmup_width=2)
     td = prep.pipeline(file_path)
 
-    m = RNNModel(epochs=1, rnn_layer='LSTM', init_layer='dense')
+    m = RNNModel(epochs=1, rnn_layer='LSTM', rnn_units=8)
     m.pipeline(td, os.path.join(Logger._logger, 'model2.keras'))
-    Logger.log_setup(prep, m, 'preprocessing_config2.json',
-                     save_name_constructed='constructed_config2.json')
+    Logger.log_setup(prep, m, 'preprocessing_config2.json')
     Logger.save_training_data(td)
 
     m.epochs = 1
     m.online_pipeline(td, os.path.join(Logger._logger, 'model2.keras'), plot=False, save_model=False)
 
-    m = RNNModel(epochs=1, rnn_layer='RNN', init_layer='dense')
-    m.pipeline(td, save_model=False, plot=False)
-    m = RNNModel(epochs=1, rnn_layer='LSTM', init_layer='LSTM')
-    m.pipeline(td, save_model=False, plot=False)
-    m = RNNModel(epochs=1, rnn_layer='GRU', init_layer='GRU')
-    m.pipeline(td, save_model=False, plot=False)
-    m = RNNModel(epochs=1, rnn_layer='RNN', init_layer='RNN')
-    m.pipeline(td, save_model=True, plot=False)
+    for layer in ('RNN', 'GRU'):
+        m = RNNModel(epochs=1, rnn_layer=layer, rnn_units=8)
+        m.pipeline(td, save_model=False, plot=False)
 
-    prep = PreprocessingMultiStep(inputs=inputs, output=output, label_width=4, warmup_width=0, val_size=0)
+    # closed loop: the air temperature is an input, too, and without validation data
+    prep = PreprocessingMultiStep(inputs=[*inputs, 'reaTZon_y'], output=px.Change('reaTZon_y'), label_width=4,
+                                  warmup_width=0, val_size=0)
     td = prep.pipeline(file_path)
-    m = RNNModel(epochs=1, rnn_layer='LSTM', early_stopping_epochs=None)
-    m.pipeline(td, save_model=False, plot=False)
-    m = RNNModel(epochs=1, rnn_layer='RNN', early_stopping_epochs=None)
-    m.pipeline(td, save_model=False, plot=False)
+    m = RNNModel(epochs=1, rnn_layer='GRU', rnn_units=8, early_stopping_epochs=None)
+    m.pipeline(td, save_model=True, plot=False)
 
 def test_read_setup():
 

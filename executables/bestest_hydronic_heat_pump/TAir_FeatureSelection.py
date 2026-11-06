@@ -1,6 +1,6 @@
 from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
 from physXAI.models.models import LinearRegressionModel
-from physXAI.preprocessing.preprocessing import PreprocessingMultiStep
+from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 from physXAI.utils.logging import Logger
 
 
@@ -18,15 +18,14 @@ inputs = ['reaTZon_y', 'reaTZon_y_lag1', 'reaTZon_y_lag2', 'weaSta_reaWeaTDryBul
           'weaSta_reaWeaTDryBul_y_lag2', 'weaSta_reaWeaHDirNor_y', 'weaSta_reaWeaHDirNor_y_lag1',
           'weaSta_reaWeaHDirNor_y_lag2', 'oveHeaPumY_u', 'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2']
 # Output feature
-output = 'Change(T_zone)'
+output = 'Change(reaTZon_y)'
 
 # Lagged inputs ('X_lag1', ...) are derived automatically from their names
 
 # Generic Preprocessing Pipeline
-# Model is state model, so multi-step evaluation is choosen
+# The model is a state model, so it is evaluated recursively over 48 steps (multi step error)
 # See example TAir_evaluateMultiStep.py for more information
-prep = PreprocessingMultiStep(inputs=inputs, output=output, label_width=48, warmup_width=0, init_features=['reaTZon_y'],
-                              overlapping_sequences=False, batch_size=1)
+prep = PreprocessingSingleStep(inputs=inputs, output=output, eval_horizon=48)
 
 # Generic Model
 m = LinearRegressionModel()

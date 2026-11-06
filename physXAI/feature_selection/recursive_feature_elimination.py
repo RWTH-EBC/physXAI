@@ -2,11 +2,8 @@ import os
 import re
 import numpy as np
 from physXAI.plotting.plotting import plot_recFeatureSelection
-from physXAI.preprocessing.preprocessing import PreprocessingSingleStep, PreprocessingMultiStep, \
-    PreprocessingData
-from physXAI.preprocessing.training_data import TrainingDataMultiStep
+from physXAI.preprocessing.preprocessing import PreprocessingSingleStep, PreprocessingData, output_feature
 from physXAI.utils.logging import Logger
-from physXAI.evaluation.metrics import Metrics
 from physXAI.models.models import SingleStepModel
 
 
@@ -47,11 +44,33 @@ def search_best_features(runs: dict, multi_step: bool, use_multi_step_error: boo
     return inputs
 
 
+def _uses_horizon(preprocessing: PreprocessingData) -> bool:
+    """Whether the models are evaluated over a horizon (recursively, as in an MPC)."""
+    if not isinstance(preprocessing, PreprocessingSingleStep):
+        raise NotImplementedError(
+            "Feature selection supports single step models only. To select features on the multi step error, "
+            "use PreprocessingSingleStep(eval_horizon=...)."
+        )
+    return preprocessing.eval_horizon is not None
+
+
+def _kpis(td, multi_step: bool) -> dict:
+    """Validation RMSE (mean over the horizon for multi step evaluations) and single step validation RMSE."""
+    single = td.metrics.val_kpis['RMSE Val']
+    if not multi_step:
+        return {'kpi': single}
+    if td.horizon_metrics is None or 'val' not in td.horizon_metrics.kpis:
+        raise ValueError('The multi step error requires the recursive feature as input and validation data.')
+    return {'kpi': float(np.mean(td.horizon_metrics.kpis['val']['rmse'])), 'kpi_single_step': single}
+
+
 def recursive_feature_elimination(file_path: str, preprocessing: PreprocessingData,
                                   model: SingleStepModel, ascending_lag_order: bool = True,
                                   use_multi_step_error: bool = True, save_models: bool = False,
                                   fixed_inputs: list[str] = None):
     assert preprocessing.val_size > 0, 'Value Error: For Feature Selection, preprocessing.val_size must be > 0.'
+    multi_step = _uses_horizon(preprocessing)
+    recursive_feature = output_feature(preprocessing.output[0])
 
     if fixed_inputs is None:
         fixed_inputs = list()
@@ -72,16 +91,9 @@ def recursive_feature_elimination(file_path: str, preprocessing: PreprocessingDa
     path = f'model_{input_length}'
     p = os.path.join(Logger._logger, path)
     model.pipeline(td, save_path=p, plot=False, save_model=save_models)
-    val_kpi = td.metrics.val_kpis['RMSE Val']
 
     # Evaluate model
-    if isinstance(preprocessing, PreprocessingSingleStep):
-        runs[input_length] = [{'inputs': inputs, 'kpi': val_kpi}]
-    elif isinstance(td, TrainingDataMultiStep):
-        val_kpi_single = td.single_step_metrics.val_kpis['RMSE Val']
-        runs[input_length] = [{'inputs': inputs, 'kpi': val_kpi, 'kpi_single_step': val_kpi_single}]
-    else:
-        raise NotImplementedError
+    runs[input_length] = [{'inputs': inputs, **_kpis(td, multi_step)}]
 
     # Recursive feature elimination
     for j in range(input_length - 1, 0, -1):
@@ -91,7 +103,7 @@ def recursive_feature_elimination(file_path: str, preprocessing: PreprocessingDa
         # Reduced input features
         new_inputs = list()
         for i, v in enumerate(inputs):
-            if isinstance(preprocessing, PreprocessingMultiStep) and preprocessing.init_features[0] == v:
+            if multi_step and v == recursive_feature:  # needed for the recursive evaluation
                 continue
             if ascending_lag_order:
                 if '_lag' not in v:
@@ -120,20 +132,19 @@ def recursive_feature_elimination(file_path: str, preprocessing: PreprocessingDa
             p = os.path.join(Logger._logger, path)
             model.pipeline(td, save_path=p, plot=False, save_model=save_models)
 
-            val_kpi = td.metrics.val_kpis['RMSE Val']
-            kpis[i] = val_kpi
-            if isinstance(preprocessing, PreprocessingMultiStep):
-                val_kpi = td.single_step_metrics.val_kpis['RMSE Val']
-                kpis_add[i] = val_kpi
+            result = _kpis(td, multi_step)
+            kpis[i] = result['kpi']
+            if multi_step:
+                kpis_add[i] = result['kpi_single_step']
 
-        if isinstance(preprocessing, PreprocessingSingleStep):
+        if not multi_step:
             run = [{'inputs': new_inputs[i], 'kpi': kpis[i]} for i in range(len(new_inputs))]
         else:
             run = [{'inputs': new_inputs[i], 'kpi': kpis[i], 'kpi_single_step': kpis_add[i]}
                    for i in range(len(new_inputs))]
 
         # Choose best models
-        if isinstance(preprocessing, PreprocessingMultiStep) and not use_multi_step_error:
+        if multi_step and not use_multi_step_error:
             key_filter = int(min(kpis_add, key=kpis_add.get))
         else:
             key_filter = int(min(kpis, key=kpis.get))
@@ -157,8 +168,9 @@ def recursive_feature_elimination_pipeline(file_path: str,
     runs = recursive_feature_elimination(file_path, preprocessing, model, ascending_lag_order, use_multi_step_error,
                                          save_models, fixed_inputs)
 
-    plot_recFeatureSelection(runs, isinstance(preprocessing, PreprocessingMultiStep), use_multi_step_error)
+    multi_step = _uses_horizon(preprocessing)
+    plot_recFeatureSelection(runs, multi_step, use_multi_step_error)
 
-    inputs = search_best_features(runs, isinstance(preprocessing, PreprocessingMultiStep), use_multi_step_error, automatic=automatic)
+    inputs = search_best_features(runs, multi_step, use_multi_step_error, automatic=automatic)
 
     return runs, inputs

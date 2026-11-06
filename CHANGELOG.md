@@ -41,6 +41,17 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   first_step_weight=0.25, mode='single_then_multi')` for all keras models (and `ModularANN(solver='ols')` as
   initialization). The saved model stays a single step model for AgentLib-MPC.
 - Example `executables/bestest_hydronic_heat_pump/TAir_recursive.py`.
+- Recurrent models (`RNNModel`) warm themselves up: a sequence of `warmup_width + label_width` steps starts
+  from zero states, the warmup is not part of the loss. This is how AgentLib-MPC applies the model.
+- `RNNModel` with `Change(T)` outputs: the trajectory of T (measured start value plus accumulated changes) is
+  predicted and trained on (`loss_on='trajectory'`, or `'outputs'`), with optional step weights
+  (`first_step_weight`, `step_weights`). If T is also an input, the prediction is fed back (closed loop) in
+  training and evaluation, as in an MPC.
+- The saved RNN (`.keras`) is the step model `[sequence, *states] -> [prediction, *states]` used by AgentLib-MPC
+  (branch 143), verified by contract tests that run as soon as the installed AgentLib-MPC supports RNNs.
+- `PreprocessingMultiStep(eval_horizon=..., eval_stride=...)`: evaluation over a horizon longer than the training
+  horizon; `label_width` / `warmup_width` also as time delta strings ('12h'). RMSE, MAE and bias per step in
+  `td.horizon_metrics` (per output in `by_feature`).
 
 ### Changed
 - Python >= 3.11 is required (3.9 and 3.10 are end of life).
@@ -53,7 +64,11 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - Data is loaded onto a regular time grid: missing time stamps are missing values instead of being
   joined with their neighbours.
 - `TrainingData` holds the whole time series as NumPy array with split labels; `TrainingDataMultiStep`
-  holds NumPy windows and builds `tf.data` pipelines on demand (reshuffled every epoch).
+  holds sequences as views on it: `X_*` (warmup and prediction), `y_*` (true trajectories), `targets(split)`
+  and `initial(split)`.
+- The batch size of recurrent models is set at the model (`RNNModel(batch_size=...)`), not the preprocessing.
+- Feature selection on the multi step error uses `PreprocessingSingleStep(eval_horizon=...)` (mean RMSE over
+  the horizon on the validation data); the recursive feature is never removed.
 - `random_state=None` draws a seed (or uses the global one) and stores it in the config.
 - `PreprocessingData.from_config` restores the class from `__class_name__` and all settings.
 
@@ -73,6 +88,9 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - `BuildContext` cached tensors by `id()` of temporary expressions, which Python reuses.
 - Early stopping on `val_loss` without validation data; random seeds were set when a model object was
   created instead of when the model is generated.
+- RNN: the summary was always printed, the verbosity ignored, the `Rescaling` layer held tensors instead of
+  floats, and the config validation of `init_layer` compared strings with `is not`.
+- `PINNModel.pipeline` and `online_pipeline` returned None instead of the trained model.
 
 ### Removed
 - `physXAI.preprocessing.constructed` (`Feature`, `FeatureConstruction`): lags and `Change(X)` are derived
@@ -82,5 +100,10 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   `ModularTrainable` -> `px.Param`, `ModularAverage` -> `px.Mean`, `ModularNormalization` -> `px.Normalize`,
   `ModularExistingModel` -> `px.Pretrained`). The separate `modular_expression_config.json` is gone, the graph
   is part of the model config.
+- RNN initialization models (`init_layer`) and the warmup features of the preprocessing (`init_features`,
+  `warmup_columns_*`). Old configs without initialization model are still accepted.
+- Multi step evaluation of single step models with `PreprocessingMultiStep` (`SingleStepModel.evaluate_multi`):
+  use `PreprocessingSingleStep(eval_horizon=...)`. `physXAI.evaluation.closed_loop` is replaced by the
+  closed loop of `RNNModel` and by `physXAI.evaluation.rollout`.
 - `GitPython` dependency; paths are no longer resolved relative to the git root.
 - `requirements.txt` with outdated pins (use `pip install -e .[dev]`).

@@ -26,13 +26,12 @@ import re
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import pandas as pd
 
 from physXAI.expr.serialization import to_config as expr_to_config
-from physXAI.preprocessing.splitting import SPLITS, BlockSplit, split_summary
+from physXAI.preprocessing.splitting import BlockSplit, split_summary
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneric, TrainingDataMultiStep
 from physXAI.utils.seed import resolve_seed
 
@@ -516,50 +515,91 @@ class PreprocessingMultiStep(PreprocessingData):
     """
     Preprocessing of multi step (recurrent) models.
 
-    A window holds `warmup_width` steps to warm up the model followed by `label_width` steps to
-    predict. Windows are only cut out of one split, so training and test windows never overlap.
+    A sequence holds `warmup_width` steps, on which the model warms up starting from a zero state,
+    followed by `label_width` predicted steps. AgentLib-MPC warms the model up the same way before
+    every MPC step, so training and MPC match. Sequences are only cut out of one split, so training
+    and test sequences never overlap.
+
+    Predicting the change ('Change(T)') is recommended: the trajectory of T is then the measured
+    start value plus the accumulated changes, and the model is trained on that trajectory.
 
     Args:
-        label_width: Number of predicted steps.
-        warmup_width: Number of warmup steps (0: no warmup).
-        overlapping_sequences: If True, windows start at every step, else every `label_width` steps.
-        batch_size: Batch size of the tf.data pipelines.
-        init_features: Features of the warmup sequence. Defaults to the inputs. Features which are
-                       no inputs are taken shifted like the outputs (removed in phase 4 of 1.0.0).
+        inputs: Input features of the model (no lags: the memory of a recurrent model is its state).
+        output: Output feature(s), e.g. `px.Change('T')`.
+        label_width: Number of predicted steps (training horizon), in steps or as time delta string
+                     ('12h'). Choose it longer than the MPC horizon, so the model stays stable over
+                     the whole horizon.
+        warmup_width: Number of warmup steps, in steps or as time delta string.
+        overlapping_sequences: If True, training sequences start at every step, else every
+                               `label_width` steps.
+        eval_horizon: Number of predicted steps of the evaluation (steps or time delta string).
+                      Defaults to `label_width`; a longer horizon shows the stability beyond training.
+        eval_stride: Distance between two evaluation sequences. Defaults to a quarter of the horizon.
         **kwargs: See `PreprocessingData`.
     """
 
     def __init__(
         self,
-        inputs: list[str],
-        output: str | list[str],
-        label_width: int,
-        warmup_width: int = 0,
+        inputs: list[str] | None = None,
+        output: str | list[str] | None = None,
+        label_width: int | str = 1,
+        warmup_width: int | str = 0,
         overlapping_sequences: bool = True,
-        batch_size: int = 32,
-        init_features: list[str] | None = None,
+        eval_horizon: int | str | None = None,
+        eval_stride: int | str | None = None,
         **kwargs,
     ):
         for legacy in ("warmup_columns_input", "warmup_columns_labels"):
             kwargs.pop(legacy, None)
+        init_features = kwargs.pop("init_features", None)
+        if "batch_size" in kwargs:
+            kwargs.pop("batch_size")
+            logger.warning("PreprocessingMultiStep(batch_size=...) is ignored, set the batch size of the model.")
         super().__init__(inputs, output, **kwargs)
-        self.label_width: int = label_width
-        self.warmup_width: int = warmup_width
+        if init_features is not None and (self.inputs is None or list(init_features) != list(self.inputs)):
+            raise ValueError(
+                "'init_features' was removed in physXAI 1.0: there is no separate initialization model "
+                "anymore, the model warms itself up on its inputs (as in AgentLib-MPC). To start from the "
+                f"measured value of a feature, predict its change, e.g. output=px.Change('{init_features[0]}')."
+            )
+        self.label_width = label_width
+        self.warmup_width = warmup_width
         self.overlapping_sequences = overlapping_sequences
-        self.batch_size: int = batch_size
-        self.init_features: list[str] = list(self.inputs) if init_features is None else list(init_features)
-        self.warmup_columns_input: list[str] = [f for f in self.init_features if f in self.inputs]
-        self.warmup_columns_labels: list[str] = [f for f in self.init_features if f not in self.inputs]
+        self.eval_horizon = eval_horizon
+        self.eval_stride = eval_stride
+
+    def _steps(self) -> dict[str, int]:
+        """Widths and strides in steps (the time step is known after loading the data)."""
+        label = _resolve_steps(self.label_width, self.time_step) if self.time_step else self.label_width
+        warmup = _resolve_steps(self.warmup_width, self.time_step) if self.time_step else self.warmup_width
+        if not isinstance(label, (int, np.integer)) or label < 1:
+            raise ValueError(f"label_width has to be at least one step, got {self.label_width}.")
+        if not isinstance(warmup, (int, np.integer)) or warmup < 0:
+            raise ValueError(f"warmup_width must not be negative, got {self.warmup_width}.")
+        horizon = (_resolve_steps(self.eval_horizon, self.time_step) if self.time_step else self.eval_horizon) or label
+        stride = 1 if self.overlapping_sequences else label
+        eval_stride = _resolve_steps(self.eval_stride, self.time_step) if self.time_step else self.eval_stride
+        return {
+            "label": int(label),
+            "warmup": int(warmup),
+            "horizon": int(horizon),
+            "stride": int(stride),
+            "eval_stride": int(eval_stride or max(horizon // 4, 1)),
+        }
 
     def _window_length(self) -> int:
-        return self.warmup_width + self.label_width + self.shift
+        steps = self._steps()
+        return steps["warmup"] + max(steps["label"], steps["horizon"]) + self.shift
+
+    def _default_gap(self) -> int:
+        return super()._default_gap() + self._steps()["warmup"]
 
     def pipeline(self, file_path: str | Path, model=None) -> TrainingDataMultiStep:
         """
-        Loads a csv file and cuts it into windows.
+        Loads a csv file and prepares the sequences.
 
         Returns:
-            TrainingDataMultiStep: Windows of inputs, warmup and labels for every split.
+            TrainingDataMultiStep: Sequences of every split, split leakage free.
 
         Args:
             file_path: Path to the csv file.
@@ -567,47 +607,23 @@ class PreprocessingMultiStep(PreprocessingData):
         """
         self.resolve_inputs(model)
         df = self.load_data(file_path)
-        td = self.build_training_data(df, extra_targets=self.warmup_columns_labels)
-        windows = {split: self._windows(td, split) for split in SPLITS}
-        X_val, y_val = windows["val"]
-        if y_val is None or len(y_val) == 0:
-            X_val, y_val = None, None
-        result = TrainingDataMultiStep(
-            windows["train"][0],
-            X_val,
-            windows["test"][0],
-            windows["train"][1],
-            y_val,
-            windows["test"][1],
-            self.inputs,
-            self.output,
-            self.init_features,
-            batch_size=self.batch_size,
-            seed=self.random_state,
+        series = self.build_training_data(df)
+        steps = self._steps()
+        td = TrainingDataMultiStep(
+            series,
+            warmup_width=steps["warmup"],
+            label_width=steps["label"],
+            stride=steps["stride"],
+            eval_horizon=steps["horizon"],
+            eval_stride=steps["eval_stride"],
         )
-        result.add_file_path(file_path)
-        return result
-
-    def _windows(self, td: TrainingData, split: str) -> tuple[Any, np.ndarray | None]:
-        length = self.warmup_width + self.label_width
-        stride = 1 if self.overlapping_sequences else self.label_width
-        targets = [TARGET_PREFIX + name for name in self.output]
-        warm_labels = [TARGET_PREFIX + name for name in self.warmup_columns_labels]
-        windows = td.windows(split, length, stride, columns=[*self.inputs, *targets, *warm_labels])
-        windows = windows.astype(np.float32)
-        n_in, n_out = len(self.inputs), len(targets)
-
-        main = windows[:, self.warmup_width :, :n_in]
-        labels = windows[:, self.warmup_width :, n_in : n_in + n_out]
-        if self.warmup_width == 0:
-            return main, labels
-        parts = list()
-        if self.warmup_columns_input:
-            idx = [self.inputs.index(f) for f in self.warmup_columns_input]
-            parts.append(windows[:, : self.warmup_width, idx])
-        if self.warmup_columns_labels:
-            parts.append(windows[:, : self.warmup_width, n_in + n_out :])
-        return (main, np.concatenate(parts, axis=-1)), labels
+        td.add_file_path(file_path)
+        if not td.has_split("train"):
+            raise ValueError(
+                f"No training sequence of {steps['warmup'] + steps['label']} steps fits into the data. "
+                "Reduce label_width / warmup_width or the block length of the split."
+            )
+        return td
 
     def get_config(self) -> dict:
         config = super().get_config()
@@ -616,8 +632,8 @@ class PreprocessingMultiStep(PreprocessingData):
                 "label_width": self.label_width,
                 "warmup_width": self.warmup_width,
                 "overlapping_sequences": self.overlapping_sequences,
-                "batch_size": self.batch_size,
-                "init_features": self.init_features,
+                "eval_horizon": self.eval_horizon,
+                "eval_stride": self.eval_stride,
             }
         )
         return config

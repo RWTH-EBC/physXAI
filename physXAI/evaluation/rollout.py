@@ -211,33 +211,52 @@ def rollout_data(td: TrainingData, spec: RecursionSpec, split: str, horizon: int
 
 class HorizonMetrics:
     """
-    Errors of a recursive prediction per step of the horizon: RMSE, MAE and bias (mean of
+    Errors of a multi step prediction per step of the horizon: RMSE, MAE and bias (mean of
     prediction - truth) for every split.
+
+    Args:
+        predictions: {split: (prediction, truth)}, arrays of shape (windows, horizon, features).
+        time_step: Sampling time in seconds (for an axis in hours).
+        feature: Name of the predicted feature, or a list of names for several features.
+
+    Attributes:
+        kpis: {split: {'rmse': [...], 'mae': [...], 'bias': [...], 'n_windows': n}} of the first feature.
+        by_feature: The same for every feature, {feature: kpis}.
     """
 
     def __init__(
-        self, predictions: dict[str, tuple[np.ndarray, np.ndarray]], time_step: float | None = None, feature: str = ""
+        self,
+        predictions: dict[str, tuple[np.ndarray, np.ndarray]],
+        time_step: float | None = None,
+        feature: str | list[str] = "",
     ):
-        self.feature = feature
+        features = [feature] if isinstance(feature, str) else list(feature)
+        self.features = features
+        self.feature = features[0]
         self.time_step = time_step
-        self.kpis: dict[str, dict[str, list[float]]] = dict()
+        self.by_feature: dict[str, dict[str, dict]] = {f: dict() for f in features}
         for split, (prediction, truth) in predictions.items():
-            error = (prediction - truth)[..., 0]
-            self.kpis[split] = {
-                "rmse": np.sqrt(np.mean(error**2, axis=0)).tolist(),
-                "mae": np.mean(np.abs(error), axis=0).tolist(),
-                "bias": np.mean(error, axis=0).tolist(),
-                "n_windows": int(error.shape[0]),
-            }
-        for split, kpis in self.kpis.items():
-            logger.info(
-                "%s horizon RMSE (first / last step): %.4f / %.4f, bias: %.4f / %.4f",
-                split.capitalize(),
-                kpis["rmse"][0],
-                kpis["rmse"][-1],
-                kpis["bias"][0],
-                kpis["bias"][-1],
-            )
+            errors = prediction - truth
+            for j, name in enumerate(features):
+                error = errors[..., j]
+                self.by_feature[name][split] = {
+                    "rmse": np.sqrt(np.mean(error**2, axis=0)).tolist(),
+                    "mae": np.mean(np.abs(error), axis=0).tolist(),
+                    "bias": np.mean(error, axis=0).tolist(),
+                    "n_windows": int(error.shape[0]),
+                }
+        self.kpis: dict[str, dict] = self.by_feature[self.feature]
+        for name, splits in self.by_feature.items():
+            for split, kpis in splits.items():
+                logger.info(
+                    "%s horizon RMSE of %s (first / last step): %.4f / %.4f, bias: %.4f / %.4f",
+                    split.capitalize(),
+                    name,
+                    kpis["rmse"][0],
+                    kpis["rmse"][-1],
+                    kpis["bias"][0],
+                    kpis["bias"][-1],
+                )
 
     @property
     def steps(self) -> np.ndarray:
@@ -251,7 +270,10 @@ class HorizonMetrics:
         return self.steps * self.time_step / 3600 if self.time_step else None
 
     def get_config(self) -> dict:
-        return {"feature": self.feature, "time_step": self.time_step, **self.kpis}
+        config = {"feature": self.feature, "time_step": self.time_step, **self.kpis}
+        if len(self.features) > 1:
+            config["by_feature"] = self.by_feature
+        return config
 
 
 def evaluate_horizon(
