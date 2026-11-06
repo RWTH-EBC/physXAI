@@ -161,10 +161,11 @@ def test_multi_step_without_validation(frame, tmp_path):
     assert td.X_train.shape[1:] == (3, 2)
 
 
-def test_multi_step_legacy_arguments(frame, tmp_path):
-    with pytest.raises(ValueError, match="init_features"):
+def test_unknown_arguments_are_rejected():
+    """Arguments of physXAI < 1.0 (e.g. init_features, batch_size) are not silently ignored."""
+    with pytest.raises(TypeError):
         PreprocessingMultiStep(inputs=["mDot"], output="T", label_width=3, init_features=["T"])
-    # old configs stored the inputs as init_features, which is still accepted
-    prep = PreprocessingMultiStep(inputs=["mDot"], output="T", label_width=3, init_features=["mDot"], batch_size=4)
-    restored = PreprocessingData.from_config(prep.get_config())
-    assert restored.label_width == 3 and "init_features" not in restored.get_config()
+    with pytest.raises(TypeError):
+        PreprocessingSingleStep(inputs=["mDot"], output="T", batch_size=4)
+    prep = PreprocessingMultiStep(inputs=["mDot"], output="T", label_width=3)
+    assert PreprocessingData.from_config(prep.get_config()).label_width == 3

@@ -15,7 +15,7 @@ to the splits (blocked holdout, see Bergmeir et al. 2018 and Cerqueira et al. 20
   so no window ever crosses a boundary.
 
 Alternative strategies are `'holdout_end'` (chronological: train, val, test), which is more
-robust for non-stationary data, and `'random_rows'` (legacy behaviour, single step only).
+robust for non-stationary data, and `'random_rows'` (random rows, only to compare with, single step only).
 """
 
 from __future__ import annotations

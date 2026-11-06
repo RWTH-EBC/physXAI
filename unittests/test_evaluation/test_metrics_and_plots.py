@@ -47,8 +47,8 @@ def test_metrics_per_output(linreg):
     assert list(metrics.by_output) == ["Change(T)"]
     test = metrics.by_output["Change(T)"]["test"]
     assert test["bias"] == pytest.approx(float(np.mean(td.y_test_pred - td.y_test)), abs=1e-9)
-    # legacy keys
-    assert metrics.test_kpis["RMSE Test"] == pytest.approx(test["rmse"])
+    assert metrics.kpi("test") == pytest.approx(test["rmse"])
+    assert set(json.loads(json.dumps(metrics.get_config()))) == {"by_output"}
     config = json.loads(json.dumps(td.get_config()))
     assert set(config["metrics"]["by_output"]["Change(T)"]) == {"train", "val", "test"}
     assert len(config["horizon_metrics"]["test"]["std"]) == 6
@@ -64,7 +64,7 @@ def test_metrics_of_several_outputs(csv):
     assert list(td.metrics.by_output) == ["T", "T_in"]
     t, t_in = td.metrics.by_output["T"]["test"], td.metrics.by_output["T_in"]["test"]
     assert t["rmse"] != pytest.approx(t_in["rmse"])
-    assert td.metrics.test_kpis["MSE Test"] == pytest.approx((t["mse"] + t_in["mse"]) / 2)
+    assert td.metrics.kpi("test", "mse", "T_in") == pytest.approx(t_in["mse"])
     assert set(td.horizon_metrics.by_feature) == {"T", "T_in"}
     titles = [a.text for a in model_report(td, "RNN").layout.annotations]
     assert "Prediction Correlation – T" in titles and "Prediction Correlation – T_in" in titles
@@ -122,9 +122,9 @@ def test_pipeline_saves_but_does_not_show_plots(linreg, tmp_path):
 def test_metrics_without_validation(csv):
     td = PreprocessingSingleStep(inputs=["mDot", "T"], output="Change(T)", val_size=0).pipeline(csv)
     LinearRegressionModel().pipeline(td, plot=False, save_model=False)
-    assert td.metrics.val_kpis is None
+    assert td.metrics.kpi("val") is None
     assert "val" not in td.metrics.by_output["Change(T)"]
-    assert isinstance(Metrics(td).get_metrics()[0], list)
+    assert set(Metrics(td).by_output["Change(T)"]) == {"train", "test"}
     model_report(td, "no validation")
 
 

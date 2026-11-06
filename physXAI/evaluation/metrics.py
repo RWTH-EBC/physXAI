@@ -2,8 +2,7 @@
 Metrics of the predictions of a model, per output and split.
 
 `Metrics.by_output` holds MSE, RMSE, MAE, R2 and bias (mean of prediction - truth) for every output and
-split. The flat dicts `train_kpis`, `val_kpis` and `test_kpis` ('RMSE Train', ...) are kept for
-compatibility; with several outputs they hold the mean over the outputs.
+split. `MetricsPINN` additionally holds the disagreement of the prediction with every physics target.
 """
 
 import logging
@@ -16,7 +15,7 @@ from physXAI.preprocessing.training_data import TrainingDataGeneric, TrainingDat
 
 logger = logging.getLogger("physXAI")
 
-SPLIT_LABELS = {"train": "Train", "val": "Val", "test": "Test"}
+SPLITS = ("train", "val", "test")
 
 
 def regression_kpis(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
@@ -39,8 +38,7 @@ def output_names(td: TrainingDataGeneric) -> list[str]:
     """Names of the predicted quantities: the outputs, for multi step data the predicted features."""
     if isinstance(td, TrainingDataMultiStep):
         return list(td.features if td.absolute else td.outputs)
-    outputs = getattr(td, "outputs", None) or getattr(td, "output", None)
-    return list(outputs) if outputs else ["output"]
+    return list(td.outputs) if getattr(td, "outputs", None) else ["output"]
 
 
 class Metrics:
@@ -52,9 +50,7 @@ class Metrics:
         names: Names of the outputs. Defaults to `output_names(td)`.
 
     Attributes:
-        by_output: {output: {split: {'mse', 'rmse', 'mae', 'r2', 'bias', 'n'}}}.
-        train_kpis, val_kpis, test_kpis: {'MSE Train': ..., 'RMSE Train': ..., 'R2 Train': ...} (mean over
-                                         the outputs), None for a split without data.
+        by_output: {output: {split: {'mse', 'rmse', 'mae', 'r2', 'bias', 'n'}}}. Splits without data are missing.
     """
 
     def __init__(self, td: TrainingDataGeneric, names: list[str] | None = None):
@@ -76,98 +72,57 @@ class Metrics:
             y = np.asarray(y).reshape(len(y), -1)
             prediction = np.asarray(prediction).reshape(len(prediction), -1)
             for j, name in enumerate(names):
-                self.by_output[name][split] = regression_kpis(y[:, j], prediction[:, j])
-        self.train_kpis = self._flat("train")
-        self.val_kpis = self._flat("val")
-        self.test_kpis = self._flat("test")
+                kpis = regression_kpis(y[:, j], prediction[:, j])
+                self.by_output[name][split] = kpis
+                logger.info("%s %s: RMSE %.4g, R2 %.4f", split.capitalize(), name, kpis["rmse"], kpis["r2"])
 
-    def _flat(self, split: str) -> dict[str, float] | None:
-        values = [kpis[split] for kpis in self.by_output.values() if split in kpis]
-        if not values:
-            return None
-        label = SPLIT_LABELS[split]
-        mse = float(np.mean([v["mse"] for v in values]))
-        r2 = float(np.mean([v["r2"] for v in values]))
-        logger.info("%s RMSE: %.4g, R2: %.4f", label, math.sqrt(mse), r2)
-        return {f"MSE {label}": mse, f"RMSE {label}": math.sqrt(mse), f"R2 {label}": r2}
-
-    @staticmethod
-    def evaluate(y_true: np.ndarray, y_pred: np.ndarray, label: str = "") -> dict[str, float]:
-        """MSE, RMSE and R2 of all values (legacy interface)."""
-        kpis = regression_kpis(y_true, y_pred)
-        return {f"MSE {label}": kpis["mse"], f"RMSE {label}": kpis["rmse"], f"R2 {label}": kpis["r2"]}
-
-    def get_metrics(self, nround: int = 2) -> tuple[list[str], list[float]]:
+    def kpi(self, split: str, metric: str = "rmse", output: str | None = None) -> float | None:
         """
-        Labels and rounded values of the flat metrics.
+        One metric of one output (default: the first) on a split, None if the split has no data.
 
-        Args:
-            nround (int, optional): The number of decimal places to round the metric values to.
+        Example:
+            >>> td.metrics.kpi('test', 'rmse')
         """
-        kpis = dict()
-        for split_kpis in (self.train_kpis, self.val_kpis, self.test_kpis):
-            if split_kpis is not None:
-                kpis |= split_kpis
-        return list(kpis.keys()), [round(v, nround) for v in kpis.values()]
+        output = self.names[0] if output is None else output
+        return self.by_output[output].get(split, {}).get(metric)
 
     def get_config(self) -> dict:
-        return {
-            "train_kpis": self.train_kpis,
-            "val_kpis": self.val_kpis,
-            "test_kpis": self.test_kpis,
-            "by_output": self.by_output,
-        }
+        return {"by_output": self.by_output}
 
 
 class MetricsPINN(Metrics):
     """
-    A class to calculate and store metrics for Physics-Informed Neural Networks (PINNs).
-    It evaluates performance using a list of provided loss functions.
+    Metrics of a physics-informed model: the metrics of its output (`by_output`) and, per physics target,
+    the disagreement of the prediction with it.
+
+    Args:
+        td: Training data holding the true values and the predictions.
+        physics: {term: {split: physics target values}}, aligned with the predictions of the split.
+        scale: Characteristic scale of the loss terms (variance of the training targets, 1 if not normalized).
+
+    Attributes:
+        physics: {term: {split: {'mse', 'rmse', 'normalized'}}}, `normalized` = mse / scale is the term of the loss.
     """
 
-    def __init__(self, td: TrainingDataGeneric, pinn_losses: list):
-        """
-        Initializes the MetricsPINN object by calculating metrics for train,
-        validation (if available), and test sets using specified PINN loss functions.
+    def __init__(self, td: TrainingDataGeneric, physics: dict[str, dict[str, np.ndarray]], scale: float = 1.0):
+        super().__init__(td)
+        predictions = {"train": td.y_train_pred_single, "val": td.y_val_pred_single, "test": td.y_test_pred_single}
+        self.scale = float(scale)
+        self.physics: dict[str, dict[str, dict]] = dict()
+        for term, splits in physics.items():
+            self.physics[term] = dict()
+            for split, target in splits.items():
+                prediction = predictions.get(split)
+                if prediction is None or target is None:
+                    continue
+                prediction = np.asarray(prediction, dtype=np.float64).reshape(-1)
+                error = prediction - np.asarray(target, dtype=np.float64).reshape(-1)
+                mse = float(np.mean(error**2))
+                self.physics[term][split] = {"mse": mse, "rmse": math.sqrt(mse), "normalized": mse / self.scale}
+                logger.info("%s physics '%s': RMSE %.4g", split.capitalize(), term, math.sqrt(mse))
 
-        Args:
-            td (TrainingData): An object containing the true and predicted values.
-            pinn_losses (list): A list of loss functions to be used for evaluation.
-        """
-
-        self.by_output = None
-        self.train_kpis = self.evaluate(
-            td.y_train_single, td.y_train_pred_single, label="Train", pinn_losses=pinn_losses
-        )
-        if td.y_val_single is not None:
-            self.val_kpis = self.evaluate(td.y_val_single, td.y_val_pred_single, label="Val", pinn_losses=pinn_losses)
-        else:
-            self.val_kpis = None
-        self.test_kpis = self.evaluate(td.y_test_single, td.y_test_pred_single, label="Test", pinn_losses=pinn_losses)
-
-    @staticmethod
-    def evaluate(y_true: np.ndarray, y_pred: np.ndarray, label: str = "", **kwargs) -> dict[str, float]:
-        """
-        Calculates metrics based on the provided list of PINN loss functions.
-
-        Args:
-            y_true (np.ndarray): The true target values.
-            y_pred (np.ndarray): The predicted target values.
-            label (str, optional): A label for the dataset being evaluated (e.g., 'Train', 'Test').
-                                   Defaults to ''.
-
-        Returns:
-            dict: A dictionary where keys are loss function names appended with the label,
-                  and values are the calculated loss values.
-        """
-
-        kpis = dict()
-        for loss in kwargs["pinn_losses"]:
-            val = float(loss(y_true, y_pred))
-            kpis[loss.__name__ + " " + label] = val
-            logger.info("%s %s: %.4g", loss.__name__, label, val)
-
-        return kpis
+    def get_config(self) -> dict:
+        return {**super().get_config(), "physics": self.physics, "scale": self.scale}
 
 
 class MetricsMultiStep(Metrics):

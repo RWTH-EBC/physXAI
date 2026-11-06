@@ -117,7 +117,7 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
     if mono is None:
         monotonicities = [0] * n_features
     else:
-        monotonicities = [0 if name not in mono.keys() else mono[name] for name in td.columns]
+        monotonicities = [0 if name not in mono.keys() else mono[name] for name in td.inputs]
 
     # Add input layer
     input_layer = keras.layers.Input(shape=(n_features,))

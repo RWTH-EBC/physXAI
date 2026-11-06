@@ -5,7 +5,6 @@ import json
 import pytest
 from conftest import simulate_one_room
 
-from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
 from physXAI.feature_selection.selection import FeatureSelection
 from physXAI.models import LinearRegressionModel
 from physXAI.preprocessing.preprocessing import PreprocessingMultiStep, PreprocessingSingleStep
@@ -74,10 +73,12 @@ def test_invalid_settings():
         FeatureSelection(PreprocessingMultiStep(inputs=["mDot"], output="T", label_width=2), LinearRegressionModel())
 
 
-def test_legacy_interface(csv):
-    runs, inputs = recursive_feature_elimination_pipeline(csv, _prep(eval_horizon=4), LinearRegressionModel())
+def test_save_result(csv, tmp_path):
+    from physXAI.io import Run
+
+    result = FeatureSelection(_prep(eval_horizon=4), LinearRegressionModel()).run(csv)
     # down to the recursive feature, which is never removed
-    assert sorted(runs) == list(range(1, len(INPUTS) + 1))
-    assert runs[1][0]["inputs"] == ["T"]
-    assert "T" in inputs
-    assert all({"inputs", "kpi", "kpi_single_step"} <= set(run) for candidates in runs.values() for run in candidates)
+    assert sorted(result.steps) == list(range(1, len(INPUTS) + 1))
+    assert result.steps[1][0].inputs == ["T"]
+    files = result.save(Run(tmp_path, "fs"))
+    assert files["json"].exists() and files["plot"].exists()

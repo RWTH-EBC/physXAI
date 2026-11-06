@@ -80,6 +80,14 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   https://rwth-ebc.github.io/physXAI/main/docs/index.html.
 
 ### Changed
+- `PINNModel(physics_targets={'pinn': w})`: physics targets are loss columns, no model outputs, so a PINN has one
+  output and is exportable to AgentLib-MPC. The loss `mse(ŷ, y)/s + Σ w_i·mse(ŷ, p_i)/s` is normalized by the
+  variance of the training targets and no longer averaged over the terms; early stopping monitors the validation
+  data loss (`early_stopping_on`); history, metrics (`td.metrics.physics`) and report hold every term.
+- `loss_columns` in the preprocessing: columns used only in the loss, added from `model.required_loss_columns` by
+  `prep.pipeline(path, model=model)`.
+- `FeatureSelectionResult.save(run)` replaces `save_result`.
+- Unknown arguments of the preprocessing raise a `TypeError` instead of being ignored.
 - Python >= 3.11 is required (3.9 and 3.10 are end of life).
 - CI uses the shared template of the institute (RWTH-EBC/ci_templates, like AgentLib and AgentLib-MPC): tests,
   coverage, package build, pylint/ruff reports, documentation and GitHub Pages; additionally the unit tests on
@@ -113,6 +121,12 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - `PreprocessingData.from_config` restores the class from `__class_name__` and all settings.
 
 ### Fixed
+- PINN: the arguments of the loss were swapped (`loss(y_pred, y_true)`), the RMSE metric accumulated over the data
+  and physics terms, adding a physics term halved the weight of the data, the output rescaling used the physics
+  columns, and a PINN could not be exported (two outputs).
+- Single step data with `test_size=0`: the evaluation predicted on an empty test set.
+- `px.Linear(bias=False)` with normalized inputs warns that the normalization acts as a bias; `nominal_range` has
+  to be ordered.
 - Multi step training and test windows overlapped (data leakage).
 - With `ignore_nan=True`, targets were taken across gaps in the data.
 - `PreprocessingMultiStep` ignored `ignore_nan`; configs missed csv options, so `from_config` was not
@@ -135,6 +149,10 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - Feature selection: `input()` prompts, the preprocessing was changed in place, lags were parsed from strings.
 
 ### Removed
+- Compatibility code of 0.x: `recursive_feature_elimination_pipeline` and `save_result`, the flat metrics
+  (`train_kpis`, `val_kpis`, `test_kpis`, `get_metrics`), `td.columns` / `td.output`, `pinn_weights` and
+  `multi_y_loss`, the arguments `init_layer`, `init_features`, `warmup_columns_*` and the `batch_size` of
+  `PreprocessingMultiStep`.
 - `physXAI.preprocessing.constructed` (`Feature`, `FeatureConstruction`): lags and `Change(X)` are derived
   natively, other quantities are expressions (`physXAI.expr`), preferably inside the model.
 - `physXAI.models.modular.modular_expression` and the `Modular*` classes: replaced by `physXAI.expr`
@@ -143,7 +161,7 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   `ModularExistingModel` -> `px.Pretrained`). The separate `modular_expression_config.json` is gone, the graph
   is part of the model config.
 - RNN initialization models (`init_layer`) and the warmup features of the preprocessing (`init_features`,
-  `warmup_columns_*`). Old configs without initialization model are still accepted.
+  `warmup_columns_*`).
 - Multi step evaluation of single step models with `PreprocessingMultiStep` (`SingleStepModel.evaluate_multi`):
   use `PreprocessingSingleStep(eval_horizon=...)`. `physXAI.evaluation.closed_loop` is replaced by the
   closed loop of `RNNModel` and by `physXAI.evaluation.rollout`.

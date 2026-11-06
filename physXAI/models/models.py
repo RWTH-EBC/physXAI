@@ -271,13 +271,12 @@ class SingleStepModel(AbstractModel, ABC):
         if isinstance(model, keras.Model):
             kwargs['verbose'] = keras_verbosity()
 
-        y_pred_train = model.predict(td.X_train_single, **kwargs)
-        y_pred_test = model.predict(td.X_test_single, **kwargs)
-        if td.X_val_single is not None:
-            y_pred_val = model.predict(td.X_val_single, **kwargs)
-        else:
-            y_pred_val = None
-        td.add_predictions(y_pred_train, y_pred_val, y_pred_test)
+        # splits without data (e.g. test_size=0) have no predictions
+        predictions = {
+            split: model.predict(X, **kwargs) if X is not None else None
+            for split, X in (("train", td.X_train_single), ("val", td.X_val_single), ("test", td.X_test_single))
+        }
+        td.add_predictions(predictions["train"], predictions["val"], predictions["test"])
 
         td.add_metrics(Metrics(td))
         # Error over the horizon of a recursive application, as in an MPC (if td.eval_horizon is set)
@@ -326,7 +325,7 @@ class LinearRegressionModel(SingleStepModel):
         td.add_training_time(stop_time - start_time)
 
         if logger.isEnabledFor(logging.INFO):
-            weights = "\n".join(f"  {inp}: {model.coef_[0][i]:.6g}" for i, inp in enumerate(td.columns))
+            weights = "\n".join(f"  {inp}: {model.coef_[0][i]:.6g}" for i, inp in enumerate(td.inputs))
             logger.info("Linear regression bias: %.6g, weights:\n%s", model.intercept_[0], weights)
 
     def compile_model(self, model):

@@ -28,6 +28,8 @@ def _nominal(nominal_range):
     if len(nominal_range) != 2:
         raise ValueError(f"nominal_range must be (min, max), but is {nominal_range}.")
     low, high = nominal_range
+    if not high > low:
+        raise ValueError(f"nominal_range must be (min, max) with max > min, but is {nominal_range}.")
     return (high + low) / 2.0, (high - low) / 4.0
 
 
@@ -139,6 +141,11 @@ class Linear(Block):
         self.monotonicities = dict(monotonicities or {})
         self._per_input(self.monotonicities)
         self.bias = bias
+        if not bias and self.normalize:
+            logger.warning(
+                "Linear '%s' has no bias, but normalizes its inputs: the normalization subtracts the mean of the "
+                "training data, which acts as a bias. Use normalize=False for a model without offset.", self.name
+            )
 
     def params(self):
         return {**super().params(), "monotonicities": self.monotonicities, "bias": self.bias}

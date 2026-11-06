@@ -7,7 +7,7 @@ import keras
 import pytest
 
 from physXAI import expr as px
-from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
+from physXAI.feature_selection.selection import FeatureSelection
 
 ######################################################################################################################
 from physXAI.io import Run
@@ -185,7 +185,6 @@ def test_model_linANN(p_hp_data, inputs_php, output_php, file_path, run):
 def test_model_pinn(inputs_php, output_php, file_path, run):
     # Check PINNs
     # PINN: Prepare preprocessing
-    output_php = [output_php] + ['pinn']
     v = px.Vars()
     u_hp, u_hp_logistic = v.oveHeaPumY_u, v['Func(logistic)']
     t_amb, TAirRoom = v.weaSta_reaWeaTDryBul_y, v.reaTZon_y
@@ -193,13 +192,14 @@ def test_model_pinn(inputs_php, output_php, file_path, run):
 
     # PINN: Preprocessing
     prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php, columns={'pinn': pinn})
-    td = prep.pipeline(file_path)
-    m = PINNModel(pinn_weights=[1], epochs=1, n_neurons=4)
+    m = PINNModel(physics_targets={'pinn': 1.0}, epochs=1, n_neurons=4)
+    td = prep.pipeline(file_path, model=m)
     m.pipeline(td, save_model=False, plot=False)
 
     prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php, val_size=0, columns={'pinn': pinn})
-    td = prep.pipeline(file_path)
-    m = PINNModel(pinn_weights=None, epochs=1, n_neurons=4)
+    m = PINNModel(physics_targets={'pinn': 0.5}, normalize_terms=False, early_stopping_on='total', epochs=1,
+                  n_neurons=4)
+    td = prep.pipeline(file_path, model=m)
     m.pipeline(td, save_model=True, plot=False, save_path=str(run.path / 'model.keras'))
 
     m.epochs = 1
@@ -238,10 +238,11 @@ def test_feature_selection(p_hp_data, file_path, run):
 
     m = LinearRegressionModel()
 
-    recursive_feature_elimination_pipeline(file_path, prep, m, ascending_lag_order=False)
+    FeatureSelection(prep, m, ascending_lag_order=False).run(file_path)
 
-    recursive_feature_elimination_pipeline(file_path, prep, m, ascending_lag_order=True,
-                                           fixed_inputs=['weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u'], run=run)
+    result = FeatureSelection(prep, m, ascending_lag_order=True,
+                              fixed_inputs=['weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u']).run(file_path)
+    result.save(run)
     assert (run.path / 'feature_selection.json').exists() and (run.path / 'feature_selection.html').exists()
 
 def test_feature_selection_multi(tair_data_delta, tair_data_noval, tair_data_total, file_path, run):
@@ -257,16 +258,16 @@ def test_feature_selection_multi(tair_data_delta, tair_data_noval, tair_data_tot
     m = LinearRegressionModel()
 
     # Feature Selection
-    recursive_feature_elimination_pipeline(file_path, prep, m, use_multi_step_error=True)
-    recursive_feature_elimination_pipeline(file_path, prep2, m, use_multi_step_error=True)
+    FeatureSelection(prep, m).run(file_path)
+    FeatureSelection(prep2, m).run(file_path)
     m.pipeline(td2, save_model=False, plot=False)
     m.pipeline(td3, save_model=True, save_path=str(run.path / 'model2.joblib'))
     m.load_model(run.path / 'model2.joblib')
 
     m = ClassicalANNModel(epochs=1, n_neurons=4)
-    recursive_feature_elimination_pipeline(file_path, prep, m, use_multi_step_error=False)
+    FeatureSelection(prep, m, criterion='single_step').run(file_path)
     m.pipeline(td3, save_model=False)
     m = ClassicalANNModel(epochs=1, n_neurons=4)
-    recursive_feature_elimination_pipeline(file_path, prep2, m, use_multi_step_error=False)
+    FeatureSelection(prep2, m, criterion='single_step').run(file_path)
     m.pipeline(td2, save_model=False, plot=False)
     run.save('training_data2', prep, None, td)

@@ -1,4 +1,3 @@
-from physXAI.feature_selection.recursive_feature_elimination import save_result
 from physXAI.feature_selection.selection import FeatureSelection
 from physXAI.io import Run
 from physXAI.models.models import LinearRegressionModel
@@ -39,4 +38,4 @@ print('Selected inputs:', result.selected.inputs)
 print(result.table()[['n_inputs', 'score', 'score_std', 'single_step_rmse', 'plausible']].to_string())
 
 # Save the result (json) and its plot (html) into the run directory
-save_result(result, run)
+result.save(run)

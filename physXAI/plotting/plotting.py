@@ -255,11 +255,7 @@ def plot_metrics_table(td: TrainingDataGeneric) -> go.Figure:
     """Table of the metrics, one row per output and metric."""
     metrics = td.metrics
     fig = go.Figure()
-    by_output = getattr(metrics, "by_output", None)
-    if not by_output:
-        labels, values = metrics.get_metrics()
-        fig.add_trace(go.Table(header=dict(values=["Metrics", "Value"]), cells=dict(values=[labels, values])))
-        return fig
+    by_output = metrics.by_output
     splits = [s for s in SPLITS if any(s in kpis for kpis in by_output.values())]
     columns = [[], []] + [[] for _ in splits]
     for name, kpis in by_output.items():

@@ -22,8 +22,9 @@ from physXAI.models.ann.model_construction.rnn_models import (
     find_step_model,
     sequence_inputs,
 )
-from physXAI.models.ann.pinn.pinn_loss import multi_y_loss
+from physXAI.models.ann.pinn.physics import PhysicsLoss, physics_metrics
 from physXAI.models.models import LinearRegressionModel, MultiStepModel, SingleStepModel, register_model
+from physXAI.preprocessing.preprocessing import TARGET_PREFIX
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneric, TrainingDataMultiStep
 from physXAI.training.recursive import step_weights, weighted_step_loss
 
@@ -128,12 +129,23 @@ class ANNModel(SingleStepModel, ABC):
         if td.training_record is None:
             td.add_training_record(record)
 
+    def _fit_data(self, td: TrainingDataGeneric, split: str):
+        """Inputs and targets the model is fitted on, None for a split without data."""
+        X = getattr(td, f'X_{split}_single')
+        return None if X is None else (X, getattr(td, f'y_{split}_single'))
+
+    def _early_stopping_monitor(self) -> str:
+        """Validation metric of the early stopping."""
+        return 'val_loss'
+
     def fit_single_step(self, model, td: TrainingDataGeneric):
         """Fits the Keras model on the single step error."""
+        train, val = self._fit_data(td, 'train'), self._fit_data(td, 'val')
         # Early stopping (only possible with validation data)
         callbacks = list()
-        if self.early_stopping_epochs is not None and td.y_val_single is not None:
-            es = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', patience=self.early_stopping_epochs,
+        if self.early_stopping_epochs is not None and val is not None:
+            es = keras.callbacks.EarlyStopping(monitor=self._early_stopping_monitor(), mode='min',
+                                               patience=self.early_stopping_epochs,
                                                restore_best_weights=True, verbose=keras_verbosity_int())
             callbacks.append(es)
 
@@ -141,18 +153,18 @@ class ANNModel(SingleStepModel, ABC):
         start_time = time.perf_counter()
 
         # Create tf.data.Dataset for better performance
-        train_ds = tf.data.Dataset.from_tensor_slices((td.X_train_single, td.y_train_single))
+        train_ds = tf.data.Dataset.from_tensor_slices(train)
         train_ds = (
             train_ds
-            .cache()                                                                                       # 1. Cache first so data is not reloaded, may need to be removed for large datasets
-            .shuffle(buffer_size=min(10000, td.X_train_single.shape[0]), reshuffle_each_iteration=True)    # 2. Shuffle randomly every epoch
-            .batch(self.batch_size)                                                                        # 3. Group into batches
-            .prefetch(buffer_size=tf.data.AUTOTUNE)                                                        # 4. Prepare next batch in background
+            .cache()                                                                     # 1. Cache first so data is not reloaded, may need to be removed for large datasets
+            .shuffle(buffer_size=min(10000, train[0].shape[0]), reshuffle_each_iteration=True)  # 2. Shuffle randomly every epoch
+            .batch(self.batch_size)                                                      # 3. Group into batches
+            .prefetch(buffer_size=tf.data.AUTOTUNE)                                      # 4. Prepare next batch in background
         )
 
         # Check for validation data
-        if td.y_val is not None:
-            val_ds = tf.data.Dataset.from_tensor_slices((td.X_val_single, td.y_val_single))
+        if val is not None:
+            val_ds = tf.data.Dataset.from_tensor_slices(val)
             val_ds = (
                 val_ds
                 .cache()                                        # 1. Cache first so data is not reloaded, may need to be removed for large datasets
@@ -469,22 +481,40 @@ class CMNNModel(ANNModel):
 @register_model
 class PINNModel(ANNModel):
     """
-    A Physics-Informed Neural Network (PINN) model.
-    This implementation uses a CMNN as its base architecture and incorporates
-    a custom multi-component loss function.
+    Physics-informed neural network: a CMNN trained on the data and on physics targets.
+
+    A physics target is a data column computed from a physical model of the output, e.g. a simplified
+    heat pump model `columns={'pinn': expression}` in the preprocessing. The model has a single output
+    (the data output) and is used and exported like any other model; the physics targets only enter the loss
+    (see `physXAI.models.ann.pinn.physics`):
+
+        L = mse(y_hat, y) / s + sum_i w_i * mse(y_hat, p_i) / s,   s = var(y_train)
+
+    Physics targets are taken at the predicted time, like the output. For a model predicting `Change(T)`
+    with a physics model of the step `T(t) -> T(t+1)`, the column of the physics prediction computed from the
+    data at time t has to be shifted back by one step: `columns={'dT_rc': expression.lag(1)}`.
+
+    Example:
+        >>> prep = PreprocessingSingleStep(inputs=[...], output='P_el', columns={'pinn': physics})
+        >>> m = PINNModel(physics_targets={'pinn': 0.5})
+        >>> td = prep.pipeline(path, model=m)   # adds the physics targets as loss columns
+        >>> m.pipeline(td)
     """
 
-    def __init__(self, n_layers: int = 1, n_neurons: int | list[int] = 32,
-                 activation_function: str | list[str] = 'softplus', pinn_weights: list[float] = None,
-                 rescale_output: bool = True, monotonies: dict[str, int] = None, activation_split: list[float] = None,
+    plot_title = "Physics-Informed Neural Network"
+
+    def __init__(self, physics_targets: dict[str, float], n_layers: int = 1, n_neurons: int | list[int] = 32,
+                 activation_function: str | list[str] = 'softplus', rescale_output: bool = True,
+                 monotonies: dict[str, int] = None, activation_split: list[float] = None,
+                 normalize_terms: bool = True, early_stopping_on: str = 'data',
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
                  early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
         """
         Initializes the PINNModel.
 
         Args:
-            pinn_weights (list[float]): Weights for the additional components in the multi_y_loss.
-                                       The length should be `num_target_components - 1`.
+            physics_targets (dict[str, float]): {column: weight} of the physics targets. The weight is the
+                                                relative importance of the term compared to the data.
             n_layers (int): Number of hidden layers.
             n_neurons (int or list[int]): Number of neurons per layer.
             activation_function (str or list[str]): Activation function(s).
@@ -493,6 +523,9 @@ class PINNModel(ANNModel):
                                          (-1 for decreasing, 0 for no constraint, 1 for increasing).
             activation_split (list[float]): Proportions for splitting neurons into convex,
                                             concave, and saturated activation paths. E.g., [0.5, 0.25, 0.25].
+            normalize_terms (bool): Divide all terms of the loss by the variance of the training targets.
+            early_stopping_on (str): 'data' (validation data loss, default) or 'total' (validation loss
+                                     including the weighted physics terms).
             batch_size (int): Number of samples per gradient update.
             epochs (int): Number of times to iterate over the entire training dataset.
             learning_rate (float): Learning rate for the Adam optimizer.
@@ -501,14 +534,20 @@ class PINNModel(ANNModel):
             random_seed (int): Seed for random number generators to ensure reproducibility.
         """
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
+        if not physics_targets:
+            raise ValueError("PINNModel needs physics targets, e.g. physics_targets={'pinn': 1.0}.")
+        if early_stopping_on not in ('data', 'total'):
+            raise ValueError("early_stopping_on has to be 'data' or 'total'.")
+        self.physics_targets: dict[str, float] = {str(k): float(w) for k, w in physics_targets.items()}
         self.n_layers: int = n_layers
         self.n_neurons: int | list[int] = n_neurons
         self.activation_function: str | list[str] = activation_function
         self.rescale_output: bool = rescale_output
         self.monotonies: dict[str, int] = monotonies
         self.activation_split: list[float] = activation_split
-
-        self.pinn_weights: list[float] = pinn_weights
+        self.normalize_terms: bool = normalize_terms
+        self.early_stopping_on: str = early_stopping_on
+        self._scale: float = 1.0
 
         self.model_config.update({
             "n_layers": self.n_layers,
@@ -519,100 +558,60 @@ class PINNModel(ANNModel):
             "activation_split": activation_split,
         })
 
-        # Create pinn loss based on standard losses
-        self.pinn_loss = multi_y_loss(keras.losses.MeanSquaredError(name='MSE'), self.pinn_weights, 'mse')
-        self.pinn_metrics = [multi_y_loss(keras.metrics.RootMeanSquaredError(name='rmse'), self.pinn_weights,
-                                          'rmse')]
+    @property
+    def required_loss_columns(self) -> list[str]:
+        """The physics targets at the predicted time, added to the loss columns of the preprocessing."""
+        return [TARGET_PREFIX + name for name in self.physics_targets]
+
+    def _check_training_data(self, td: TrainingDataGeneric):
+        super()._check_training_data(td)
+        missing = [c for c in self.required_loss_columns if c not in td.loss_columns]
+        if missing:
+            raise ValueError(
+                f"The training data holds no physics targets {[c[len(TARGET_PREFIX):] for c in missing]}. "
+                "Pass the model to the preprocessing, prep.pipeline(path, model=model), so it adds them."
+            )
+        if len(td.outputs) != 1:
+            raise ValueError(f"PINNModel predicts one output, got {td.outputs}. Physics targets are no outputs.")
+        variance = float(np.var(td.y_train_single[:, 0])) if self.normalize_terms else 1.0
+        self._scale = max(variance, 1e-12)
 
     def generate_model(self, **kwargs):
         """
-        Generates the Keras model (typically a CMNN) to be used as the PINN.
+        Generates the Keras model (a CMNN) with one output.
         """
-
         td = kwargs['td']
-        model = CMNNModelConstruction(self.model_config, td)
-        return model
+        return CMNNModelConstruction(self.model_config, td)
 
     def compile_model(self, model):
         """
-        Compiles the PINN model with the custom multi_y_loss and corresponding metrics.
+        Compiles the model with the physics loss and the metrics of every term (`data_loss`, `<target>_loss`).
         """
-
         model.compile(keras.optimizers.Adam(learning_rate=self.learning_rate),
-                      loss=self.pinn_loss,
-                      metrics=self.pinn_metrics)
+                      loss=PhysicsLoss(list(self.physics_targets.values()), self._scale),
+                      metrics=physics_metrics(list(self.physics_targets), self._scale))
 
-    def _check_pinn_weights(self, td: TrainingDataGeneric):
-        """
-        Checks and sets default PINN weights if not provided, based on the shape of y_train.
-        y_train is expected to have multiple components: y_train[:, 0] for data-driven loss,
-        and y_train[:, 1:] for physics-informed/residual losses.
+    def _fit_data(self, td: TrainingDataGeneric, split: str):
+        data = super()._fit_data(td, split)
+        if data is None:
+            return None
+        targets = td.values(split, self.required_loss_columns)
+        return data[0], np.concatenate([data[1], targets], axis=1)
 
-        Args:
-            td (TrainingDataGeneric): The training data, used to infer the number of target components.
-        """
-
-        yn = td.y_train_single.shape[1]
-        if self.pinn_weights is None:
-            if yn == 1:  # pragma: no cover
-                self.pinn_weights = list()  # pragma: no cover
-            else:
-                self.pinn_weights = [1] * (yn - 1)
-            self.pinn_loss = multi_y_loss(keras.losses.MeanSquaredError(name='MSE'), self.pinn_weights, 'mse')
-            self.pinn_metrics = [multi_y_loss(keras.metrics.RootMeanSquaredError(name='rmse'), self.pinn_weights,
-                                              'rmse')]
-        assert yn == len(self.pinn_weights) + 1, \
-            'Shape of y values does not match length of pinn weights'
-
-    def pipeline(self, td: TrainingDataGeneric,
-                 save_path: str = None, plot: bool = True, save_model: bool = True, show_plot: bool = False):
-        """
-        Overrides the base pipeline to include PINN weight checking.
-
-        Args:
-            td (TrainingData): The training data, used to infer the number of target components.
-            save_path (str): Path to save the model.
-            plot (bool, optional): Whether to plot the results. Defaults to True.
-            save_model (bool, optional): Whether to save the trained model. Defaults to True.
-        """
-
-        self._check_pinn_weights(td)
-        return super().pipeline(td, save_path, plot, save_model, show_plot)
-
-    def online_pipeline(self, td: TrainingDataGeneric, load_path: str = None, save_path: str = None,
-                        plot: bool = True, save_model: bool = True, show_plot: bool = False):
-        """
-        Overrides the online pipeline to include PINN weight checking.
-
-        Args:
-            td (TrainingData): The training data, used to infer the number of target components.
-            load_path (str): Path to load the model.
-            save_path (str): Path to save the model (not saved without a path).
-            plot (bool, optional): Whether to plot the results. Defaults to True.
-            save_model (bool, optional): Whether to save the trained model. Defaults to True.
-        """
-        self._check_pinn_weights(td)
-        return super().online_pipeline(td, load_path, save_path, plot, save_model, show_plot)
+    def _early_stopping_monitor(self) -> str:
+        return 'val_data_loss' if self.early_stopping_on == 'data' else 'val_loss'
 
     def evaluate(self, model, td: TrainingDataGeneric):
         """
-        Evaluates the PINN model using custom MetricsPINN.
-
-        Args:
-            model: The keras model to be evaluated.
-            td (TrainingData): The training data
+        Evaluates the model like any single step model and adds the disagreement with the physics targets
+        (`MetricsPINN`).
         """
-
-        y_pred_train = model.predict(td.X_train_single, verbose=keras_verbosity())
-        y_pred_test = model.predict(td.X_test_single, verbose=keras_verbosity())
-        if td.X_val is not None:
-            y_pred_val = model.predict(td.X_val_single, verbose=keras_verbosity())
-        else:
-            y_pred_val = None
-        td.add_predictions(y_pred_train, y_pred_val, y_pred_test)
-
-        metrics = MetricsPINN(td, [self.pinn_loss, *self.pinn_metrics])
-        td.add_metrics(metrics)
+        SingleStepModel.evaluate(model, td)
+        physics = {
+            name: {split: td.values(split, [column]) for split in ('train', 'val', 'test') if td.has_split(split)}
+            for name, column in zip(self.physics_targets, self.required_loss_columns, strict=True)
+        }
+        td.add_metrics(MetricsPINN(td, physics, self._scale))
 
     def load_model(self, load_path: str):
         """
@@ -635,7 +634,9 @@ class PINNModel(ANNModel):
             "n_layers": self.n_layers,
             "n_neurons": self.n_neurons,
             "activation_function": self.activation_function,
-            "pinn_weights": self.pinn_weights,
+            "physics_targets": self.physics_targets,
+            "normalize_terms": self.normalize_terms,
+            "early_stopping_on": self.early_stopping_on,
             "rescale_output": self.rescale_output,
             "monotonies": self.monotonies,
             "activation_split": self.activation_split
@@ -694,12 +695,6 @@ class RNNModel(MultiStepModel):
         step_weights: list[float] | None = None,
         **kwargs,
     ):
-        init_layer = kwargs.pop("init_layer", None)
-        if init_layer not in (None, "out_model"):
-            raise ValueError(
-                "'init_layer' was removed in physXAI 1.0: the model warms itself up on the warmup sequence "
-                "(as in AgentLib-MPC) instead of using a separate initialization model."
-            )
         super().__init__(**kwargs)
         if loss_on not in ("trajectory", "outputs"):
             raise ValueError(f"Unknown loss_on '{loss_on}', use 'trajectory' or 'outputs'.")
