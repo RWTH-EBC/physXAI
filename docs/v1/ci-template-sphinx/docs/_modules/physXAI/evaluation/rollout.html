@@ -1,0 +1,435 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>physXAI.evaluation.rollout &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../../../_static/jquery.js"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+      <script src="../../../_static/doctools.js"></script>
+      <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">physXAI.evaluation.rollout</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for physXAI.evaluation.rollout</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Recursive (multi step) prediction with single step models.</span>
+
+<span class="sd">A single step model predicts the next value (or the change) of a feature it also gets as input.</span>
+<span class="sd">In an MPC it is applied recursively over the horizon: the prediction of step t becomes the input</span>
+<span class="sd">of step t+1. This module performs exactly this rollout on windows of the measured data:</span>
+
+<span class="sd">- The recursive feature (e.g. 'T' for an output 'Change(T)') and its lags ('T_lag1', ...) are</span>
+<span class="sd">  taken from the predicted trajectory, all other inputs from the data (they are known to the MPC).</span>
+<span class="sd">- Derived data columns depending on the recursive feature (e.g. a heat flow computed from 'T') are</span>
+<span class="sd">  recomputed in every step from their expressions. Expressions inside the model are recomputed</span>
+<span class="sd">  anyway, since they are part of the keras model.</span>
+<span class="sd">- The rollout is a keras RNN around the (trained) step model. It is differentiable, so it can also</span>
+<span class="sd">  be used to train a single step model on the multi step error (`physXAI.training.recursive`).</span>
+
+<span class="sd">The resulting errors over the horizon (RMSE, MAE and bias per step) show how the error of the</span>
+<span class="sd">model grows in an MPC, which the single step error does not.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.expr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">BuildContext</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">CHANGE_PATTERN</span><span class="p">,</span> <span class="n">LAG_PATTERN</span><span class="p">,</span> <span class="n">output_feature</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.splitting</span><span class="w"> </span><span class="kn">import</span> <span class="n">SPLITS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.training_data</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingData</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"TF_CPP_MIN_LOG_LEVEL"</span><span class="p">,</span> <span class="s2">"2"</span><span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">keras</span>  <span class="c1"># noqa: E402</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"physXAI"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_base_and_lag</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="n">LAG_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span> <span class="k">if</span> <span class="n">match</span> <span class="k">else</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="RecursionSpec"><a class="viewcode-back" href="../../../code/physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RecursionSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Describes how a single step model is applied recursively.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        feature: The recursive feature, e.g. 'T'.</span>
+<span class="sd">        difference: Whether the model predicts the change of the feature ('Change(T)').</span>
+<span class="sd">        max_lag: Largest lag of the feature the model needs (inputs and derived columns).</span>
+<span class="sd">        columns: Columns of one step of the rollout: the inputs of the model plus the variables of</span>
+<span class="sd">                 derived inputs which depend on the feature.</span>
+<span class="sd">        derived: Inputs that are derived columns depending on the feature (recomputed every step).</span>
+<span class="sd">    """</span>
+
+    <span class="n">feature</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">difference</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">max_lag</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">columns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">derived</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Names of the state of the rollout: [feature, feature_lag1, ..., feature_lag&lt;max_lag&gt;]."""</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">feature</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">feature</span><span class="si">}</span><span class="s2">_lag</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lag</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span></div>
+
+
+<div class="viewcode-block" id="recursion_spec"><a class="viewcode-back" href="../../../code/physXAI.evaluation.html#physXAI.evaluation.rollout.recursion_spec">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">recursion_spec</span><span class="p">(</span><span class="n">td</span><span class="p">:</span> <span class="n">TrainingData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RecursionSpec</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Derives the recursion of a single step model from the names of its inputs and outputs.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        RecursionSpec, or None if the model does not predict one of its own inputs (then there is</span>
+<span class="sd">        nothing to feed back and the single step error already is the multi step error).</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">outputs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">feature</span> <span class="o">=</span> <span class="n">output_feature</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">difference</span> <span class="o">=</span> <span class="n">CHANGE_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">depends</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">_base_and_lag</span><span class="p">(</span><span class="n">v</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">feature</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">free_vars</span><span class="p">())</span>
+
+    <span class="n">derived</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">td</span><span class="o">.</span><span class="n">inputs</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">td</span><span class="o">.</span><span class="n">derived</span> <span class="ow">and</span> <span class="n">depends</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">derived</span><span class="p">[</span><span class="n">c</span><span class="p">])]</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">derived</span><span class="p">:</span>
+        <span class="n">columns</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">td</span><span class="o">.</span><span class="n">derived</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">free_vars</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">)</span>
+    <span class="n">lags</span> <span class="o">=</span> <span class="p">[</span><span class="n">_base_and_lag</span><span class="p">(</span><span class="n">c</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">columns</span> <span class="k">if</span> <span class="n">_base_and_lag</span><span class="p">(</span><span class="n">c</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">feature</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">lags</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">feature</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">td</span><span class="o">.</span><span class="n">all_columns</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Recursive evaluation skipped: the data holds no column '</span><span class="si">%s</span><span class="s2">'."</span><span class="p">,</span> <span class="n">feature</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">td</span><span class="o">.</span><span class="n">all_columns</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Recursive evaluation skipped: the data holds no columns </span><span class="si">%s</span><span class="s2">."</span><span class="p">,</span> <span class="n">missing</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">RecursionSpec</span><span class="p">(</span><span class="n">feature</span><span class="p">,</span> <span class="n">difference</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">lags</span><span class="p">),</span> <span class="n">columns</span><span class="p">,</span> <span class="n">derived</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="as_keras_step_model"><a class="viewcode-back" href="../../../code/physXAI.evaluation.html#physXAI.evaluation.rollout.as_keras_step_model">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">as_keras_step_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">n_inputs</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The model as keras model; scikit-learn linear regressions become a frozen dense layer."""</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">model</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegression</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">LinearRegression</span><span class="p">):</span>
+        <span class="n">inp</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_inputs</span><span class="p">,))</span>
+        <span class="n">dense</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">trainable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">dense</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+        <span class="n">dense</span><span class="o">.</span><span class="n">set_weights</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">coef_</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">intercept_</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Recursive predictions are not supported for </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="build_step_function"><a class="viewcode-back" href="../../../code/physXAI.evaluation.html#physXAI.evaluation.rollout.build_step_function">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">build_step_function</span><span class="p">(</span><span class="n">step_model</span><span class="p">:</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingData</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">RecursionSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Maps one row of `spec.columns` to the output of the model, recomputing derived inputs.</span>
+<span class="sd">    """</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">columns</span><span class="p">),))</span>
+    <span class="n">ctx</span> <span class="o">=</span> <span class="n">BuildContext</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">ctx</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">derived</span><span class="p">[</span><span class="n">c</span><span class="p">])</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">derived</span> <span class="k">else</span> <span class="n">ctx</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">_var</span><span class="p">(</span><span class="n">c</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">td</span><span class="o">.</span><span class="n">inputs</span><span class="p">]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Concatenate</span><span class="p">()(</span><span class="n">parts</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">step_model</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">"step_function"</span><span class="p">)</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_var</span><span class="p">(</span><span class="n">column</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.expr</span><span class="w"> </span><span class="kn">import</span> <span class="n">Var</span>
+
+    <span class="k">return</span> <span class="n">Var</span><span class="p">(</span><span class="n">column</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="RecursiveCell"><a class="viewcode-back" href="../../../code/physXAI.evaluation.html#physXAI.evaluation.rollout.RecursiveCell">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RecursiveCell</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Layer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    RNN cell applying a step function recursively.</span>
+
+<span class="sd">    State: history of the recursive feature [x_t, x_{t-1}, ..., x_{t-max_lag}].</span>
+<span class="sd">    Input:  one data row of `spec.columns` at time t.</span>
+<span class="sd">    Output: the predicted absolute value x_{t+1}.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_function</span><span class="p">:</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">,</span> <span class="n">slots</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">difference</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_function</span> <span class="o">=</span> <span class="n">step_function</span>
+        <span class="c1"># slots[k, j] = 1 if column j holds the feature with lag k</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slots</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">slots</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">"float32"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slots</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">difference</span> <span class="o">=</span> <span class="n">difference</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slots</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_size</span> <span class="o">=</span> <span class="mi">1</span>
+
+<div class="viewcode-block" id="RecursiveCell.call"><a class="viewcode-back" href="../../../code/physXAI.evaluation.html#physXAI.evaluation.rollout.RecursiveCell.call">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">states</span><span class="p">):</span>
+        <span class="n">history</span> <span class="o">=</span> <span class="n">states</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="k">else</span> <span class="n">states</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">inputs</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask</span><span class="p">)</span> <span class="o">+</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">history</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">slots</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_function</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">history</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">y</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">difference</span> <span class="k">else</span> <span class="n">y</span>
+        <span class="n">history</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">value</span><span class="p">,</span> <span class="n">history</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_size</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">value</span>
+        <span class="k">return</span> <span class="n">value</span><span class="p">,</span> <span class="p">[</span><span class="n">history</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="build_rollout_model"><a class="viewcode-back" href="../../../code/physXAI.evaluation.html#physXAI.evaluation.rollout.build_rollout_model">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">build_rollout_model</span><span class="p">(</span><span class="n">step_model</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingData</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">RecursionSpec</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Keras model [rows (batch, horizon, columns), initial history (batch, max_lag + 1)] -&gt;</span>
+<span class="sd">    predicted feature (batch, horizon, 1). It shares the weights of `step_model`.</span>
+<span class="sd">    """</span>
+    <span class="n">step_model</span> <span class="o">=</span> <span class="n">as_keras_step_model</span><span class="p">(</span><span class="n">step_model</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">inputs</span><span class="p">))</span>
+    <span class="n">step_function</span> <span class="o">=</span> <span class="n">build_step_function</span><span class="p">(</span><span class="n">step_model</span><span class="p">,</span> <span class="n">td</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
+    <span class="n">slots</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">spec</span><span class="o">.</span><span class="n">max_lag</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">columns</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">"float32"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+        <span class="n">base</span><span class="p">,</span> <span class="n">lag</span> <span class="o">=</span> <span class="n">_base_and_lag</span><span class="p">(</span><span class="n">column</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">base</span> <span class="o">==</span> <span class="n">spec</span><span class="o">.</span><span class="n">feature</span><span class="p">:</span>
+            <span class="n">slots</span><span class="p">[</span><span class="n">lag</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">horizon</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">columns</span><span class="p">)))</span>
+    <span class="n">history</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">max_lag</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,))</span>
+    <span class="n">cell</span> <span class="o">=</span> <span class="n">RecursiveCell</span><span class="p">(</span><span class="n">step_function</span><span class="p">,</span> <span class="n">slots</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">difference</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">RNN</span><span class="p">(</span><span class="n">cell</span><span class="p">,</span> <span class="n">return_sequences</span><span class="o">=</span><span class="kc">True</span><span class="p">)(</span><span class="n">rows</span><span class="p">,</span> <span class="n">initial_state</span><span class="o">=</span><span class="p">[</span><span class="n">history</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">([</span><span class="n">rows</span><span class="p">,</span> <span class="n">history</span><span class="p">],</span> <span class="n">out</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"rollout"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="rollout_data"><a class="viewcode-back" href="../../../code/physXAI.evaluation.html#physXAI.evaluation.rollout.rollout_data">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">rollout_data</span><span class="p">(</span><span class="n">td</span><span class="p">:</span> <span class="n">TrainingData</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">RecursionSpec</span><span class="p">,</span> <span class="n">split</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Windows for a recursive prediction over `horizon` steps.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: rows (n, horizon, columns), initial history (n, max_lag + 1) and the true trajectory of</span>
+<span class="sd">               the feature (n, horizon, 1), i.e. x_{s+1}, ..., x_{s+horizon} for a window starting at s.</span>
+<span class="sd">               None if the split holds no window.</span>
+<span class="sd">    """</span>
+    <span class="n">starts</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">window_starts</span><span class="p">(</span><span class="n">split</span><span class="p">,</span> <span class="n">horizon</span><span class="p">,</span> <span class="n">stride</span><span class="p">)</span>
+    <span class="n">starts</span> <span class="o">=</span> <span class="n">starts</span><span class="p">[</span><span class="n">starts</span> <span class="o">&gt;=</span> <span class="n">spec</span><span class="o">.</span><span class="n">max_lag</span><span class="p">]</span>
+    <span class="n">feature</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">column</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">feature</span><span class="p">)</span>
+    <span class="n">history</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">feature</span><span class="p">[</span><span class="n">starts</span> <span class="o">-</span> <span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">max_lag</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">history</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">starts</span><span class="p">,</span> <span class="n">history</span> <span class="o">=</span> <span class="n">starts</span><span class="p">[</span><span class="n">keep</span><span class="p">],</span> <span class="n">history</span><span class="p">[</span><span class="n">keep</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">starts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="n">td</span><span class="o">.</span><span class="n">all_columns</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+    <span class="n">window</span> <span class="o">=</span> <span class="n">starts</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">horizon</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="n">index</span><span class="p">][</span><span class="n">window</span><span class="p">]</span>
+    <span class="n">target</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">column</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">targets</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="n">window</span><span class="p">]</span>
+    <span class="n">truth</span> <span class="o">=</span> <span class="n">history</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">difference</span> <span class="k">else</span> <span class="n">target</span>
+    <span class="k">return</span> <span class="n">rows</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">),</span> <span class="n">history</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">),</span> <span class="n">truth</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="HorizonMetrics"><a class="viewcode-back" href="../../../code/physXAI.evaluation.html#physXAI.evaluation.rollout.HorizonMetrics">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">HorizonMetrics</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Errors of a multi step prediction per step of the horizon: RMSE, MAE and bias (mean of</span>
+<span class="sd">    prediction - truth) for every split.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        predictions: {split: (prediction, truth)}, arrays of shape (windows, horizon, features).</span>
+<span class="sd">        time_step: Sampling time in seconds (for an axis in hours).</span>
+<span class="sd">        feature: Name of the predicted feature, or a list of names for several features.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        kpis: {split: {'rmse': [...], 'mae': [...], 'bias': [...], 'std': [...], 'n_windows': n}} of the</span>
+<span class="sd">              first feature ('std' is the standard deviation of the error per step).</span>
+<span class="sd">        by_feature: The same for every feature, {feature: kpis}.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">predictions</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]],</span>
+        <span class="n">time_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">feature</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="n">feature</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">feature</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="n">features</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span> <span class="o">=</span> <span class="n">time_step</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">by_feature</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="p">:</span> <span class="nb">dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">features</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">split</span><span class="p">,</span> <span class="p">(</span><span class="n">prediction</span><span class="p">,</span> <span class="n">truth</span><span class="p">)</span> <span class="ow">in</span> <span class="n">predictions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">errors</span> <span class="o">=</span> <span class="n">prediction</span> <span class="o">-</span> <span class="n">truth</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">features</span><span class="p">):</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="n">errors</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">by_feature</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">split</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">"rmse"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">error</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                    <span class="s2">"mae"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">error</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                    <span class="s2">"bias"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                    <span class="s2">"std"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                    <span class="s2">"n_windows"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kpis</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">by_feature</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">feature</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">splits</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">by_feature</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">split</span><span class="p">,</span> <span class="n">kpis</span> <span class="ow">in</span> <span class="n">splits</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">"</span><span class="si">%s</span><span class="s2"> horizon RMSE of </span><span class="si">%s</span><span class="s2"> (first / last step): </span><span class="si">%.4f</span><span class="s2"> / </span><span class="si">%.4f</span><span class="s2">, bias: </span><span class="si">%.4f</span><span class="s2"> / </span><span class="si">%.4f</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">split</span><span class="o">.</span><span class="n">capitalize</span><span class="p">(),</span>
+                    <span class="n">name</span><span class="p">,</span>
+                    <span class="n">kpis</span><span class="p">[</span><span class="s2">"rmse"</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="n">kpis</span><span class="p">[</span><span class="s2">"rmse"</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">kpis</span><span class="p">[</span><span class="s2">"bias"</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="n">kpis</span><span class="p">[</span><span class="s2">"bias"</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">steps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Prediction steps 1, ..., horizon."""</span>
+        <span class="n">first</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kpis</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">first</span><span class="p">[</span><span class="s2">"rmse"</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">hours</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Prediction horizon in hours, if the time step is known."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span> <span class="o">/</span> <span class="mi">3600</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span> <span class="k">else</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="HorizonMetrics.get_config"><a class="viewcode-back" href="../../../code/physXAI.evaluation.html#physXAI.evaluation.rollout.HorizonMetrics.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"feature"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature</span><span class="p">,</span> <span class="s2">"time_step"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kpis</span><span class="p">}</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">config</span><span class="p">[</span><span class="s2">"by_feature"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">by_feature</span>
+        <span class="k">return</span> <span class="n">config</span></div></div>
+
+
+<div class="viewcode-block" id="evaluate_horizon"><a class="viewcode-back" href="../../../code/physXAI.evaluation.html#physXAI.evaluation.rollout.evaluate_horizon">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">evaluate_horizon</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span>
+    <span class="n">td</span><span class="p">:</span> <span class="n">TrainingData</span><span class="p">,</span>
+    <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">splits</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"train"</span><span class="p">,</span> <span class="s2">"val"</span><span class="p">,</span> <span class="s2">"test"</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HorizonMetrics</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Predicts all windows of the data recursively and stores predictions and metrics in `td`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model: Trained single step model (keras or scikit-learn linear regression).</span>
+<span class="sd">        td: Training data. Defaults for `horizon` and `stride` are taken from it.</span>
+<span class="sd">        horizon: Number of steps.</span>
+<span class="sd">        stride: Distance between two windows.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        HorizonMetrics, or None if the model has no recursion or no horizon is given.</span>
+<span class="sd">    """</span>
+    <span class="n">horizon</span> <span class="o">=</span> <span class="n">horizon</span> <span class="ow">or</span> <span class="n">td</span><span class="o">.</span><span class="n">eval_horizon</span>
+    <span class="n">stride</span> <span class="o">=</span> <span class="n">stride</span> <span class="ow">or</span> <span class="n">td</span><span class="o">.</span><span class="n">eval_stride</span> <span class="ow">or</span> <span class="mi">1</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">recursion_spec</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">horizon</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">rollout</span> <span class="o">=</span> <span class="n">build_rollout_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">horizon</span><span class="p">)</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">splits</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">split</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SPLITS</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">rollout_data</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">horizon</span><span class="p">,</span> <span class="n">stride</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">history</span><span class="p">,</span> <span class="n">truth</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="n">prediction</span> <span class="o">=</span> <span class="n">rollout</span><span class="o">.</span><span class="n">predict</span><span class="p">([</span><span class="n">rows</span><span class="p">,</span> <span class="n">history</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">)</span>
+        <span class="n">predictions</span><span class="p">[</span><span class="n">split</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">prediction</span><span class="p">,</span> <span class="n">truth</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">predictions</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Recursive evaluation skipped: no window of </span><span class="si">%d</span><span class="s2"> steps fits into the splits."</span><span class="p">,</span> <span class="n">horizon</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">td</span><span class="o">.</span><span class="n">horizon_predictions</span> <span class="o">=</span> <span class="n">predictions</span>
+    <span class="n">td</span><span class="o">.</span><span class="n">horizon_metrics</span> <span class="o">=</span> <span class="n">HorizonMetrics</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">td</span><span class="o">.</span><span class="n">time_step</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">feature</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">td</span><span class="o">.</span><span class="n">horizon_metrics</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
