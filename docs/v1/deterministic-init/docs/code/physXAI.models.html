@@ -1,0 +1,701 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>physXAI.models package &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../_static/jquery.js"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+      <script src="../_static/doctools.js"></script>
+      <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="physXAI.models.ann package" href="physXAI.models.ann.html" />
+    <link rel="prev" title="physXAI.io package" href="physXAI.io.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/physics.html">Physics-informed models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">physXAI</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="physXAI.html">physXAI package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="physXAI.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="physXAI.agentlib_mpc_plugin.html">physXAI.agentlib_mpc_plugin package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html">physXAI.evaluation package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html">physXAI.expr package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html">physXAI.feature_selection package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.io.html">physXAI.io package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">physXAI.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.plotting.html">physXAI.plotting package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html">physXAI.preprocessing package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html">physXAI.training package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.utils.html">physXAI.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">physXAI</a></li>
+          <li class="breadcrumb-item"><a href="physXAI.html">physXAI package</a></li>
+      <li class="breadcrumb-item active">physXAI.models package</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-physXAI.models">
+<span id="physxai-models-package"></span><h1>physXAI.models package<a class="headerlink" href="#module-physXAI.models" title="Permalink to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="physXAI.models.ann.html">physXAI.models.ann package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.models.ann.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.configs.html">physXAI.models.ann.configs package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.configs.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.configs.html#module-physXAI.models.ann.configs.ann_model_configs">physXAI.models.ann.configs.ann_model_configs module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.keras_models.html">physXAI.models.ann.keras_models package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.keras_models.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.keras_models.html#module-physXAI.models.ann.keras_models.keras_models">physXAI.models.ann.keras_models.keras_models module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.model_construction.html">physXAI.models.ann.model_construction package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.model_construction.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.model_construction.html#module-physXAI.models.ann.model_construction.ann_models">physXAI.models.ann.model_construction.ann_models module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.model_construction.html#module-physXAI.models.ann.model_construction.rbf_models">physXAI.models.ann.model_construction.rbf_models module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.model_construction.html#module-physXAI.models.ann.model_construction.residual_models">physXAI.models.ann.model_construction.residual_models module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.model_construction.html#module-physXAI.models.ann.model_construction.rnn_models">physXAI.models.ann.model_construction.rnn_models module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.pinn.html">physXAI.models.ann.pinn package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.pinn.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.pinn.html#module-physXAI.models.ann.pinn.physics">physXAI.models.ann.pinn.physics module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.models.ann.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.models.ann.html#module-physXAI.models.ann.ann_design">physXAI.models.ann.ann_design module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel"><code class="docutils literal notranslate"><span class="pre">ANNModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.plot_title"><code class="docutils literal notranslate"><span class="pre">ANNModel.plot_title</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.physics_parameters"><code class="docutils literal notranslate"><span class="pre">ANNModel.physics_parameters</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.required_loss_columns"><code class="docutils literal notranslate"><span class="pre">ANNModel.required_loss_columns</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.generate_model"><code class="docutils literal notranslate"><span class="pre">ANNModel.generate_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.compile_model"><code class="docutils literal notranslate"><span class="pre">ANNModel.compile_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.prepare"><code class="docutils literal notranslate"><span class="pre">ANNModel.prepare()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.fit_model"><code class="docutils literal notranslate"><span class="pre">ANNModel.fit_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.fit_multi_step"><code class="docutils literal notranslate"><span class="pre">ANNModel.fit_multi_step()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.fit_single_step"><code class="docutils literal notranslate"><span class="pre">ANNModel.fit_single_step()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.save_model"><code class="docutils literal notranslate"><span class="pre">ANNModel.save_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.load_model"><code class="docutils literal notranslate"><span class="pre">ANNModel.load_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.get_config"><code class="docutils literal notranslate"><span class="pre">ANNModel.get_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ClassicalANNModel"><code class="docutils literal notranslate"><span class="pre">ClassicalANNModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ClassicalANNModel.generate_model"><code class="docutils literal notranslate"><span class="pre">ClassicalANNModel.generate_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ClassicalANNModel.get_config"><code class="docutils literal notranslate"><span class="pre">ClassicalANNModel.get_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.LinANNModel"><code class="docutils literal notranslate"><span class="pre">LinANNModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.LinANNModel.generate_model"><code class="docutils literal notranslate"><span class="pre">LinANNModel.generate_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.LinANNModel.get_config"><code class="docutils literal notranslate"><span class="pre">LinANNModel.get_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RBFModel"><code class="docutils literal notranslate"><span class="pre">RBFModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RBFModel.generate_model"><code class="docutils literal notranslate"><span class="pre">RBFModel.generate_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RBFModel.get_config"><code class="docutils literal notranslate"><span class="pre">RBFModel.get_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.CMNNModel"><code class="docutils literal notranslate"><span class="pre">CMNNModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.CMNNModel.generate_model"><code class="docutils literal notranslate"><span class="pre">CMNNModel.generate_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.CMNNModel.get_config"><code class="docutils literal notranslate"><span class="pre">CMNNModel.get_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel"><code class="docutils literal notranslate"><span class="pre">PINNModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.plot_title"><code class="docutils literal notranslate"><span class="pre">PINNModel.plot_title</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.required_loss_columns"><code class="docutils literal notranslate"><span class="pre">PINNModel.required_loss_columns</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.generate_model"><code class="docutils literal notranslate"><span class="pre">PINNModel.generate_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.compile_model"><code class="docutils literal notranslate"><span class="pre">PINNModel.compile_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.evaluate"><code class="docutils literal notranslate"><span class="pre">PINNModel.evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.load_model"><code class="docutils literal notranslate"><span class="pre">PINNModel.load_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.get_config"><code class="docutils literal notranslate"><span class="pre">PINNModel.get_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel"><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.plot_title"><code class="docutils literal notranslate"><span class="pre">RNNModel.plot_title</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.required_inputs"><code class="docutils literal notranslate"><span class="pre">RNNModel.required_inputs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.prepare"><code class="docutils literal notranslate"><span class="pre">RNNModel.prepare()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.generate_model"><code class="docutils literal notranslate"><span class="pre">RNNModel.generate_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.compile_model"><code class="docutils literal notranslate"><span class="pre">RNNModel.compile_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.fit_model"><code class="docutils literal notranslate"><span class="pre">RNNModel.fit_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.online_pipeline"><code class="docutils literal notranslate"><span class="pre">RNNModel.online_pipeline()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.save_model"><code class="docutils literal notranslate"><span class="pre">RNNModel.save_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.load_model"><code class="docutils literal notranslate"><span class="pre">RNNModel.load_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.get_config"><code class="docutils literal notranslate"><span class="pre">RNNModel.get_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.from_config"><code class="docutils literal notranslate"><span class="pre">RNNModel.from_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel"><code class="docutils literal notranslate"><span class="pre">PCNNModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.plot_title"><code class="docutils literal notranslate"><span class="pre">PCNNModel.plot_title</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.generate_model"><code class="docutils literal notranslate"><span class="pre">PCNNModel.generate_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.evaluate"><code class="docutils literal notranslate"><span class="pre">PCNNModel.evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.physics_parameters"><code class="docutils literal notranslate"><span class="pre">PCNNModel.physics_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.get_config"><code class="docutils literal notranslate"><span class="pre">PCNNModel.get_config()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="physXAI.models.modular.html">physXAI.models.modular package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.models.modular.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.models.modular.html#module-physXAI.models.modular.modular_ann">physXAI.models.modular.modular_ann module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.modular_ann.CLOSED_FORM"><code class="docutils literal notranslate"><span class="pre">CLOSED_FORM</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN"><code class="docutils literal notranslate"><span class="pre">ModularANN</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.plot_title"><code class="docutils literal notranslate"><span class="pre">ModularANN.plot_title</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.required_inputs"><code class="docutils literal notranslate"><span class="pre">ModularANN.required_inputs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.generate_model"><code class="docutils literal notranslate"><span class="pre">ModularANN.generate_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.warm_start_applies"><code class="docutils literal notranslate"><span class="pre">ModularANN.warm_start_applies</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.fit_model"><code class="docutils literal notranslate"><span class="pre">ModularANN.fit_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.online_pipeline"><code class="docutils literal notranslate"><span class="pre">ModularANN.online_pipeline()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.get_config"><code class="docutils literal notranslate"><span class="pre">ModularANN.get_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.from_config"><code class="docutils literal notranslate"><span class="pre">ModularANN.from_config()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.models.modular.html#module-physXAI.models.modular.shape_constraints">physXAI.models.modular.shape_constraints module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeConstraints"><code class="docutils literal notranslate"><span class="pre">ShapeConstraints</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeConstraints.columns"><code class="docutils literal notranslate"><span class="pre">ShapeConstraints.columns</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeConstraints.constraints"><code class="docutils literal notranslate"><span class="pre">ShapeConstraints.constraints()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeConstraints.get_config"><code class="docutils literal notranslate"><span class="pre">ShapeConstraints.get_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeConstraints.from_config"><code class="docutils literal notranslate"><span class="pre">ShapeConstraints.from_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeFitResult"><code class="docutils literal notranslate"><span class="pre">ShapeFitResult</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeFitResult.weights"><code class="docutils literal notranslate"><span class="pre">ShapeFitResult.weights</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeFitResult.bias"><code class="docutils literal notranslate"><span class="pre">ShapeFitResult.bias</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeFitResult.constraints"><code class="docutils literal notranslate"><span class="pre">ShapeFitResult.constraints</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeFitResult.rmse_train"><code class="docutils literal notranslate"><span class="pre">ShapeFitResult.rmse_train</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeFitResult.rmse_train_unconstrained"><code class="docutils literal notranslate"><span class="pre">ShapeFitResult.rmse_train_unconstrained</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeFitResult.iterations"><code class="docutils literal notranslate"><span class="pre">ShapeFitResult.iterations</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeFitResult.seconds"><code class="docutils literal notranslate"><span class="pre">ShapeFitResult.seconds</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeFitResult.domain"><code class="docutils literal notranslate"><span class="pre">ShapeFitResult.domain</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeFitResult.certified"><code class="docutils literal notranslate"><span class="pre">ShapeFitResult.certified</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeFitResult.get_config"><code class="docutils literal notranslate"><span class="pre">ShapeFitResult.get_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.fit_shape_constrained"><code class="docutils literal notranslate"><span class="pre">fit_shape_constrained()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.shape_constraints.constrained_least_squares"><code class="docutils literal notranslate"><span class="pre">constrained_least_squares()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-physXAI.models.models">
+<span id="physxai-models-models-module"></span><h2>physXAI.models.models module<a class="headerlink" href="#module-physXAI.models.models" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.models.</span></span><span class="sig-name descname"><span class="pre">AbstractModel</span></span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.generate_model">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.generate_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.generate_model" title="Permalink to this definition"></a></dt>
+<dd><p>Abstract method to be implemented by subclasses.
+Should generate and return an instance of the specific model.
+<code class="code docutils literal notranslate"><span class="pre">kwargs</span></code> can be used to pass necessary parameters, e.g., <code class="code docutils literal notranslate"><span class="pre">td</span></code> (TrainingData or TrainingDataMultiStep).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.compile_model">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">compile_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.compile_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.compile_model" title="Permalink to this definition"></a></dt>
+<dd><p>Abstract method for model compilation.
+Relevant for models like Keras neural networks. For scikit-learn models,
+this might be a pass-through or not applicable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.fit_model">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.fit_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.fit_model" title="Permalink to this definition"></a></dt>
+<dd><p>Abstract method to fit the model to the training data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – The model instance to be trained.</p></li>
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – The TrainingData object.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.evaluate">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.evaluate" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.plot_title">
+<span class="sig-name descname"><span class="pre">plot_title</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Model'</span></em><a class="headerlink" href="#physXAI.models.models.AbstractModel.plot_title" title="Permalink to this definition"></a></dt>
+<dd><p>Title of the plots of the model</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.plot">
+<span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.plot" title="Permalink to this definition"></a></dt>
+<dd><p>Plots the predictions, the errors (over the horizon), the training history and the metrics.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – The evaluated training data.</p></li>
+<li><p><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether to open the figure.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The figure.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>plotly.graph_objects.Figure</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.save_plot">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">save_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">figure</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.save_plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.save_plot" title="Permalink to this definition"></a></dt>
+<dd><p>Saves the figure of <code class="code docutils literal notranslate"><span class="pre">plot</span></code> as html file next to the model: <code class="code docutils literal notranslate"><span class="pre">&lt;save_path&gt;.html</span></code>.
+Nothing is saved without a path (use <code class="code docutils literal notranslate"><span class="pre">Run.save</span></code> to save a model with its report).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>save_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.save_model">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">save_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.save_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.save_model" title="Permalink to this definition"></a></dt>
+<dd><p>Abstract method for saving the trained model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – The trained model instance to save.</p></li>
+<li><p><strong>save_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The path where the model should be saved.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.load_model">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">load_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.load_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.load_model" title="Permalink to this definition"></a></dt>
+<dd><p>Abstract method for loading a pre-trained model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>load_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The path from which to load the model.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The loaded model instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.prepare">
+<span class="sig-name descname"><span class="pre">prepare</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.prepare"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.prepare" title="Permalink to this definition"></a></dt>
+<dd><p>Hook called before the model is generated (e.g. to set random seeds).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.trained_model">
+<span class="sig-name descname"><span class="pre">trained_model</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#physXAI.models.models.AbstractModel.trained_model" title="Permalink to this definition"></a></dt>
+<dd><p>The trained model of the last <code class="code docutils literal notranslate"><span class="pre">pipeline</span></code> or <code class="code docutils literal notranslate"><span class="pre">online_pipeline</span></code> (used by <code class="code docutils literal notranslate"><span class="pre">Run.save</span></code>)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.pipeline">
+<span class="sig-name descname"><span class="pre">pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.pipeline" title="Permalink to this definition"></a></dt>
+<dd><p>Trains and evaluates the model:</p>
+<ol class="arabic simple">
+<li><p>Generate the model</p></li>
+<li><p>Compile the model (if applicable)</p></li>
+<li><p>Fit the model</p></li>
+<li><p>Evaluate the model, the metrics are stored in <code class="code docutils literal notranslate"><span class="pre">td</span></code></p></li>
+<li><p>Save the model and its report, if a <code class="code docutils literal notranslate"><span class="pre">save_path</span></code> is given, and show the report if requested</p></li>
+</ol>
+<p>To save the model together with its configs and metrics, use <code class="code docutils literal notranslate"><span class="pre">Run.save(name,</span> <span class="pre">preprocessing,</span> <span class="pre">model,</span> <span class="pre">td)</span></code>
+after the pipeline instead of <code class="code docutils literal notranslate"><span class="pre">save_path</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – The training data.</p></li>
+<li><p><strong>save_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Path of the model file. Without a path nothing is saved.</p></li>
+<li><p><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to save the report as html next to the model. Defaults to True.</p></li>
+<li><p><strong>save_model</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to save the trained model (if <code class="code docutils literal notranslate"><span class="pre">save_path</span></code> is given). Defaults to True.</p></li>
+<li><p><strong>show_plot</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to open the report. Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The trained model instance (also available as <code class="code docutils literal notranslate"><span class="pre">self.trained_model</span></code>).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.online_pipeline">
+<span class="sig-name descname"><span class="pre">online_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.online_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.online_pipeline" title="Permalink to this definition"></a></dt>
+<dd><p>Loads a saved model, trains it further on new data, evaluates and (optionally) saves it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – New training data.</p></li>
+<li><p><strong>load_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Path to the saved model.</p></li>
+<li><p><strong>save_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Path of the model file. Without a path nothing is saved.</p></li>
+<li><p><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to save the report as html next to the model. Defaults to True.</p></li>
+<li><p><strong>save_model</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to save the trained model (if <code class="code docutils literal notranslate"><span class="pre">save_path</span></code> is given). Defaults to True.</p></li>
+<li><p><strong>show_plot</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to open the report. Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The trained model.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.online_pipeline_internal">
+<span class="sig-name descname"><span class="pre">online_pipeline_internal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.online_pipeline_internal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.online_pipeline_internal" title="Permalink to this definition"></a></dt>
+<dd><p>Trains a loaded model on new data and evaluates it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – New training data.</p></li>
+<li><p><strong>model</strong> – The model to train.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The trained model.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.get_config">
+<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.get_config" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.from_config">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.from_config" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#physXAI.models.models.AbstractModel" title="physXAI.models.models.AbstractModel"><em>AbstractModel</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.model_from_config">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_conf</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.model_from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.model_from_config" title="Permalink to this definition"></a></dt>
+<dd><p>Factory function to create a model object from its configuration dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>item_conf</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – The configuration dictionary for a model.
+Must contain ‘class_name’ and other necessary parameters.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An instance of the appropriate model subclass.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#physXAI.models.models.AbstractModel" title="physXAI.models.models.AbstractModel">AbstractModel</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#KeyError" title="(in Python v3.15)"><strong>KeyError</strong></a> – If ‘class_name’ is not in <code class="code docutils literal notranslate"><span class="pre">item_conf</span></code> or if the class_name is not in <code class="code docutils literal notranslate"><span class="pre">MODEL_CLASS_REGISTRY</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.models.models.register_model">
+<span class="sig-prename descclassname"><span class="pre">physXAI.models.models.</span></span><span class="sig-name descname"><span class="pre">register_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#register_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.register_model" title="Permalink to this definition"></a></dt>
+<dd><p>A class decorator that registers the decorated class in the MODEL_CLASS_REGISTRY.
+The class is registered using its __name__.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.models.models.SingleStepModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.models.</span></span><span class="sig-name descname"><span class="pre">SingleStepModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#SingleStepModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.SingleStepModel" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#physXAI.models.models.AbstractModel" title="physXAI.models.models.AbstractModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractModel</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<p>Abstract Base Class for single-step prediction models.
+Defines a common interface and a pipeline for training, evaluating,
+plotting, and saving models that predict a single output based on input features.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.SingleStepModel.evaluate">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#SingleStepModel.evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.SingleStepModel.evaluate" title="Permalink to this definition"></a></dt>
+<dd><p>Evaluates the trained model on training, validation (if available), and test sets.
+Predictions are stored in the TrainingData object, and metrics are calculated and stored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – The trained model instance.</p></li>
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – The TrainingData object containing datasets and for storing results.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.SingleStepModel.from_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#SingleStepModel.from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.SingleStepModel.from_config" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#physXAI.models.models.SingleStepModel" title="physXAI.models.models.SingleStepModel"><em>SingleStepModel</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.models.models.LinearRegressionModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.models.</span></span><span class="sig-name descname"><span class="pre">LinearRegressionModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#LinearRegressionModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.LinearRegressionModel" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#physXAI.models.models.SingleStepModel" title="physXAI.models.models.SingleStepModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">SingleStepModel</span></code></a></p>
+<p>A concrete implementation of SingleStepModel for scikit-learn’s Linear Regression.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.models.models.LinearRegressionModel.plot_title">
+<span class="sig-name descname"><span class="pre">plot_title</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Linear</span> <span class="pre">Regression'</span></em><a class="headerlink" href="#physXAI.models.models.LinearRegressionModel.plot_title" title="Permalink to this definition"></a></dt>
+<dd><p>Title of the plots of the model</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.LinearRegressionModel.generate_model">
+<span class="sig-name descname"><span class="pre">generate_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#LinearRegressionModel.generate_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.LinearRegressionModel.generate_model" title="Permalink to this definition"></a></dt>
+<dd><p>Generates an instance of scikit-learn’s LinearRegression model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.LinearRegressionModel.fit_model">
+<span class="sig-name descname"><span class="pre">fit_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#LinearRegressionModel.fit_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.LinearRegressionModel.fit_model" title="Permalink to this definition"></a></dt>
+<dd><p>Fits the LinearRegression model using the training data from <code class="code docutils literal notranslate"><span class="pre">td</span></code>.
+Also records the training time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>LinearRegression</em>) – The scikit-learn LinearRegression model instance.</p></li>
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – The TrainingData object.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.LinearRegressionModel.compile_model">
+<span class="sig-name descname"><span class="pre">compile_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#LinearRegressionModel.compile_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.LinearRegressionModel.compile_model" title="Permalink to this definition"></a></dt>
+<dd><p>No compilation step is needed for scikit-learn models.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.LinearRegressionModel.save_model">
+<span class="sig-name descname"><span class="pre">save_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#LinearRegressionModel.save_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.LinearRegressionModel.save_model" title="Permalink to this definition"></a></dt>
+<dd><p>Saves the trained LinearRegression model using joblib.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>LinearRegression</em>) – The trained scikit-learn model.</p></li>
+<li><p><strong>save_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The path to save the model.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.LinearRegressionModel.load_model">
+<span class="sig-name descname"><span class="pre">load_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">load_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#LinearRegressionModel.load_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.LinearRegressionModel.load_model" title="Permalink to this definition"></a></dt>
+<dd><p>Loads a scikit-learn LinearRegression model from a file using joblib.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>load_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The path from which to load the model.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The loaded scikit-learn model.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>LinearRegression</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.models.models.MultiStepModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.models.</span></span><span class="sig-name descname"><span class="pre">MultiStepModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#MultiStepModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.MultiStepModel" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#physXAI.models.models.AbstractModel" title="physXAI.models.models.AbstractModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractModel</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<p>Abstract Base Class for multi-step prediction models.
+Defines a common interface and pipeline for models that forecast multiple steps ahead.
+This class is similar to SingleStepModel but tailored for multi-step data and metrics.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.MultiStepModel.fit_model">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#MultiStepModel.fit_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.MultiStepModel.fit_model" title="Permalink to this definition"></a></dt>
+<dd><p>Abstract method to fit the model to the training data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – The model instance to be trained.</p></li>
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep" title="physXAI.preprocessing.training_data.TrainingDataMultiStep"><em>TrainingDataMultiStep</em></a>) – The TrainingData object.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.MultiStepModel.evaluate">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#MultiStepModel.evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.MultiStepModel.evaluate" title="Permalink to this definition"></a></dt>
+<dd><p>Predicts all sequences (with warmup, closed loop for fed back features) and stores the
+predicted trajectories, the metrics and the errors over the evaluation horizon in <code class="code docutils literal notranslate"><span class="pre">td</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – The trained model (sequence or step model).</p></li>
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep" title="physXAI.preprocessing.training_data.TrainingDataMultiStep"><em>TrainingDataMultiStep</em></a>) – The training data.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.models.MultiStepModel.from_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#MultiStepModel.from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.MultiStepModel.from_config" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#physXAI.models.models.MultiStepModel" title="physXAI.models.models.MultiStepModel"><em>MultiStepModel</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="physXAI.io.html" class="btn btn-neutral float-left" title="physXAI.io package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="physXAI.models.ann.html" class="btn btn-neutral float-right" title="physXAI.models.ann package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

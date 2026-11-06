@@ -1,0 +1,509 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>physXAI.models.ann.pinn.physics &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../../../../../_static/jquery.js"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+      <script src="../../../../../_static/doctools.js"></script>
+      <script src="../../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/physics.html">Physics-informed models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">physXAI.models.ann.pinn.physics</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for physXAI.models.ann.pinn.physics</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Loss and metrics of physics-informed training.</span>
+
+<span class="sd">The loss of a model with one output y and physics targets p_1, ..., p_n (e.g. the prediction of a</span>
+<span class="sd">physical model of the same quantity) is</span>
+
+<span class="sd">    L = mse(y_hat, y) / s + sum_i w_i * mse(y_hat, p_i) / s</span>
+
+<span class="sd">with the characteristic scale s = var(y_train) (`normalize_terms=True`, else s = 1). The scale makes the</span>
+<span class="sd">terms dimensionless: the data term is 1 - R^2 on the training data and w_i is the relative importance of</span>
+<span class="sd">physics target i. The terms are not averaged, so adding a physics term does not change the weight of the</span>
+<span class="sd">data term. The weights encode the trust in the physics and are chosen by validation (e.g. the error over</span>
+<span class="sd">the prediction horizon); they are not adapted during the training.</span>
+
+<span class="sd">The targets passed to keras are `[y, p_1, ..., p_n]` (columns), the model predicts y only, so the trained</span>
+<span class="sd">model can be used (and exported to AgentLib-MPC) like any other single output model.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"TF_CPP_MIN_LOG_LEVEL"</span><span class="p">,</span> <span class="s2">"2"</span><span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">keras</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">keras</span><span class="w"> </span><span class="kn">import</span> <span class="n">ops</span>  <span class="c1"># noqa: E402</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"physXAI"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="PhysicsLoss"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsLoss">[docs]</a><span class="nd">@keras</span><span class="o">.</span><span class="n">saving</span><span class="o">.</span><span class="n">register_keras_serializable</span><span class="p">(</span><span class="n">package</span><span class="o">=</span><span class="s2">"physXAI"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"PhysicsLoss"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PhysicsLoss</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">Loss</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Data loss plus weighted physics terms, all divided by the characteristic scale.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        weights: Weight of each physics target (columns 1, 2, ... of y_true).</span>
+<span class="sd">        scale: Characteristic scale (variance of the training targets).</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"physics_loss"</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">weights</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PhysicsLoss.call"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsLoss.call">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+        <span class="n">prediction</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">prediction</span> <span class="o">-</span> <span class="n">y_true</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">):</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span> <span class="o">+</span> <span class="n">weight</span> <span class="o">*</span> <span class="n">ops</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">prediction</span> <span class="o">-</span> <span class="n">y_true</span><span class="p">[:,</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">loss</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span></div>
+
+<div class="viewcode-block" id="PhysicsLoss.get_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsLoss.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_config</span><span class="p">(),</span> <span class="s2">"weights"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="s2">"scale"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">}</span></div></div>
+
+
+<div class="viewcode-block" id="TermLoss"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.TermLoss">[docs]</a><span class="nd">@keras</span><span class="o">.</span><span class="n">saving</span><span class="o">.</span><span class="n">register_keras_serializable</span><span class="p">(</span><span class="n">package</span><span class="o">=</span><span class="s2">"physXAI"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"TermLoss"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TermLoss</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">Mean</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    One unweighted term of the loss: mean of (y_hat - y_true[:, column])^2 / scale.</span>
+<span class="sd">    Column 0 is the data term ('data_loss'), columns 1, ... the physics targets.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"data_loss"</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">column</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">column</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TermLoss.update_state"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.TermLoss.update_state">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">update_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">y_pred</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">y_true</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">column</span><span class="p">])</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">update_state</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TermLoss.get_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.TermLoss.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_config</span><span class="p">(),</span> <span class="s2">"column"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">column</span><span class="p">,</span> <span class="s2">"scale"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">}</span></div></div>
+
+
+<div class="viewcode-block" id="OutputRMSE"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.OutputRMSE">[docs]</a><span class="nd">@keras</span><span class="o">.</span><span class="n">saving</span><span class="o">.</span><span class="n">register_keras_serializable</span><span class="p">(</span><span class="n">package</span><span class="o">=</span><span class="s2">"physXAI"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"OutputRMSE"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OutputRMSE</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">RootMeanSquaredError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""RMSE of the prediction with respect to the data (column 0 of the targets), in output units."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"rmse"</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="OutputRMSE.update_state"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.OutputRMSE.update_state">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">update_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">update_state</span><span class="p">(</span><span class="n">y_true</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">1</span><span class="p">],</span> <span class="n">y_pred</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">1</span><span class="p">],</span> <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="physics_metrics"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.physics_metrics">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">physics_metrics</span><span class="p">(</span><span class="n">terms</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">keras</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Metrics of all terms (`data_loss`, `&lt;term&gt;_loss`) and the RMSE of the data."""</span>
+    <span class="n">metrics</span> <span class="o">=</span> <span class="p">[</span><span class="n">TermLoss</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"data_loss"</span><span class="p">)]</span>
+    <span class="n">metrics</span> <span class="o">+=</span> <span class="p">[</span><span class="n">TermLoss</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">term</span><span class="si">}</span><span class="s2">_loss"</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">term</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">terms</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="o">*</span><span class="n">metrics</span><span class="p">,</span> <span class="n">OutputRMSE</span><span class="p">()]</span></div>
+
+
+<span class="c1"># --- trainable physics residuals -------------------------------------------------------------------</span>
+<div class="viewcode-block" id="PhysicsResidual"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsResidual">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">PhysicsResidual</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A physics residual r(x, y; theta) to be close to zero, e.g. the disagreement of the prediction with a</span>
+<span class="sd">    grey-box model with trainable physical parameters theta (`px.Param`, `px.positive`):</span>
+
+<span class="sd">        dT = (1 - px.exp(-dt / tau)) * (v.T_amb - v.T + K_u * v.u_hp)       # exact zero order hold</span>
+<span class="sd">        residual = PhysicsResidual(px.Prediction() - dT, weight=1.0)</span>
+
+<span class="sd">    `px.Prediction()` is the output of the model. All other variables are data columns at the time of the</span>
+<span class="sd">    inputs, `px.Target(name)` at the predicted time; they become loss columns of the preprocessing and do</span>
+<span class="sd">    not have to be inputs of the model. Only the network is saved and exported, the residual is used in the</span>
+<span class="sd">    training only.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        residual: The residual expression. It has to contain `px.Prediction()`; parameters (`px.Param`) are</span>
+<span class="sd">                  the only trainable parts (no blocks), so they keep their physical meaning.</span>
+<span class="sd">        weight: Weight of the residual in the loss (relative to the data term).</span>
+<span class="sd">        name: Name of the term, in lower case (history: '&lt;name&gt;_loss', '&lt;name&gt;_fit_loss').</span>
+<span class="sd">        scale: Characteristic squared magnitude of the residual (the loss term is mean(r^2) / scale).</span>
+<span class="sd">               Defaults to the variance of the training targets, i.e. a residual in output units.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">residual</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"physics"</span><span class="p">,</span> <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.expr</span><span class="w"> </span><span class="kn">import</span> <span class="n">Expr</span><span class="p">,</span> <span class="n">Param</span><span class="p">,</span> <span class="n">Prediction</span><span class="p">,</span> <span class="n">from_config</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">residual</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">residual</span> <span class="o">=</span> <span class="n">from_config</span><span class="p">(</span><span class="n">residual</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">residual</span><span class="p">,</span> <span class="n">Expr</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"The residual has to be an expression (physXAI.expr)."</span><span class="p">)</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="n">residual</span><span class="o">.</span><span class="n">nodes</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">Prediction</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"The residual has to contain px.Prediction(), the output of the model."</span><span class="p">)</span>
+        <span class="n">blocks</span> <span class="o">=</span> <span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">has_weights</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">Param</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">blocks</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Physics residuals can only train parameters (px.Param), not blocks: </span><span class="si">{</span><span class="n">blocks</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">weight</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"The weight of a physics residual must not be negative."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">residual</span> <span class="o">=</span> <span class="n">residual</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">weight</span><span class="p">)</span>
+        <span class="c1"># keras writes metric names in snake case, the history keys are '&lt;name&gt;_loss' and '&lt;name&gt;_fit_loss'</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[^0-9a-z_]"</span><span class="p">,</span> <span class="s2">"_"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">scale</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">columns</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Data columns the residual needs (loss columns of the preprocessing)."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">residual</span><span class="o">.</span><span class="n">free_vars</span><span class="p">()</span>
+
+<div class="viewcode-block" id="PhysicsResidual.parameters"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsResidual.parameters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The parameters (`px.Param`) of the residual."""</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.expr</span><span class="w"> </span><span class="kn">import</span> <span class="n">Param</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">node</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">residual</span><span class="o">.</span><span class="n">nodes</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">Param</span><span class="p">)]</span></div>
+
+<div class="viewcode-block" id="PhysicsResidual.named_values"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsResidual.named_values">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">named_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Named sub expressions of parameters only (e.g. `px.positive(..., 'tau')`), reported after training."""</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.expr</span><span class="w"> </span><span class="kn">import</span> <span class="n">Param</span><span class="p">,</span> <span class="n">Prediction</span><span class="p">,</span> <span class="n">Var</span>
+
+        <span class="n">named</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">residual</span><span class="o">.</span><span class="n">nodes</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">_name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">Param</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">sub</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">nodes</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">Param</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">sub</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="p">(</span><span class="n">Var</span><span class="p">,</span> <span class="n">Prediction</span><span class="p">))</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">sub</span><span class="p">):</span>
+                <span class="n">named</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">named</span></div>
+
+<div class="viewcode-block" id="PhysicsResidual.get_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsResidual.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.expr</span><span class="w"> </span><span class="kn">import</span> <span class="n">to_config</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"residual"</span><span class="p">:</span> <span class="n">to_config</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">residual</span><span class="p">),</span> <span class="s2">"weight"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">"scale"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="PhysicsResidual.from_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsResidual.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PhysicsResidual</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_residual_loss</span><span class="p">(</span><span class="n">scale_y</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">scale_r</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">fit_weight</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">data_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">loss</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ops</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">outputs</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">y_true</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]))</span> <span class="o">/</span> <span class="n">scale_y</span>
+        <span class="n">physics</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ops</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">outputs</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]))</span> <span class="o">/</span> <span class="n">scale_r</span>
+        <span class="n">fit</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ops</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">outputs</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]))</span> <span class="o">/</span> <span class="n">scale_r</span>
+        <span class="k">return</span> <span class="n">data_weight</span> <span class="o">*</span> <span class="n">data</span> <span class="o">+</span> <span class="n">weight</span> <span class="o">*</span> <span class="n">physics</span> <span class="o">+</span> <span class="n">fit_weight</span> <span class="o">*</span> <span class="n">fit</span>
+
+    <span class="k">return</span> <span class="n">loss</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_term_metrics</span><span class="p">(</span><span class="n">scale_y</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">scale_r</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data_loss</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ops</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ops</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">outputs</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">y_true</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]))</span> <span class="o">/</span> <span class="n">scale_y</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">physics_loss</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ops</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ops</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">outputs</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]))</span> <span class="o">/</span> <span class="n">scale_r</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">physics_fit_loss</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ops</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ops</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">outputs</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]))</span> <span class="o">/</span> <span class="n">scale_r</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">rmse</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ops</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">ops</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ops</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">outputs</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">y_true</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])))</span>
+
+    <span class="n">physics_loss</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_loss"</span>
+    <span class="n">physics_fit_loss</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_fit_loss"</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">data_loss</span><span class="p">,</span> <span class="n">physics_loss</span><span class="p">,</span> <span class="n">physics_fit_loss</span><span class="p">,</span> <span class="n">rmse</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="calibrate_least_squares"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.calibrate_least_squares">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">calibrate_least_squares</span><span class="p">(</span><span class="n">physics</span><span class="p">:</span> <span class="n">PhysicsResidual</span><span class="p">,</span> <span class="n">td</span><span class="p">,</span> <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Grey-box identification of the parameters theta of a residual: `min_theta sum r(x, y; theta)^2` on the training</span>
+<span class="sd">    data with the measured target y, solved deterministically (no seed, no learning rate) with a trust region</span>
+<span class="sd">    method (`scipy.optimize.least_squares`) and the exact Jacobian of the residual from CasADi.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        physics: The residual.</span>
+<span class="sd">        td: Single step training data holding the loss columns of the residual.</span>
+<span class="sd">        scale: Characteristic squared magnitude of the residual (only for the reported cost).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict with the 'parameters' {name: value} and the 'record' of the solver, or None if the residual cannot be</span>
+<span class="sd">        translated to CasADi (then the parameters are calibrated with gradient descent).</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">casadi</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ca</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">least_squares</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.expr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">PREDICTION</span>
+
+    <span class="n">parameters</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">physics</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">is_trainable</span><span class="p">]</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">parameters</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">names</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">init</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="n">physics</span><span class="o">.</span><span class="n">columns</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">ca</span><span class="o">.</span><span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s2">"x"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">))</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">ca</span><span class="o">.</span><span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s2">"theta"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">parameters</span><span class="p">))</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">ca</span><span class="o">.</span><span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s2">"y"</span><span class="p">)</span>
+    <span class="n">syms</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">columns</span><span class="p">)},</span> <span class="o">**</span><span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">theta</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">names</span><span class="p">)},</span> <span class="n">PREDICTION</span><span class="p">:</span> <span class="n">y</span><span class="p">}</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">physics</span><span class="o">.</span><span class="n">residual</span><span class="o">.</span><span class="n">to_casadi</span><span class="p">(</span><span class="n">syms</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">NotImplementedError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">step</span> <span class="o">=</span> <span class="n">ca</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span><span class="s2">"r"</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span><span class="p">],</span> <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">ca</span><span class="o">.</span><span class="n">jacobian</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">theta</span><span class="p">)])</span>
+
+    <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="s2">"train"</span><span class="p">,</span> <span class="n">columns</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">Y</span><span class="p">[</span><span class="n">finite</span><span class="p">]</span>
+    <span class="n">mapped</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Y</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="n">values</span><span class="p">,</span> <span class="n">jacobian</span> <span class="o">=</span> <span class="n">mapped</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="nb">len</span><span class="p">(</span><span class="n">Y</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+        <span class="c1"># the map concatenates the (1 x n_theta) Jacobians of the samples horizontally</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">jacobian</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Y</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">parameters</span><span class="p">))</span>
+
+    <span class="n">theta0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">init</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">])</span>
+    <span class="n">initial</span> <span class="o">=</span> <span class="n">evaluate</span><span class="p">(</span><span class="n">theta0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">solution</span> <span class="o">=</span> <span class="n">least_squares</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">evaluate</span><span class="p">(</span><span class="n">t</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="n">theta0</span><span class="p">,</span> <span class="n">jac</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">evaluate</span><span class="p">(</span><span class="n">t</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="n">method</span><span class="o">=</span><span class="s2">"trf"</span><span class="p">,</span>
+                             <span class="n">x_scale</span><span class="o">=</span><span class="s2">"jac"</span><span class="p">,</span> <span class="n">ftol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">xtol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">gtol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">max_nfev</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">solution</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Calibration of the physics residual '</span><span class="si">%s</span><span class="s2">': </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">physics</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">solution</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"parameters"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">solution</span><span class="o">.</span><span class="n">x</span><span class="p">),</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)),</span>
+        <span class="s2">"record"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"least_squares"</span><span class="p">,</span>
+            <span class="s2">"success"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">solution</span><span class="o">.</span><span class="n">success</span><span class="p">),</span>
+            <span class="s2">"message"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">solution</span><span class="o">.</span><span class="n">message</span><span class="p">),</span>
+            <span class="s2">"evaluations"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">solution</span><span class="o">.</span><span class="n">nfev</span><span class="p">),</span>
+            <span class="s2">"fit_loss_initial"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">initial</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span><span class="p">),</span>
+            <span class="s2">"fit_loss"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">solution</span><span class="o">.</span><span class="n">fun</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span><span class="p">),</span>
+        <span class="p">},</span>
+    <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="fit_with_physics"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.fit_with_physics">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">fit_with_physics</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">,</span> <span class="n">settings</span><span class="p">,</span> <span class="n">physics</span><span class="p">:</span> <span class="n">PhysicsResidual</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"calibrate"</span><span class="p">,</span>
+                     <span class="n">physics_learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Trains a single output keras model on the data and a physics residual.</span>
+
+<span class="sd">    The residual is evaluated twice with shared parameters theta: with the prediction (r_hat, the physics</span>
+<span class="sd">    term of the network) and with the measured target (r_y, the fit of the physics model to the data).</span>
+
+<span class="sd">    - 'calibrate' (default): 1. theta is fitted to the data on mean(r_y^2) (grey-box identification, deterministic</span>
+<span class="sd">      by least squares, see `calibrate_least_squares`; gradient descent if the residual has no CasADi form),</span>
+<span class="sd">      2. theta is frozen and the network is trained on the data and w * mean(r_hat^2). The parameters cannot drift</span>
+<span class="sd">      to follow the network.</span>
+<span class="sd">    - 'joint': network and theta together on data + w * r_hat + r_y.</span>
+<span class="sd">    - 'fixed': theta stays at its initial values, the network is trained on data + w * r_hat.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model: The keras model (one output). It is trained in place.</span>
+<span class="sd">        td: Single step training data holding the loss columns of the residual.</span>
+<span class="sd">        settings: The physXAI model (epochs, batch_size, learning_rate, early_stopping_epochs, random_seed).</span>
+<span class="sd">        physics: The residual.</span>
+<span class="sd">        mode: 'calibrate', 'joint' or 'fixed'.</span>
+<span class="sd">        physics_learning_rate: Learning rate of a calibration by gradient descent. Defaults to 10 x the learning rate.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: 'parameters' (trained values by name), 'fit' (RMSE of the physics term and of the physics model</span>
+<span class="sd">              per split), 'calibration_record' (result of the least squares solver or the history of the gradient</span>
+<span class="sd">              descent, None without calibration) and 'record' (keras</span>
+<span class="sd">              history of the training of the network).</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">tensorflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tf</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.expr</span><span class="w"> </span><span class="kn">import</span> <span class="n">BuildContext</span><span class="p">,</span> <span class="n">freeze</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.io.run</span><span class="w"> </span><span class="kn">import</span> <span class="n">keras_verbosity</span><span class="p">,</span> <span class="n">keras_verbosity_int</span>
+
+    <span class="k">if</span> <span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"calibrate"</span><span class="p">,</span> <span class="s2">"joint"</span><span class="p">,</span> <span class="s2">"fixed"</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown physics_fit '</span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="s2">', use 'calibrate', 'joint' or 'fixed'."</span><span class="p">)</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="n">physics</span><span class="o">.</span><span class="n">columns</span>
+    <span class="n">n_inputs</span><span class="p">,</span> <span class="n">n_columns</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">inputs</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
+
+    <span class="n">x_in</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_inputs</span><span class="p">,),</span> <span class="n">name</span><span class="o">=</span><span class="s2">"inputs"</span><span class="p">)</span>
+    <span class="n">columns_in</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_columns</span><span class="p">,),</span> <span class="n">name</span><span class="o">=</span><span class="s2">"loss_columns"</span><span class="p">)</span>
+    <span class="n">y_in</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span> <span class="n">name</span><span class="o">=</span><span class="s2">"target"</span><span class="p">)</span>
+    <span class="n">prediction</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x_in</span><span class="p">)</span>
+    <span class="n">shared</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">r_hat</span> <span class="o">=</span> <span class="n">BuildContext</span><span class="p">(</span><span class="n">columns_in</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">prediction</span><span class="o">=</span><span class="n">prediction</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="n">shared</span><span class="p">)</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">physics</span><span class="o">.</span><span class="n">residual</span><span class="p">)</span>
+    <span class="n">r_y</span> <span class="o">=</span> <span class="n">BuildContext</span><span class="p">(</span><span class="n">columns_in</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">prediction</span><span class="o">=</span><span class="n">y_in</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="n">shared</span><span class="p">)</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">physics</span><span class="o">.</span><span class="n">residual</span><span class="p">)</span>
+    <span class="n">wrapper</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">([</span><span class="n">x_in</span><span class="p">,</span> <span class="n">columns_in</span><span class="p">,</span> <span class="n">y_in</span><span class="p">],</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Concatenate</span><span class="p">()([</span><span class="n">prediction</span><span class="p">,</span> <span class="n">r_hat</span><span class="p">,</span> <span class="n">r_y</span><span class="p">]))</span>
+    <span class="n">parameter_layers</span> <span class="o">=</span> <span class="p">[</span><span class="n">shared</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">p</span><span class="p">)]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">physics</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span> <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="ow">in</span> <span class="n">shared</span><span class="p">]</span>
+
+    <span class="n">scale_y</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])),</span> <span class="mf">1e-12</span><span class="p">)</span>
+    <span class="n">scale_r</span> <span class="o">=</span> <span class="n">physics</span><span class="o">.</span><span class="n">scale</span> <span class="k">if</span> <span class="n">physics</span><span class="o">.</span><span class="n">scale</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">scale_y</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">data</span><span class="p">(</span><span class="n">split</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">td</span><span class="o">.</span><span class="n">has_split</span><span class="p">(</span><span class="n">split</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"y_</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">_single"</span><span class="p">)[:,</span> <span class="p">:</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"X_</span><span class="si">{</span><span class="n">split</span><span class="si">}</span><span class="s2">_single"</span><span class="p">),</span> <span class="n">td</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">split</span><span class="p">,</span> <span class="n">columns</span><span class="p">),</span> <span class="n">y</span><span class="p">),</span> <span class="n">y</span>
+
+    <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">data</span><span class="p">(</span><span class="s2">"train"</span><span class="p">),</span> <span class="n">data</span><span class="p">(</span><span class="s2">"val"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">dataset</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">shuffle</span><span class="p">):</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_tensor_slices</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">shuffle</span><span class="p">:</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span> <span class="n">seed</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">random_seed</span><span class="p">,</span> <span class="n">reshuffle_each_iteration</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span><span class="o">.</span><span class="n">prefetch</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">AUTOTUNE</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">,</span> <span class="n">monitor</span><span class="p">):</span>
+        <span class="n">wrapper</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="n">learning_rate</span><span class="p">),</span> <span class="n">loss</span><span class="o">=</span><span class="n">loss</span><span class="p">,</span>
+                        <span class="n">metrics</span><span class="o">=</span><span class="n">_term_metrics</span><span class="p">(</span><span class="n">scale_y</span><span class="p">,</span> <span class="n">scale_r</span><span class="p">,</span> <span class="n">physics</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="n">callbacks</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">settings</span><span class="o">.</span><span class="n">early_stopping_epochs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="n">monitor</span><span class="o">=</span><span class="n">monitor</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"min"</span><span class="p">,</span>
+                                                           <span class="n">patience</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">early_stopping_epochs</span><span class="p">,</span>
+                                                           <span class="n">restore_best_weights</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                           <span class="n">verbose</span><span class="o">=</span><span class="n">keras_verbosity_int</span><span class="p">()))</span>
+        <span class="k">return</span> <span class="n">wrapper</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">dataset</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span> <span class="n">validation_data</span><span class="o">=</span><span class="n">dataset</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span> <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                           <span class="n">epochs</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span> <span class="n">callbacks</span><span class="o">=</span><span class="n">callbacks</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">keras_verbosity</span><span class="p">(),</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">calibration</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">"calibrate"</span> <span class="ow">and</span> <span class="n">parameter_layers</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">calibrate_least_squares</span><span class="p">(</span><span class="n">physics</span><span class="p">,</span> <span class="n">td</span><span class="p">,</span> <span class="n">scale_r</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">physics</span><span class="o">.</span><span class="n">parameters</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s2">"parameters"</span><span class="p">]</span> <span class="ow">and</span> <span class="nb">id</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="ow">in</span> <span class="n">shared</span><span class="p">:</span>
+                    <span class="n">layer</span> <span class="o">=</span> <span class="n">shared</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">p</span><span class="p">)]</span>
+                    <span class="n">layer</span><span class="o">.</span><span class="n">set_weights</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">layer</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">result</span><span class="p">[</span><span class="s2">"parameters"</span><span class="p">][</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">])])</span>
+            <span class="n">calibration</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">"record"</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"The residual '</span><span class="si">%s</span><span class="s2">' cannot be calibrated by least squares, gradient descent is used."</span><span class="p">,</span>
+                        <span class="n">physics</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">trainable</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">calibration</span> <span class="o">=</span> <span class="n">fit</span><span class="p">(</span><span class="n">_residual_loss</span><span class="p">(</span><span class="n">scale_y</span><span class="p">,</span> <span class="n">scale_r</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">data_weight</span><span class="o">=</span><span class="mf">0.0</span><span class="p">),</span>
+                              <span class="n">physics_learning_rate</span> <span class="ow">or</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">settings</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span>
+                              <span class="sa">f</span><span class="s2">"val_</span><span class="si">{</span><span class="n">physics</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_fit_loss"</span><span class="p">)</span><span class="o">.</span><span class="n">history</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">trainable</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"calibrate"</span><span class="p">,</span> <span class="s2">"fixed"</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">parameter_layers</span><span class="p">:</span>
+            <span class="n">layer</span><span class="o">.</span><span class="n">trainable</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">record</span> <span class="o">=</span> <span class="n">fit</span><span class="p">(</span><span class="n">_residual_loss</span><span class="p">(</span><span class="n">scale_y</span><span class="p">,</span> <span class="n">scale_r</span><span class="p">,</span> <span class="n">physics</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">settings</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span> <span class="s2">"val_data_loss"</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">record</span> <span class="o">=</span> <span class="n">fit</span><span class="p">(</span><span class="n">_residual_loss</span><span class="p">(</span><span class="n">scale_y</span><span class="p">,</span> <span class="n">scale_r</span><span class="p">,</span> <span class="n">physics</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="n">settings</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span> <span class="s2">"val_data_loss"</span><span class="p">)</span>
+
+    <span class="c1"># trained parameters (also the named ones, e.g. px.positive) and the fit of the physics model</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="p">{</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">shared</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">p</span><span class="p">)]</span><span class="o">.</span><span class="n">get_weights</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+              <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">physics</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span> <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="ow">in</span> <span class="n">shared</span><span class="p">}</span>
+    <span class="n">parameters</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">physics</span><span class="o">.</span><span class="n">named_values</span><span class="p">():</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">freeze</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">evaluate</span><span class="p">({}))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">fit_metrics</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"train"</span><span class="p">,</span> <span class="s2">"val"</span><span class="p">,</span> <span class="s2">"test"</span><span class="p">):</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">data</span><span class="p">(</span><span class="n">split</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">d</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">wrapper</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">)</span>
+        <span class="n">fit_metrics</span><span class="p">[</span><span class="n">split</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"physics_rmse"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">outputs</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))),</span>
+            <span class="s2">"fit_rmse"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">outputs</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))),</span>
+        <span class="p">}</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"name"</span><span class="p">:</span> <span class="n">physics</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="s2">"parameters"</span><span class="p">:</span> <span class="n">parameters</span><span class="p">,</span>
+        <span class="s2">"fit"</span><span class="p">:</span> <span class="n">fit_metrics</span><span class="p">,</span>
+        <span class="s2">"calibration_record"</span><span class="p">:</span> <span class="n">calibration</span><span class="p">,</span>
+        <span class="s2">"record"</span><span class="p">:</span> <span class="n">record</span><span class="p">,</span>
+    <span class="p">}</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

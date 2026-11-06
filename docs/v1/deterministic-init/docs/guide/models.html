@@ -1,0 +1,273 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Models &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../_static/jquery.js"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+      <script src="../_static/doctools.js"></script>
+      <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Multi step evaluation and training" href="multi_step.html" />
+    <link rel="prev" title="Data pipeline and split" href="data.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">Data pipeline and split</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#single-step-models">Single step models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#constrained-regression">Constrained regression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#physics-informed-neural-networks">Physics-informed neural networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#multi-step-models">Multi step models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#saving-and-loading">Saving and loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#reports">Reports</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Physics-informed models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Models</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="models">
+<h1>Models<a class="headerlink" href="#models" title="Permalink to this heading"></a></h1>
+<p>All models share <code class="docutils literal notranslate"><span class="pre">model.pipeline(td)</span></code>: build, train, evaluate. The trained model is returned and kept as
+<code class="docutils literal notranslate"><span class="pre">model.trained_model</span></code>, <code class="docutils literal notranslate"><span class="pre">Run.save</span></code> stores it with its configs.</p>
+<section id="single-step-models">
+<h2>Single step models<a class="headerlink" href="#single-step-models" title="Permalink to this heading"></a></h2>
+<p>Predict the next time step. Applied recursively in the MPC when they predict one of their inputs.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Model</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel()</span></code></p></td>
+<td><p>linear regression (scikit-learn, saved as joblib)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ClassicalANNModel(n_layers,</span> <span class="pre">n_neurons,</span> <span class="pre">activation_function)</span></code></p></td>
+<td><p>feed forward network</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CMNNModel(monotonies,</span> <span class="pre">activation_split)</span></code></p></td>
+<td><p>constrained monotonic neural network</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RBFModel(n_neurons)</span></code></p></td>
+<td><p>radial basis function network</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LinANNModel()</span></code></p></td>
+<td><p>linear regression plus an RBF network on its residuals</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">PINNModel(physics_targets)</span></code></p></td>
+<td><p>physics-informed loss on physics targets, see below</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ModularANN(architecture,</span> <span class="pre">solver='adam',</span> <span class="pre">'ols'</span> <span class="pre">or</span> <span class="pre">'qp')</span></code></p></td>
+<td><p>any expression graph, see <a class="reference internal" href="expressions.html"><span class="std std-doc">Expressions</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ModularANN(px.Linear(terms),</span> <span class="pre">solver='qp',</span> <span class="pre">shape=ShapeConstraints(...))</span></code></p></td>
+<td><p>constrained regression, see below</p></td>
+</tr>
+</tbody>
+</table>
+<p>Keras models share the training options <code class="docutils literal notranslate"><span class="pre">epochs</span></code>, <code class="docutils literal notranslate"><span class="pre">learning_rate</span></code>, <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>,
+<code class="docutils literal notranslate"><span class="pre">early_stopping_epochs</span></code> and <code class="docutils literal notranslate"><span class="pre">random_seed</span></code>. Early stopping needs validation data.</p>
+</section>
+<section id="constrained-regression">
+<h2>Constrained regression<a class="headerlink" href="#constrained-regression" title="Permalink to this heading"></a></h2>
+<p>A linear regression on physical terms whose prediction is monotonic or convex in raw data columns, guaranteed on a
+domain. The fit is a convex quadratic program: one global optimum, no seeds, about a second for 1e5 samples.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModularANN</span><span class="p">,</span> <span class="n">ShapeConstraints</span>
+
+<span class="n">v</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Vars</span><span class="p">()</span>
+<span class="n">u</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">T_amb</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">oveHeaPumY_u</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">reaTZon_y</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">weaSta_reaWeaTDryBul_y</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">ModularANN</span><span class="p">(</span>
+    <span class="n">px</span><span class="o">.</span><span class="n">Linear</span><span class="p">([</span><span class="n">u</span><span class="p">,</span> <span class="n">u</span> <span class="o">*</span> <span class="n">T_amb</span><span class="p">,</span> <span class="n">u</span> <span class="o">*</span> <span class="n">T</span><span class="p">,</span> <span class="n">T_amb</span><span class="p">]),</span>
+    <span class="n">solver</span><span class="o">=</span><span class="s2">"qp"</span><span class="p">,</span>
+    <span class="n">shape</span><span class="o">=</span><span class="n">ShapeConstraints</span><span class="p">(</span><span class="n">monotonicities</span><span class="o">=</span><span class="p">{</span><span class="s2">"oveHeaPumY_u"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"weaSta_reaWeaTDryBul_y"</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">},</span>
+                           <span class="n">bounds</span><span class="o">=</span><span class="p">{</span><span class="s2">"weaSta_reaWeaTDryBul_y"</span><span class="p">:</span> <span class="p">(</span><span class="mf">250.0</span><span class="p">,</span> <span class="mf">310.0</span><span class="p">)}),</span>
+<span class="p">)</span>
+<span class="n">td</span> <span class="o">=</span> <span class="n">prep</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+<span class="n">td</span><span class="o">.</span><span class="n">physics</span><span class="p">[</span><span class="s2">"shape_constraints"</span><span class="p">]</span>     <span class="c1"># certificates, violations, binding share, cost of the physics</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>Constraints on raw columns:</strong> <code class="docutils literal notranslate"><span class="pre">monotonicities={'x':</span> <span class="pre">1</span> <span class="pre">|</span> <span class="pre">-1}</span></code> constrains <code class="docutils literal notranslate"><span class="pre">dy/dx</span></code> of the whole model, e.g.
+<code class="docutils literal notranslate"><span class="pre">d/dT_amb</span> <span class="pre">(w1</span> <span class="pre">·</span> <span class="pre">u</span> <span class="pre">·</span> <span class="pre">T_amb</span> <span class="pre">+</span> <span class="pre">w2</span> <span class="pre">·</span> <span class="pre">T_amb)</span> <span class="pre">=</span> <span class="pre">w1</span> <span class="pre">·</span> <span class="pre">u</span> <span class="pre">+</span> <span class="pre">w2</span></code>, which depends on <code class="docutils literal notranslate"><span class="pre">u</span></code>. <code class="docutils literal notranslate"><span class="pre">convexities={'x':</span> <span class="pre">1</span> <span class="pre">|</span> <span class="pre">-1}</span></code>
+constrains <code class="docutils literal notranslate"><span class="pre">d²y/dx²</span></code> (convex or concave along <code class="docutils literal notranslate"><span class="pre">x</span></code>, not the joint convexity in several columns). Every column is
+constrained separately, also lags (<code class="docutils literal notranslate"><span class="pre">u</span></code> and <code class="docutils literal notranslate"><span class="pre">u_lag1</span></code>).</p></li>
+<li><p><strong>Sign of single weights:</strong> <code class="docutils literal notranslate"><span class="pre">px.Linear(terms,</span> <span class="pre">monotonicities={'term':</span> <span class="pre">1})</span></code> bounds the weight of a term; this holds
+globally and is also kept by <code class="docutils literal notranslate"><span class="pre">recursive_training</span></code>.</p></li>
+<li><p><strong>Domain:</strong> <code class="docutils literal notranslate"><span class="pre">domain='box'</span></code> (default) enforces the constraints on the box of the training data, or on <code class="docutils literal notranslate"><span class="pre">bounds</span></code>
+(e.g. the bounds of the MPC). The derivative is linear in the weights, so this is a semi-infinite program, solved
+with the exchange method: the least squares problem on a finite set of constraint points, the most violated points
+of the box (Sobol sample, local minimization) are added until no violation is left. <code class="docutils literal notranslate"><span class="pre">domain='data'</span></code> only enforces
+them on the training samples, e.g. when a physical relation only holds in the operating range of the data
+(more cold supply air only cools while <code class="docutils literal notranslate"><span class="pre">T_in</span> <span class="pre">&lt;</span> <span class="pre">T</span></code>).</p></li>
+<li><p><strong>Certificates</strong> per constraint: <code class="docutils literal notranslate"><span class="pre">exact</span></code> (the derivative is multilinear in its columns, e.g. linear, bilinear and
+quadratic terms: its minimum over the box lies in a corner, and all corners are constraint points, so the
+constraint holds on the whole box), <code class="docutils literal notranslate"><span class="pre">verified</span></code> (no violation found on the box), <code class="docutils literal notranslate"><span class="pre">data</span></code> (holds on the training
+samples), <code class="docutils literal notranslate"><span class="pre">violated</span></code> (no convergence after <code class="docutils literal notranslate"><span class="pre">max_iter</span></code>, with warning).</p></li>
+<li><p><strong>Diagnosis:</strong> the train RMSE with and without the constraints (the cost of the physics) and the share of training
+samples where a constraint binds: constraints binding on many samples show where the data contradicts the physics.
+The report contains a table of it.</p></li>
+<li><p><strong>Numerics:</strong> terms and target are standardized, the least squares problem is solved in the coordinates of its QR
+decomposition (no squared condition number), a tiny ridge (<code class="docutils literal notranslate"><span class="pre">ridge=1e-10</span></code>) makes the solution unique for collinear
+terms. Terms that are not defined everywhere in the box (e.g. a division by zero) are left out at those points
+with a warning; restrict the box with <code class="docutils literal notranslate"><span class="pre">bounds</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">shape</span></code> cannot be combined with <code class="docutils literal notranslate"><span class="pre">recursive_training</span></code> (gradient descent would not keep it) or a physics residual.
+Closed form solvers (<code class="docutils literal notranslate"><span class="pre">ols</span></code>, <code class="docutils literal notranslate"><span class="pre">qp</span></code>) have no <code class="docutils literal notranslate"><span class="pre">online_pipeline</span></code>: train a new model on the combined data.</p></li>
+<li><p>The model is exported like any modular model: the keras model of the terms with one dense layer.</p></li>
+</ul>
+<p>See <code class="docutils literal notranslate"><span class="pre">examples/05_constrained_regression.py</span></code>.</p>
+</section>
+<section id="physics-informed-neural-networks">
+<h2>Physics-informed neural networks<a class="headerlink" href="#physics-informed-neural-networks" title="Permalink to this heading"></a></h2>
+<p>A physics target is a data column computed from a physical model of the output. The network keeps one
+output; the physics targets only enter the loss:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">v</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Vars</span><span class="p">()</span>
+<span class="n">physics</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">u_hp</span> <span class="o">*</span> <span class="mi">10000</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">T_room</span> <span class="o">+</span> <span class="mi">15</span> <span class="o">-</span> <span class="n">v</span><span class="o">.</span><span class="n">T_amb</span><span class="p">)</span> <span class="o">/</span> <span class="p">((</span><span class="n">v</span><span class="o">.</span><span class="n">T_room</span> <span class="o">+</span> <span class="mi">15</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.55</span><span class="p">)</span>
+<span class="n">prep</span> <span class="o">=</span> <span class="n">PreprocessingSingleStep</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="n">output</span><span class="o">=</span><span class="s1">'P_el'</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'pinn'</span><span class="p">:</span> <span class="n">physics</span><span class="p">})</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">PINNModel</span><span class="p">(</span><span class="n">physics_targets</span><span class="o">=</span><span class="p">{</span><span class="s1">'pinn'</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">})</span>
+<span class="n">td</span> <span class="o">=</span> <span class="n">prep</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>     <span class="c1"># the model adds its physics targets to the loss columns</span>
+<span class="n">m</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Loss: <code class="docutils literal notranslate"><span class="pre">mse(ŷ,</span> <span class="pre">y)/s</span> <span class="pre">+</span> <span class="pre">Σ</span> <span class="pre">w_i</span> <span class="pre">·</span> <span class="pre">mse(ŷ,</span> <span class="pre">p_i)/s</span></code> with the characteristic scale <code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">=</span> <span class="pre">var(y_train)</span></code>
+(<code class="docutils literal notranslate"><span class="pre">normalize_terms=True</span></code>). The data term is 1 − R² on the training data, the weight <code class="docutils literal notranslate"><span class="pre">w_i</span></code> the relative
+importance of the physics. The terms are not averaged, adding a physics term does not change the weight of
+the data.</p></li>
+<li><p>The weight encodes the trust in the physical model and is chosen by validation (e.g. the error over the
+horizon, see <a class="reference internal" href="evaluation.html#comparing-models"><span class="std std-ref">Comparing models</span></a>). Adaptive weighting schemes (e.g. GradNorm,
+learning rate annealing) target PDE residuals of very different magnitudes and are not used.</p></li>
+<li><p>Early stopping monitors the validation <strong>data</strong> loss (<code class="docutils literal notranslate"><span class="pre">early_stopping_on='data'</span></code>), so the selected model does
+not depend on the physics weights; <code class="docutils literal notranslate"><span class="pre">'total'</span></code> monitors the weighted loss.</p></li>
+<li><p>History and report hold every term (<code class="docutils literal notranslate"><span class="pre">data_loss</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;target&gt;_loss</span></code>); <code class="docutils literal notranslate"><span class="pre">td.metrics.physics</span></code> the disagreement with
+each physics target per split.</p></li>
+<li><p>Physics targets are taken at the predicted time, like the output. For <code class="docutils literal notranslate"><span class="pre">Change(T)</span></code> and a physical model of
+the step T(t) → T(t+1) computed from the data at t, shift the column: <code class="docutils literal notranslate"><span class="pre">columns={'dT':</span> <span class="pre">step.lag(1)}</span></code>.</p></li>
+<li><p>The saved model has one output and is exported to AgentLib-MPC like any other model.</p></li>
+</ul>
+</section>
+<section id="multi-step-models">
+<h2>Multi step models<a class="headerlink" href="#multi-step-models" title="Permalink to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">RNNModel(rnn_layer='RNN'</span> <span class="pre">|</span> <span class="pre">'GRU'</span> <span class="pre">|</span> <span class="pre">'LSTM',</span> <span class="pre">rnn_units)</span></code> predicts a trajectory, see
+<a class="reference internal" href="rnn.html"><span class="std std-doc">Recurrent models</span></a>. <code class="docutils literal notranslate"><span class="pre">PCNNModel(heating,</span> <span class="pre">cooling,</span> <span class="pre">losses)</span></code> is a physically consistent recurrent model, see
+<a class="reference internal" href="physics.html"><span class="std std-doc">Physics-informed models</span></a>.</p>
+<p>Every single step keras model takes a physics residual with trainable physical parameters
+(<code class="docutils literal notranslate"><span class="pre">physics=PhysicsResidual(...)</span></code>), see <a class="reference internal" href="physics.html"><span class="std std-doc">Physics-informed models</span></a>.</p>
+</section>
+<section id="saving-and-loading">
+<h2>Saving and loading<a class="headerlink" href="#saving-and-loading" title="Permalink to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">run</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">"model"</span><span class="p">,</span> <span class="n">prep</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span>                       <span class="c1"># recommended</span>
+<span class="n">model</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="n">save_path</span><span class="o">=</span><span class="s2">"results/x/model"</span><span class="p">)</span>      <span class="c1"># only the model file and its report</span>
+<span class="n">trained</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="s2">"results/x/model.keras"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AbstractModel</span><span class="o">.</span><span class="n">model_from_config</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">"results/x/model_model.json"</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">online_pipeline(td,</span> <span class="pre">load_path)</span></code> loads a saved model and trains it further on new data.</p>
+</section>
+<section id="reports">
+<h2>Reports<a class="headerlink" href="#reports" title="Permalink to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">pipeline</span></code> does not open plots. <code class="docutils literal notranslate"><span class="pre">model.plot(td)</span></code> returns the report as plotly figure,
+<code class="docutils literal notranslate"><span class="pre">pipeline(td,</span> <span class="pre">show_plot=True)</span></code> opens it, and <code class="docutils literal notranslate"><span class="pre">Run.save</span></code> writes it as <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;.html</span></code>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="data.html" class="btn btn-neutral float-left" title="Data pipeline and split" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="multi_step.html" class="btn btn-neutral float-right" title="Multi step evaluation and training" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

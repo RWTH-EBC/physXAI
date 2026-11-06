@@ -1,0 +1,761 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>physXAI.preprocessing.preprocessing &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../../../_static/jquery.js"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+      <script src="../../../_static/doctools.js"></script>
+      <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/physics.html">Physics-informed models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">physXAI.preprocessing.preprocessing</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for physXAI.preprocessing.preprocessing</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Preprocessing of time series data for single step and multi step models.</span>
+
+<span class="sd">Both preprocessings share one pipeline:</span>
+
+<span class="sd">1. Load the csv file onto a regular time grid of `time_step` (missing time stamps become rows</span>
+<span class="sd">   with missing values instead of silently joining the neighbouring rows).</span>
+<span class="sd">2. Apply an optional `transform(df) -&gt; df` hook (not serialized).</span>
+<span class="sd">3. Create derived columns from the naming conventions used by AgentLib-MPC:</span>
+<span class="sd">   `X_lagN` is `X` shifted by N steps, `Change(X)` is `X(t) - X(t-1)`. Lags can also be given as</span>
+<span class="sd">   `lags={'X': 2}`, which adds `X_lag1` and `X_lag2` directly after `X` to the inputs.</span>
+<span class="sd">4. Shift the outputs by `shift` steps, so row t holds the target predicted from the inputs at t.</span>
+<span class="sd">5. Mark rows with missing values as invalid (with `ignore_nan=False`, missing values between</span>
+<span class="sd">   valid rows raise an error).</span>
+<span class="sd">6. Split the rows leakage free into training, validation and test data</span>
+<span class="sd">   (`physXAI.preprocessing.splitting.BlockSplit`).</span>
+
+<span class="sd">The class names `PreprocessingSingleStep` and `PreprocessingMultiStep` and the keys of</span>
+<span class="sd">`get_config()` are read by AgentLib-MPC and must not change.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.expr.serialization</span><span class="w"> </span><span class="kn">import</span> <span class="n">to_config</span> <span class="k">as</span> <span class="n">expr_to_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.splitting</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlockSplit</span><span class="p">,</span> <span class="n">split_summary</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.training_data</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingData</span><span class="p">,</span> <span class="n">TrainingDataGeneric</span><span class="p">,</span> <span class="n">TrainingDataMultiStep</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.utils.seed</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_seed</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"physXAI"</span><span class="p">)</span>
+
+<span class="n">LAG_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^(.*)_lag(\d+)$"</span><span class="p">)</span>
+<span class="n">CHANGE_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^Change\((.*)\)$"</span><span class="p">)</span>
+<span class="n">TARGET_PREFIX</span> <span class="o">=</span> <span class="s2">"y:"</span>
+
+<span class="n">PREPROCESSING_CLASS_REGISTRY</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">[</span><span class="n">PreprocessingData</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="register_preprocessing"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.register_preprocessing">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">register_preprocessing</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="n">PREPROCESSING_CLASS_REGISTRY</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span>
+    <span class="k">return</span> <span class="bp">cls</span></div>
+
+
+<div class="viewcode-block" id="expand_lags"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.expand_lags">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">expand_lags</span><span class="p">(</span><span class="n">inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">lags</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Adds lagged inputs: `lags={'X': 2}` inserts 'X_lag1', 'X_lag2' directly after 'X'.</span>
+<span class="sd">    Lags of features which are no input are appended at the end.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">lags</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">:</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_lag</span><span class="si">{</span><span class="n">lag</span><span class="si">}</span><span class="s2">"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">:</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_lag</span><span class="si">{</span><span class="n">lag</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">lags</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_lag</span><span class="si">{</span><span class="n">lag</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="max_lag"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.max_lag">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">max_lag</span><span class="p">(</span><span class="n">names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Largest lag of a list of feature names."""</span>
+    <span class="n">lags</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="p">(</span><span class="n">LAG_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">)</span> <span class="k">if</span> <span class="n">m</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">lags</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ensure_column"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.ensure_column">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">ensure_column</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Creates `name` from the naming conventions if it is not a column of `df`.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: If the column neither exists nor can be derived.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">lag</span> <span class="o">=</span> <span class="n">LAG_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">lag</span><span class="p">:</span>
+        <span class="n">base</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">lag</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">lag</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">ensure_column</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">base</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">base</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="n">change</span> <span class="o">=</span> <span class="n">CHANGE_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">change</span><span class="p">:</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">change</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">ensure_column</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">base</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">base</span><span class="p">]</span> <span class="o">-</span> <span class="n">df</span><span class="p">[</span><span class="n">base</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Column '</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">' is not part of the data and cannot be derived from it."</span><span class="p">)</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_split_lag</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="n">LAG_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span> <span class="k">if</span> <span class="n">match</span> <span class="k">else</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="output_feature"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.output_feature">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">output_feature</span><span class="p">(</span><span class="n">output</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Feature predicted by an output: 'T' for 'Change(T)' and for 'T'."""</span>
+    <span class="n">change</span> <span class="o">=</span> <span class="n">CHANGE_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">change</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="n">change</span> <span class="k">else</span> <span class="n">output</span></div>
+
+
+<div class="viewcode-block" id="order_inputs"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.order_inputs">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">order_inputs</span><span class="p">(</span><span class="n">names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">outputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Orders input names as AgentLib-MPC expects them: lags directly after their feature in</span>
+<span class="sd">    ascending order (missing intermediate lags are added), the recursive feature (predicted by an</span>
+<span class="sd">    output) and its lags last.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; order_inputs(["T_lag2", "u", "T"], ["Change(T)"])</span>
+<span class="sd">        ['u', 'T', 'T_lag1', 'T_lag2']</span>
+<span class="sd">    """</span>
+    <span class="n">groups</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+        <span class="n">base</span><span class="p">,</span> <span class="n">lag</span> <span class="o">=</span> <span class="n">_split_lag</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">groups</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lag</span><span class="p">)</span>
+    <span class="n">recursive</span> <span class="o">=</span> <span class="p">{</span><span class="n">output_feature</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">}</span>
+    <span class="n">ordered</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">groups</span> <span class="k">if</span> <span class="n">b</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">recursive</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">groups</span> <span class="k">if</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">recursive</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">ordered</span><span class="p">:</span>
+        <span class="n">lags</span> <span class="o">=</span> <span class="n">groups</span><span class="p">[</span><span class="n">base</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">lags</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">lags</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base</span> <span class="k">if</span> <span class="n">lag</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">_lag</span><span class="si">{</span><span class="n">lag</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_try_ensure_column</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ensure_column</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+
+<div class="viewcode-block" id="PreprocessingData"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">PreprocessingData</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Common preprocessing of single step and multi step models, see the module docstring.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        inputs: Input features of the model. Lagged inputs ('X_lag1') and changes ('Change(X)')</span>
+<span class="sd">                are derived automatically. If None, the inputs are taken from the model passed to</span>
+<span class="sd">                `pipeline` (the free variables of its expression graph).</span>
+<span class="sd">        output: Output feature(s), e.g. 'Change(T)' for a model predicting the change of T.</span>
+<span class="sd">        columns: Optional derived data columns {name: expression}, e.g. {'Q': v.mDot * (v.T_in - v.T)}.</span>
+<span class="sd">                 Prefer expressions inside the model, then the MPC does not need to compute them.</span>
+<span class="sd">        lags: Optional number of lags per feature, e.g. {'T': 2}.</span>
+<span class="sd">        shift: Number of steps between the inputs and the predicted output (1: next time step).</span>
+<span class="sd">        time_step: Sampling time in seconds. The data is sub-sampled to it. Defaults to the</span>
+<span class="sd">                   sampling time of the data.</span>
+<span class="sd">        test_size: Fraction of the data used for testing.</span>
+<span class="sd">        val_size: Fraction of the data used for validation.</span>
+<span class="sd">        random_state: Seed of the split. Defaults to the global seed (`physXAI.set_seed`), else a</span>
+<span class="sd">                      new seed is drawn. The used seed is stored in the config.</span>
+<span class="sd">        split: Split strategy ('blocks', 'holdout_end', 'random_rows') or a `BlockSplit`.</span>
+<span class="sd">        block_length: Block length of the split in steps or as time delta string ('7D').</span>
+<span class="sd">        gap_steps: Embargo between splits in steps. Defaults to the maximum lag + shift.</span>
+<span class="sd">        time_index_col: Name or index of the time column of the csv file.</span>
+<span class="sd">        csv_delimiter: Delimiter of the csv file (`pandas.read_csv`).</span>
+<span class="sd">        csv_encoding: Encoding of the csv file.</span>
+<span class="sd">        csv_header: Row of the column names.</span>
+<span class="sd">        csv_skiprows: Rows to skip.</span>
+<span class="sd">        ignore_nan: If False, missing values between valid rows raise an error. If True, rows</span>
+<span class="sd">                    with missing values are left out.</span>
+<span class="sd">        transform: Optional function `df -&gt; df` applied after loading, e.g. to add columns that are</span>
+<span class="sd">                   no inputs of the model. It is not serialized.</span>
+<span class="sd">        loss_columns: Columns used only in the training loss, no inputs or outputs of the model (e.g. the</span>
+<span class="sd">                      physics targets of a PINN). 'name' is the value at the time of the inputs, 'y:name'</span>
+<span class="sd">                      the value at the predicted time (shifted like the outputs). Models declare the columns</span>
+<span class="sd">                      they need (`required_loss_columns`), they are added by `pipeline(path, model=model)`.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">output</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">lags</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">time_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">test_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">val_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">split</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">BlockSplit</span> <span class="o">|</span> <span class="nb">dict</span> <span class="o">=</span> <span class="s2">"blocks"</span><span class="p">,</span>
+        <span class="n">block_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">gap_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">time_index_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">csv_delimiter</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">";"</span><span class="p">,</span>
+        <span class="n">csv_encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"latin1"</span><span class="p">,</span>
+        <span class="n">csv_header</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">csv_skiprows</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ignore_nan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">transform</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">loss_columns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">shift</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"shift has to be at least 1."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">output</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"An output is required."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">expand_lags</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">inputs</span><span class="p">),</span> <span class="n">lags</span><span class="p">)</span> <span class="k">if</span> <span class="n">inputs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lags</span> <span class="o">=</span> <span class="n">lags</span> <span class="k">if</span> <span class="n">inputs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">output</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.expr</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_config</span> <span class="k">as</span> <span class="n">expr_from_config</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="n">expr_from_config</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">e</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="p">(</span><span class="n">columns</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">shift</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">time_step</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">resolve_seed</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">split</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">split</span> <span class="o">=</span> <span class="n">BlockSplit</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">split</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">split</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">split</span> <span class="o">=</span> <span class="n">BlockSplit</span><span class="p">(</span><span class="n">test_size</span><span class="p">,</span> <span class="n">val_size</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">split</span><span class="p">,</span> <span class="n">block_length</span><span class="o">=</span><span class="n">block_length</span><span class="p">,</span> <span class="n">gap_steps</span><span class="o">=</span><span class="n">gap_steps</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">split</span><span class="p">:</span> <span class="n">BlockSplit</span> <span class="o">=</span> <span class="n">split</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_index_col</span> <span class="o">=</span> <span class="n">time_index_col</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">csv_delimiter</span> <span class="o">=</span> <span class="n">csv_delimiter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">csv_encoding</span> <span class="o">=</span> <span class="n">csv_encoding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">csv_header</span> <span class="o">=</span> <span class="n">csv_header</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">csv_skiprows</span> <span class="o">=</span> <span class="n">csv_skiprows</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_nan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">ignore_nan</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">transform</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loss_columns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">loss_columns</span> <span class="ow">or</span> <span class="p">[])</span>
+
+    <span class="c1"># The split sizes are part of the AgentLib-MPC contract</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">test_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">split</span><span class="o">.</span><span class="n">test_size</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">val_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">split</span><span class="o">.</span><span class="n">val_size</span>
+
+    <span class="c1"># --- loading --------------------------------------------------------------------------------</span>
+<div class="viewcode-block" id="PreprocessingData.load_data"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.load_data">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Loads a csv file onto a regular time grid of `time_step`.</span>
+
+<span class="sd">        The time column may hold seconds or date times. Time stamps which are not on the grid are</span>
+<span class="sd">        dropped; missing time stamps become rows with missing values.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_path: Path to the csv file (absolute or relative to the working directory).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            pd.DataFrame: Data indexed by the regular time grid.</span>
+<span class="sd">        """</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
+            <span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span>
+            <span class="n">delimiter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">csv_delimiter</span><span class="p">,</span>
+            <span class="n">index_col</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_index_col</span><span class="p">,</span>
+            <span class="n">encoding</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">csv_encoding</span><span class="p">,</span>
+            <span class="n">header</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">csv_header</span><span class="p">,</span>
+            <span class="n">skiprows</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">csv_skiprows</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="o">~</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">duplicated</span><span class="p">(</span><span class="n">keep</span><span class="o">=</span><span class="s2">"first"</span><span class="p">)]</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+
+        <span class="n">index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">):</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+        <span class="n">is_datetime</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">)</span>
+        <span class="n">seconds</span> <span class="o">=</span> <span class="p">((</span><span class="n">index</span> <span class="o">-</span> <span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="k">if</span> <span class="n">is_datetime</span> <span class="k">else</span> <span class="n">index</span> <span class="o">-</span> <span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+        <span class="n">data_step</span> <span class="o">=</span> <span class="n">_sampling_time</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span> <span class="o">=</span> <span class="n">data_step</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">_is_multiple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">,</span> <span class="n">data_step</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Given time step </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="si">}</span><span class="s2"> is not a multiple of data time step </span><span class="si">{</span><span class="n">data_step</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+
+        <span class="n">positions</span> <span class="o">=</span> <span class="n">seconds</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span>
+        <span class="n">on_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">positions</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">on_grid</span><span class="p">]</span>
+        <span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="n">on_grid</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">positions</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">is_datetime</span><span class="p">:</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_timedelta</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"s"</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"time"</span>
+        <span class="k">return</span> <span class="n">df</span></div>
+
+    <span class="c1"># --- processing -----------------------------------------------------------------------------</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_required_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Raw columns (besides inputs and outputs) needed in the data."""</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">output_feature</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="k">for</span> <span class="n">out</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_window_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">1</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_default_gap</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">max_lag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span>
+
+<div class="viewcode-block" id="PreprocessingData.build_training_data"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.build_training_data">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">build_training_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">extra_targets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">eval_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">eval_stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainingData</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Turns a loaded DataFrame into `TrainingData` (derived columns, shifted targets, split).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            df: Data on a regular time grid, see `load_data`.</span>
+<span class="sd">            extra_targets: Further columns to shift like the outputs (e.g. warmup features).</span>
+<span class="sd">            eval_horizon: Steps of the multi step evaluation stored in the training data.</span>
+<span class="sd">            eval_stride: Distance between two evaluation windows.</span>
+<span class="sd">        """</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">expression</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">variable</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">free_vars</span><span class="p">():</span>
+                <span class="n">ensure_column</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">variable</span><span class="p">)</span>
+            <span class="n">df</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">df</span><span class="p">),</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">),))</span>
+        <span class="c1"># loss columns at the predicted time are shifted like the outputs, the others are taken as they are</span>
+        <span class="n">shifted_loss</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">TARGET_PREFIX</span><span class="p">):]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_columns</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">TARGET_PREFIX</span><span class="p">)]</span>
+        <span class="n">plain_loss</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_columns</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">TARGET_PREFIX</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">plain_loss</span><span class="p">:</span>
+            <span class="n">ensure_column</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="n">shifted</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">([</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="n">extra_targets</span> <span class="ow">or</span> <span class="p">[]),</span> <span class="o">*</span><span class="n">shifted_loss</span><span class="p">]))</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">([</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span> <span class="o">*</span><span class="n">shifted</span><span class="p">]):</span>
+            <span class="n">ensure_column</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="c1"># raw features of the outputs and the variables of derived columns are kept for recursive</span>
+        <span class="c1"># (multi step) evaluations, if available</span>
+        <span class="n">candidates</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_required_columns</span><span class="p">(),</span> <span class="o">*</span><span class="p">(</span><span class="n">v</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">free_vars</span><span class="p">())]</span>
+        <span class="n">aux</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">candidates</span><span class="p">)</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span> <span class="ow">and</span> <span class="n">_try_ensure_column</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">c</span><span class="p">)]</span>
+
+        <span class="n">target_columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">TARGET_PREFIX</span> <span class="o">+</span> <span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">shifted</span><span class="p">]</span>
+        <span class="n">targets</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="n">TARGET_PREFIX</span> <span class="o">+</span> <span class="n">name</span><span class="p">:</span> <span class="n">df</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">shifted</span><span class="p">},</span> <span class="n">index</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">([</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span> <span class="o">*</span><span class="n">aux</span><span class="p">,</span> <span class="o">*</span><span class="n">plain_loss</span><span class="p">]))</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="p">[</span><span class="n">columns</span><span class="p">],</span> <span class="n">targets</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">used</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span> <span class="o">*</span><span class="n">target_columns</span><span class="p">,</span> <span class="o">*</span><span class="n">plain_loss</span><span class="p">]</span>
+        <span class="n">valid</span> <span class="o">=</span> <span class="n">frame</span><span class="p">[</span><span class="n">used</span><span class="p">]</span><span class="o">.</span><span class="n">notna</span><span class="p">()</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">valid</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Data Error: No row holds valid values for all inputs and outputs."</span><span class="p">)</span>
+        <span class="n">first</span><span class="p">,</span> <span class="n">last</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">valid</span><span class="p">)[[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">valid</span><span class="p">[</span><span class="n">first</span> <span class="p">:</span> <span class="n">last</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignore_nan</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"Data Error: The data contains missing values (or missing time stamps) in intermediate rows. "</span>
+                <span class="sa">f</span><span class="s2">"If this is intended, set ignore_nan=True in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span>
+            <span class="p">)</span>
+
+        <span class="n">labels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">split</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">frame</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_window_length</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_gap</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">td</span> <span class="o">=</span> <span class="n">TrainingData</span><span class="p">(</span>
+            <span class="n">frame</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+            <span class="nb">list</span><span class="p">(</span><span class="n">frame</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">,</span>
+            <span class="n">labels</span><span class="p">,</span>
+            <span class="n">valid</span><span class="p">,</span>
+            <span class="n">time</span><span class="o">=</span><span class="n">frame</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+            <span class="n">time_step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">,</span>
+            <span class="n">eval_horizon</span><span class="o">=</span><span class="n">eval_horizon</span><span class="p">,</span>
+            <span class="n">eval_stride</span><span class="o">=</span><span class="n">eval_stride</span><span class="p">,</span>
+            <span class="n">targets</span><span class="o">=</span><span class="p">[</span><span class="n">TARGET_PREFIX</span> <span class="o">+</span> <span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">],</span>
+            <span class="n">derived</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+            <span class="n">loss_columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loss_columns</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Split of the data: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">split_summary</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">valid</span><span class="p">])</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
+        <span class="k">return</span> <span class="n">td</span></div>
+
+<div class="viewcode-block" id="PreprocessingData.resolve_inputs"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.resolve_inputs">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Determines the inputs: the given ones or, if None, the inputs required by the model.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the model needs inputs which are not part of the given inputs.</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">"required_loss_columns"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]:</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_columns</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">loss_columns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">required</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">"required_inputs"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">required</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"No inputs given: pass inputs or a model with an expression graph to pipeline()."</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span> <span class="o">=</span> <span class="n">order_inputs</span><span class="p">(</span><span class="n">expand_lags</span><span class="p">(</span><span class="n">required</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lags</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">required</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">required</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"The model needs the inputs </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">, which are not part of the inputs </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="si">}</span><span class="s2">."</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span></div>
+
+<div class="viewcode-block" id="PreprocessingData.pipeline"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.pipeline">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainingDataGeneric</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Loads and preprocesses a csv file. Inputs can be taken from `model`."""</span></div>
+
+    <span class="c1"># --- (de)serialization ----------------------------------------------------------------------</span>
+<div class="viewcode-block" id="PreprocessingData.get_config"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"__class_name__"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">"inputs"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span>
+            <span class="s2">"output"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">,</span>
+            <span class="s2">"columns"</span><span class="p">:</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">expr_to_config</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"shift"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="p">,</span>
+            <span class="s2">"test_size"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_size</span><span class="p">,</span>
+            <span class="s2">"val_size"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_size</span><span class="p">,</span>
+            <span class="s2">"random_state"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="s2">"time_step"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">,</span>
+            <span class="s2">"split"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">split</span><span class="o">.</span><span class="n">get_config</span><span class="p">(),</span>
+            <span class="s2">"time_index_col"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index_col</span><span class="p">,</span>
+            <span class="s2">"csv_delimiter"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">csv_delimiter</span><span class="p">,</span>
+            <span class="s2">"csv_encoding"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">csv_encoding</span><span class="p">,</span>
+            <span class="s2">"csv_header"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">csv_header</span><span class="p">,</span>
+            <span class="s2">"csv_skiprows"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">csv_skiprows</span><span class="p">,</span>
+            <span class="s2">"ignore_nan"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignore_nan</span><span class="p">,</span>
+            <span class="s2">"transform"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">,</span> <span class="s2">"__name__"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"loss_columns"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_columns</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="PreprocessingData.from_config"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PreprocessingData</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Creates a preprocessing from its config. Called on `PreprocessingData`, the class is taken</span>
+<span class="sd">        from '__class_name__'. A `transform` hook is not serialized and has to be set again.</span>
+<span class="sd">        """</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="n">class_name</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"__class_name__"</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="bp">cls</span> <span class="k">if</span> <span class="bp">cls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">PreprocessingData</span> <span class="k">else</span> <span class="n">PREPROCESSING_CLASS_REGISTRY</span><span class="p">[</span><span class="n">class_name</span><span class="p">]</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"physXAI_version"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"transform"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">transform</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"The transform '</span><span class="si">%s</span><span class="s2">' is not serialized and has to be set again."</span><span class="p">,</span> <span class="n">transform</span><span class="p">)</span>
+            <span class="n">transform</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"split"</span><span class="p">),</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">split</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"split"</span><span class="p">]</span>
+            <span class="n">config</span><span class="p">[</span><span class="s2">"test_size"</span><span class="p">],</span> <span class="n">config</span><span class="p">[</span><span class="s2">"val_size"</span><span class="p">]</span> <span class="o">=</span> <span class="n">split</span><span class="p">[</span><span class="s2">"test_size"</span><span class="p">],</span> <span class="n">split</span><span class="p">[</span><span class="s2">"val_size"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">target</span><span class="p">(</span><span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span> <span class="o">**</span><span class="n">config</span><span class="p">)</span></div></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sampling_time</span><span class="p">(</span><span class="n">seconds</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Most frequent positive difference of the time stamps."""</span>
+    <span class="n">diffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span>
+    <span class="n">diffs</span> <span class="o">=</span> <span class="n">diffs</span><span class="p">[</span><span class="n">diffs</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">diffs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Data Error: The data needs at least two time stamps."</span><span class="p">)</span>
+    <span class="n">values</span><span class="p">,</span> <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">diffs</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">counts</span><span class="p">)])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_multiple</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">base</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="n">ratio</span> <span class="o">=</span> <span class="n">value</span> <span class="o">/</span> <span class="n">base</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">ratio</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">ratio</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">round</span><span class="p">(</span><span class="n">ratio</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_resolve_steps</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">time_step</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Converts a number of steps or a time delta string ('24h') into steps."""</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">value</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">/</span> <span class="n">time_step</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="PreprocessingSingleStep"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingSingleStep">[docs]</a><span class="nd">@register_preprocessing</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PreprocessingSingleStep</span><span class="p">(</span><span class="n">PreprocessingData</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Preprocessing of single step models, which predict the output of the next time step.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        eval_horizon: Optional horizon of the multi step (recursive) evaluation of the model, in</span>
+<span class="sd">                      steps or as time delta string (e.g. '24h').</span>
+<span class="sd">        eval_stride: Distance between two evaluation windows, in steps or as time delta string.</span>
+<span class="sd">                     Defaults to a quarter of the horizon.</span>
+<span class="sd">        **kwargs: See `PreprocessingData`.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">output</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">eval_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">eval_stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval_horizon</span> <span class="o">=</span> <span class="n">eval_horizon</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval_stride</span> <span class="o">=</span> <span class="n">eval_stride</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_horizon_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="n">horizon</span> <span class="o">=</span> <span class="n">_resolve_steps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eval_horizon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">stride</span> <span class="o">=</span> <span class="n">_resolve_steps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eval_stride</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">stride</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">stride</span> <span class="o">=</span> <span class="nb">max</span><span class="p">((</span><span class="n">horizon</span> <span class="ow">or</span> <span class="mi">4</span><span class="p">)</span> <span class="o">//</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">horizon</span><span class="p">,</span> <span class="n">stride</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_window_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">horizon</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_horizon_steps</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">horizon</span> <span class="ow">or</span> <span class="mi">1</span>
+
+<div class="viewcode-block" id="PreprocessingSingleStep.pipeline"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingSingleStep.pipeline">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainingData</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Loads and preprocesses a csv file.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            TrainingData: Single step data, split leakage free.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_path: Path to the csv file.</span>
+<span class="sd">            model: Optional model; without explicit inputs, its required inputs are used.</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolve_inputs</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="n">horizon</span><span class="p">,</span> <span class="n">stride</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_horizon_steps</span><span class="p">()</span>
+        <span class="n">td</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_training_data</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">eval_horizon</span><span class="o">=</span><span class="n">horizon</span><span class="p">,</span> <span class="n">eval_stride</span><span class="o">=</span><span class="n">stride</span><span class="p">)</span>
+        <span class="n">td</span><span class="o">.</span><span class="n">add_file_path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">td</span></div>
+
+<div class="viewcode-block" id="PreprocessingSingleStep.get_config"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingSingleStep.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">"eval_horizon"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_horizon</span><span class="p">,</span> <span class="s2">"eval_stride"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_stride</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">config</span></div></div>
+
+
+<div class="viewcode-block" id="PreprocessingMultiStep"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingMultiStep">[docs]</a><span class="nd">@register_preprocessing</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PreprocessingMultiStep</span><span class="p">(</span><span class="n">PreprocessingData</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Preprocessing of multi step (recurrent) models.</span>
+
+<span class="sd">    A sequence holds `warmup_width` steps, on which the model warms up starting from a zero state,</span>
+<span class="sd">    followed by `label_width` predicted steps. AgentLib-MPC warms the model up the same way before</span>
+<span class="sd">    every MPC step, so training and MPC match. Sequences are only cut out of one split, so training</span>
+<span class="sd">    and test sequences never overlap.</span>
+
+<span class="sd">    Predicting the change ('Change(T)') is recommended: the trajectory of T is then the measured</span>
+<span class="sd">    start value plus the accumulated changes, and the model is trained on that trajectory.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        inputs: Input features of the model (no lags: the memory of a recurrent model is its state).</span>
+<span class="sd">        output: Output feature(s), e.g. `px.Change('T')`.</span>
+<span class="sd">        label_width: Number of predicted steps (training horizon), in steps or as time delta string</span>
+<span class="sd">                     ('12h'). Choose it longer than the MPC horizon, so the model stays stable over</span>
+<span class="sd">                     the whole horizon.</span>
+<span class="sd">        warmup_width: Number of warmup steps, in steps or as time delta string.</span>
+<span class="sd">        overlapping_sequences: If True, training sequences start at every step, else every</span>
+<span class="sd">                               `label_width` steps.</span>
+<span class="sd">        eval_horizon: Number of predicted steps of the evaluation (steps or time delta string).</span>
+<span class="sd">                      Defaults to `label_width`; a longer horizon shows the stability beyond training.</span>
+<span class="sd">        eval_stride: Distance between two evaluation sequences. Defaults to a quarter of the horizon.</span>
+<span class="sd">        **kwargs: See `PreprocessingData`.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">output</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">label_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">warmup_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">overlapping_sequences</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">eval_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">eval_stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_width</span> <span class="o">=</span> <span class="n">label_width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">warmup_width</span> <span class="o">=</span> <span class="n">warmup_width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overlapping_sequences</span> <span class="o">=</span> <span class="n">overlapping_sequences</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval_horizon</span> <span class="o">=</span> <span class="n">eval_horizon</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval_stride</span> <span class="o">=</span> <span class="n">eval_stride</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Widths and strides in steps (the time step is known after loading the data)."""</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">_resolve_steps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_width</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">label_width</span>
+        <span class="n">warmup</span> <span class="o">=</span> <span class="n">_resolve_steps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">warmup_width</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_width</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">))</span> <span class="ow">or</span> <span class="n">label</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"label_width has to be at least one step, got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">label_width</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">warmup</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">))</span> <span class="ow">or</span> <span class="n">warmup</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"warmup_width must not be negative, got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">warmup_width</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="n">horizon</span> <span class="o">=</span> <span class="p">(</span><span class="n">_resolve_steps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eval_horizon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_horizon</span><span class="p">)</span> <span class="ow">or</span> <span class="n">label</span>
+        <span class="n">stride</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">overlapping_sequences</span> <span class="k">else</span> <span class="n">label</span>
+        <span class="n">eval_stride</span> <span class="o">=</span> <span class="n">_resolve_steps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eval_stride</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_stride</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"label"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">label</span><span class="p">),</span>
+            <span class="s2">"warmup"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">warmup</span><span class="p">),</span>
+            <span class="s2">"horizon"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">horizon</span><span class="p">),</span>
+            <span class="s2">"stride"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">stride</span><span class="p">),</span>
+            <span class="s2">"eval_stride"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">eval_stride</span> <span class="ow">or</span> <span class="nb">max</span><span class="p">(</span><span class="n">horizon</span> <span class="o">//</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_window_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_steps</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">steps</span><span class="p">[</span><span class="s2">"warmup"</span><span class="p">]</span> <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="n">steps</span><span class="p">[</span><span class="s2">"label"</span><span class="p">],</span> <span class="n">steps</span><span class="p">[</span><span class="s2">"horizon"</span><span class="p">])</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_default_gap</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_default_gap</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_steps</span><span class="p">()[</span><span class="s2">"warmup"</span><span class="p">]</span>
+
+<div class="viewcode-block" id="PreprocessingMultiStep.pipeline"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingMultiStep.pipeline">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainingDataMultiStep</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Loads a csv file and prepares the sequences.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            TrainingDataMultiStep: Sequences of every split, split leakage free.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_path: Path to the csv file.</span>
+<span class="sd">            model: Optional model; without explicit inputs, its required inputs are used.</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolve_inputs</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_training_data</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+        <span class="n">steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_steps</span><span class="p">()</span>
+        <span class="n">td</span> <span class="o">=</span> <span class="n">TrainingDataMultiStep</span><span class="p">(</span>
+            <span class="n">series</span><span class="p">,</span>
+            <span class="n">warmup_width</span><span class="o">=</span><span class="n">steps</span><span class="p">[</span><span class="s2">"warmup"</span><span class="p">],</span>
+            <span class="n">label_width</span><span class="o">=</span><span class="n">steps</span><span class="p">[</span><span class="s2">"label"</span><span class="p">],</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">steps</span><span class="p">[</span><span class="s2">"stride"</span><span class="p">],</span>
+            <span class="n">eval_horizon</span><span class="o">=</span><span class="n">steps</span><span class="p">[</span><span class="s2">"horizon"</span><span class="p">],</span>
+            <span class="n">eval_stride</span><span class="o">=</span><span class="n">steps</span><span class="p">[</span><span class="s2">"eval_stride"</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="n">td</span><span class="o">.</span><span class="n">add_file_path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">td</span><span class="o">.</span><span class="n">has_split</span><span class="p">(</span><span class="s2">"train"</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"No training sequence of </span><span class="si">{</span><span class="n">steps</span><span class="p">[</span><span class="s1">'warmup'</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">steps</span><span class="p">[</span><span class="s1">'label'</span><span class="p">]</span><span class="si">}</span><span class="s2"> steps fits into the data. "</span>
+                <span class="s2">"Reduce label_width / warmup_width or the block length of the split."</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">td</span></div>
+
+<div class="viewcode-block" id="PreprocessingMultiStep.get_config"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingMultiStep.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">"label_width"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">label_width</span><span class="p">,</span>
+                <span class="s2">"warmup_width"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_width</span><span class="p">,</span>
+                <span class="s2">"overlapping_sequences"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">overlapping_sequences</span><span class="p">,</span>
+                <span class="s2">"eval_horizon"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_horizon</span><span class="p">,</span>
+                <span class="s2">"eval_stride"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_stride</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">config</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
