@@ -95,7 +95,8 @@
 <span class="sd">3. Create derived columns from the naming conventions used by AgentLib-MPC:</span>
 <span class="sd">   `X_lagN` is `X` shifted by N steps, `Change(X)` is `X(t) - X(t-1)`. Lags can also be given as</span>
 <span class="sd">   `lags={'X': 2}`, which adds `X_lag1` and `X_lag2` directly after `X` to the inputs.</span>
-<span class="sd">4. Shift the outputs by `shift` steps, so row t holds the target predicted from the inputs at t.</span>
+<span class="sd">4. Shift the outputs by `shift` steps (1: the next time step, 0: the time of the inputs), so row t holds</span>
+<span class="sd">   the target predicted from the inputs at t.</span>
 <span class="sd">5. Mark rows with missing values as invalid (with `ignore_nan=False`, missing values between</span>
 <span class="sd">   valid rows raise an error).</span>
 <span class="sd">6. Split the rows leakage free into training, validation and test data</span>
@@ -131,6 +132,7 @@
 
 
 <div class="viewcode-block" id="register_preprocessing"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.register_preprocessing">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">register_preprocessing</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Registers a preprocessing class by name, so `PreprocessingData.from_config` can create it."""</span>
     <span class="n">PREPROCESSING_CLASS_REGISTRY</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span>
     <span class="k">return</span> <span class="bp">cls</span></div>
 
@@ -239,7 +241,10 @@
 <span class="sd">        columns: Optional derived data columns {name: expression}, e.g. {'Q': v.mDot * (v.T_in - v.T)}.</span>
 <span class="sd">                 Prefer expressions inside the model, then the MPC does not need to compute them.</span>
 <span class="sd">        lags: Optional number of lags per feature, e.g. {'T': 2}.</span>
-<span class="sd">        shift: Number of steps between the inputs and the predicted output (1: next time step).</span>
+<span class="sd">        shift: Steps between the inputs and the predicted output. 1 (default): the next time step, for states</span>
+<span class="sd">               (e.g. 'Change(T)') and for outputs over the interval [t, t+1) (as AgentLib-MPC uses them). 0: the</span>
+<span class="sd">               time of the inputs, for algebraic outputs of point sampled data, e.g. P_el(t) = f(u(t), T(t)); the</span>
+<span class="sd">               output feature must then not be an input (only its lags), and there is no recursive evaluation.</span>
 <span class="sd">        time_step: Sampling time in seconds. The data is sub-sampled to it. Defaults to the</span>
 <span class="sd">                   sampling time of the data.</span>
 <span class="sd">        test_size: Fraction of the data used for testing.</span>
@@ -287,8 +292,11 @@
         <span class="n">transform</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">loss_columns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="k">if</span> <span class="n">shift</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"shift has to be at least 1."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">shift</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"shift has to be 1 (next time step) or 0 (time of the inputs), got </span><span class="si">{</span><span class="n">shift</span><span class="si">}</span><span class="s2">. A delay is modelled "</span>
+                <span class="s2">"with lagged inputs (e.g. lags={'u': 3}), a prediction over several steps recursively (eval_horizon)."</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="n">output</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"An output is required."</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">expand_lags</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">inputs</span><span class="p">),</span> <span class="n">lags</span><span class="p">)</span> <span class="k">if</span> <span class="n">inputs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
@@ -458,6 +466,7 @@
             <span class="n">targets</span><span class="o">=</span><span class="p">[</span><span class="n">TARGET_PREFIX</span> <span class="o">+</span> <span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">],</span>
             <span class="n">derived</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
             <span class="n">loss_columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loss_columns</span><span class="p">,</span>
+            <span class="n">shift</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Split of the data: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">split_summary</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">valid</span><span class="p">])</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
         <span class="k">return</span> <span class="n">td</span></div>
@@ -484,6 +493,26 @@
                     <span class="sa">f</span><span class="s2">"The model needs the inputs </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">, which are not part of the inputs </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="si">}</span><span class="s2">."</span>
                 <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_shift</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""With shift = 0 the target is taken at the time of the inputs: it must not be one of them."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">changes</span> <span class="o">=</span> <span class="p">[</span><span class="n">o</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="k">if</span> <span class="n">CHANGE_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">o</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">changes</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Outputs </span><span class="si">{</span><span class="n">changes</span><span class="si">}</span><span class="s2"> are changes to the next step and need shift=1."</span><span class="p">)</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="p">{</span><span class="n">output_feature</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">}</span>
+        <span class="n">leaks</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">features</span> <span class="ow">or</span> <span class="n">output_feature</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">in</span> <span class="n">features</span><span class="p">]</span>
+        <span class="n">leaks</span> <span class="o">+=</span> <span class="p">[</span>
+            <span class="n">name</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span> <span class="ow">and</span> <span class="n">features</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">free_vars</span><span class="p">())</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">leaks</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"With shift=0 the outputs </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">features</span><span class="p">)</span><span class="si">}</span><span class="s2"> are predicted at the time of the inputs, so the inputs "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">leaks</span><span class="si">}</span><span class="s2"> contain the target. Use lagged values (e.g. 'X_lag1') or shift=1."</span>
+            <span class="p">)</span>
 
 <div class="viewcode-block" id="PreprocessingData.pipeline"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.pipeline">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainingDataGeneric</span><span class="p">:</span>
@@ -522,6 +551,7 @@
         <span class="n">class_name</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"__class_name__"</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
         <span class="n">target</span> <span class="o">=</span> <span class="bp">cls</span> <span class="k">if</span> <span class="bp">cls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">PreprocessingData</span> <span class="k">else</span> <span class="n">PREPROCESSING_CLASS_REGISTRY</span><span class="p">[</span><span class="n">class_name</span><span class="p">]</span>
         <span class="n">config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"physXAI_version"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"environment"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="n">transform</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"transform"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">transform</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"The transform '</span><span class="si">%s</span><span class="s2">' is not serialized and has to be set again."</span><span class="p">,</span> <span class="n">transform</span><span class="p">)</span>
@@ -576,6 +606,8 @@
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">eval_horizon</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"The recursive evaluation (eval_horizon) predicts the next step and needs shift=1."</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">eval_horizon</span> <span class="o">=</span> <span class="n">eval_horizon</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">eval_stride</span> <span class="o">=</span> <span class="n">eval_stride</span>
 
@@ -602,6 +634,7 @@
 <span class="sd">            model: Optional model; without explicit inputs, its required inputs are used.</span>
 <span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">resolve_inputs</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_shift</span><span class="p">()</span>
         <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
         <span class="n">horizon</span><span class="p">,</span> <span class="n">stride</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_horizon_steps</span><span class="p">()</span>
         <span class="n">td</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_training_data</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">eval_horizon</span><span class="o">=</span><span class="n">horizon</span><span class="p">,</span> <span class="n">eval_stride</span><span class="o">=</span><span class="n">stride</span><span class="p">)</span>
@@ -654,6 +687,8 @@
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Multi step models predict the next step of their states and need shift=1."</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">label_width</span> <span class="o">=</span> <span class="n">label_width</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">warmup_width</span> <span class="o">=</span> <span class="n">warmup_width</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">overlapping_sequences</span> <span class="o">=</span> <span class="n">overlapping_sequences</span>

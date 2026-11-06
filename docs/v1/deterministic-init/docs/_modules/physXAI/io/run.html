@@ -305,8 +305,25 @@
 
 <div class="viewcode-block" id="Run.version_info"><a class="viewcode-back" href="../../../code/physXAI.io.html#physXAI.io.run.Run.version_info">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">version_info</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Meta information stored with every saved config."""</span>
-        <span class="k">return</span> <span class="p">{</span><span class="s2">"physXAI_version"</span><span class="p">:</span> <span class="n">__version__</span><span class="p">}</span></div></div>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Meta information stored with every saved config: the version of physXAI and the versions of Python and of</span>
+<span class="sd">        the packages the results depend on (`environment`), so a run can be reproduced in the same environment.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"physXAI_version"</span><span class="p">:</span> <span class="n">__version__</span><span class="p">,</span> <span class="s2">"environment"</span><span class="p">:</span> <span class="n">environment_info</span><span class="p">()}</span></div></div>
+
+
+<div class="viewcode-block" id="environment_info"><a class="viewcode-back" href="../../../code/physXAI.io.html#physXAI.io.run.environment_info">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">environment_info</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Versions of Python and of the packages a trained model depends on (None if a package is not installed)."""</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">PackageNotFoundError</span><span class="p">,</span> <span class="n">version</span>
+
+    <span class="n">info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"python"</span><span class="p">:</span> <span class="n">platform</span><span class="o">.</span><span class="n">python_version</span><span class="p">(),</span> <span class="s2">"platform"</span><span class="p">:</span> <span class="n">platform</span><span class="o">.</span><span class="n">platform</span><span class="p">(</span><span class="n">terse</span><span class="o">=</span><span class="kc">True</span><span class="p">)}</span>
+    <span class="k">for</span> <span class="n">package</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"numpy"</span><span class="p">,</span> <span class="s2">"pandas"</span><span class="p">,</span> <span class="s2">"scikit-learn"</span><span class="p">,</span> <span class="s2">"keras"</span><span class="p">,</span> <span class="s2">"tensorflow"</span><span class="p">,</span> <span class="s2">"casadi"</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">info</span><span class="p">[</span><span class="n">package</span><span class="p">]</span> <span class="o">=</span> <span class="n">version</span><span class="p">(</span><span class="n">package</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">PackageNotFoundError</span><span class="p">:</span>
+            <span class="n">info</span><span class="p">[</span><span class="n">package</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">info</span></div>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_json_default</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>

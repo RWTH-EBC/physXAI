@@ -99,14 +99,18 @@ whole horizon, also on unseen inputs. The parameters are positive by constructio
 starting at 1), `1 − Σ b > 0` is checked after the training (`consistency_margin`).
 
 ```python
-from physXAI.models.ann.ann_design import PCNNModel
+from physXAI import expr as px
+from physXAI.models import PCNNModel
+from physXAI.preprocessing.preprocessing import PreprocessingMultiStep
 
 prep = PreprocessingMultiStep(inputs=['oveHeaPumY_u', 'weaSta_reaWeaTDryBul_y', 'weaSta_reaWeaHDirNor_y', 'reaTZon_y'],
-                              output=px.Change('reaTZon_y'), warmup_width='3h', label_width='12h', eval_horizon='24h')
+                              output=px.Change('reaTZon_y'), warmup_width='3h', label_width='12h', eval_horizon='24h',
+                              time_index_col='time')   # the time column of the BOPTEST data
 m = PCNNModel(heating={'oveHeaPumY_u': 0.5},              # +1 K in 2 h at full power: 0.5 K/h
               losses={'weaSta_reaWeaTDryBul_y': 0.01},    # -1.5 K in 6 h at 25 K colder outside: 0.01 1/h
               rnn_layer='LSTM', rnn_units=16)
-m.pipeline(prep.pipeline(path))
+td = prep.pipeline(path)
+m.pipeline(td)
 td.physics['parameters']        # trained rates per hour and the consistency margin
 ```
 

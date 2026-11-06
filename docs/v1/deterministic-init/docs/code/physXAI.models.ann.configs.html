@@ -114,10 +114,12 @@
 </section>
 <section id="module-physXAI.models.ann.configs.ann_model_configs">
 <span id="physxai-models-ann-configs-ann-model-configs-module"></span><h2>physXAI.models.ann.configs.ann_model_configs module<a class="headerlink" href="#module-physXAI.models.ann.configs.ann_model_configs" title="Permalink to this heading"></a></h2>
+<p>Validation of the settings of the keras model constructions (pydantic).</p>
 <dl class="py class pydantic_model">
 <dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config">
 <em class="property"><span class="pre">pydantic</span> <span class="pre">model</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.configs.ann_model_configs.</span></span><span class="sig-name descname"><span class="pre">ClassicalANNConstruction_config</span></span><a class="reference internal" href="../_modules/physXAI/models/ann/configs/ann_model_configs.html#ClassicalANNConstruction_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Settings of a feed forward network: layers, neurons, activations, normalization and output rescaling.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Fields<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -203,6 +205,7 @@
 <dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config">
 <em class="property"><span class="pre">pydantic</span> <span class="pre">model</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.configs.ann_model_configs.</span></span><span class="sig-name descname"><span class="pre">RBFConstruction_config</span></span><a class="reference internal" href="../_modules/physXAI/models/ann/configs/ann_model_configs.html#RBFConstruction_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassicalANNConstruction_config</span></code></a></p>
+<p>Settings of an RBF network (one layer), the k-means seed and an optional fixed output rescaling.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Fields<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -251,6 +254,7 @@
 <dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config">
 <em class="property"><span class="pre">pydantic</span> <span class="pre">model</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.configs.ann_model_configs.</span></span><span class="sig-name descname"><span class="pre">CMNNModelConstruction_config</span></span><a class="reference internal" href="../_modules/physXAI/models/ann/configs/ann_model_configs.html#CMNNModelConstruction_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassicalANNConstruction_config</span></code></a></p>
+<p>Settings of a CMNN: monotonicities per input and the shares of convex, concave and saturated neurons.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Fields<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -305,6 +309,7 @@
 <dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.RNNModelConstruction_config">
 <em class="property"><span class="pre">pydantic</span> <span class="pre">model</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.configs.ann_model_configs.</span></span><span class="sig-name descname"><span class="pre">RNNModelConstruction_config</span></span><a class="reference internal" href="../_modules/physXAI/models/ann/configs/ann_model_configs.html#RNNModelConstruction_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.RNNModelConstruction_config" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Settings of the recurrent layer of an RNN or PCNN.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Fields<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">

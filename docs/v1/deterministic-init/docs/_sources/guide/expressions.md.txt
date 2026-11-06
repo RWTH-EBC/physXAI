@@ -17,6 +17,7 @@ prediction, and the MPC only needs the raw inputs:
 
 ```python
 from physXAI.models import ModularANN
+from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 
 model = ModularANN(px.Linear([v.mDot, v.load, vT, v.T]), solver="ols")   # linear regression in closed form
 prep = PreprocessingSingleStep(output=px.Change("T"))
@@ -42,18 +43,21 @@ feature are recomputed in every step.
 
 | Block | Purpose |
 |---|---|
-| `px.Linear(inputs, monotonicities=None, normalize=None)` | weighted sum, optionally with monotonic weights |
+| `px.Linear(inputs, monotonicities=None, bias=True, normalize=False)` | weighted sum, optionally with monotonic weights |
 | `px.MLP(inputs, n_layers=1, n_neurons=32, activation='softplus')` | neural network |
-| `px.MonotoneMLP(inputs, monotonicities, activation_split=None)` | constrained monotonic network (CMNN) |
+| `px.MonotoneMLP(inputs, monotonicities={...}, activation_split=None)` | constrained monotonic network (CMNN) |
 | `px.Polynomial(inputs, degree=2, interaction_degree=1)` | polynomial features |
-| `px.RBF(inputs, units=32)` | radial basis functions (extrapolate to 0, for residual models) |
+| `px.RBF(inputs, units=32, random_state=None)` | radial basis functions (extrapolate to 0, for residual models) |
 | `px.Mean(inputs)` | mean of expressions |
 | `px.Normalize(x)` | normalization with the training data statistics |
 | `px.Param(init=None, trainable=True)` | (trainable) scalar parameter |
 | `px.Pretrained(model, inputs, trainable=False)` | an already trained keras model |
 
 Arithmetic (`+ - * / **`), `px.exp`, `px.relu`, `px.sigmoid`, `px.softplus`, `px.tanh` and constants
-(`px.Const`) combine them. Blocks normalize their inputs; arithmetic works on physical values.
+(`px.Const`) combine them. Arithmetic works on physical values. `MLP`, `MonotoneMLP` and `RBF` normalize their
+inputs with the statistics of the training data; `Linear`, `Polynomial` and `Mean` do not (`normalize=True` turns it
+on), so their weights keep their physical meaning. The second positional argument of every block is its `name`, so
+the other settings are given as keywords.
 
 ```python
 v = px.Vars()

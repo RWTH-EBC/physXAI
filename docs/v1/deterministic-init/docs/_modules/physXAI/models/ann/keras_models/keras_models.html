@@ -84,7 +84,14 @@
            <div itemprop="articleBody">
              
   <h1>Source code for physXAI.models.ann.keras_models.keras_models</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span></span><span class="sd">"""</span>
+<span class="sd">Custom keras layers, activations and constraints of physXAI.</span>
+
+<span class="sd">They are registered under fixed names (`custom_layer&gt;...`, `custom_activation&gt;...`, `custom_constraint&gt;...`), which</span>
+<span class="sd">saved models and the CasADi converter of AgentLib-MPC rely on: the names and attributes must not change.</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 

@@ -196,7 +196,6 @@
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.save_model"><code class="docutils literal notranslate"><span class="pre">RNNModel.save_model()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.load_model"><code class="docutils literal notranslate"><span class="pre">RNNModel.load_model()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.get_config"><code class="docutils literal notranslate"><span class="pre">RNNModel.get_config()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.from_config"><code class="docutils literal notranslate"><span class="pre">RNNModel.from_config()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel"><code class="docutils literal notranslate"><span class="pre">PCNNModel</span></code></a><ul>
@@ -223,7 +222,6 @@
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.fit_model"><code class="docutils literal notranslate"><span class="pre">ModularANN.fit_model()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.online_pipeline"><code class="docutils literal notranslate"><span class="pre">ModularANN.online_pipeline()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.get_config"><code class="docutils literal notranslate"><span class="pre">ModularANN.get_config()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.from_config"><code class="docutils literal notranslate"><span class="pre">ModularANN.from_config()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -263,10 +261,23 @@
 </section>
 <section id="module-physXAI.models.models">
 <span id="physxai-models-models-module"></span><h2>physXAI.models.models module<a class="headerlink" href="#module-physXAI.models.models" title="Permalink to this heading"></a></h2>
+<p>Base classes of all physXAI models and the scikit-learn linear regression.</p>
+<p>A model object holds the settings of a model (its config) and runs the training pipeline: generate, compile,
+fit, evaluate, save. The trained (keras or scikit-learn) model is returned by <code class="code docutils literal notranslate"><span class="pre">pipeline</span></code> and kept in
+<code class="code docutils literal notranslate"><span class="pre">trained_model</span></code>. Models are registered by class name (<code class="code docutils literal notranslate"><span class="pre">register_model</span></code>), so they can be created from their
+saved config (<code class="code docutils literal notranslate"><span class="pre">AbstractModel.model_from_config</span></code>); AgentLib-MPC reads the class name from <code class="code docutils literal notranslate"><span class="pre">{name}_model.json</span></code>.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="physXAI.models.models.CONFIG_META_KEYS">
+<span class="sig-prename descclassname"><span class="pre">physXAI.models.models.</span></span><span class="sig-name descname"><span class="pre">CONFIG_META_KEYS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('__class_name__',</span> <span class="pre">'physXAI_version',</span> <span class="pre">'environment')</span></em><a class="headerlink" href="#physXAI.models.models.CONFIG_META_KEYS" title="Permalink to this definition"></a></dt>
+<dd><p>Keys of a saved model config which are no arguments of the model (see <code class="code docutils literal notranslate"><span class="pre">Run.save</span></code>)</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="physXAI.models.models.AbstractModel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.models.</span></span><span class="sig-name descname"><span class="pre">AbstractModel</span></span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<p>Base class of all models: the training pipeline (<code class="code docutils literal notranslate"><span class="pre">pipeline</span></code>, <code class="code docutils literal notranslate"><span class="pre">online_pipeline</span></code>), saving, loading and the
+config (<code class="code docutils literal notranslate"><span class="pre">get_config</span></code>, <code class="code docutils literal notranslate"><span class="pre">from_config</span></code>, <code class="code docutils literal notranslate"><span class="pre">model_from_config</span></code>).</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.generate_model">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.generate_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.generate_model" title="Permalink to this definition"></a></dt>
@@ -300,7 +311,8 @@ this might be a pass-through or not applicable.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.evaluate">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.evaluate" title="Permalink to this definition"></a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Predicts all splits of <code class="code docutils literal notranslate"><span class="pre">td</span></code> with the trained model and stores predictions and metrics in <code class="code docutils literal notranslate"><span class="pre">td</span></code>.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – </p>
 </dd>
@@ -464,8 +476,10 @@ after the pipeline instead of <code class="code docutils literal notranslate"><s
 
 <dl class="py method">
 <dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.from_config">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.from_config" title="Permalink to this definition"></a></dt>
-<dd><dl class="field-list simple">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.from_config" title="Permalink to this definition"></a></dt>
+<dd><p>Creates the model from its config (<code class="code docutils literal notranslate"><span class="pre">get_config</span></code>). Meta keys of saved configs (<code class="code docutils literal notranslate"><span class="pre">__class_name__</span></code>,
+<code class="code docutils literal notranslate"><span class="pre">physXAI_version</span></code>, <code class="code docutils literal notranslate"><span class="pre">environment</span></code>) are ignored, unknown settings raise a <code class="code docutils literal notranslate"><span class="pre">TypeError</span></code>.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – </p>
 </dd>
@@ -482,7 +496,7 @@ after the pipeline instead of <code class="code docutils literal notranslate"><s
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>item_conf</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – The configuration dictionary for a model.
-Must contain ‘class_name’ and other necessary parameters.</p>
+Must contain ‘__class_name__’ and other necessary parameters.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>An instance of the appropriate model subclass.</p>
@@ -491,7 +505,7 @@ Must contain ‘class_name’ and other necessary parameters.</p>
 <dd class="field-odd"><p><a class="reference internal" href="#physXAI.models.models.AbstractModel" title="physXAI.models.models.AbstractModel">AbstractModel</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#KeyError" title="(in Python v3.15)"><strong>KeyError</strong></a> – If ‘class_name’ is not in <code class="code docutils literal notranslate"><span class="pre">item_conf</span></code> or if the class_name is not in <code class="code docutils literal notranslate"><span class="pre">MODEL_CLASS_REGISTRY</span></code>.</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#KeyError" title="(in Python v3.15)"><strong>KeyError</strong></a> – If ‘__class_name__’ is not in <code class="code docutils literal notranslate"><span class="pre">item_conf</span></code> or the class is not in <code class="code docutils literal notranslate"><span class="pre">MODEL_CLASS_REGISTRY</span></code>.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -523,19 +537,6 @@ Predictions are stored in the TrainingData object, and metrics are calculated an
 <li><p><strong>model</strong> – The trained model instance.</p></li>
 <li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – The TrainingData object containing datasets and for storing results.</p></li>
 </ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="physXAI.models.models.SingleStepModel.from_config">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#SingleStepModel.from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.SingleStepModel.from_config" title="Permalink to this definition"></a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – </p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="#physXAI.models.models.SingleStepModel" title="physXAI.models.models.SingleStepModel"><em>SingleStepModel</em></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -645,19 +646,6 @@ predicted trajectories, the metrics and the errors over the evaluation horizon i
 <li><p><strong>model</strong> – The trained model (sequence or step model).</p></li>
 <li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep" title="physXAI.preprocessing.training_data.TrainingDataMultiStep"><em>TrainingDataMultiStep</em></a>) – The training data.</p></li>
 </ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="physXAI.models.models.MultiStepModel.from_config">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#MultiStepModel.from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.MultiStepModel.from_config" title="Permalink to this definition"></a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – </p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="#physXAI.models.models.MultiStepModel" title="physXAI.models.models.MultiStepModel"><em>MultiStepModel</em></a></p>
 </dd>
 </dl>
 </dd></dl>

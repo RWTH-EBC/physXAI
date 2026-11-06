@@ -183,9 +183,11 @@ on to it instead of being printed.</p>
 </section>
 <section id="reproducibility">
 <h2>Reproducibility<a class="headerlink" href="#reproducibility" title="Permalink to this heading"></a></h2>
-<p>Every random choice (split, weights, batches) is seeded. <code class="docutils literal notranslate"><span class="pre">random_state=None</span></code> in the preprocessing draws a
-seed and stores it in the config, so every run can be reproduced from its saved config.
-<code class="docutils literal notranslate"><span class="pre">physXAI.set_seed(42)</span></code> sets one global seed for Python, NumPy and Keras.</p>
+<p>Every random choice (split, weights, batches, k-means centers) is seeded. <code class="docutils literal notranslate"><span class="pre">physXAI.set_seed(42)</span></code> sets one global
+seed for Python, NumPy and Keras, which is the default of <code class="docutils literal notranslate"><span class="pre">random_state</span></code> (preprocessing) and <code class="docutils literal notranslate"><span class="pre">random_seed</span></code> (models).
+Without a seed, every object draws one and stores it in its config, so every run can be reproduced from its saved
+configs. The saved configs also record the versions of Python and of the main packages (<code class="docutils literal notranslate"><span class="pre">environment</span></code>).
+On a GPU, TensorFlow is not bitwise deterministic unless <code class="docutils literal notranslate"><span class="pre">tf.config.experimental.enable_op_determinism()</span></code> is set.</p>
 </section>
 </section>
 

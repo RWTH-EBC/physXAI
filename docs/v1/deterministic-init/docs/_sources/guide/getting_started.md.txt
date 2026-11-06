@@ -81,6 +81,8 @@ on to it instead of being printed.
 
 ## Reproducibility
 
-Every random choice (split, weights, batches) is seeded. `random_state=None` in the preprocessing draws a
-seed and stores it in the config, so every run can be reproduced from its saved config.
-`physXAI.set_seed(42)` sets one global seed for Python, NumPy and Keras.
+Every random choice (split, weights, batches, k-means centers) is seeded. `physXAI.set_seed(42)` sets one global
+seed for Python, NumPy and Keras, which is the default of `random_state` (preprocessing) and `random_seed` (models).
+Without a seed, every object draws one and stores it in its config, so every run can be reproduced from its saved
+configs. The saved configs also record the versions of Python and of the main packages (`environment`).
+On a GPU, TensorFlow is not bitwise deterministic unless `tf.config.experimental.enable_op_determinism()` is set.

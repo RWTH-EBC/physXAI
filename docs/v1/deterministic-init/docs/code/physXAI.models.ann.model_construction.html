@@ -114,6 +114,7 @@
 </section>
 <section id="module-physXAI.models.ann.model_construction.ann_models">
 <span id="physxai-models-ann-model-construction-ann-models-module"></span><h2>physXAI.models.ann.model_construction.ann_models module<a class="headerlink" href="#module-physXAI.models.ann.model_construction.ann_models" title="Permalink to this heading"></a></h2>
+<p>Construction of the keras models of <code class="code docutils literal notranslate"><span class="pre">ClassicalANNModel</span></code> and <code class="code docutils literal notranslate"><span class="pre">CMNNModel</span></code> (and of <code class="code docutils literal notranslate"><span class="pre">PINNModel</span></code>).</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.ann_models.ClassicalANNConstruction">
 <span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.ann_models.</span></span><span class="sig-name descname"><span class="pre">ClassicalANNConstruction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/ann_models.html#ClassicalANNConstruction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.ann_models.ClassicalANNConstruction" title="Permalink to this definition"></a></dt>
@@ -162,6 +163,7 @@ input shape, and determining monotonicity constraints based on column names.</p>
 </section>
 <section id="module-physXAI.models.ann.model_construction.rbf_models">
 <span id="physxai-models-ann-model-construction-rbf-models-module"></span><h2>physXAI.models.ann.model_construction.rbf_models module<a class="headerlink" href="#module-physXAI.models.ann.model_construction.rbf_models" title="Permalink to this heading"></a></h2>
+<p>Construction of radial basis function networks (<code class="code docutils literal notranslate"><span class="pre">RBFModel</span></code>): k-means centers and the width of the gaussians.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rbf_models.gamma_init">
 <span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.rbf_models.</span></span><span class="sig-name descname"><span class="pre">gamma_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">centers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/rbf_models.html#gamma_init"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.rbf_models.gamma_init" title="Permalink to this definition"></a></dt>
@@ -193,7 +195,7 @@ centers initialized by the RBFLayer’s default mechanism or as specified.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – A dictionary containing the configuration parameters for the RBF network.
-This is validated against <code class="code docutils literal notranslate"><span class="pre">ClassicalANNConstruction_config</span></code>.</p></li>
+This is validated against <code class="code docutils literal notranslate"><span class="pre">RBFConstruction_config</span></code>.</p></li>
 <li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – An object containing the training data,
 used for adapting normalization, K-Means clustering, and
 determining input/output shapes.</p></li>
@@ -211,6 +213,7 @@ determining input/output shapes.</p></li>
 </section>
 <section id="module-physXAI.models.ann.model_construction.residual_models">
 <span id="physxai-models-ann-model-construction-residual-models-module"></span><h2>physXAI.models.ann.model_construction.residual_models module<a class="headerlink" href="#module-physXAI.models.ann.model_construction.residual_models" title="Permalink to this heading"></a></h2>
+<p>Construction of <code class="code docutils literal notranslate"><span class="pre">LinANNModel</span></code>: a frozen linear regression plus an RBF network on its residuals.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.residual_models.LinResidualANNConstruction">
 <span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.residual_models.</span></span><span class="sig-name descname"><span class="pre">LinResidualANNConstruction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lin_model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/residual_models.html#LinResidualANNConstruction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.residual_models.LinResidualANNConstruction" title="Permalink to this definition"></a></dt>

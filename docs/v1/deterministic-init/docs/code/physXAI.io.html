@@ -394,7 +394,8 @@ Existing files are never deleted, so several models can share one run directory.
 <dl class="py method">
 <dt class="sig sig-object py" id="physXAI.io.run.Run.version_info">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">version_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/run.html#Run.version_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.run.Run.version_info" title="Permalink to this definition"></a></dt>
-<dd><p>Meta information stored with every saved config.</p>
+<dd><p>Meta information stored with every saved config: the version of physXAI and the versions of Python and of
+the packages the results depend on (<code class="code docutils literal notranslate"><span class="pre">environment</span></code>), so a run can be reproduced in the same environment.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
@@ -402,6 +403,17 @@ Existing files are never deleted, so several models can share one run directory.
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.io.run.environment_info">
+<span class="sig-prename descclassname"><span class="pre">physXAI.io.run.</span></span><span class="sig-name descname"><span class="pre">environment_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/run.html#environment_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.run.environment_info" title="Permalink to this definition"></a></dt>
+<dd><p>Versions of Python and of the packages a trained model depends on (None if a package is not installed).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a> | None]</p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
