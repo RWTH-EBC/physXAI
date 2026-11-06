@@ -1,0 +1,662 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>physXAI.models.ann.keras_models.keras_models &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../../../../../_static/jquery.js"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+      <script src="../../../../../_static/doctools.js"></script>
+      <script src="../../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/physics.html">Physics-informed models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">physXAI.models.ann.keras_models.keras_models</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for physXAI.models.ann.keras_models.keras_models</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'TF_CPP_MIN_LOG_LEVEL'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'2'</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">keras</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'TF_CPP_MIN_LOG_LEVEL'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'0'</span>
+
+
+<div class="viewcode-block" id="NonNegPartial"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.NonNegPartial">[docs]</a><span class="nd">@keras</span><span class="o">.</span><span class="n">saving</span><span class="o">.</span><span class="n">register_keras_serializable</span><span class="p">(</span><span class="n">package</span><span class="o">=</span><span class="s1">'custom_constraint'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'NonNegPartial'</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">NonNegPartial</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">Constraint</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A Keras constraint that enforces non-negativity or non-positivity on specific parts of a weight tensor.</span>
+<span class="sd">    This is useful for imposing monotonicity constraints on a neural network layer.</span>
+<span class="sd">    For example, if a feature should have a non-decreasing relationship with the output,</span>
+<span class="sd">    the corresponding weight can be constrained to be non-negative.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monotonicities</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Initializes the NonNegPartial constraint.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            monotonicities (list[int]): A list of integers specifying the monotonicity for each</span>
+<span class="sd">                                        corresponding weight (or part of the weight tensor).</span>
+<span class="sd">                                        -  1: Enforces non-negativity (weight &gt;= 0).</span>
+<span class="sd">                                        - -1: Enforces non-positivity (weight &lt;= 0).</span>
+<span class="sd">                                        -  0: No constraint is applied.</span>
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If any item in `monotonicities` is not -1, 0, or 1.</span>
+<span class="sd">        """</span>
+
+        <span class="n">allowed_items</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">item</span> <span class="ow">in</span> <span class="n">allowed_items</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">monotonicities</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Monotonicities must be in [-1, 0, 1]'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">monotonicities</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">         Applies the constraint to the weight tensor.</span>
+<span class="sd">         This method is called by Keras during the training process after each weight update.</span>
+
+<span class="sd">         Args:</span>
+<span class="sd">             w: The weight tensor to be constrained.</span>
+
+<span class="sd">         Returns:</span>
+<span class="sd">             The constrained weight tensor.</span>
+
+<span class="sd">         Raises:</span>
+<span class="sd">             ValueError: If the length of `monotonicities` does not match the first dimension</span>
+<span class="sd">                         of the weight tensor `w`.</span>
+<span class="sd">         """</span>
+
+        <span class="n">w</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">)</span> <span class="o">!=</span> <span class="n">w</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Length of monotonicities list must be equal'</span>
+                             <span class="s1">' to the first element of the weight tensor´s shape.'</span><span class="p">)</span>
+
+        <span class="n">w_split</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="c1"># non-negativity</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">w_split</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">w_split</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">greater_equal</span><span class="p">(</span><span class="n">w_split</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mf">0.</span><span class="p">),</span>
+                                                         <span class="n">dtype</span><span class="o">=</span><span class="n">w_split</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="c1"># non - positivity</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">w_split</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">w_split</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">greater_equal</span><span class="p">(</span><span class="o">-</span><span class="n">w_split</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mf">0.</span><span class="p">),</span>
+                                                         <span class="n">dtype</span><span class="o">=</span><span class="n">w_split</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+        <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">w_split</span><span class="p">)</span>
+
+<div class="viewcode-block" id="NonNegPartial.get_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.NonNegPartial.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">'monotonicities'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">}</span></div></div>
+
+
+<div class="viewcode-block" id="ConcaveActivation"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.ConcaveActivation">[docs]</a><span class="nd">@keras</span><span class="o">.</span><span class="n">saving</span><span class="o">.</span><span class="n">register_keras_serializable</span><span class="p">(</span><span class="n">package</span><span class="o">=</span><span class="s1">'custom_activation'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'ConcaveActivation'</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConcaveActivation</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A Keras activation function wrapper that transforms a given activation function</span>
+<span class="sd">    into its concave counterpart.</span>
+<span class="sd">    If f(x) is the original activation, the concave version is -f(-x).</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">activation</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Initializes the ConcaveActivation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            activation (str): The name of the Keras activation function to be made concave</span>
+<span class="sd">                              (e.g., 'relu', 'sigmoid').</span>
+<span class="sd">        """</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">activation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation_fcn</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">activations</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">activation</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Applies the concave transformation to the input tensor.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: The input tensor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The tensor after applying the concave activation: -activation_fcn(-x).</span>
+<span class="sd">        """</span>
+
+        <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">activation_fcn</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ConcaveActivation.get_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.ConcaveActivation.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">'activation'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="ConcaveActivation.from_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.ConcaveActivation.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SaturatedActivation"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.SaturatedActivation">[docs]</a><span class="nd">@keras</span><span class="o">.</span><span class="n">saving</span><span class="o">.</span><span class="n">register_keras_serializable</span><span class="p">(</span><span class="n">package</span><span class="o">=</span><span class="s1">'custom_activation'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'SaturatedActivation'</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SaturatedActivation</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A Keras activation function that creates a saturated version of a given base activation.</span>
+<span class="sd">    The saturation behavior is different for x &lt;= 0 and x &gt; 0.</span>
+<span class="sd">    - For x &lt;= 0:  f(x + 1) - f(1)  (where f is the base activation)</span>
+<span class="sd">    - For x &gt; 0:  g(x - 1) + f(1)  (where g is the concave version of f, and f(1) is a constant)</span>
+<span class="sd">    This can be used to create activation functions that plateau or saturate at certain input ranges.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">activation</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Initializes the SaturatedActivation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            activation (str): The name of the Keras activation function to be used as the base.</span>
+<span class="sd">        """</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">activation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation_fcn</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">activations</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">activation</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation_fcn_concave</span> <span class="o">=</span> <span class="n">ConcaveActivation</span><span class="p">(</span><span class="n">activation</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Applies the saturated activation to the input tensor.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: The input tensor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The tensor after applying the saturated activation.</span>
+<span class="sd">        """</span>
+
+        <span class="n">cc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation_fcn</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+            <span class="n">x</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">activation_fcn</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">cc</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">activation_fcn_concave</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">cc</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="SaturatedActivation.get_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.SaturatedActivation.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">'activation'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="SaturatedActivation.from_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.SaturatedActivation.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="LimitedActivation"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.LimitedActivation">[docs]</a><span class="nd">@keras</span><span class="o">.</span><span class="n">saving</span><span class="o">.</span><span class="n">register_keras_serializable</span><span class="p">(</span><span class="n">package</span><span class="o">=</span><span class="s1">'custom_activation'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'LimitedActivation'</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LimitedActivation</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A Keras activation function that clips the input tensor to a specified minimum and/or maximum value.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">min_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Initializes the LimitedActivation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            max_value (float, optional): The maximum value to clip to. If None, no upper limit is applied.</span>
+<span class="sd">                                         Defaults to None.</span>
+<span class="sd">            min_value (float, optional): The minimum value to clip to. If None, no lower limit is applied.</span>
+<span class="sd">                                         Defaults to None.</span>
+<span class="sd">        """</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_value</span> <span class="o">=</span> <span class="n">max_value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_value</span> <span class="o">=</span> <span class="n">min_value</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Applies the clipping to the input tensor.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: The input tensor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The clipped tensor.</span>
+<span class="sd">        """</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span>
+
+<div class="viewcode-block" id="LimitedActivation.get_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.LimitedActivation.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">'max_value'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_value</span><span class="p">,</span> <span class="s1">'min_value'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_value</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="LimitedActivation.from_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.LimitedActivation.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="RBFLayer"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.RBFLayer">[docs]</a><span class="nd">@keras</span><span class="o">.</span><span class="n">saving</span><span class="o">.</span><span class="n">register_keras_serializable</span><span class="p">(</span><span class="n">package</span><span class="o">=</span><span class="s1">'custom_layer'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'RBFLayer'</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RBFLayer</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">Layer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">        Custom Radial Basis Function (RBF) Layer.</span>
+
+<span class="sd">        This layer implements RBF neurons, where the activation is typically a Gaussian function</span>
+<span class="sd">        of the Euclidean distance between the input and the neuron's center.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            units (int): Positive integer, dimensionality of the output space (number of RBF neurons).</span>
+<span class="sd">            gamma (float or list/array): The gamma parameter of the Gaussian function, controlling the width.</span>
+<span class="sd">                                         Can be a scalar (same gamma for all neurons) or a tensor/array</span>
+<span class="sd">                                         of length `units` (individual gamma per neuron).</span>
+<span class="sd">            initial_centers (np.ndarray, optional): A NumPy array of shape (units, input_dim)</span>
+<span class="sd">                                                     for the initial centers. If None, they are</span>
+<span class="sd">                                                     initialized using a default initializer (RandomUniform).</span>
+<span class="sd">            learnable_centers (bool): Whether the centers should be trainable. Defaults to True.</span>
+<span class="sd">            learnable_gamma (bool): Whether gamma should be trainable. Defaults to True.</span>
+
+<span class="sd">        Input shape:</span>
+<span class="sd">            2D tensor with shape `(batch_size, input_dim)`.</span>
+
+<span class="sd">        Output shape:</span>
+<span class="sd">            2D tensor with shape `(batch_size, units)`.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">initial_centers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">learnable_centers</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">learnable_gamma</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Initializes the RBFLayer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            units (int): Number of RBF neurons.</span>
+<span class="sd">            gamma (float or list/np.ndarray): Initial value(s) for the gamma parameter.</span>
+<span class="sd">            initial_centers (np.ndarray, optional): Initial positions for the RBF centers.</span>
+<span class="sd">            learnable_centers (bool): If True, centers will be updated during training.</span>
+<span class="sd">            learnable_gamma (bool): If True, gamma values will be updated during training.</span>
+<span class="sd">        """</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">units</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gamma_init_value</span> <span class="o">=</span> <span class="n">gamma</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_centers</span> <span class="o">=</span> <span class="n">initial_centers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">learnable_centers</span> <span class="o">=</span> <span class="n">learnable_centers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">learnable_gamma</span> <span class="o">=</span> <span class="n">learnable_gamma</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">centers</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_gamma</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="RBFLayer.build"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.RBFLayer.build">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Creates the layer's weights (centers and gamma).</span>
+<span class="sd">        This method is called the first time the layer is used, with the shape of the input.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_shape (tuple): Shape of the input tensor.</span>
+<span class="sd">        """</span>
+
+        <span class="c1"># Extract the input feature dimension</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="n">input_shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># Initialize RBF centers</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_centers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Validate the shape of provided initial centers</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_centers</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"Shape of initial_centers </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_centers</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> "</span>
+                    <span class="sa">f</span><span class="s2">"does not match expected shape (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="si">}</span><span class="s2">)"</span>
+                <span class="p">)</span>
+            <span class="n">centers_initializer</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">Constant</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_centers</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Default initializer for centers if none are provided (RandomUniform)</span>
+            <span class="n">centers_initializer</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">RandomUniform</span><span class="p">(</span><span class="n">minval</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">maxval</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+
+        <span class="c1"># Add centers as a trainable weight to the layer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">centers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_weight</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s1">'centers'</span><span class="p">,</span>
+            <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">),</span>
+            <span class="n">initializer</span><span class="o">=</span><span class="n">centers_initializer</span><span class="p">,</span>
+            <span class="n">trainable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">learnable_centers</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Initialize gamma parameters (width of the Gaussian function)</span>
+        <span class="c1"># We store and train log_gamma to ensure gamma = exp(log_gamma) remains positive.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma_init_value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+            <span class="c1"># If gamma is provided as a list or array, it's for individual neurons</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma_init_value</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"If gamma is a list/array, its length must be equal to units."</span><span class="p">)</span>
+            <span class="c1"># Convert initial gamma values to log_gamma</span>
+            <span class="n">initial_log_gamma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma_init_value</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># If gamma is a scalar, use the same value for all neurons</span>
+            <span class="c1"># Convert initial gamma values to log_gamma</span>
+            <span class="n">initial_log_gamma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma_init_value</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+        <span class="c1"># Add log_gamma as a trainable weight</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_gamma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_weight</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s1">'log_gamma'</span><span class="p">,</span>
+            <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,),</span>
+            <span class="n">initializer</span><span class="o">=</span><span class="n">keras</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">Constant</span><span class="p">(</span><span class="n">initial_log_gamma</span><span class="p">),</span>
+            <span class="n">trainable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">learnable_gamma</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">input_shape</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RBFLayer.call"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.RBFLayer.call">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Defines the forward pass of the RBF layer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            inputs (tf.Tensor): Input tensor of shape (batch_size, input_dim).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tf.Tensor: Output tensor of shape (batch_size, units), representing</span>
+<span class="sd">                       the activation of each RBF neuron for each input sample.</span>
+<span class="sd">        """</span>
+        <span class="c1"># inputs shape: (batch_size, input_dim)</span>
+        <span class="c1"># centers shape: (units, input_dim)</span>
+        <span class="c1"># Goal: Calculate ||inputs_batch_item - center_unit||^2 for all combinations</span>
+
+        <span class="c1"># Expand dimensions of inputs and centers to enable broadcasting for distance calculation</span>
+        <span class="c1"># inputs_expanded shape: (batch_size, 1, input_dim)</span>
+        <span class="n">inputs_expanded</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># centers_expanded shape: (1, units, input_dim)</span>
+        <span class="n">centers_expanded</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">centers</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Calculate squared Euclidean distances between each input sample and each RBF center</span>
+        <span class="c1"># (inputs_expanded - centers_expanded) results in shape (batch_size, units, input_dim)</span>
+        <span class="c1"># Then, sum the squares along the input_dim axis (axis=2)</span>
+        <span class="n">distances_sq</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+            <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">inputs_expanded</span> <span class="o">-</span> <span class="n">centers_expanded</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span>
+        <span class="p">)</span>   <span class="c1"># Resulting shape: (batch_size, units)</span>
+
+        <span class="c1"># Apply the Gaussian RBF activation function: exp(-gamma * ||x - c||^2)</span>
+        <span class="c1"># Retrieve gamma from log_gamma (shape: (units,))</span>
+        <span class="n">gamma</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_gamma</span><span class="p">)</span>
+        <span class="c1"># Broadcasting will apply each gamma to its respective column in distances_sq</span>
+        <span class="c1"># Output shape: (batch_size, units)</span>
+        <span class="n">phi</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">gamma</span> <span class="o">*</span> <span class="n">distances_sq</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">phi</span></div>
+
+<div class="viewcode-block" id="RBFLayer.compute_output_shape"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.RBFLayer.compute_output_shape">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute_output_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Computes the output shape of the layer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_shape (tuple): Shape of the input tensor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple: Shape of the output tensor (batch_size, units).</span>
+<span class="sd">        """</span>
+
+        <span class="k">return</span> <span class="n">input_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span></div>
+
+<div class="viewcode-block" id="RBFLayer.get_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.RBFLayer.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+            <span class="s2">"units"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span>
+            <span class="c1"># Store the original gamma value(s), not log_gamma, for easier interpretatio</span>
+            <span class="s2">"gamma"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_gamma</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_gamma</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_init_value</span><span class="p">,</span>
+            <span class="c1"># Convert initial centers to list</span>
+            <span class="s2">"initial_centers"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_centers</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_centers</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"learnable_centers"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">learnable_centers</span><span class="p">,</span>
+            <span class="s2">"learnable_gamma"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">learnable_gamma</span>
+        <span class="p">})</span>
+        <span class="k">return</span> <span class="n">config</span></div>
+
+<div class="viewcode-block" id="RBFLayer.from_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.RBFLayer.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="c1"># Retrieve 'initial_centers' from config and convert back to NumPy array if it was stored as a list</span>
+        <span class="n">initial_centers_list</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"initial_centers"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">initial_centers_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">config</span><span class="p">[</span><span class="s2">"initial_centers"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">initial_centers_list</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="InputSliceLayer"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.InputSliceLayer">[docs]</a><span class="nd">@keras</span><span class="o">.</span><span class="n">saving</span><span class="o">.</span><span class="n">register_keras_serializable</span><span class="p">(</span><span class="n">package</span><span class="o">=</span><span class="s1">'custom_layer'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'InputSliceLayer'</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InputSliceLayer</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">Layer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A simple layer to select specific features from the last axis.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature_indices</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Initializes the layer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            feature_indices (int or list): The index or indices to select.</span>
+<span class="sd">                - If int (e.g., 1), selects the feature at that index and</span>
+<span class="sd">                  reduces the rank.</span>
+<span class="sd">                - If list (e.g., [1]), selects the feature(s) and</span>
+<span class="sd">                  keeps the rank.</span>
+<span class="sd">        """</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature_indices</span> <span class="o">=</span> <span class="n">feature_indices</span>
+
+<div class="viewcode-block" id="InputSliceLayer.call"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.InputSliceLayer.call">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_indices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="InputSliceLayer.get_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.InputSliceLayer.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+            <span class="s2">"feature_indices"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_indices</span>
+        <span class="p">})</span>
+        <span class="k">return</span> <span class="n">config</span></div>
+
+<div class="viewcode-block" id="InputSliceLayer.from_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.InputSliceLayer.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="InputSliceLayer.compute_output_shape"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.InputSliceLayer.compute_output_shape">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute_output_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">):</span>
+        <span class="n">output_shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">input_shape</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_indices</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">output_shape</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_indices</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">output_shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_indices</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">output_shape</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ConstantLayer"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.ConstantLayer">[docs]</a><span class="nd">@keras</span><span class="o">.</span><span class="n">saving</span><span class="o">.</span><span class="n">register_keras_serializable</span><span class="p">(</span><span class="n">package</span><span class="o">=</span><span class="s1">'custom_layer'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'ConstantLayer'</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConstantLayer</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">Layer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A layer that returns a constant tensor, broadcasted to the batch size.</span>
+
+<span class="sd">    This layer ignores its input and simply returns a tensor of a</span>
+<span class="sd">    pre-defined shape, initialized with a constant value.</span>
+
+<span class="sd">    The constant is created as a Keras weight, which can be</span>
+<span class="sd">    trainable or non-trainable.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span> <span class="n">trainable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">weight_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Initializes the layer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (float): The value to initialize the constant tensor with.</span>
+<span class="sd">            shape (tuple): The shape of the constant, *excluding* the batch</span>
+<span class="sd">                dimension. For a single number to be added, use (1,).</span>
+<span class="sd">            trainable (bool): Whether this constant is a learnable parameter.</span>
+<span class="sd">        """</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">trainable</span><span class="o">=</span><span class="n">trainable</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight_name</span> <span class="o">=</span> <span class="n">weight_name</span>
+
+<div class="viewcode-block" id="ConstantLayer.build"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.ConstantLayer.build">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">init</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">Constant</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">init</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">glorot_uniform</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constant</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_weight</span><span class="p">(</span>
+            <span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_shape</span><span class="p">,</span>
+            <span class="n">initializer</span><span class="o">=</span><span class="n">init</span><span class="p">,</span>
+            <span class="n">trainable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trainable</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weight_name</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConstantLayer.call"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.ConstantLayer.call">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">):</span>
+        <span class="c1"># Create the full target shape, keeping all axes of the input except the</span>
+        <span class="c1"># feature axis. For a batch of samples that is (batch_size,) + target_shape,</span>
+        <span class="c1"># for a batch of sequences (batch_size, steps) + target_shape.</span>
+        <span class="n">leading_shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">inputs</span><span class="p">))[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">full_shape</span> <span class="o">=</span> <span class="n">leading_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_shape</span>
+
+        <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constant</span><span class="p">,</span> <span class="n">full_shape</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConstantLayer.compute_output_shape"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.ConstantLayer.compute_output_shape">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute_output_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">):</span>
+        <span class="c1"># The output shape keeps all axes of the input except the feature axis</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">input_shape</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_shape</span></div>
+
+<div class="viewcode-block" id="ConstantLayer.get_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.ConstantLayer.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+            <span class="s2">"value"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="s2">"shape"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_shape</span><span class="p">,</span>
+        <span class="p">})</span>
+        <span class="k">return</span> <span class="n">config</span></div>
+
+<div class="viewcode-block" id="ConstantLayer.from_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.ConstantLayer.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="DivideLayer"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.DivideLayer">[docs]</a><span class="nd">@keras</span><span class="o">.</span><span class="n">saving</span><span class="o">.</span><span class="n">register_keras_serializable</span><span class="p">(</span><span class="n">package</span><span class="o">=</span><span class="s1">'custom_layer'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'DivideLayer'</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DivideLayer</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">Layer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A layer that divides two layers.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DivideLayer.call"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.DivideLayer.call">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">inputs</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="DivideLayer.compute_output_shape"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.DivideLayer.compute_output_shape">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute_output_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">input_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="DivideLayer.get_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.DivideLayer.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">config</span></div>
+
+<div class="viewcode-block" id="DivideLayer.from_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.DivideLayer.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="PowerLayer"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.PowerLayer">[docs]</a><span class="nd">@keras</span><span class="o">.</span><span class="n">saving</span><span class="o">.</span><span class="n">register_keras_serializable</span><span class="p">(</span><span class="n">package</span><span class="o">=</span><span class="s1">'custom_layer'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'PowerLayer'</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PowerLayer</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">Layer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A layer that computes the power of two layers.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PowerLayer.call"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.PowerLayer.call">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">inputs</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="PowerLayer.compute_output_shape"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.PowerLayer.compute_output_shape">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute_output_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">input_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="PowerLayer.get_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.PowerLayer.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">config</span></div>
+
+<div class="viewcode-block" id="PowerLayer.from_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.PowerLayer.from_config">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

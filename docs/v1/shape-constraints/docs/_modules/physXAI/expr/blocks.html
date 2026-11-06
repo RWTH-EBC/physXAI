@@ -1,0 +1,577 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>physXAI.expr.blocks &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../../../_static/jquery.js"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+      <script src="../../../_static/doctools.js"></script>
+      <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/physics.html">Physics-informed models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">physXAI.expr.blocks</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for physXAI.expr.blocks</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Trainable building blocks of modular models.</span>
+
+<span class="sd">A block maps a list of input expressions to one output. Blocks normalize their inputs</span>
+<span class="sd">themselves (with statistics of the training data, if the inputs are data only), so arithmetic</span>
+<span class="sd">outside of blocks can work on raw physical values.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">operator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">combinations</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.expr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">BuildContext</span><span class="p">,</span> <span class="n">Expr</span><span class="p">,</span> <span class="n">_keras</span><span class="p">,</span> <span class="n">as_expr</span><span class="p">,</span> <span class="n">register_expression</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"physXAI"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_nominal</span><span class="p">(</span><span class="n">nominal_range</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Mean and sigma of a nominal output range (4 sigma cover the range)."""</span>
+    <span class="k">if</span> <span class="n">nominal_range</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nominal_range</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"nominal_range must be (min, max), but is </span><span class="si">{</span><span class="n">nominal_range</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+    <span class="n">low</span><span class="p">,</span> <span class="n">high</span> <span class="o">=</span> <span class="n">nominal_range</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">high</span> <span class="o">&gt;</span> <span class="n">low</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"nominal_range must be (min, max) with max &gt; min, but is </span><span class="si">{</span><span class="n">nominal_range</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">high</span> <span class="o">+</span> <span class="n">low</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span> <span class="p">(</span><span class="n">high</span> <span class="o">-</span> <span class="n">low</span><span class="p">)</span> <span class="o">/</span> <span class="mf">4.0</span>
+
+
+<div class="viewcode-block" id="Block"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Block">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">Block</span><span class="p">(</span><span class="n">Expr</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Base class of trainable blocks.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        inputs: Input expressions (or column names).</span>
+<span class="sd">        name: Name of the block.</span>
+<span class="sd">        normalize: Whether the inputs are normalized with the statistics of the training data.</span>
+<span class="sd">        nominal_range: Optional (min, max) of the output. The output of the block is scaled to it.</span>
+<span class="sd">    """</span>
+
+    <span class="n">has_weights</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">default_normalize</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">nominal_range</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="p">(</span><span class="n">Expr</span><span class="p">,</span> <span class="nb">str</span><span class="p">)):</span>
+            <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">inputs</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> needs at least one input."</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">as_expr</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_normalize</span> <span class="k">if</span> <span class="n">normalize</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">normalize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nominal_range</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nominal_range</span><span class="p">)</span> <span class="k">if</span> <span class="n">nominal_range</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">_nominal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nominal_range</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Expr</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span>
+
+<div class="viewcode-block" id="Block.params"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Block.params">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nominal</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nominal_range</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nominal_range</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"normalize"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span><span class="p">,</span> <span class="s2">"nominal_range"</span><span class="p">:</span> <span class="n">nominal</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="Block.from_params"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Block.from_params">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">children</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_per_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Maps a dict {input name: value} to one value per input."""</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">values</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">]</span>
+        <span class="n">unknown</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: unknown inputs </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unknown</span><span class="p">)</span><span class="si">}</span><span class="s2">, inputs are </span><span class="si">{</span><span class="n">names</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">values</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Block.input_tensor"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Block.input_tensor">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">input_tensor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">BuildContext</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Concatenated (and normalized) inputs."""</span>
+        <span class="n">keras</span> <span class="o">=</span> <span class="n">_keras</span><span class="p">()</span>
+        <span class="n">tensors</span> <span class="o">=</span> <span class="p">[</span><span class="n">ctx</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Concatenate</span><span class="p">()(</span><span class="n">tensors</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">x</span>
+        <span class="n">means</span><span class="p">,</span> <span class="n">variances</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(),</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">values</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">means</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+                <span class="n">variances</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">variance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanvar</span><span class="p">(</span><span class="n">values</span><span class="p">))</span>
+                <span class="n">means</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">values</span><span class="p">)))</span>
+                <span class="n">variances</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">variance</span> <span class="k">if</span> <span class="n">variance</span> <span class="o">&gt;</span> <span class="mf">1e-12</span> <span class="k">else</span> <span class="mf">1.0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Normalization</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">means</span><span class="p">),</span> <span class="n">variance</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">variances</span><span class="p">))(</span><span class="n">x</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Block.rescale"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Block.rescale">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">rescale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">nominal</span> <span class="o">=</span> <span class="n">_nominal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nominal_range</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">nominal</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">x</span>
+        <span class="k">return</span> <span class="n">_keras</span><span class="p">()</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Rescaling</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">nominal</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">offset</span><span class="o">=</span><span class="n">nominal</span><span class="p">[</span><span class="mi">0</span><span class="p">])(</span><span class="n">x</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Block.evaluate"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Block.evaluate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is trainable and can only be evaluated in a model."</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Linear"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Linear">[docs]</a><span class="nd">@register_expression</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Linear</span><span class="p">(</span><span class="n">Block</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Linear combination `w @ inputs + b`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        inputs: Input expressions.</span>
+<span class="sd">        monotonicities: Optional {input name: 1 (increasing) | -1 (decreasing)}.</span>
+<span class="sd">        bias: Whether to use a bias.</span>
+<span class="sd">        normalize: Normalize the inputs (default False, so the weights keep their physical meaning</span>
+<span class="sd">                   and the block can be solved by ordinary least squares).</span>
+<span class="sd">    """</span>
+
+    <span class="n">default_normalize</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">monotonicities</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">bias</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">nominal_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">normalize</span><span class="p">,</span> <span class="n">nominal_range</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">monotonicities</span> <span class="ow">or</span> <span class="p">{})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_per_input</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">bias</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">bias</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">"Linear '</span><span class="si">%s</span><span class="s2">' has no bias, but normalizes its inputs: the normalization subtracts the mean of the "</span>
+                <span class="s2">"training data, which acts as a bias. Use normalize=False for a model without offset."</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+            <span class="p">)</span>
+
+<div class="viewcode-block" id="Linear.params"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Linear.params">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="s2">"monotonicities"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">,</span> <span class="s2">"bias"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="Linear.to_keras"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Linear.to_keras">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_keras</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.keras_models.keras_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NonNegPartial</span>
+
+        <span class="n">keras</span> <span class="o">=</span> <span class="n">_keras</span><span class="p">()</span>
+        <span class="n">constraint</span> <span class="o">=</span> <span class="n">NonNegPartial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_per_input</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">))</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">dense</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">use_bias</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span> <span class="n">kernel_constraint</span><span class="o">=</span><span class="n">constraint</span><span class="p">)</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)]</span> <span class="o">=</span> <span class="n">dense</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rescale</span><span class="p">(</span><span class="n">dense</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_tensor</span><span class="p">(</span><span class="n">ctx</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="Linear.to_casadi"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Linear.to_casadi">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_casadi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">syms</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"Use the trained keras model to evaluate a Linear block."</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="MLP"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.MLP">[docs]</a><span class="nd">@register_expression</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MLP</span><span class="p">(</span><span class="n">Block</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Feed forward network.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        inputs: Input expressions.</span>
+<span class="sd">        n_layers: Number of hidden layers.</span>
+<span class="sd">        n_neurons: Neurons per hidden layer (int or one per layer).</span>
+<span class="sd">        activation: Activation of the hidden layers (one or one per layer).</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">n_neurons</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
+        <span class="n">activation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"softplus"</span><span class="p">,</span>
+        <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">nominal_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">normalize</span><span class="p">,</span> <span class="n">nominal_range</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span> <span class="o">=</span> <span class="n">n_layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_neurons</span> <span class="o">=</span> <span class="n">_per_layer</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">,</span> <span class="s2">"n_neurons"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">_per_layer</span><span class="p">(</span><span class="n">activation</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">,</span> <span class="s2">"activation"</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MLP.params"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.MLP.params">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="o">**</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span>
+            <span class="s2">"n_layers"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span><span class="p">,</span>
+            <span class="s2">"n_neurons"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_neurons</span><span class="p">,</span>
+            <span class="s2">"activation"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="MLP.to_keras"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.MLP.to_keras">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_keras</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+        <span class="n">keras</span> <span class="o">=</span> <span class="n">_keras</span><span class="p">()</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_tensor</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">units</span><span class="p">,</span> <span class="n">activation</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_neurons</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">units</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="n">activation</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rescale</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">)(</span><span class="n">x</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="MonotoneMLP"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.MonotoneMLP">[docs]</a><span class="nd">@register_expression</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MonotoneMLP</span><span class="p">(</span><span class="n">Block</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Constrained monotonic neural network (CMNN): monotone in the given inputs.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        inputs: Input expressions.</span>
+<span class="sd">        monotonicities: {input name: 1 (increasing) | -1 (decreasing)}.</span>
+<span class="sd">        n_layers: Number of hidden layers, see `MLP`.</span>
+<span class="sd">        n_neurons: Neurons per hidden layer, see `MLP`.</span>
+<span class="sd">        activation: Activation function(s), see `MLP`.</span>
+<span class="sd">        activation_split: Shares of convex, concave and saturated neurons. Defaults to [1, 1, 1].</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">monotonicities</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">n_neurons</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
+        <span class="n">activation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"softplus"</span><span class="p">,</span>
+        <span class="n">activation_split</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">nominal_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">normalize</span><span class="p">,</span> <span class="n">nominal_range</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">monotonicities</span> <span class="ow">or</span> <span class="p">{})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_per_input</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span> <span class="o">=</span> <span class="n">n_layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_neurons</span> <span class="o">=</span> <span class="n">_per_layer</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">,</span> <span class="s2">"n_neurons"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">_per_layer</span><span class="p">(</span><span class="n">activation</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">,</span> <span class="s2">"activation"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation_split</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">activation_split</span><span class="p">)</span> <span class="k">if</span> <span class="n">activation_split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">activation_split</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">activation_split</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">activation_split</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"activation_split needs three non negative shares, not all zero."</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MonotoneMLP.params"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.MonotoneMLP.params">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="o">**</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span>
+            <span class="s2">"monotonicities"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">,</span>
+            <span class="s2">"n_layers"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span><span class="p">,</span>
+            <span class="s2">"n_neurons"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_neurons</span><span class="p">,</span>
+            <span class="s2">"activation"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">,</span>
+            <span class="s2">"activation_split"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation_split</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="MonotoneMLP.to_keras"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.MonotoneMLP.to_keras">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_keras</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.keras_models.keras_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConcaveActivation</span><span class="p">,</span> <span class="n">NonNegPartial</span><span class="p">,</span> <span class="n">SaturatedActivation</span>
+
+        <span class="n">keras</span> <span class="o">=</span> <span class="n">_keras</span><span class="p">()</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_tensor</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+        <span class="n">constraint</span> <span class="o">=</span> <span class="n">NonNegPartial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_per_input</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">))</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">activation_split</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">units</span><span class="p">,</span> <span class="n">activation</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_neurons</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="n">activations</span> <span class="o">=</span> <span class="p">[</span><span class="n">activation</span><span class="p">,</span> <span class="n">ConcaveActivation</span><span class="p">(</span><span class="n">activation</span><span class="p">),</span> <span class="n">SaturatedActivation</span><span class="p">(</span><span class="n">activation</span><span class="p">)]</span>
+            <span class="n">parts</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">share</span><span class="p">,</span> <span class="n">act</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">activation_split</span><span class="p">,</span> <span class="n">activations</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">units</span> <span class="o">*</span> <span class="n">share</span> <span class="o">/</span> <span class="n">total</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">share</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">n</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># every active part keeps at least one neuron</span>
+                <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="n">act</span><span class="p">,</span> <span class="n">kernel_constraint</span><span class="o">=</span><span class="n">constraint</span><span class="p">)(</span><span class="n">x</span><span class="p">))</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Concatenate</span><span class="p">()(</span><span class="n">parts</span><span class="p">)</span>
+            <span class="c1"># after the first layer, non negative weights preserve the monotonicity</span>
+            <span class="n">constraint</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">NonNeg</span><span class="p">()</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">kernel_constraint</span><span class="o">=</span><span class="n">keras</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">NonNeg</span><span class="p">())(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rescale</span><span class="p">(</span><span class="n">out</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Polynomial"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Polynomial">[docs]</a><span class="nd">@register_expression</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Polynomial</span><span class="p">(</span><span class="n">Block</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Polynomial regression: powers of every input up to `degree` and products of up to</span>
+<span class="sd">    `interaction_degree` inputs, combined linearly.</span>
+<span class="sd">    """</span>
+
+    <span class="n">default_normalize</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">degree</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">interaction_degree</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">nominal_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">normalize</span><span class="p">,</span> <span class="n">nominal_range</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">degree</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">interaction_degree</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"degree and interaction_degree must be at least 1."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">degree</span> <span class="o">=</span> <span class="n">degree</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interaction_degree</span> <span class="o">=</span> <span class="n">interaction_degree</span>
+
+<div class="viewcode-block" id="Polynomial.params"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Polynomial.params">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="s2">"degree"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">degree</span><span class="p">,</span> <span class="s2">"interaction_degree"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">interaction_degree</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="Polynomial.to_keras"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Polynomial.to_keras">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_keras</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.keras_models.keras_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">InputSliceLayer</span>
+
+        <span class="n">keras</span> <span class="o">=</span> <span class="n">_keras</span><span class="p">()</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_tensor</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">InputSliceLayer</span><span class="p">([</span><span class="n">i</span><span class="p">])(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">))]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="p">[</span><span class="n">x</span><span class="p">]</span>
+        <span class="c1"># powers as repeated products: unlike a power layer they are defined for negative bases</span>
+        <span class="n">terms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">:</span>
+            <span class="n">power</span> <span class="o">=</span> <span class="n">column</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">degree</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">power</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Multiply</span><span class="p">()([</span><span class="n">power</span><span class="p">,</span> <span class="n">column</span><span class="p">])</span>
+                <span class="n">terms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">power</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">interaction_degree</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">combo</span> <span class="ow">in</span> <span class="n">combinations</span><span class="p">(</span><span class="n">columns</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+                <span class="n">terms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">functools</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Multiply</span><span class="p">()([</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">]),</span> <span class="n">combo</span><span class="p">))</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="n">terms</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">terms</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Concatenate</span><span class="p">()(</span><span class="n">terms</span><span class="p">)</span>
+        <span class="n">dense</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">)</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)]</span> <span class="o">=</span> <span class="n">dense</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rescale</span><span class="p">(</span><span class="n">dense</span><span class="p">(</span><span class="n">features</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="RBF"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.RBF">[docs]</a><span class="nd">@register_expression</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RBF</span><span class="p">(</span><span class="n">Block</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Radial basis function network with `units` gaussian neurons. Centers are initialized by</span>
+<span class="sd">    k-means on the (normalized) training data, if available.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">units</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
+        <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">nominal_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">normalize</span><span class="p">,</span> <span class="n">nominal_range</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">units</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
+
+<div class="viewcode-block" id="RBF.params"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.RBF.params">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="s2">"units"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="s2">"random_state"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="RBF.to_keras"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.RBF.to_keras">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_keras</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.keras_models.keras_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RBFLayer</span>
+
+        <span class="n">keras</span> <span class="o">=</span> <span class="n">_keras</span><span class="p">()</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_tensor</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+        <span class="n">centers</span><span class="p">,</span> <span class="n">gamma</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="mf">1.0</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">ctx</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">values</span><span class="p">):</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.cluster</span><span class="w"> </span><span class="kn">import</span> <span class="n">KMeans</span>
+
+            <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.model_construction.rbf_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">gamma_init</span>
+
+            <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span> <span class="o">-</span> <span class="n">data</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
+            <span class="n">units</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+            <span class="n">centers</span> <span class="o">=</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">units</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">,</span> <span class="n">n_init</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">cluster_centers_</span>
+            <span class="n">gamma</span> <span class="o">=</span> <span class="n">gamma_init</span><span class="p">(</span><span class="n">centers</span><span class="p">)</span> <span class="k">if</span> <span class="n">units</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mf">1.0</span>
+        <span class="n">layer</span> <span class="o">=</span> <span class="n">RBFLayer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="k">if</span> <span class="n">centers</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">centers</span><span class="p">),</span> <span class="n">gamma</span><span class="o">=</span><span class="n">gamma</span><span class="p">,</span> <span class="n">initial_centers</span><span class="o">=</span><span class="n">centers</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rescale</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">)(</span><span class="n">layer</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span></div></div>
+
+
+<div class="viewcode-block" id="Mean"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Mean">[docs]</a><span class="nd">@register_expression</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Mean</span><span class="p">(</span><span class="n">Block</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Average of the inputs."""</span>
+
+    <span class="n">has_weights</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">default_normalize</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="Mean.params"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Mean.params">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Mean.evaluate"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Mean.evaluate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">c</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Mean.to_casadi"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Mean.to_casadi">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_casadi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">syms</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">to_casadi</span><span class="p">(</span><span class="n">syms</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Mean.to_keras"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Mean.to_keras">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_keras</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+        <span class="n">tensors</span> <span class="o">=</span> <span class="p">[</span><span class="n">ctx</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">_keras</span><span class="p">()</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Average</span><span class="p">()(</span><span class="n">tensors</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Normalize"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Normalize">[docs]</a><span class="nd">@register_expression</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Normalize</span><span class="p">(</span><span class="n">Block</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Normalizes one expression: with the statistics of the training data if it is data only,</span>
+<span class="sd">    else with batch normalization.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">([</span><span class="n">x</span><span class="p">],</span> <span class="n">name</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Normalize.params"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Normalize.params">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Normalize.from_params"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Normalize.from_params">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Normalize.to_keras"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Normalize.to_keras">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_keras</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+        <span class="n">keras</span> <span class="o">=</span> <span class="n">_keras</span><span class="p">()</span>
+        <span class="n">child</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">values</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">BatchNormalization</span><span class="p">()(</span><span class="n">ctx</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">child</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_tensor</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Pretrained"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Pretrained">[docs]</a><span class="nd">@register_expression</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Pretrained</span><span class="p">(</span><span class="n">Block</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    An existing keras model applied to the inputs.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model: Path to a saved keras model (or the model itself, which then cannot be serialized).</span>
+<span class="sd">        inputs: Input expressions, in the order the model expects them.</span>
+<span class="sd">        trainable: Whether the model is trained further.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">trainable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">))</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">_keras</span><span class="p">()</span><span class="o">.</span><span class="n">saving</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">trainable</span> <span class="o">=</span> <span class="n">trainable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_trainable</span> <span class="o">=</span> <span class="n">trainable</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_pretrained"</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Pretrained.params"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Pretrained.params">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"A Pretrained block built from a model object cannot be serialized, pass a path instead."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"model"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s2">"trainable"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_trainable</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="Pretrained.from_params"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Pretrained.from_params">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"model"</span><span class="p">],</span> <span class="nb">list</span><span class="p">(</span><span class="n">children</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">trainable</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"trainable"</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Pretrained.to_keras"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.Pretrained.to_keras">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_keras</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_tensor</span><span class="p">(</span><span class="n">ctx</span><span class="p">))</span></div></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_per_layer</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="k">else</span> <span class="p">[</span><span class="n">value</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_layers</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n_layers</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> needs one value per layer (</span><span class="si">{</span><span class="n">n_layers</span><span class="si">}</span><span class="s2">), got </span><span class="si">{</span><span class="n">values</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">values</span>
+
+
+<div class="viewcode-block" id="product"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.product">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">product</span><span class="p">(</span><span class="n">expressions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Expr</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Expr</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Product of several expressions."""</span>
+    <span class="k">return</span> <span class="n">functools</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">mul</span><span class="p">,</span> <span class="n">expressions</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
