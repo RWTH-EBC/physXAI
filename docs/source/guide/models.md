@@ -5,7 +5,8 @@ All models share `model.pipeline(td)`: build, train, evaluate. The trained model
 
 ## Single step models
 
-Predict the next time step. Applied recursively in the MPC when they predict one of their inputs.
+Predict the next time step (`shift=1`), or an output at the time of the inputs (`shift=0`). Applied recursively
+in the MPC when they predict one of their inputs. The keras networks have one output; train one model per output.
 
 | Model | Description |
 |---|---|
@@ -19,7 +20,9 @@ Predict the next time step. Applied recursively in the MPC when they predict one
 | `ConstrainedRegression(inputs, monotonies, convexities)` | constrained linear regression on expressions |
 
 Keras models share the training options `epochs`, `learning_rate`, `batch_size`,
-`early_stopping_epochs` and `random_seed`. Early stopping needs validation data.
+`early_stopping_epochs` and `random_seed`. Early stopping needs validation data. `random_seed` seeds the weight
+initialization and the batch order; it defaults to the global seed (`physXAI.set_seed`), else a new seed is drawn and
+stored in the config. Unknown arguments raise a `TypeError`.
 
 ## Physics-informed neural networks
 

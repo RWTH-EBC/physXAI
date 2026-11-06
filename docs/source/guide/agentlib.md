@@ -4,6 +4,12 @@ AgentLib-MPC (`agentlib_mpc.machine_learning_plugins.physXAI`) calls a training 
 loads the trained model into the MPC. The script provides
 
 ```python
+from physXAI import expr as px
+from physXAI.io import Run
+from physXAI.models import ModularANN
+from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
+
+
 def train_model(base_path: str, folder_name: str, training_data_path: str, time_step: int,
                 output_name: str = "T") -> str:
     run = Run(base_path, folder_name, overwrite=True, log_level="warning")
@@ -27,7 +33,11 @@ AgentLib-MPC reads the inputs and the output from their names:
 - `X_lagN` is the value of `X` N steps in the past,
 - lags of a feature are consecutive and ascending, the recursive feature and its lags are the last inputs
   (inputs taken from the model are ordered like that automatically),
-- single step models have exactly one output and `shift=1`,
+- single step models have exactly one output and `shift=1` (AgentLib-MPC evaluates an output over the interval
+  `[t, t+1)` of the inputs),
+- inputs are variables of the MPC: inputs computed by the preprocessing (`columns`, `transform`) have to be
+  computed by the MPC as well, `check_agentlib_compatibility` warns about them. Expressions inside the model need
+  only the raw inputs,
 - recurrent models have no lagged inputs (their memory is the state).
 
 `check_agentlib_compatibility(prep)` raises an `AgentLibCompatibilityError` listing all violations before
@@ -37,4 +47,5 @@ the model is trained.
 
 - Linear regression (`.joblib`), all keras models and `ModularANN` (translated to CasADi layer by layer;
   expressions inside the model are part of it, the MPC only needs raw inputs).
-- Recurrent models (`RNNModel`): the step model, with AgentLib-MPC versions supporting recurrent models.
+- Recurrent models (`RNNModel`, `PCNNModel`): the step model, with AgentLib-MPC versions supporting recurrent
+  models (branch `143-feature-multistep-model-support`; the released AgentLib-MPC 1.1.1 does not support them yet).
