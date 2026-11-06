@@ -122,6 +122,37 @@ def test_no_convergence_is_reported(caplog):
     assert "violated" in caplog.text
 
 
+def _corner_case():
+    """y = x * (1 - 1.2 z): dy/dx > 0 on the data (z in [0.4, 0.6]), but < 0 at the corner z = 1 of the box."""
+    rng = np.random.default_rng(0)
+    values = {"x": rng.uniform(0.0, 1.0, 400), "z": rng.uniform(0.4, 0.6, 400)}
+    y = values["x"] * (1.0 - 1.2 * values["z"]) + rng.normal(0.0, 1e-3, 400)
+    shape = ShapeConstraints(monotonicities={"x": 1}, bounds={"z": (0.0, 1.0)}, n_samples=0)
+    return [v.x, v.x * v.z], values, y, shape
+
+
+def test_corners_are_checked_on_the_final_solution(monkeypatch):
+    """A solution violating the constraint only at a corner (no candidate) is not certified."""
+    from physXAI.models.modular import shape_constraints
+
+    terms, values, y, shape = _corner_case()
+    assert fit_shape_constrained(terms, values, y, shape=shape).constraints[0]["certificate"] == "exact"
+    original = shape_constraints._LeastSquares.solve
+    monkeypatch.setattr(shape_constraints._LeastSquares, "solve",
+                        lambda self, rows: original(self, np.zeros((0, rows.shape[1]))))  # ignores the constraints
+    result = fit_shape_constrained(terms, values, y, shape=shape)
+    assert result.constraints[0]["certificate"] == "violated"
+
+
+def test_failed_qp_is_at_most_verified(monkeypatch):
+    from physXAI.models.modular import shape_constraints
+
+    terms, values, y, shape = _corner_case()
+    original = shape_constraints._LeastSquares.solve
+    monkeypatch.setattr(shape_constraints._LeastSquares, "solve", lambda self, rows: (original(self, rows)[0], False))
+    assert fit_shape_constrained(terms, values, y, shape=shape).constraints[0]["certificate"] == "verified"
+
+
 def test_bounds_define_the_box_and_singular_points_are_left_out(caplog):
     values, y = heat_pump()
     values = {**values, "on": (values["u"] > 0).astype(float)}

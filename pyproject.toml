@@ -27,6 +27,7 @@ dependencies = [
     "numpy>=2.0",
     "pandas>=2.2.3",
     "scikit-learn>=1.6.1",
+    "scipy>=1.11",  # QP sampling (qmc) and local search of the shape constraints, least squares calibration
     "keras>=3.9.2",
     "tensorflow>=2.19.0",
     "casadi>=3.6.7",

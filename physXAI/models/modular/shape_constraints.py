@@ -363,6 +363,7 @@ def _exchange(terms, values, problem: _LeastSquares, scales, shape: ShapeConstra
             corners_complete[i] = bool(finite.all())
 
     w = None
+    success = False
     worst = [0.0] * len(constraints)
     for iteration in range(1, shape.max_iter + 1):
         w, success = problem.solve(np.vstack(active_rows))
@@ -402,14 +403,20 @@ def _exchange(terms, values, problem: _LeastSquares, scales, shape: ShapeConstra
     for i, c in enumerate(constraints):
         on_data = _normalized(c.rows(data), w)
         on_data = on_data[np.isfinite(on_data)]
+        # final check of the solution on all constraint points (incl. the corners), not only on the candidates
+        on_points = _normalized(active_rows[i], w)
+        if len(on_points):
+            worst[i] = float(min(worst[i], on_points.min(), 0.0))
         if c.trivial:
             certificate = "exact" if shape.domain == "box" else "data"
         elif worst[i] < -shape.tol:  # evaluated on the final solution
             certificate = "violated"
         elif shape.domain == "data":
             certificate = "data"
+        elif c.multilinear and corners_complete[i] and success:
+            certificate = "exact"
         else:
-            certificate = "exact" if c.multilinear and corners_complete[i] else "verified"
+            certificate = "verified"  # without a successful QP solve, the corners are only checked
         active = float(np.mean(np.abs(on_data) <= max(shape.tol, 1e-9))) if len(on_data) and not c.trivial else None
         result.constraints.append({
             "column": c.column,
