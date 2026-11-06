@@ -1,0 +1,219 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expressions: physics inside the model &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../_static/jquery.js"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+      <script src="../_static/doctools.js"></script>
+      <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Data pipeline and split" href="data.html" />
+    <link rel="prev" title="Examples" href="examples.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Expressions: physics inside the model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#inside-the-model-recommended">Inside the model (recommended)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#as-data-column-fallback">As data column (fallback)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#building-blocks">Building blocks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Physics-informed models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Expressions: physics inside the model</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="expressions-physics-inside-the-model">
+<h1>Expressions: physics inside the model<a class="headerlink" href="#expressions-physics-inside-the-model" title="Permalink to this heading"></a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">physXAI.expr</span></code> is one language for physically motivated terms and trainable blocks. An expression can be
+evaluated on data (NumPy / pandas), built into a Keras model and translated to CasADi for the MPC.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI</span><span class="w"> </span><span class="kn">import</span> <span class="n">expr</span> <span class="k">as</span> <span class="n">px</span>
+
+<span class="n">v</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Vars</span><span class="p">()</span>                       <span class="c1"># v.T, v.T_in, v['Func(logistic)']: no declarations needed</span>
+<span class="n">vT</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">mDot</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">T_in</span> <span class="o">-</span> <span class="n">v</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>        <span class="c1"># heat flow of the supply air</span>
+</pre></div>
+</div>
+<section id="inside-the-model-recommended">
+<h2>Inside the model (recommended)<a class="headerlink" href="#inside-the-model-recommended" title="Permalink to this heading"></a></h2>
+<p>Derived quantities are best placed inside the model. They are recomputed in every step of a recursive
+prediction, and the MPC only needs the raw inputs:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModularANN</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">ModularANN</span><span class="p">(</span><span class="n">px</span><span class="o">.</span><span class="n">Linear</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">mDot</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">load</span><span class="p">,</span> <span class="n">vT</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">T</span><span class="p">]),</span> <span class="n">solver</span><span class="o">=</span><span class="s2">"ols"</span><span class="p">)</span>   <span class="c1"># linear regression in closed form</span>
+<span class="n">prep</span> <span class="o">=</span> <span class="n">PreprocessingSingleStep</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="n">px</span><span class="o">.</span><span class="n">Change</span><span class="p">(</span><span class="s2">"T"</span><span class="p">))</span>
+<span class="n">td</span> <span class="o">=</span> <span class="n">prep</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>    <span class="c1"># the inputs are taken from the model</span>
+<span class="n">model</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">prep.pipeline(path,</span> <span class="pre">model=model)</span></code> collects the free variables of the model (including lags like
+<code class="docutils literal notranslate"><span class="pre">v.T.lag(1)</span></code>) and orders them as AgentLib-MPC expects: the recursive feature and its lags last.</p>
+</section>
+<section id="as-data-column-fallback">
+<h2>As data column (fallback)<a class="headerlink" href="#as-data-column-fallback" title="Permalink to this heading"></a></h2>
+<p>If a quantity has to be a column of the data, e.g. the target of a PINN, it is added with <code class="docutils literal notranslate"><span class="pre">columns</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prep</span> <span class="o">=</span> <span class="n">PreprocessingSingleStep</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="s2">"mDot"</span><span class="p">,</span> <span class="s2">"vT"</span><span class="p">,</span> <span class="s2">"T"</span><span class="p">],</span> <span class="n">output</span><span class="o">=</span><span class="s2">"Change(T)"</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">"vT"</span><span class="p">:</span> <span class="n">vT</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>The MPC then has to provide <code class="docutils literal notranslate"><span class="pre">vT</span></code> as input. In a recursive evaluation, columns depending on the predicted
+feature are recomputed in every step.</p>
+</section>
+<section id="building-blocks">
+<h2>Building blocks<a class="headerlink" href="#building-blocks" title="Permalink to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Block</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">px.Linear(inputs,</span> <span class="pre">monotonicities=None,</span> <span class="pre">normalize=None)</span></code></p></td>
+<td><p>weighted sum, optionally with monotonic weights</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">px.MLP(inputs,</span> <span class="pre">n_layers=1,</span> <span class="pre">n_neurons=32,</span> <span class="pre">activation='softplus')</span></code></p></td>
+<td><p>neural network</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">px.MonotoneMLP(inputs,</span> <span class="pre">monotonicities,</span> <span class="pre">activation_split=None)</span></code></p></td>
+<td><p>constrained monotonic network (CMNN)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">px.Polynomial(inputs,</span> <span class="pre">degree=2,</span> <span class="pre">interaction_degree=1)</span></code></p></td>
+<td><p>polynomial features</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">px.RBF(inputs,</span> <span class="pre">units=32)</span></code></p></td>
+<td><p>radial basis functions (extrapolate to 0, for residual models)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">px.Mean(inputs)</span></code></p></td>
+<td><p>mean of expressions</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">px.Normalize(x)</span></code></p></td>
+<td><p>normalization with the training data statistics</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">px.Param(init=None,</span> <span class="pre">trainable=True)</span></code></p></td>
+<td><p>(trainable) scalar parameter</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">px.Pretrained(model,</span> <span class="pre">inputs,</span> <span class="pre">trainable=False)</span></code></p></td>
+<td><p>an already trained keras model</p></td>
+</tr>
+</tbody>
+</table>
+<p>Arithmetic (<code class="docutils literal notranslate"><span class="pre">+</span> <span class="pre">-</span> <span class="pre">*</span> <span class="pre">/</span> <span class="pre">**</span></code>), <code class="docutils literal notranslate"><span class="pre">px.exp</span></code>, <code class="docutils literal notranslate"><span class="pre">px.relu</span></code>, <code class="docutils literal notranslate"><span class="pre">px.sigmoid</span></code>, <code class="docutils literal notranslate"><span class="pre">px.softplus</span></code>, <code class="docutils literal notranslate"><span class="pre">px.tanh</span></code> and constants
+(<code class="docutils literal notranslate"><span class="pre">px.Const</span></code>) combine them. Blocks normalize their inputs; arithmetic works on physical values.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">v</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Vars</span><span class="p">()</span>
+<span class="n">T</span><span class="p">,</span> <span class="n">T_amb</span><span class="p">,</span> <span class="n">u_hp</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">reaTZon_y</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">weaSta_reaWeaTDryBul_y</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">oveHeaPumY_u</span>
+<span class="n">architecture</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Linear</span><span class="p">([</span>
+    <span class="n">T</span> <span class="o">-</span> <span class="n">T_amb</span><span class="p">,</span>                                <span class="c1"># losses through the envelope</span>
+    <span class="n">u_hp</span><span class="p">,</span> <span class="n">u_hp</span><span class="o">.</span><span class="n">lag</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>                        <span class="c1"># heat pump with delay</span>
+    <span class="n">v</span><span class="o">.</span><span class="n">weaSta_reaWeaHDirNor_y</span><span class="p">,</span>                 <span class="c1"># solar gains</span>
+    <span class="n">px</span><span class="o">.</span><span class="n">MLP</span><span class="p">([</span><span class="n">u_hp</span><span class="p">,</span> <span class="n">T_amb</span><span class="p">,</span> <span class="n">T</span><span class="p">],</span> <span class="n">n_neurons</span><span class="o">=</span><span class="mi">8</span><span class="p">),</span>    <span class="c1"># residual dynamics</span>
+<span class="p">],</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">ModularANN</span><span class="p">(</span><span class="n">architecture</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Physical parameters: <code class="docutils literal notranslate"><span class="pre">px.Param(init)</span></code> is a trainable scalar, <code class="docutils literal notranslate"><span class="pre">px.positive(value,</span> <span class="pre">name)</span></code> a positive one
+(<code class="docutils literal notranslate"><span class="pre">value</span> <span class="pre">·</span> <span class="pre">exp(p)</span></code>), <code class="docutils literal notranslate"><span class="pre">px.freeze(expr,</span> <span class="pre">values)</span></code> replaces the parameters by numbers. <code class="docutils literal notranslate"><span class="pre">px.Prediction()</span></code> (the model
+output) and <code class="docutils literal notranslate"><span class="pre">px.Target(name)</span></code> (a column at the predicted time) are used in physics residuals, see
+<a class="reference internal" href="physics.html"><span class="std std-doc">Physics-informed models</span></a>.</p>
+<p>The whole graph is stored in the model config (<code class="docutils literal notranslate"><span class="pre">model.get_config()</span></code>), shared nodes stay shared.
+<code class="docutils literal notranslate"><span class="pre">ConstrainedRegression(inputs,</span> <span class="pre">monotonies,</span> <span class="pre">convexities)</span></code> fits a linear regression on expressions with
+monotonicity and convexity constraints (CasADi / IPOPT).</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="examples.html" class="btn btn-neutral float-left" title="Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="data.html" class="btn btn-neutral float-right" title="Data pipeline and split" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

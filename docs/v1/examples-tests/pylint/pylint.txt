@@ -1,0 +1,380 @@
+************* Module /home/runner/work/physXAI/physXAI/pyproject.toml
+pyproject.toml:1:0: W0012: Unknown option value for '--disable', expected a valid pylint message and got 'too-many-positional-arguments' (unknown-option-value)
+************* Module physXAI.agentlib_mpc_plugin.example
+physXAI/agentlib_mpc_plugin/example.py:23:0: C0301: Line too long (148/120) (line-too-long)
+************* Module physXAI.agentlib_mpc_plugin.example_ci
+physXAI/agentlib_mpc_plugin/example_ci.py:23:0: C0301: Line too long (148/120) (line-too-long)
+************* Module physXAI.training.recursive
+physXAI/training/recursive.py:1:0: F0002: physXAI/training/recursive.py: Fatal error while checking 'physXAI/training/recursive.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-21-36-56.txt'. (astroid-error)
+************* Module physXAI.feature_selection.selection
+physXAI/feature_selection/selection.py:22:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/feature_selection/selection.py:23:0: E0401: Unable to import 'pandas' (import-error)
+physXAI/feature_selection/selection.py:24:0: E0401: Unable to import 'plotly.graph_objects' (import-error)
+physXAI/feature_selection/selection.py:85:15: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/feature_selection/selection.py:102:24: R1735: Consider using '{"type": 'data', "array": [c.score_std for c in best.values()], "visible": True, ... }' instead of a call to 'dict'. (use-dict-literal)
+physXAI/feature_selection/selection.py:103:23: R1735: Consider using '{"color": 'blue'}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/feature_selection/selection.py:113:27: R1735: Consider using '{"color": 'green'}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/feature_selection/selection.py:124:27: R1735: Consider using '{"color": 'red', "symbol": 'x', "size": 12}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/feature_selection/selection.py:133:23: R1735: Consider using '{"color": 'black', "symbol": 'star', "size": 14}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/feature_selection/selection.py:160:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/feature_selection/selection.py:253:17: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/feature_selection/selection.py:359:4: E0401: Unable to import 'keras' (import-error)
+************* Module physXAI.feature_selection.__init__
+physXAI/feature_selection/__init__.py:1:0: C0305: Trailing newlines (trailing-newlines)
+************* Module physXAI.io.run
+physXAI/io/run.py:187:0: C0301: Line too long (124/120) (line-too-long)
+physXAI/io/run.py:191:0: C0301: Line too long (124/120) (line-too-long)
+physXAI/io/run.py:1:0: F0002: physXAI/io/run.py: Fatal error while checking 'physXAI/io/run.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-21-36-57.txt'. (astroid-error)
+************* Module physXAI.io.agentlib
+physXAI/io/agentlib.py:1:0: F0002: physXAI/io/agentlib.py: Fatal error while checking 'physXAI/io/agentlib.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-21-36-57.txt'. (astroid-error)
+physXAI/io/agentlib.py:18:0: C0412: Imports from package __future__ are not grouped (ungrouped-imports)
+************* Module physXAI.evaluation.comparison
+physXAI/evaluation/comparison.py:366:0: C0301: Line too long (125/120) (line-too-long)
+physXAI/evaluation/comparison.py:424:0: C0301: Line too long (131/120) (line-too-long)
+physXAI/evaluation/comparison.py:433:0: C0301: Line too long (127/120) (line-too-long)
+physXAI/evaluation/comparison.py:34:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/evaluation/comparison.py:35:0: E0401: Unable to import 'pandas' (import-error)
+physXAI/evaluation/comparison.py:36:0: E0401: Unable to import 'plotly.graph_objects' (import-error)
+physXAI/evaluation/comparison.py:212:53: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/evaluation/comparison.py:218:59: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/evaluation/comparison.py:253:15: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/evaluation/comparison.py:273:15: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/evaluation/comparison.py:282:15: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/evaluation/comparison.py:395:18: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/evaluation/comparison.py:638:11: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/evaluation/comparison.py:660:13: R1734: Consider using [] instead of list() (use-list-literal)
+************* Module physXAI.evaluation.rollout
+physXAI/evaluation/rollout.py:26:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/evaluation/rollout.py:34:0: E0401: Unable to import 'keras' (import-error)
+physXAI/evaluation/rollout.py:107:4: E0401: Unable to import 'sklearn.linear_model' (import-error)
+physXAI/evaluation/rollout.py:159:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/evaluation/rollout.py:238:58: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/evaluation/rollout.py:274:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/evaluation/rollout.py:306:18: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/evaluation/rollout.py:34:0: C0411: third party import "import keras" should be placed before "from physXAI.expr.core import BuildContext" (wrong-import-order)
+************* Module physXAI.evaluation.metrics
+physXAI/evaluation/metrics.py:11:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/evaluation/metrics.py:12:0: E0401: Unable to import 'sklearn.metrics' (import-error)
+physXAI/evaluation/metrics.py:68:60: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/evaluation/metrics.py:89:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/evaluation/metrics.py:111:51: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/evaluation/metrics.py:113:33: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+************* Module physXAI.evaluation.__init__
+physXAI/evaluation/__init__.py:1:0: C0305: Trailing newlines (trailing-newlines)
+************* Module physXAI.expr.serialization
+physXAI/expr/serialization.py:20:26: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/expr/serialization.py:21:12: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/expr/serialization.py:31:28: W0212: Access to a protected member _name of a client class (protected-access)
+physXAI/expr/serialization.py:41:29: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+************* Module physXAI.expr.blocks
+physXAI/expr/blocks.py:17:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/expr/blocks.py:67:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/expr/blocks.py:80:27: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/expr/blocks.py:94:27: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/expr/blocks.py:94:35: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/expr/blocks.py:106:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/expr/blocks.py:167:0: W0223: Method 'evaluate' is abstract in class 'Block' but is not overridden in child class 'MLP' (abstract-method)
+physXAI/expr/blocks.py:167:0: W0223: Method 'to_casadi' is abstract in class 'Expr' but is not overridden in child class 'MLP' (abstract-method)
+physXAI/expr/blocks.py:210:0: W0223: Method 'evaluate' is abstract in class 'Block' but is not overridden in child class 'MonotoneMLP' (abstract-method)
+physXAI/expr/blocks.py:210:0: W0223: Method 'to_casadi' is abstract in class 'Expr' but is not overridden in child class 'MonotoneMLP' (abstract-method)
+physXAI/expr/blocks.py:264:20: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/expr/blocks.py:279:0: W0223: Method 'evaluate' is abstract in class 'Block' but is not overridden in child class 'Polynomial' (abstract-method)
+physXAI/expr/blocks.py:279:0: W0223: Method 'to_casadi' is abstract in class 'Expr' but is not overridden in child class 'Polynomial' (abstract-method)
+physXAI/expr/blocks.py:328:0: W0223: Method 'evaluate' is abstract in class 'Block' but is not overridden in child class 'RBF' (abstract-method)
+physXAI/expr/blocks.py:328:0: W0223: Method 'to_casadi' is abstract in class 'Expr' but is not overridden in child class 'RBF' (abstract-method)
+physXAI/expr/blocks.py:358:12: E0401: Unable to import 'sklearn.cluster' (import-error)
+physXAI/expr/blocks.py:380:15: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/expr/blocks.py:394:0: W0223: Method 'evaluate' is abstract in class 'Block' but is not overridden in child class 'Normalize' (abstract-method)
+physXAI/expr/blocks.py:394:0: W0223: Method 'to_casadi' is abstract in class 'Expr' but is not overridden in child class 'Normalize' (abstract-method)
+physXAI/expr/blocks.py:404:15: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/expr/blocks.py:420:0: W0223: Method 'evaluate' is abstract in class 'Block' but is not overridden in child class 'Pretrained' (abstract-method)
+physXAI/expr/blocks.py:420:0: W0223: Method 'to_casadi' is abstract in class 'Expr' but is not overridden in child class 'Pretrained' (abstract-method)
+************* Module physXAI.expr.core
+physXAI/expr/core.py:1:0: F0002: physXAI/expr/core.py: Fatal error while checking 'physXAI/expr/core.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-21-36-59.txt'. (astroid-error)
+************* Module physXAI.plotting.plotting
+physXAI/plotting/plotting.py:13:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/plotting/plotting.py:14:0: E0401: Unable to import 'plotly.graph_objects' (import-error)
+physXAI/plotting/plotting.py:15:0: E0401: Unable to import 'plotly.subplots' (import-error)
+physXAI/plotting/plotting.py:148:23: R1735: Consider using '{"color": color, "size": 3, "opacity": 0.3}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/plotting/plotting.py:159:25: R1735: Consider using '{"width": 0}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/plotting/plotting.py:173:21: R1735: Consider using '{"color": color, "width": 4}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/plotting/plotting.py:183:21: R1735: Consider using '{"color": 'black', "dash": 'dash'}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/plotting/plotting.py:207:82: R1735: Consider using '{"color": 'black', "size": 3}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/plotting/plotting.py:218:27: R1735: Consider using '{"color": SPLIT_COLORS[split], "size": 3, "opacity": 0.5}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/plotting/plotting.py:227:27: R1735: Consider using '{"xaxis_title": 'Epochs', "yaxis_title": 'RMSE'}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/plotting/plotting.py:248:29: R1735: Consider using '{"color": color, "dash": dash}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/plotting/plotting.py:270:19: R1735: Consider using '{"values": ['Output', 'Metric', *[s.capitalize() for s in splits]], ... }' instead of a call to 'dict'. (use-dict-literal)
+physXAI/plotting/plotting.py:270:95: R1735: Consider using '{"values": columns}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/plotting/plotting.py:296:25: R1735: Consider using '{"width": 0}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/plotting/plotting.py:309:21: R1735: Consider using '{"color": color, "width": 3}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/plotting/plotting.py:314:88: R1735: Consider using '{"color": color, "dash": 'dash'}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/plotting/plotting.py:341:14: R1734: Consider using [] instead of list() (use-list-literal)
+************* Module physXAI.plotting.__init__
+physXAI/plotting/__init__.py:1:0: C0305: Trailing newlines (trailing-newlines)
+************* Module physXAI.models.models
+physXAI/models/models.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+physXAI/models/models.py:6:0: E0401: Unable to import 'joblib' (import-error)
+physXAI/models/models.py:7:0: E0401: Unable to import 'joblib' (import-error)
+physXAI/models/models.py:8:0: E0401: Unable to import 'sklearn.linear_model' (import-error)
+physXAI/models/models.py:16:0: E0401: Unable to import 'keras' (import-error)
+physXAI/models/models.py:23:57: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/models/models.py:26:0: C0115: Missing class docstring (missing-class-docstring)
+physXAI/models/models.py:35:8: W0107: Unnecessary pass statement (unnecessary-pass)
+physXAI/models/models.py:44:8: W0107: Unnecessary pass statement (unnecessary-pass)
+physXAI/models/models.py:55:8: W0107: Unnecessary pass statement (unnecessary-pass)
+physXAI/models/models.py:59:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/models.py:99:8: W0107: Unnecessary pass statement (unnecessary-pass)
+physXAI/models/models.py:112:8: W0107: Unnecessary pass statement (unnecessary-pass)
+physXAI/models/models.py:208:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/models.py:215:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/models.py:335:8: W0107: Unnecessary pass statement (unnecessary-pass)
+physXAI/models/models.py:382:8: W0107: Unnecessary pass statement (unnecessary-pass)
+physXAI/models/models.py:16:0: C0411: third party import "import keras" should be placed before "from physXAI.evaluation.metrics import Metrics" (wrong-import-order)
+************* Module physXAI.models
+physXAI/models/__init__.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+************* Module physXAI.models.modular.modular_ann
+physXAI/models/modular/modular_ann.py:18:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/models/modular/modular_ann.py:27:0: E0401: Unable to import 'keras' (import-error)
+physXAI/models/modular/modular_ann.py:110:4: R1710: Either all return statements in a function should return an expression, or none of them should. (inconsistent-return-statements)
+physXAI/models/modular/modular_ann.py:27:0: C0411: third party import "import keras" should be placed before "from physXAI.expr import Expr, Linear, from_config, to_config" (wrong-import-order)
+************* Module physXAI.models.modular.constrained_regression
+physXAI/models/modular/constrained_regression.py:186:9: W0511: TODO: Check if constraints should be applied only to training data or generally (fixme)
+physXAI/models/modular/constrained_regression.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+physXAI/models/modular/constrained_regression.py:5:0: E0401: Unable to import 'casadi' (import-error)
+physXAI/models/modular/constrained_regression.py:6:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/models/modular/constrained_regression.py:17:0: E0401: Unable to import 'keras' (import-error)
+physXAI/models/modular/constrained_regression.py:56:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/modular/constrained_regression.py:59:4: R0912: Too many branches (57/12) (too-many-branches)
+physXAI/models/modular/constrained_regression.py:59:4: R0915: Too many statements (145/50) (too-many-statements)
+physXAI/models/modular/constrained_regression.py:17:0: C0411: third party import "import keras" should be placed before "from physXAI.expr import Expr, as_expr" (wrong-import-order)
+************* Module physXAI.models.ann.ann_design
+physXAI/models/ann/ann_design.py:160:0: C0301: Line too long (121/120) (line-too-long)
+physXAI/models/ann/ann_design.py:207:0: C0301: Line too long (172/120) (line-too-long)
+physXAI/models/ann/ann_design.py:208:0: C0301: Line too long (129/120) (line-too-long)
+physXAI/models/ann/ann_design.py:210:0: C0301: Line too long (126/120) (line-too-long)
+physXAI/models/ann/ann_design.py:218:0: C0301: Line too long (147/120) (line-too-long)
+physXAI/models/ann/ann_design.py:1:0: C0302: Too many lines in module (1050/1000) (too-many-lines)
+physXAI/models/ann/ann_design.py:1050:0: C0305: Trailing newlines (trailing-newlines)
+physXAI/models/ann/ann_design.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+physXAI/models/ann/ann_design.py:1:0: F0002: physXAI/models/ann/ann_design.py: Fatal error while checking 'physXAI/models/ann/ann_design.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-21-37-00.txt'. (astroid-error)
+************* Module physXAI.models.ann.configs.ann_model_configs
+physXAI/models/ann/configs/ann_model_configs.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+physXAI/models/ann/configs/ann_model_configs.py:1:0: F0002: physXAI/models/ann/configs/ann_model_configs.py: Fatal error while checking 'physXAI/models/ann/configs/ann_model_configs.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-21-37-00.txt'. (astroid-error)
+************* Module physXAI.models.ann.configs.__init__
+physXAI/models/ann/configs/__init__.py:1:0: C0305: Trailing newlines (trailing-newlines)
+************* Module physXAI.models.ann.pinn.physics
+physXAI/models/ann/pinn/physics.py:25:0: E0401: Unable to import 'keras' (import-error)
+physXAI/models/ann/pinn/physics.py:26:0: E0401: Unable to import 'keras' (import-error)
+physXAI/models/ann/pinn/physics.py:44:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/pinn/physics.py:51:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/pinn/physics.py:67:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/pinn/physics.py:71:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/pinn/physics.py:82:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/pinn/physics.py:152:16: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/models/ann/pinn/physics.py:154:15: W0212: Access to a protected member _name of a client class (protected-access)
+physXAI/models/ann/pinn/physics.py:161:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/pinn/physics.py:167:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/pinn/physics.py:185:21: W0613: Unused argument 'y_true' (unused-argument)
+physXAI/models/ann/pinn/physics.py:188:25: W0613: Unused argument 'y_true' (unused-argument)
+physXAI/models/ann/pinn/physics.py:226:4: E0401: Unable to import 'numpy' (import-error)
+physXAI/models/ann/pinn/physics.py:227:4: E0401: Unable to import 'tensorflow' (import-error)
+physXAI/models/ann/pinn/physics.py:241:19: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/models/ann/pinn/physics.py:267:20: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/models/ann/pinn/physics.py:295:18: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+************* Module physXAI.models.ann.pinn.__init__
+physXAI/models/ann/pinn/__init__.py:1:0: C0305: Trailing newlines (trailing-newlines)
+************* Module physXAI.models.ann.keras_models.keras_models
+physXAI/models/ann/keras_models/keras_models.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+physXAI/models/ann/keras_models/keras_models.py:3:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/models/ann/keras_models/keras_models.py:6:0: E0401: Unable to import 'keras' (import-error)
+physXAI/models/ann/keras_models/keras_models.py:76:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:113:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:117:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:161:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:165:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:206:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:210:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:368:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:382:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:410:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:413:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:421:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:424:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:463:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:463:20: W0613: Unused argument 'input_shape' (unused-argument)
+physXAI/models/ann/keras_models/keras_models.py:475:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:484:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:488:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:497:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:468:8: W0201: Attribute 'constant' defined outside __init__ (attribute-defined-outside-init)
+physXAI/models/ann/keras_models/keras_models.py:507:4: W0246: Useless parent or super() delegation in method '__init__' (useless-parent-delegation)
+physXAI/models/ann/keras_models/keras_models.py:510:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:513:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:516:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:521:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:531:4: W0246: Useless parent or super() delegation in method '__init__' (useless-parent-delegation)
+physXAI/models/ann/keras_models/keras_models.py:534:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:537:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:540:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/keras_models/keras_models.py:545:4: C0116: Missing function or method docstring (missing-function-docstring)
+************* Module physXAI.models.ann.model_construction.ann_models
+physXAI/models/ann/model_construction/ann_models.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+physXAI/models/ann/model_construction/ann_models.py:3:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/models/ann/model_construction/ann_models.py:10:0: E0401: Unable to import 'keras' (import-error)
+physXAI/models/ann/model_construction/ann_models.py:144:18: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/models/ann/model_construction/ann_models.py:78:0: R0912: Too many branches (20/12) (too-many-branches)
+physXAI/models/ann/model_construction/ann_models.py:78:0: R0915: Too many statements (57/50) (too-many-statements)
+physXAI/models/ann/model_construction/ann_models.py:10:0: C0411: third party import "import keras" should be placed before "from physXAI.models.ann.configs.ann_model_configs import ClassicalANNConstruction_config, CMNNModelConstruction_config" (wrong-import-order)
+************* Module physXAI.models.ann.model_construction.residual_models
+physXAI/models/ann/model_construction/residual_models.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+physXAI/models/ann/model_construction/residual_models.py:3:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/models/ann/model_construction/residual_models.py:4:0: E0401: Unable to import 'sklearn.linear_model' (import-error)
+physXAI/models/ann/model_construction/residual_models.py:10:0: E0401: Unable to import 'keras' (import-error)
+physXAI/models/ann/model_construction/residual_models.py:10:0: C0411: third party import "import keras" should be placed before "from physXAI.models.ann.model_construction.rbf_models import RBFModelConstruction" (wrong-import-order)
+************* Module physXAI.models.ann.model_construction.rnn_models
+physXAI/models/ann/model_construction/rnn_models.py:183:0: C0301: Line too long (121/120) (line-too-long)
+physXAI/models/ann/model_construction/rnn_models.py:24:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/models/ann/model_construction/rnn_models.py:31:0: E0401: Unable to import 'keras' (import-error)
+physXAI/models/ann/model_construction/rnn_models.py:60:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/model_construction/rnn_models.py:64:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/model_construction/rnn_models.py:177:13: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/models/ann/model_construction/rnn_models.py:242:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/model_construction/rnn_models.py:246:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/model_construction/rnn_models.py:258:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/model_construction/rnn_models.py:261:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/model_construction/rnn_models.py:273:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/model_construction/rnn_models.py:278:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/model_construction/rnn_models.py:303:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/model_construction/rnn_models.py:320:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/model_construction/rnn_models.py:323:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/models/ann/model_construction/rnn_models.py:417:18: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/models/ann/model_construction/rnn_models.py:31:0: C0411: third party import "import keras" should be placed before "from physXAI.expr import Expr" (wrong-import-order)
+************* Module physXAI.models.ann.model_construction.rbf_models
+physXAI/models/ann/model_construction/rbf_models.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+physXAI/models/ann/model_construction/rbf_models.py:3:0: E0401: Unable to import 'keras' (import-error)
+physXAI/models/ann/model_construction/rbf_models.py:4:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/models/ann/model_construction/rbf_models.py:5:0: E0401: Unable to import 'sklearn.cluster' (import-error)
+physXAI/models/ann/model_construction/rbf_models.py:6:0: E0401: Unable to import 'sklearn.neighbors' (import-error)
+************* Module physXAI.models.ann.model_construction.__init__
+physXAI/models/ann/model_construction/__init__.py:1:0: C0305: Trailing newlines (trailing-newlines)
+************* Module physXAI.utils.seed
+physXAI/utils/seed.py:14:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/utils/seed.py:26:4: W0603: Using the global statement (global-statement)
+physXAI/utils/seed.py:33:4: E0401: Unable to import 'keras' (import-error)
+************* Module physXAI.utils.__init__
+physXAI/utils/__init__.py:1:0: C0305: Trailing newlines (trailing-newlines)
+************* Module physXAI.preprocessing.training_data
+physXAI/preprocessing/training_data.py:18:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/preprocessing/training_data.py:63:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:85:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:91:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:95:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:99:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:103:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:107:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:111:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:114:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:118:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:122:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:198:28: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/preprocessing/training_data.py:239:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:242:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:250:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:254:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:258:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:262:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:266:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:270:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:369:26: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/preprocessing/training_data.py:135:0: R0904: Too many public methods (24/20) (too-many-public-methods)
+physXAI/preprocessing/training_data.py:422:28: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/preprocessing/training_data.py:462:42: W0212: Access to a protected member _input_index of a client class (protected-access)
+physXAI/preprocessing/training_data.py:463:48: W0212: Access to a protected member _output_index of a client class (protected-access)
+physXAI/preprocessing/training_data.py:476:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:500:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:504:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:508:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:512:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:516:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:520:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:551:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/training_data.py:552:20: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/preprocessing/training_data.py:570:26: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/preprocessing/training_data.py:373:0: R0904: Too many public methods (21/20) (too-many-public-methods)
+************* Module physXAI.preprocessing.preprocessing
+physXAI/preprocessing/preprocessing.py:30:0: E0401: Unable to import 'numpy' (import-error)
+physXAI/preprocessing/preprocessing.py:31:0: E0401: Unable to import 'pandas' (import-error)
+physXAI/preprocessing/preprocessing.py:44:67: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/preprocessing/preprocessing.py:47:0: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/preprocessing.py:59:13: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/preprocessing/preprocessing.py:122:35: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
+physXAI/preprocessing/preprocessing.py:128:13: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/preprocessing/preprocessing.py:237:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/preprocessing.py:241:4: C0116: Missing function or method docstring (missing-function-docstring)
+physXAI/preprocessing/preprocessing.py:407:4: C0116: Missing function or method docstring (missing-function-docstring)
+************* Module physXAI.preprocessing.windows
+physXAI/preprocessing/windows.py:11:0: E0401: Unable to import 'numpy' (import-error)
+************* Module physXAI.preprocessing.splitting
+physXAI/preprocessing/splitting.py:1:0: F0002: physXAI/preprocessing/splitting.py: Fatal error while checking 'physXAI/preprocessing/splitting.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-21-37-02.txt'. (astroid-error)
+************* Module physXAI.preprocessing.__init__
+physXAI/preprocessing/__init__.py:1:0: C0305: Trailing newlines (trailing-newlines)
+physXAI/preprocessing/__init__.py:1:0: R0801: Similar lines in 2 files
+==physXAI.models.ann.ann_design:[247:268]
+==physXAI.models.modular.constrained_regression:[304:325]
+        save_path = output_path(save_path, '.keras')
+        model.save(save_path)
+
+    def load_model(self, load_path: str):
+        """
+        Loads a Keras model from the specified path.
+
+        Args:
+            load_path (str): The path from which to load the model.
+
+        Returns:
+            keras.Model: The loaded Keras model.
+        """
+
+        load_path = input_path(load_path)
+        model = keras.saving.load_model(load_path)
+        return model
+
+    def get_config(self) -> dict:
+        c = super().get_config()
+        c.update({ (duplicate-code)
+physXAI/preprocessing/__init__.py:1:0: R0801: Similar lines in 2 files
+==physXAI.evaluation.comparison:[498:505]
+==physXAI.plotting.plotting:[163:170]
+                    )
+                )
+            fig.add_trace(
+                go.Scatter(
+                    x=x,
+                    y=median,
+                    mode="lines", (duplicate-code)
+physXAI/preprocessing/__init__.py:1:0: R0801: Similar lines in 2 files
+==physXAI.models.ann.model_construction.ann_models:[122:129]
+==physXAI.models.ann.model_construction.rbf_models:[71:77]
+    input_layer = keras.layers.Input(shape=(n_features,))
+    # Add normalization layer
+    if config['normalize']:
+        normalization = keras.layers.Normalization()
+        normalization.adapt(td.X_train_single)
+        x = normalization(input_layer) (duplicate-code)
+physXAI/preprocessing/__init__.py:1:0: R0801: Similar lines in 2 files
+==physXAI.agentlib_mpc_plugin.example:[17:25]
+==physXAI.agentlib_mpc_plugin.example_ci:[17:25]
+    run = Run(base_path, folder_name, overwrite=True)
+
+    inputs = ['mDot', 'T']
+    output = px.Change('T')  # 'Change(T)', derived by the preprocessing
+
+    prep = PreprocessingSingleStep(inputs=inputs, output=output, csv_delimiter=',', time_step=time_step)  # a new seed per run, stored in the config
+    td = prep.pipeline(training_data_path)
+ (duplicate-code)
+physXAI/preprocessing/__init__.py:1:0: R0401: Cyclic import (physXAI.preprocessing.preprocessing -> physXAI.preprocessing.training_data) (cyclic-import)
+physXAI/preprocessing/__init__.py:1:0: R0401: Cyclic import (physXAI.expr -> physXAI.expr.blocks -> physXAI.models.ann.model_construction.rbf_models -> physXAI.preprocessing.training_data -> physXAI.preprocessing.preprocessing) (cyclic-import)
+
+-----------------------------------
+Your code has been rated at 0.00/10
+
