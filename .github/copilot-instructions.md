@@ -34,7 +34,7 @@ physXAI/
 └── utils/                  # Logging, path utilities, and helper functions
 executables/                # Runnable example scripts and use cases
 unittests/                  # pytest test-suite
-docs/                       # MkDocs documentation
+docs/                       # Sphinx documentation (docs/source, MyST Markdown)
 data/                       # Input datasets (typically .csv files)
 stored_data/                # Saved models and configurations
 ```

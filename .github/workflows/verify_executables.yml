@@ -94,28 +94,25 @@ jobs:
       fail-fast: false
       matrix:
         script: ${{ fromJSON(needs.setup.outputs.scripts) }}
+        # Python versions are covered by the unit tests; the executables run on both operating systems
         os: [ubuntu-latest, windows-latest]
-        python-version: ['3.11', '3.12', '3.13']
-        exclude:  # Windows only with one Python version to keep the matrix small
-          - os: windows-latest
-            python-version: '3.11'
-          - os: windows-latest
-            python-version: '3.13'
 
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
-      
-    - name: Set up Python ${{ matrix.python-version }}
+
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}
-        
-    - name: Install requirements and add python path
+        python-version: '3.12'
+        cache: pip
+        cache-dependency-path: pyproject.toml
+
+    - name: Install physXAI
       run: |
         python -m pip install --upgrade pip
         pip install .
-        
-    - name: Run script -> ${{ matrix.script }} with Python ${{ matrix.python-version }}
-      run: |
-        echo "2" | python ${{ matrix.script }}
+
+    # one training epoch per fit, no plots (unittests/smoke_executables.py), the scripts are unchanged
+    - name: Smoke run -> ${{ matrix.script }}
+      run: python unittests/smoke_executables.py ${{ matrix.script }}

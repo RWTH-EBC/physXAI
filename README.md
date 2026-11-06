@@ -1,8 +1,9 @@
 ![E.ON EBC RWTH Aachen University](https://github.com/RWTH-EBC/physXAI/blob/main/docs/EBC_Logo.png?raw=true)
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://rwth-ebc.github.io/physXAI/)
-![Coverage](https://raw.githubusercontent.com/RWTH-EBC/physXAI/dc3f25cbff23c06eac5344978b431a2faf27aa1c/build/reports/coverage.svg)
+[![Documentation](https://rwth-ebc.github.io/physXAI/main/docs/doc.svg)](https://rwth-ebc.github.io/physXAI/main/docs/index.html)
+[![Coverage](https://rwth-ebc.github.io/physXAI/main/coverage/badge.svg)](https://rwth-ebc.github.io/physXAI/main/coverage/index.html)
+[![Pylint](https://rwth-ebc.github.io/physXAI/main/pylint/pylint.svg)](https://rwth-ebc.github.io/physXAI/main/pylint/pylint.html)
 [![DOI:10.1016/j.buildenv.2025.113640](https://img.shields.io/badge/DOI-10.1016%2Fj.buildenv.2025.113640-227BC0)](https://doi.org/10.1016/j.buildenv.2025.113640)
 
 
@@ -52,8 +53,8 @@ If you have any questions regarding physXAI, feel free to contact us at ebc-tool
 	```
 
 ## Getting Started
-The [documentation](https://rwth-ebc.github.io/physXAI/) contains a user guide, the API reference and a
-[migration guide from physXAI 0.x to 1.0](https://rwth-ebc.github.io/physXAI/migration/). <br />
+The [documentation](https://rwth-ebc.github.io/physXAI/main/docs/index.html) contains a user guide, the API reference and a
+[migration guide from physXAI 0.x to 1.0](https://rwth-ebc.github.io/physXAI/main/docs/migration.html). <br />
 Executable and commented examples can be found in the `executables` directory. They serve as a starting point
 for new projects. New executable scripts should be added there.
 

@@ -17,7 +17,7 @@ physXAI needs Python >= 3.11 and runs on Linux and Windows.
 ```bash
 pip install .                    # user
 pip install -e .[dev,agentlib]   # developer: tests, linting, AgentLib-MPC contract tests
-pip install -e .[docs]           # documentation (mkdocs serve)
+pip install -e .[docs]           # documentation: sphinx-apidoc -M -o docs/source/code physXAI && sphinx-build -b html docs/source docs_output
 ```
 
 ## A first model

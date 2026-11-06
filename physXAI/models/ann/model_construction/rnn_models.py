@@ -168,7 +168,7 @@ class ClosedLoopCell(keras.layers.Layer):
     """
     RNN cell applying the step model one step at a time and feeding predicted features back.
 
-    State: [values of the predicted features, *states of the step model].
+    State: `[values of the predicted features, *states of the step model]`.
     Input: one row of input features; the fed back features are replaced by the predicted values.
     Output: [trajectory of the predicted features, outputs of the step model].
     """
