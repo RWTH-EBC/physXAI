@@ -416,7 +416,7 @@ class PreprocessingData(ABC):
         if changes:
             raise ValueError(f"Outputs {changes} are changes to the next step and need shift=1.")
         features = {output_feature(o) for o in self.output}
-        leaks = [name for name in self.inputs if name in features]
+        leaks = [name for name in self.inputs if name in features or output_feature(name) in features]
         leaks += [
             name
             for name in self.inputs

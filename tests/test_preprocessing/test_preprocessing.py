@@ -177,6 +177,7 @@ def test_shift_zero_predicts_the_output_at_the_time_of_the_inputs(frame, tmp_pat
     "settings",
     [
         dict(inputs=["mDot", "T"], output="T"),  # the target itself is an input
+        dict(inputs=["mDot", "Change(T)"], output="T"),  # the change holds the target as well
         dict(inputs=["mDot", "T_lag1"], output="Change(T)"),  # a change is defined to the next step
         dict(inputs=["mDot", "q"], output="T", columns="q"),  # a derived input depends on the target
     ],
