@@ -38,7 +38,14 @@ def test_relative_paths_use_the_working_directory(tmp_path, monkeypatch):
 
 
 def test_version_info():
-    assert Run.version_info() == {"physXAI_version": __version__}
+    import keras
+    import numpy
+
+    info = Run.version_info()
+    assert info["physXAI_version"] == __version__
+    assert info["environment"]["numpy"] == numpy.__version__
+    assert info["environment"]["keras"] == keras.__version__
+    assert {"python", "tensorflow", "scikit-learn", "casadi"} <= info["environment"].keys()
 
 
 def test_log_level():
@@ -90,6 +97,15 @@ def test_save(tmp_path, one_room_csv):
     }
     saved = json.loads(files["training_data"].read_text())
     assert saved["physXAI_version"] == __version__ and "by_output" in saved["metrics"]
+    # the saved configs, with their meta information, create the objects again
+    from physXAI.models.models import AbstractModel
+    from physXAI.preprocessing.preprocessing import PreprocessingData
+
+    saved_prep = json.loads(files["preprocessing"].read_text())
+    assert "environment" in saved_prep
+    assert PreprocessingData.from_config(saved_prep).get_config() == prep.get_config()
+    loaded = AbstractModel.model_from_config(json.loads(files["model_config"].read_text()))
+    assert isinstance(loaded, LinearRegressionModel)
     with pytest.raises(FileExistsError):
         run.save("lr", prep, m, td)
     # only configs, without a trained model

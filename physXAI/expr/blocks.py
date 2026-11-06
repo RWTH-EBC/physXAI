@@ -17,6 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from physXAI.expr.core import BuildContext, Expr, _keras, as_expr, register_expression
+from physXAI.utils.seed import resolve_seed
 
 logger = logging.getLogger("physXAI")
 
@@ -328,7 +329,8 @@ class Polynomial(Block):
 class RBF(Block):
     """
     Radial basis function network with `units` gaussian neurons. Centers are initialized by
-    k-means on the (normalized) training data, if available.
+    k-means on the (normalized) training data, if available. `random_state` is the seed of the k-means,
+    defaults to the global seed (`physXAI.set_seed`), else a new seed is drawn (stored in the config).
     """
 
     def __init__(
@@ -338,11 +340,11 @@ class RBF(Block):
         units: int = 32,
         normalize: bool | None = None,
         nominal_range=None,
-        random_state: int = 0,
+        random_state: int | None = None,
     ):
         super().__init__(inputs, name, normalize, nominal_range)
         self.units = units
-        self.random_state = random_state
+        self.random_state = resolve_seed(random_state)
 
     def params(self):
         return {**super().params(), "units": self.units, "random_state": self.random_state}
@@ -363,7 +365,7 @@ class RBF(Block):
             if self.normalize:
                 data = (data - data.mean(axis=0)) / np.where(data.std(axis=0) > 0, data.std(axis=0), 1.0)
             units = min(self.units, len(data))
-            centers = KMeans(n_clusters=units, random_state=self.random_state, n_init="auto").fit(data).cluster_centers_
+            centers = KMeans(n_clusters=units, random_state=self.random_state % 2**32, n_init="auto").fit(data).cluster_centers_
             gamma = gamma_init(centers) if units > 1 else 1.0
         layer = RBFLayer(self.units if centers is None else len(centers), gamma=gamma, initial_centers=centers)
         return self.rescale(keras.layers.Dense(1, activation="linear")(layer(x)))

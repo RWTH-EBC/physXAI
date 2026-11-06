@@ -32,7 +32,7 @@ def saved(csv, prep, tmp_path_factory):
     """Linear regression and a small ANN, three and two runs, saved into one run directory."""
     run = Run(tmp_path_factory.mktemp("runs"), "compare", overwrite=True)
     linreg = repeat_training(csv, prep, LinearRegressionModel(), seeds=3, run=run, name="linreg")
-    ann = repeat_training(csv, prep, ClassicalANNModel(hidden_layer_size=[4], epochs=1), seeds=[0, 1], run=run,
+    ann = repeat_training(csv, prep, ClassicalANNModel(n_neurons=4, epochs=1), seeds=[0, 1], run=run,
                           name="ann", plot=True)
     return run, linreg + ann
 

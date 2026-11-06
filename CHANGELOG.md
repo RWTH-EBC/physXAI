@@ -17,7 +17,8 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - `physXAI.io.save_for_agentlib` and `check_agentlib_compatibility`: write and validate the files
   consumed by AgentLib-MPC.
 - Contract tests against AgentLib-MPC (`tests/contract`, optional extra `physXAI[agentlib]`).
-- `physXAI.set_seed`: one global seed for Python, NumPy and Keras, default `random_state` of all objects.
+- `physXAI.set_seed`: one global seed for Python, NumPy and Keras, default `random_state` / `random_seed` of all
+  objects (splits, weight initialization, batch order, k-means of RBF networks).
 - Leakage free `BlockSplit` (stratified blocks, embargo between splits) with the strategies `blocks`
   (default), `holdout_end` and `random_rows`; windows never cross a split boundary.
 - Preprocessing derives `X_lagN` and `Change(X)` columns natively, `lags={'X': n}`, `transform` hook,
@@ -54,14 +55,15 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   predicted and trained on (`loss_on='trajectory'`, or `'outputs'`), with optional step weights
   (`first_step_weight`, `step_weights`). If T is also an input, the prediction is fed back (closed loop) in
   training and evaluation, as in an MPC.
-- The saved RNN (`.keras`) is the step model `[sequence, *states] -> [prediction, *states]` used by AgentLib-MPC
-  (branch 143), verified by contract tests that run as soon as the installed AgentLib-MPC supports RNNs.
+- The saved RNN (`.keras`) is the step model `[sequence, *states] -> [prediction, *states]` used by AgentLib-MPC,
+  verified by contract tests that run as soon as the installed AgentLib-MPC supports RNNs (branch
+  `143-feature-multistep-model-support` of AgentLib-MPC; the released AgentLib-MPC 1.1.1 has no RNN support yet).
 - `PreprocessingMultiStep(eval_horizon=..., eval_stride=...)`: evaluation over a horizon longer than the training
   horizon; `label_width` / `warmup_width` also as time delta strings ('12h'). RMSE, MAE and bias per step in
   `td.horizon_metrics` (per output in `by_feature`).
 - Metrics per output: `td.metrics.by_output[output][split]` holds MSE, RMSE, MAE, R2 and bias; `HorizonMetrics`
   additionally the standard deviation of the error per step. Everything is part of the training data json.
-- Plots: one report for all models (`physXAI.plotting.model_report`): per output the true vs. predicted values
+- Plots: one report for all models (`physXAI.plotting.plotting.model_report`): per output the true vs. predicted values
   with small transparent points, the binned median per split as bold line and its interquartile band, the sorted
   predictions, the error over the horizon (RMSE, bias, bias ± σ), the training history (including a multi step
   training) and a metrics table per output. Large point clouds are thinned out for display.
@@ -83,19 +85,22 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   (`python -m physXAI.evaluation.comparison results`).
 - Documentation with Sphinx (MyST Markdown, API reference from the docstrings): user guide (getting started,
   expressions, data pipeline and split, models, multi step evaluation and training, recurrent models, evaluation and
-  comparison, AgentLib-MPC export) and migration guide from 0.x. Published at
+  comparison, AgentLib-MPC export, examples) and migration guide from 0.x. Published at
   https://rwth-ebc.github.io/physXAI/main/docs/index.html.
-
 - `PCNNModel`: physically consistent neural network after Di Natale et al. (2022): energy accumulator with
   positive heating, cooling and loss rates (initial rules of thumb per hour) in parallel to a recurrent network of
   the unforced dynamics; the predicted temperature provably rises with heating and outside temperature over the
   horizon. Closed loop, warmup and step model export as for `RNNModel`, verified against AgentLib-MPC (CasADi).
-  Example `TAir_pcnn.py`.
+  Example `examples/10_pcnn.py`.
 - Physics residuals with trainable physical parameters for all single step keras models:
   `physics=PhysicsResidual(px.Prediction() - model, weight)`, `physics_fit='calibrate'` (grey-box identification
   first, then the network), `'joint'` or `'fixed'`; `px.Prediction`, `px.Target`, `px.positive`, `px.freeze`;
-  trained parameters in `td.physics`. Only the network is exported. Example `TAir_physics_residual.py`.
+  trained parameters in `td.physics`. Only the network is exported. Example `examples/09_physics_residual.py`.
 - User guide page on physics-informed models; `docs/branch_review.md` documents the review of the old branches.
+- Saved configs record the environment (`environment`: versions of Python, NumPy, pandas, scikit-learn, Keras,
+  TensorFlow and CasADi) next to `physXAI_version`.
+- `check_agentlib_compatibility` warns about inputs computed by the preprocessing (`columns`, `Change(X)`,
+  `transform`), which the MPC has to provide as variables.
 
 ### Changed
 - `PINNModel(physics_targets={'pinn': w})`: physics targets are loss columns, no model outputs, so a PINN has one
@@ -105,7 +110,12 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - `loss_columns` in the preprocessing: columns used only in the loss, added from `model.required_loss_columns` by
   `prep.pipeline(path, model=model)`.
 - `FeatureSelectionResult.save(run)` replaces `save_result`.
-- Unknown arguments of the preprocessing raise a `TypeError` instead of being ignored.
+- Unknown arguments of the preprocessing and of the models raise a `TypeError` instead of being ignored.
+- `shift` is 1 (next time step, default, required by AgentLib-MPC) or 0 (algebraic outputs of point sampled data,
+  e.g. `P_el(t) = f(u(t))`; the output feature must not be an input). Values above 1 are rejected: a delay is
+  modelled with lagged inputs, a prediction over several steps recursively (`eval_horizon`).
+- `random_seed` of the keras models defaults to the global seed (`physXAI.set_seed`), else a new seed is drawn and
+  stored in the config (before: 42).
 - Python >= 3.11 is required (3.9 and 3.10 are end of life).
 - CI uses the shared template of the institute (RWTH-EBC/ci_templates, like AgentLib and AgentLib-MPC): tests,
   coverage, package build, pylint/ruff reports, documentation and GitHub Pages; additionally the unit tests on
@@ -122,18 +132,15 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   holds sequences as views on it: `X_*` (warmup and prediction), `y_*` (true trajectories), `targets(split)`
   and `initial(split)`.
 - The batch size of recurrent models is set at the model (`RNNModel(batch_size=...)`), not the preprocessing.
-- Feature selection on the multi step error uses `PreprocessingSingleStep(eval_horizon=...)`; the recursive
-  feature and the controls are never removed. `recursive_feature_elimination_pipeline` is a wrapper around
-  `FeatureSelection`: it no longer asks for input, does not change the preprocessing and saves its result as
-  json and html into the run directory.
+- Feature selection on the multi step error uses `PreprocessingSingleStep(eval_horizon=...)`; the controls (and
+  with `criterion='horizon'` the recursive feature) are never removed. It no longer asks for input, does not
+  change the preprocessing and saves its result as json and html into the run directory.
 - Plots are not opened anymore by default: `pipeline(..., save_path=...)` saves them as `<model>.html` next to
   the model and `Run.save` as `<name>.html`; `show_plot=True` opens them. `Model.plot(td)` returns the figure.
 - `pipeline` and `online_pipeline` save nothing without a `save_path` (there is no default directory anymore).
 - Logging uses the standard `logging` module (logger `physXAI`): `set_log_level('warning')` replaces
   `Logger.print_level`; keras progress bars follow the log level. If the application configures logging,
   messages are passed on to it.
-- `save_result(result, run)` of the feature selection writes into a `Run`, `recursive_feature_elimination_pipeline`
-  takes an optional `run`.
 - `executables/` is replaced by `examples/`: a tutorial of 13 numbered, self-contained scripts from a first model
   to the export for AgentLib-MPC (`examples/README.md`). They use `Run`, save their models with `Run.save` and
   find the data relative to the repository. The experimental `regression_prototype.py` is replaced by the
@@ -154,9 +161,9 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - `PreprocessingMultiStep` ignored `ignore_nan`; configs missed csv options, so `from_config` was not
   reproducible.
 - `y_val_pred_single` failed without a validation set.
-- Modular models: `ModularModel` with `LinearRegressionModel` crashed; loading a config twice failed
-  (config mutated in place); references to not yet built expressions became None; global caches of keras
-  tensors broke a second model in the same process; auto names depended on the process history.
+- Modular models (now `physXAI.expr`): loading a config twice failed (config mutated in place); references to not
+  yet built expressions became None; global caches of keras tensors broke a second model in the same process;
+  auto names depended on the process history.
 - `ModularANN(solver='ols')`: `online_pipeline` set the weights of a stale model; closed form solvers now raise a
   `NotImplementedError` (train a new model on the combined data).
 - The training history plot failed for models trained without keras history.
@@ -169,6 +176,14 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - `PINNModel.pipeline` and `online_pipeline` returned None instead of the trained model.
 - Metrics of several outputs were computed on the flattened outputs (mixing their units).
 - Feature selection: `input()` prompts, the preprocessing was changed in place, lags were parsed from strings.
+- Split: the embargo purged rows of test or validation blocks next to a training block shorter than `gap_steps`.
+- `physXAI.set_seed` had no effect on the keras models (their default seed 42 was set again).
+- Keras single step networks trained on several outputs broadcast them against their single output neuron;
+  they now require one output.
+- `shift > 1` gave wrong errors over the horizon, multi step trainings and RNN trajectories.
+- `LinANNModel` wrote the evaluation of its linear regression into the training data; `RBFModel` and
+  `LinANNModel` did not use the seed of `repeat_training` for their k-means; the RBF construction failed without
+  normalization.
 
 ### Removed
 - Compatibility code of 0.x: `recursive_feature_elimination_pipeline` and `save_result`, the flat metrics

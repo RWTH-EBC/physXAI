@@ -1,3 +1,5 @@
+"""Construction of the keras models of `ClassicalANNModel` and `CMNNModel` (and of `PINNModel`)."""
+
 import os
 
 import numpy as np

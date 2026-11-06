@@ -11,7 +11,9 @@ expression is evaluated on data (NumPy), built into the keras model and translat
 - Blocks: px.Linear, px.MLP, px.MonotoneMLP (CMNN), px.Polynomial, px.RBF, px.Param, px.Pretrained, ...
 
 Part A fits a linear model of physical terms in closed form (solver='ols'). Part B adds a small neural network
-for the remaining dynamics. Part C is a modular model of the heat pump power.
+for the remaining dynamics. Part C is a modular model of the heat pump power. Part D reuses the trained model of
+part B as a frozen block (px.Pretrained, e.g. to transfer it to a similar building) and trains a polynomial
+correction (px.Polynomial) on top of it.
 """
 
 from pathlib import Path
@@ -59,6 +61,7 @@ hybrid = ModularANN(architecture, epochs=200, early_stopping_epochs=20)
 td = prep.pipeline(DATA, model=hybrid)
 hybrid.pipeline(td)
 run.save('hybrid', prep, hybrid, td)
+hybrid_inputs = list(td.inputs)
 print(f"B linear + MLP:  RMSE of T after 12 h {td.horizon_metrics.kpis['test']['rmse'][-1]:.3f} K")
 # The whole graph is part of the model config (hybrid_model.json), shared nodes stay shared
 print('Blocks in the config:', sorted({n['type'] for n in hybrid.get_config()['architecture']['nodes']}))
@@ -72,3 +75,15 @@ td = prep_power.pipeline(DATA, model=power)
 power.pipeline(td)
 run.save('power', prep_power, power, td)
 print(f"C heat pump power: test RMSE {td.metrics.kpi('test', 'rmse'):.1f} W")
+
+# --- D: a trained model as block, plus a correction -----------------------------------------------------------------
+# The saved model of part B gets its inputs in the order it was trained with; it stays frozen (trainable=False).
+# On the same data the correction has little to add; with the data of a similar building it adapts the model.
+pretrained = px.Pretrained(run.path / 'hybrid.keras', [v[name] for name in hybrid_inputs])
+correction = px.Polynomial([u_hp, T_amb], degree=2, interaction_degree=2, normalize=True)
+# the correction is scaled by a parameter starting at 0, so the training starts at the pretrained model
+transfer = ModularANN(pretrained + px.Param(0.0, name='k_correction') * correction, epochs=50, early_stopping_epochs=10)
+td = prep.pipeline(DATA, model=transfer)
+transfer.pipeline(td)
+run.save('transfer', prep, transfer, td)
+print(f"D pretrained + polynomial correction: RMSE of T after 12 h {td.horizon_metrics.kpis['test']['rmse'][-1]:.3f} K")

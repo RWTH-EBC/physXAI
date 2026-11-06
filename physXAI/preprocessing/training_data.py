@@ -154,6 +154,8 @@ class TrainingData(TrainingDataGeneric):
                  step of a recursive (multi step) prediction.
         loss_columns: Columns used only in the training loss (e.g. physics targets of a PINN), see
                       `PreprocessingData(loss_columns=...)`. They are no model outputs.
+        shift: Steps between the inputs and the targets (1: next step, 0: time of the inputs). Recursive
+               (multi step) predictions need shift=1.
     """
 
     def __init__(
@@ -171,6 +173,7 @@ class TrainingData(TrainingDataGeneric):
         targets: list[str] | None = None,
         derived: dict | None = None,
         loss_columns: list[str] | None = None,
+        shift: int = 1,
     ):
         super().__init__()
         targets = list(outputs) if targets is None else list(targets)
@@ -192,6 +195,7 @@ class TrainingData(TrainingDataGeneric):
         self.time_step = time_step
         self.eval_horizon = eval_horizon
         self.eval_stride = eval_stride
+        self.shift = int(shift)
         self._input_index = [self.all_columns.index(c) for c in self.inputs]
         self._output_index = [self.all_columns.index(c) for c in self.targets]
         self.derived: dict = dict(derived or {})
@@ -314,6 +318,7 @@ class TrainingData(TrainingDataGeneric):
             "time_step": self.time_step,
             "eval_horizon": self.eval_horizon,
             "eval_stride": self.eval_stride,
+            "shift": self.shift,
             "file_path": self.file_path,
             "time_is_datetime": bool(time_is_datetime),
         }
@@ -360,6 +365,7 @@ class TrainingData(TrainingDataGeneric):
             targets=meta["targets"],
             loss_columns=meta.get("loss_columns"),
             derived={name: from_config(e) for name, e in meta.get("derived", {}).items()},
+            shift=meta.get("shift", 1),
         )
         td.file_path = file_path
         return td

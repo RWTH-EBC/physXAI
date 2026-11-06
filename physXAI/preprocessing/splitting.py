@@ -200,19 +200,28 @@ def apply_embargo(labels: np.ndarray, gap: int) -> np.ndarray:
 
     The rows are taken from the training side of a boundary, so validation and test data stay
     complete. At a boundary between validation and test data, the validation side is used.
+    Only rows of the block at the boundary are purged: a block shorter than `gap` is purged completely,
+    but the rows of the neighbouring block are kept.
     """
     labels = labels.copy()
     boundaries = np.flatnonzero(labels[1:] != labels[:-1]) + 1
     original = labels.copy()
+    n = len(labels)
     for b in boundaries:
         before, after = original[b - 1], original[b]
         if UNUSED in (before, after):
             continue
         purge_before = before == TRAIN or (before == VAL and after == TEST)
         if purge_before:
-            labels[max(b - gap, 0) : b] = UNUSED
+            start = b
+            while start > max(b - gap, 0) and original[start - 1] == before:
+                start -= 1
+            labels[start:b] = UNUSED
         else:
-            labels[b : b + gap] = UNUSED
+            stop = b
+            while stop < min(b + gap, n) and original[stop] == after:
+                stop += 1
+            labels[b:stop] = UNUSED
     return labels
 
 

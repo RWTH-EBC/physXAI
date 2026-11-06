@@ -65,7 +65,10 @@ def check_agentlib_compatibility(preprocessing: PreprocessingData | dict) -> Non
     errors = list()
 
     if config.get("shift", 1) != 1:
-        errors.append(f"'shift' has to be 1, but is {config.get('shift')}.")
+        errors.append(
+            f"'shift' has to be 1, but is {config.get('shift')} (AgentLib-MPC evaluates outputs over the interval "
+            "[t, t+1) of the inputs, as trained with shift=1)."
+        )
     inputs = list(config.get("inputs") or [])
     outputs = config.get("output")
     if isinstance(outputs, str):
@@ -88,6 +91,24 @@ def check_agentlib_compatibility(preprocessing: PreprocessingData | dict) -> Non
 
     if errors:
         raise AgentLibCompatibilityError("Config cannot be used in AgentLib-MPC:\n- " + "\n- ".join(errors))
+    _warn_derived_inputs(config, inputs)
+
+
+def _warn_derived_inputs(config: dict, inputs: list[str]) -> None:
+    """Inputs computed by the preprocessing are no variables of the MPC: AgentLib-MPC has to compute them itself."""
+    derived = set(config.get("columns") or {})
+    computed = [name for name in inputs if split_lag(name)[0] in derived or CHANGE_PATTERN.fullmatch(split_lag(name)[0])]
+    if computed:
+        logger.warning(
+            "The inputs %s are computed by the preprocessing, AgentLib-MPC needs them as variables of the MPC model. "
+            "Expressions inside the model (physXAI.expr, ModularANN) need only the raw inputs.",
+            computed,
+        )
+    if config.get("transform"):
+        logger.warning(
+            "The preprocessing uses the transform '%s': inputs it creates have to be variables of the MPC model.",
+            config["transform"],
+        )
 
 
 def _check_lag_order(inputs: list[str], recursive_feature: str) -> list[str]:
