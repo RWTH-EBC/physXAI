@@ -5,7 +5,7 @@ physXAI/agentlib_mpc_plugin/example.py:23:0: C0301: Line too long (148/120) (lin
 ************* Module physXAI.agentlib_mpc_plugin.example_ci
 physXAI/agentlib_mpc_plugin/example_ci.py:23:0: C0301: Line too long (148/120) (line-too-long)
 ************* Module physXAI.training.recursive
-physXAI/training/recursive.py:1:0: F0002: physXAI/training/recursive.py: Fatal error while checking 'physXAI/training/recursive.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-22-12-25.txt'. (astroid-error)
+physXAI/training/recursive.py:1:0: F0002: physXAI/training/recursive.py: Fatal error while checking 'physXAI/training/recursive.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-23-10-32.txt'. (astroid-error)
 ************* Module physXAI.feature_selection.selection
 physXAI/feature_selection/selection.py:22:0: E0401: Unable to import 'numpy' (import-error)
 physXAI/feature_selection/selection.py:23:0: E0401: Unable to import 'pandas' (import-error)
@@ -24,9 +24,9 @@ physXAI/feature_selection/__init__.py:1:0: C0305: Trailing newlines (trailing-ne
 ************* Module physXAI.io.run
 physXAI/io/run.py:187:0: C0301: Line too long (124/120) (line-too-long)
 physXAI/io/run.py:191:0: C0301: Line too long (124/120) (line-too-long)
-physXAI/io/run.py:1:0: F0002: physXAI/io/run.py: Fatal error while checking 'physXAI/io/run.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-22-12-26.txt'. (astroid-error)
+physXAI/io/run.py:1:0: F0002: physXAI/io/run.py: Fatal error while checking 'physXAI/io/run.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-23-10-33.txt'. (astroid-error)
 ************* Module physXAI.io.agentlib
-physXAI/io/agentlib.py:1:0: F0002: physXAI/io/agentlib.py: Fatal error while checking 'physXAI/io/agentlib.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-22-12-26.txt'. (astroid-error)
+physXAI/io/agentlib.py:1:0: F0002: physXAI/io/agentlib.py: Fatal error while checking 'physXAI/io/agentlib.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-23-10-33.txt'. (astroid-error)
 physXAI/io/agentlib.py:18:0: C0412: Imports from package __future__ are not grouped (ungrouped-imports)
 ************* Module physXAI.evaluation.comparison
 physXAI/evaluation/comparison.py:366:0: C0301: Line too long (125/120) (line-too-long)
@@ -90,7 +90,7 @@ physXAI/expr/blocks.py:404:15: R1735: Consider using '{}' instead of a call to '
 physXAI/expr/blocks.py:420:0: W0223: Method 'evaluate' is abstract in class 'Block' but is not overridden in child class 'Pretrained' (abstract-method)
 physXAI/expr/blocks.py:420:0: W0223: Method 'to_casadi' is abstract in class 'Expr' but is not overridden in child class 'Pretrained' (abstract-method)
 ************* Module physXAI.expr.core
-physXAI/expr/core.py:1:0: F0002: physXAI/expr/core.py: Fatal error while checking 'physXAI/expr/core.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-22-12-27.txt'. (astroid-error)
+physXAI/expr/core.py:1:0: F0002: physXAI/expr/core.py: Fatal error while checking 'physXAI/expr/core.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-23-10-35.txt'. (astroid-error)
 ************* Module physXAI.plotting.plotting
 physXAI/plotting/plotting.py:13:0: E0401: Unable to import 'numpy' (import-error)
 physXAI/plotting/plotting.py:14:0: E0401: Unable to import 'plotly.graph_objects' (import-error)
@@ -147,13 +147,13 @@ physXAI/models/modular/shape_constraints.py:162:4: C0116: Missing function or me
 physXAI/models/modular/shape_constraints.py:273:4: C0116: Missing function or method docstring (missing-function-docstring)
 physXAI/models/modular/shape_constraints.py:303:25: R1734: Consider using [] instead of list() (use-list-literal)
 physXAI/models/modular/shape_constraints.py:303:33: R1734: Consider using [] instead of list() (use-list-literal)
-physXAI/models/modular/shape_constraints.py:341:23: R1734: Consider using [] instead of list() (use-list-literal)
-physXAI/models/modular/shape_constraints.py:286:0: R0912: Too many branches (25/12) (too-many-branches)
-physXAI/models/modular/shape_constraints.py:286:0: R0915: Too many statements (84/50) (too-many-statements)
-physXAI/models/modular/shape_constraints.py:421:4: E0401: Unable to import 'scipy.stats' (import-error)
-physXAI/models/modular/shape_constraints.py:431:14: R1734: Consider using [] instead of list() (use-list-literal)
-physXAI/models/modular/shape_constraints.py:442:4: E0401: Unable to import 'scipy.optimize' (import-error)
-physXAI/models/modular/shape_constraints.py:449:12: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/models/modular/shape_constraints.py:342:23: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/models/modular/shape_constraints.py:286:0: R0912: Too many branches (27/12) (too-many-branches)
+physXAI/models/modular/shape_constraints.py:286:0: R0915: Too many statements (90/50) (too-many-statements)
+physXAI/models/modular/shape_constraints.py:428:4: E0401: Unable to import 'scipy.stats' (import-error)
+physXAI/models/modular/shape_constraints.py:438:14: R1734: Consider using [] instead of list() (use-list-literal)
+physXAI/models/modular/shape_constraints.py:449:4: E0401: Unable to import 'scipy.optimize' (import-error)
+physXAI/models/modular/shape_constraints.py:456:12: R1734: Consider using [] instead of list() (use-list-literal)
 ************* Module physXAI.models.modular.modular_ann
 physXAI/models/modular/modular_ann.py:173:0: C0301: Line too long (121/120) (line-too-long)
 physXAI/models/modular/modular_ann.py:19:0: E0401: Unable to import 'numpy' (import-error)
@@ -170,10 +170,10 @@ physXAI/models/ann/ann_design.py:218:0: C0301: Line too long (147/120) (line-too
 physXAI/models/ann/ann_design.py:1:0: C0302: Too many lines in module (1050/1000) (too-many-lines)
 physXAI/models/ann/ann_design.py:1050:0: C0305: Trailing newlines (trailing-newlines)
 physXAI/models/ann/ann_design.py:1:0: C0114: Missing module docstring (missing-module-docstring)
-physXAI/models/ann/ann_design.py:1:0: F0002: physXAI/models/ann/ann_design.py: Fatal error while checking 'physXAI/models/ann/ann_design.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-22-12-29.txt'. (astroid-error)
+physXAI/models/ann/ann_design.py:1:0: F0002: physXAI/models/ann/ann_design.py: Fatal error while checking 'physXAI/models/ann/ann_design.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-23-10-36.txt'. (astroid-error)
 ************* Module physXAI.models.ann.configs.ann_model_configs
 physXAI/models/ann/configs/ann_model_configs.py:1:0: C0114: Missing module docstring (missing-module-docstring)
-physXAI/models/ann/configs/ann_model_configs.py:1:0: F0002: physXAI/models/ann/configs/ann_model_configs.py: Fatal error while checking 'physXAI/models/ann/configs/ann_model_configs.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-22-12-29.txt'. (astroid-error)
+physXAI/models/ann/configs/ann_model_configs.py:1:0: F0002: physXAI/models/ann/configs/ann_model_configs.py: Fatal error while checking 'physXAI/models/ann/configs/ann_model_configs.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-23-10-36.txt'. (astroid-error)
 ************* Module physXAI.models.ann.configs.__init__
 physXAI/models/ann/configs/__init__.py:1:0: C0305: Trailing newlines (trailing-newlines)
 ************* Module physXAI.models.ann.pinn.physics
@@ -329,7 +329,7 @@ physXAI/preprocessing/preprocessing.py:407:4: C0116: Missing function or method 
 ************* Module physXAI.preprocessing.windows
 physXAI/preprocessing/windows.py:11:0: E0401: Unable to import 'numpy' (import-error)
 ************* Module physXAI.preprocessing.splitting
-physXAI/preprocessing/splitting.py:1:0: F0002: physXAI/preprocessing/splitting.py: Fatal error while checking 'physXAI/preprocessing/splitting.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-22-12-30.txt'. (astroid-error)
+physXAI/preprocessing/splitting.py:1:0: F0002: physXAI/preprocessing/splitting.py: Fatal error while checking 'physXAI/preprocessing/splitting.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-23-10-38.txt'. (astroid-error)
 ************* Module physXAI.preprocessing.__init__
 physXAI/preprocessing/__init__.py:1:0: C0305: Trailing newlines (trailing-newlines)
 physXAI/preprocessing/__init__.py:1:0: R0801: Similar lines in 2 files
@@ -362,8 +362,8 @@ physXAI/preprocessing/__init__.py:1:0: R0801: Similar lines in 2 files
     prep = PreprocessingSingleStep(inputs=inputs, output=output, csv_delimiter=',', time_step=time_step)  # a new seed per run, stored in the config
     td = prep.pipeline(training_data_path)
  (duplicate-code)
-physXAI/preprocessing/__init__.py:1:0: R0401: Cyclic import (physXAI.preprocessing.preprocessing -> physXAI.preprocessing.training_data) (cyclic-import)
 physXAI/preprocessing/__init__.py:1:0: R0401: Cyclic import (physXAI.expr -> physXAI.expr.blocks -> physXAI.models.ann.model_construction.rbf_models -> physXAI.preprocessing.training_data -> physXAI.preprocessing.preprocessing) (cyclic-import)
+physXAI/preprocessing/__init__.py:1:0: R0401: Cyclic import (physXAI.preprocessing.preprocessing -> physXAI.preprocessing.training_data) (cyclic-import)
 
 -----------------------------------
 Your code has been rated at 0.00/10
