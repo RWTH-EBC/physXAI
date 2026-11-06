@@ -40,10 +40,47 @@ comparison.save(run)                            # comparison.html and csv files
 - Every run is saved with `Run.save` into `<run>/<name>/seed_<seed>/`. With the same seeds, all models are
   trained and tested on the same splits (`vary=('split', 'init')` by default; `vary=('init',)` keeps the
   split fixed and only varies the weights).
-- `ModelComparison.load` also takes a list of directories or `{label: directory}`, so runs saved at any
-  time (also by physXAI < 1.0) can be compared. Every `*training_data.json` is one run.
 - Without saving: `comparison = repeat_training(...) + repeat_training(...)`, or
   `ModelComparison().add("label", td)` for evaluated training data.
+
+### Existing runs
+
+Runs saved earlier, also by physXAI < 1.0 or by AgentLib-MPC training scripts, are compared the same way.
+A model is a directory, every directory below it holding a `*training_data.json` is one run, named
+arbitrarily:
+
+```
+results/
+  cmnn/
+    a1b2c3d4/   training_data.json, model_config.json, preprocessing_config.json   (physXAI < 1.0)
+    x9y8z7w6/   ...
+    ...         (e.g. 50 runs)
+  ann/
+    seed_0/     ann_training_data.json, ann_model.json, ann_preprocessing.json, ann.keras   (Run.save)
+```
+
+```python
+ModelComparison.load("results")                          # every sub directory is a model: cmnn, ann
+ModelComparison.load(["results/cmnn", "old/ann"])        # every given directory is a model
+ModelComparison.load({"CMNN": "results/cmnn"})           # with labels
+ModelComparison.load(["results/cmnn"], name="T")         # only T_training_data.json (AgentLib-MPC runs)
+```
+
+- Outputs are named after the `output` of the saved preprocessing, so old and new runs of `Change(T)` share
+  their scores. The RMSE per step of multi step models of physXAI < 1.0 is used as their error over the
+  horizon (the bias was not stored then).
+- A run directory with several models (`T_…` and `P_…` of AgentLib-MPC) gives separate models `cmnn/T` and
+  `cmnn/P`. Unreadable files are skipped with a warning.
+
+From the command line (prints the summary, saves plot and csv files into `results/comparison`):
+
+```bash
+python -m physXAI.evaluation.comparison results
+python -m physXAI.evaluation.comparison results/cmnn results/ann --split test --horizon 12
+python -m physXAI.evaluation.comparison results/cmnn --models --band range
+```
+
+### Tables and plot
 
 Tables: `runs()` (seeds, model class, training time), `metrics()` (single step metrics),
 `horizon()` (errors per step), `scores(split)` (one row per run) and `summary(split)`.
@@ -53,7 +90,7 @@ are compared on the error of `T` over the horizon. `scores` and `plot` use the h
 or `horizon=` in hours.
 
 The plot shows box plots of the single step RMSE (every point is a run), RMSE and bias over the horizon
-(median over the runs and the range, or `band='iqr'`), box plots of the mean RMSE over the horizon and
+(median over the runs and the interquartile range, or `band='range'` for min - max), box plots of the mean RMSE over the horizon and
 the RMSE at its end, and the summary table.
 See `executables/bestest_hydronic_heat_pump/TAir_compare.py`.
 

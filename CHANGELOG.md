@@ -71,6 +71,9 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   or takes training data in memory and compares the distributions of the single step metrics and of the errors
   over a common prediction horizon: tables per run, summary per model (mean, std, min, median, max), box plots
   and horizon plots with median and band. Example `executables/bestest_hydronic_heat_pump/TAir_compare.py`.
+  Existing runs are loaded from model directories with arbitrarily named run directories (`results/cmnn/<run>/`),
+  also with several models per run directory (AgentLib-MPC) and from the command line
+  (`python -m physXAI.evaluation.comparison results`).
 - Documentation: user guide (getting started, expressions, data pipeline and split, models, multi step evaluation
   and training, recurrent models, evaluation and comparison, AgentLib-MPC export), migration guide from 0.x and
   the API reference of all modules. The CI builds it in strict mode.
