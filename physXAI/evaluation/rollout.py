@@ -220,7 +220,8 @@ class HorizonMetrics:
         feature: Name of the predicted feature, or a list of names for several features.
 
     Attributes:
-        kpis: {split: {'rmse': [...], 'mae': [...], 'bias': [...], 'n_windows': n}} of the first feature.
+        kpis: {split: {'rmse': [...], 'mae': [...], 'bias': [...], 'std': [...], 'n_windows': n}} of the
+              first feature ('std' is the standard deviation of the error per step).
         by_feature: The same for every feature, {feature: kpis}.
     """
 
@@ -243,6 +244,7 @@ class HorizonMetrics:
                     "rmse": np.sqrt(np.mean(error**2, axis=0)).tolist(),
                     "mae": np.mean(np.abs(error), axis=0).tolist(),
                     "bias": np.mean(error, axis=0).tolist(),
+                    "std": np.std(error, axis=0).tolist(),
                     "n_windows": int(error.shape[0]),
                 }
         self.kpis: dict[str, dict] = self.by_feature[self.feature]

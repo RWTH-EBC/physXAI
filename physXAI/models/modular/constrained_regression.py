@@ -8,13 +8,6 @@ import numpy as np
 from physXAI.expr import Expr, as_expr, from_config as expr_from_config, to_config as expr_to_config
 from physXAI.expr.core import BuildContext
 from physXAI.models.models import SingleStepModel, register_model
-from physXAI.plotting.plotting import (
-    plot_horizon_metrics,
-    plot_metrics_table,
-    plot_prediction_correlation,
-    plot_predictions,
-    subplots,
-)
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 from physXAI.utils.logging import Logger, create_full_path, get_full_path
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -36,6 +29,8 @@ class ConstrainedRegression(SingleStepModel):
                     data column, in which case the derivative with respect to the raw column is constrained.
         convexities: {name: 1 (convex) | -1 (concave)}, names as for `monotonies`.
     """
+
+    plot_title = "Constrained Regression"
 
     def __init__(self, inputs: Union[list[Union[Expr, str]], dict], monotonies: dict[str, int] = None,
                  convexities: dict[str, int] = None, **kwargs):
@@ -297,28 +292,6 @@ class ConstrainedRegression(SingleStepModel):
             if l.name == LAYER_NAME:
                 l.set_weights([weights_val[1:].reshape(-1, 1), np.array([weights_val[0]])])
                 l.trainable = False
-
-    def plot(self, td: TrainingDataGeneric):
-        """
-        Generates and displays various plots related to model performance.
-
-        Args:
-            td (TrainingDataGeneric): The TrainingData object
-        """
-
-        fig1 = plot_prediction_correlation(td)
-        fig2 = plot_predictions(td)
-        fig3 = plot_metrics_table(td)
-
-        figures = [
-            {"title": "Prediction Correlation", "type": "scatter", "figure": fig1},
-            {"title": "Predictions Sorted", "type": "scatter", "figure": fig2},
-            {"title": "Performance Metrics", "type": "table", "figure": fig3},
-        ]
-        if getattr(td, "horizon_metrics", None) is not None:
-            figures.insert(2, {"title": "Recursive Prediction Error", "type": "scatter",
-                               "figure": plot_horizon_metrics(td)})
-        subplots("Constrained Regression", *figures)
 
     def save_model(self, model, save_path: str):
         """

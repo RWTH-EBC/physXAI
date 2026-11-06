@@ -52,6 +52,17 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - `PreprocessingMultiStep(eval_horizon=..., eval_stride=...)`: evaluation over a horizon longer than the training
   horizon; `label_width` / `warmup_width` also as time delta strings ('12h'). RMSE, MAE and bias per step in
   `td.horizon_metrics` (per output in `by_feature`).
+- Metrics per output: `td.metrics.by_output[output][split]` holds MSE, RMSE, MAE, R2 and bias; `HorizonMetrics`
+  additionally the standard deviation of the error per step. Everything is part of the training data json.
+- Plots: one report for all models (`physXAI.plotting.model_report`): per output the true vs. predicted values
+  with small transparent points, the binned median per split as bold line and its interquartile band, the sorted
+  predictions, the error over the horizon (RMSE, bias, bias ± σ), the training history (including a multi step
+  training) and a metrics table per output. Large point clouds are thinned out for display.
+- Feature selection `physXAI.feature_selection.selection.FeatureSelection` (experimental): backward elimination
+  on the step weighted error of the recursive prediction (or the single step error), repeated on several block
+  splits (`n_repeats`, mean and spread), absolute bias at the MPC horizon, plausibility check of the sign of the
+  sensitivity to the controls (`controls={'u': 1}`), `tolerance` to prefer fewer inputs. Results as table, json
+  and plot.
 
 ### Changed
 - Python >= 3.11 is required (3.9 and 3.10 are end of life).
@@ -67,8 +78,12 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   holds sequences as views on it: `X_*` (warmup and prediction), `y_*` (true trajectories), `targets(split)`
   and `initial(split)`.
 - The batch size of recurrent models is set at the model (`RNNModel(batch_size=...)`), not the preprocessing.
-- Feature selection on the multi step error uses `PreprocessingSingleStep(eval_horizon=...)` (mean RMSE over
-  the horizon on the validation data); the recursive feature is never removed.
+- Feature selection on the multi step error uses `PreprocessingSingleStep(eval_horizon=...)`; the recursive
+  feature and the controls are never removed. `recursive_feature_elimination_pipeline` is a wrapper around
+  `FeatureSelection`: it no longer asks for input, does not change the preprocessing and saves its result as
+  json and html into the run directory.
+- Plots are not opened anymore by default: `pipeline(..., plot=True)` saves them as `<model>.html` next to the
+  model (or into the run directory of the Logger); `show_plot=True` opens them. `Model.plot(td)` returns the figure.
 - `random_state=None` draws a seed (or uses the global one) and stores it in the config.
 - `PreprocessingData.from_config` restores the class from `__class_name__` and all settings.
 
@@ -91,6 +106,8 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - RNN: the summary was always printed, the verbosity ignored, the `Rescaling` layer held tensors instead of
   floats, and the config validation of `init_layer` compared strings with `is not`.
 - `PINNModel.pipeline` and `online_pipeline` returned None instead of the trained model.
+- Metrics of several outputs were computed on the flattened outputs (mixing their units).
+- Feature selection: `input()` prompts, the preprocessing was changed in place, lags were parsed from strings.
 
 ### Removed
 - `physXAI.preprocessing.constructed` (`Feature`, `FeatureConstruction`): lags and `Change(X)` are derived
