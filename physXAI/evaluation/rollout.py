@@ -73,9 +73,10 @@ def recursion_spec(td: TrainingData) -> RecursionSpec | None:
 
     Returns:
         RecursionSpec, or None if the model does not predict one of its own inputs (then there is
-        nothing to feed back and the single step error already is the multi step error).
+        nothing to feed back and the single step error already is the multi step error) or the targets
+        are not the next step (shift != 1).
     """
-    if len(td.outputs) != 1:
+    if len(td.outputs) != 1 or getattr(td, "shift", 1) != 1:
         return None
     feature = output_feature(td.outputs[0])
     difference = CHANGE_PATTERN.match(td.outputs[0]) is not None

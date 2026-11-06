@@ -33,6 +33,7 @@ CONFIGS = {
     "lags_not_ascending": _config(["u", "u_lag2", "T"]),
     "two_outputs": _config(["u", "T"], output=["Change(T)", "P"]),
     "shift_2": _config(["u", "T"], shift=2),
+    "shift_0": _config(["u", "d"], output="P", shift=0),
 }
 
 
