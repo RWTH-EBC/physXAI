@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
     - main
-    - refactoring_v1.0.0  # phase PRs of the 1.0.0 refactoring, remove after the release # Runs on PRs targeting the main branch
+    - refactoring_v1.0.0  # phase PRs of the 1.0.0 refactoring, remove after the release
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
