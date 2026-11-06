@@ -80,7 +80,7 @@ def test_ols_recovers_the_physics(one_room):
     kernel, bias = model.get_layer(index=-1).get_weights()
     # dT = dt/C * (load + cp * mDot * (T_in - T))
     np.testing.assert_allclose(kernel.reshape(-1), [0, 300 / 1e5, 300 / 1e5 * 1000, 0], atol=1e-5)
-    assert td.metrics.test_kpis["R2 Test"] > 0.999
+    assert td.metrics.kpi("test", "r2") > 0.999
 
 
 @pytest.mark.parametrize(
@@ -106,7 +106,7 @@ def test_constrained_regression(one_room):
     )  # more cold supply air cools the room
     _, td = _data(m, one_room)
     model = m.pipeline(td, plot=False, save_model=False)
-    assert td.metrics.test_kpis["R2 Test"] > 0.99
+    assert td.metrics.kpi("test", "r2") > 0.99
     assert model.get_layer("dense_constrained_regression").get_weights()[0][0, 0] >= 0
     config = json.loads(json.dumps(m.get_config()))
     assert [e.name for e in AbstractModel.model_from_config(config).inputs] == ["load", "heat", "T"]

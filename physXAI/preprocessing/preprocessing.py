@@ -172,6 +172,10 @@ class PreprocessingData(ABC):
                     with missing values are left out.
         transform: Optional function `df -> df` applied after loading, e.g. to add columns that are
                    no inputs of the model. It is not serialized.
+        loss_columns: Columns used only in the training loss, no inputs or outputs of the model (e.g. the
+                      physics targets of a PINN). 'name' is the value at the time of the inputs, 'y:name'
+                      the value at the predicted time (shifted like the outputs). Models declare the columns
+                      they need (`required_loss_columns`), they are added by `pipeline(path, model=model)`.
     """
 
     def __init__(
@@ -195,7 +199,7 @@ class PreprocessingData(ABC):
         csv_skiprows: int | list[int] | None = None,
         ignore_nan: bool = False,
         transform: Callable[[pd.DataFrame], pd.DataFrame] | None = None,
-        **kwargs,
+        loss_columns: list[str] | None = None,
     ):
         if shift < 1:
             raise ValueError("shift has to be at least 1.")
@@ -226,6 +230,7 @@ class PreprocessingData(ABC):
         self.csv_skiprows = csv_skiprows
         self.ignore_nan: bool = ignore_nan
         self.transform = transform
+        self.loss_columns: list[str] = list(loss_columns or [])
 
     # The split sizes are part of the AgentLib-MPC contract
     @property
@@ -321,7 +326,12 @@ class PreprocessingData(ABC):
             for variable in expression.free_vars():
                 ensure_column(df, variable)
             df[name] = np.broadcast_to(expression.evaluate(df), (len(df),))
-        shifted = list(dict.fromkeys([*self.output, *(extra_targets or [])]))
+        # loss columns at the predicted time are shifted like the outputs, the others are taken as they are
+        shifted_loss = [c[len(TARGET_PREFIX):] for c in self.loss_columns if c.startswith(TARGET_PREFIX)]
+        plain_loss = [c for c in self.loss_columns if not c.startswith(TARGET_PREFIX)]
+        for name in plain_loss:
+            ensure_column(df, name)
+        shifted = list(dict.fromkeys([*self.output, *(extra_targets or []), *shifted_loss]))
         for name in dict.fromkeys([*self.inputs, *shifted]):
             ensure_column(df, name)
         # raw features of the outputs and the variables of derived columns are kept for recursive
@@ -331,10 +341,10 @@ class PreprocessingData(ABC):
 
         target_columns = [TARGET_PREFIX + name for name in shifted]
         targets = pd.DataFrame({TARGET_PREFIX + name: df[name].shift(-self.shift) for name in shifted}, index=df.index)
-        columns = list(dict.fromkeys([*self.inputs, *aux]))
+        columns = list(dict.fromkeys([*self.inputs, *aux, *plain_loss]))
         frame = pd.concat([df[columns], targets], axis=1)
 
-        used = [*self.inputs, *target_columns]
+        used = [*self.inputs, *target_columns, *plain_loss]
         valid = frame[used].notna().all(axis=1).to_numpy()
         if not valid.any():
             raise ValueError("Data Error: No row holds valid values for all inputs and outputs.")
@@ -361,6 +371,7 @@ class PreprocessingData(ABC):
             eval_stride=eval_stride,
             targets=[TARGET_PREFIX + name for name in self.output],
             derived=self.columns,
+            loss_columns=self.loss_columns,
         )
         logger.info("Split of the data: %s", {k: round(v, 3) for k, v in split_summary(labels[valid]).items()})
         return td
@@ -372,6 +383,9 @@ class PreprocessingData(ABC):
         Raises:
             ValueError: If the model needs inputs which are not part of the given inputs.
         """
+        for name in getattr(model, "required_loss_columns", None) or []:
+            if name not in self.loss_columns:
+                self.loss_columns.append(name)
         required = getattr(model, "required_inputs", None) if model is not None else None
         if self.inputs is None:
             if required is None:
@@ -409,6 +423,7 @@ class PreprocessingData(ABC):
             "csv_skiprows": self.csv_skiprows,
             "ignore_nan": self.ignore_nan,
             "transform": getattr(self.transform, "__name__", None) if self.transform is not None else None,
+            "loss_columns": self.loss_columns or None,
         }
 
     @classmethod
@@ -552,19 +567,7 @@ class PreprocessingMultiStep(PreprocessingData):
         eval_stride: int | str | None = None,
         **kwargs,
     ):
-        for legacy in ("warmup_columns_input", "warmup_columns_labels"):
-            kwargs.pop(legacy, None)
-        init_features = kwargs.pop("init_features", None)
-        if "batch_size" in kwargs:
-            kwargs.pop("batch_size")
-            logger.warning("PreprocessingMultiStep(batch_size=...) is ignored, set the batch size of the model.")
         super().__init__(inputs, output, **kwargs)
-        if init_features is not None and (self.inputs is None or list(init_features) != list(self.inputs)):
-            raise ValueError(
-                "'init_features' was removed in physXAI 1.0: there is no separate initialization model "
-                "anymore, the model warms itself up on its inputs (as in AgentLib-MPC). To start from the "
-                f"measured value of a feature, predict its change, e.g. output=px.Change('{init_features[0]}')."
-            )
         self.label_width = label_width
         self.warmup_width = warmup_width
         self.overlapping_sequences = overlapping_sequences

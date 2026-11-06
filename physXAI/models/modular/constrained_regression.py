@@ -61,7 +61,7 @@ class ConstrainedRegression(SingleStepModel):
         Generates the keras model and the CasADi optimization problem of the regression.
         """
         td = kwargs['td']
-        columns = list(td.columns)
+        columns = list(td.inputs)
         X_data = td.X_train_single
         train_values = {name: X_data[:, i] for i, name in enumerate(columns)}
         ctx = BuildContext(keras.layers.Input(shape=(len(columns),)), columns, train_values)

@@ -29,7 +29,7 @@ def set_seed(seed: int | None) -> None:
         return
     _global_seed = int(seed)
     random.seed(_global_seed)
-    np.random.seed(_global_seed % 2**32)  # noqa: NPY002 - seeds legacy code relying on the global state
+    np.random.seed(_global_seed % 2**32)  # noqa: NPY002 - seeds third-party code relying on the global state
     import keras
 
     keras.utils.set_random_seed(_global_seed % 2**32)

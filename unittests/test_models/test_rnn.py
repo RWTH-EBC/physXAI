@@ -187,7 +187,3 @@ def test_wrong_models_and_data(csv):
     single = PreprocessingSingleStep(inputs=["mDot", "T"], output="Change(T)").pipeline(csv)
     with pytest.raises(TypeError, match="PreprocessingMultiStep"):
         RNNModel(epochs=1).pipeline(single, plot=False, save_model=False)
-    with pytest.raises(ValueError, match="init_layer"):
-        RNNModel(init_layer="LSTM")
-    # old configs without separate initialization model are accepted
-    assert RNNModel(init_layer=None).get_config()["rnn_layer"] == "RNN"

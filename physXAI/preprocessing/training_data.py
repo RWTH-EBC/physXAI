@@ -44,7 +44,7 @@ class TrainingDataGeneric(ABC):
         """Stores the training history (e.g. the keras `History` object)."""
         self.training_record = data
 
-    def add_predictions(self, y_train_pred: np.ndarray, y_val_pred: np.ndarray | None, y_test_pred: np.ndarray):
+    def add_predictions(self, y_train_pred: np.ndarray, y_val_pred: np.ndarray | None, y_test_pred: np.ndarray | None):
         """Stores the predictions of the model for the training, validation and test set."""
         self.y_train_pred = y_train_pred
         self.y_val_pred = y_val_pred
@@ -149,6 +149,8 @@ class TrainingData(TrainingDataGeneric):
         eval_stride: Distance between two evaluation windows in steps.
         derived: Expressions of derived data columns {name: expression}. They are recomputed in every
                  step of a recursive (multi step) prediction.
+        loss_columns: Columns used only in the training loss (e.g. physics targets of a PINN), see
+                      `PreprocessingData(loss_columns=...)`. They are no model outputs.
     """
 
     def __init__(
@@ -165,12 +167,14 @@ class TrainingData(TrainingDataGeneric):
         eval_stride: int = 1,
         targets: list[str] | None = None,
         derived: dict | None = None,
+        loss_columns: list[str] | None = None,
     ):
         super().__init__()
         targets = list(outputs) if targets is None else list(targets)
         if len(targets) != len(outputs):
             raise ValueError("One target column is needed per output.")
-        missing = [c for c in [*inputs, *targets] if c not in columns]
+        loss_columns = list(loss_columns or [])
+        missing = [c for c in [*inputs, *targets, *loss_columns] if c not in columns]
         if missing:
             raise ValueError(f"Columns {missing} are not part of the data.")
         self.data = np.asarray(data, dtype=np.float64)
@@ -178,6 +182,7 @@ class TrainingData(TrainingDataGeneric):
         self.inputs: list[str] = list(inputs)
         self.outputs: list[str] = list(outputs)
         self.targets: list[str] = targets
+        self.loss_columns: list[str] = loss_columns
         self.labels = np.asarray(labels, dtype=np.int8)
         self.valid = np.asarray(valid, dtype=bool)
         self.time = time if time is not None else np.arange(len(self.data), dtype=np.float64)
@@ -213,6 +218,11 @@ class TrainingData(TrainingDataGeneric):
         """Single step targets of a split, shape (samples, outputs)."""
         return self.data[np.ix_(self.rows(split), self._output_index)].astype(np.float32)
 
+    def values(self, split: str, columns: list[str]) -> np.ndarray:
+        """Values of any columns (e.g. `loss_columns`) on the samples of a split, shape (samples, columns)."""
+        index = [self.all_columns.index(c) for c in columns]
+        return self.data[np.ix_(self.rows(split), index)].astype(np.float32)
+
     def window_starts(self, split: str, length: int, stride: int = 1) -> np.ndarray:
         """Start rows of all windows of `length` rows within a split."""
         return window_starts(self.labels, self.valid, SPLITS[split], length, stride)
@@ -229,16 +239,7 @@ class TrainingData(TrainingDataGeneric):
     def summary(self) -> dict:
         return {"rows": len(self.data), "valid_rows": int(self.valid.sum()), **split_summary(self.labels)}
 
-    # --- legacy views (physXAI < 1.0) ----------------------------------------------------------
-    @property
-    def columns(self) -> list[str]:
-        """Input names (legacy name, use `inputs`)."""
-        return self.inputs
-
-    @columns.setter
-    def columns(self, value: list[str]):
-        self.inputs = list(value)
-
+    # --- views of the splits (None for a split without data) -----------------------------------
     def _split_or_none(self, split: str, getter):
         return getter(split) if self.has_split(split) else None
 
@@ -252,7 +253,7 @@ class TrainingData(TrainingDataGeneric):
 
     @property
     def X_test(self):
-        return self.X("test")
+        return self._split_or_none("test", self.X)
 
     @property
     def y_train(self):
@@ -264,7 +265,7 @@ class TrainingData(TrainingDataGeneric):
 
     @property
     def y_test(self):
-        return self.y("test")
+        return self._split_or_none("test", self.y)
 
     @property
     def X_train_single(self):
@@ -305,6 +306,7 @@ class TrainingData(TrainingDataGeneric):
             "inputs": self.inputs,
             "outputs": self.outputs,
             "targets": self.targets,
+            "loss_columns": self.loss_columns,
             "derived": {name: to_config(e) for name, e in self.derived.items()},
             "time_step": self.time_step,
             "eval_horizon": self.eval_horizon,
@@ -353,6 +355,7 @@ class TrainingData(TrainingDataGeneric):
             eval_horizon=meta["eval_horizon"],
             eval_stride=meta["eval_stride"],
             targets=meta["targets"],
+            loss_columns=meta.get("loss_columns"),
             derived={name: from_config(e) for name, e in meta.get("derived", {}).items()},
         )
         td.file_path = file_path
@@ -513,17 +516,6 @@ class TrainingDataMultiStep(TrainingDataGeneric):
     @property
     def y_test(self):
         return self.y("test")
-
-    # legacy names
-    @property
-    def columns(self) -> list[str]:
-        """Input names (legacy name, use `inputs`)."""
-        return self.inputs
-
-    @property
-    def output(self) -> list[str]:
-        """Output names (legacy name, use `outputs`)."""
-        return self.outputs
 
     @staticmethod
     def _single(X):

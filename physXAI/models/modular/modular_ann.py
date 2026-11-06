@@ -90,7 +90,7 @@ class ModularANN(ANNModel):
 
     def generate_model(self, **kwargs):
         td: TrainingDataGeneric = kwargs["td"]
-        inputs = list(td.columns)
+        inputs = list(td.inputs)
         X = td.X_train_single
         missing = [v for v in self.required_inputs if v not in inputs]
         if missing:

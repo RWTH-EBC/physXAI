@@ -138,6 +138,25 @@ class FeatureSelectionResult:
             fig.show()
         return fig
 
+    def save(self, run, name: str = "feature_selection") -> dict:
+        """
+        Saves the result into a run directory: `{name}.json` (all candidates and their criteria) and
+        `{name}.html` (plot).
+
+        Args:
+            run: The run directory (`physXAI.io.Run`).
+            name: Name of the files.
+
+        Returns:
+            dict: The paths of the written files.
+        """
+        from physXAI.plotting.plotting import save_figure
+
+        return {
+            "json": run.save_json(f"{name}.json", self.get_config()),
+            "plot": save_figure(self.plot(), run.file(f"{name}.html")),
+        }
+
     def get_config(self) -> dict:
         return {
             "criterion": self.criterion,
