@@ -130,6 +130,8 @@ loads single step models only. The export is verified against that branch, but n
 - `casadi` is now a declared dependency (it was imported, but missing).
 - Upper bounds on the next major versions of all dependencies (e.g. `keras<4`, `tensorflow<3`): the CasADi converter
   of AgentLib-MPC recognizes keras layers by their names and attributes.
+- `keras>=3.15.0`: older versions have known vulnerabilities in loading models (unsafe deserialization, file
+  disclosure via HDF5), see the GitHub security advisories.
 - Default run folder names no longer contain `:` (invalid on Windows).
 - Single step data is split in blocks instead of random rows by default (random rows overestimate
   the test performance because of autocorrelation).
