@@ -1,27 +1,27 @@
 [build-system]
-requires = ["setuptools>=80.9", "setuptools-scm>=8.3"]
+requires = ["setuptools>=80.9"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "physXAI"
+# Single source of truth for the version. Bump manually for each release and add an entry to CHANGELOG.md.
+version = "1.0.0.dev0"
 authors = [
     { name = "Patrick Henkel", email = "ebc-tools@eonerc.rwth-aachen.de" }
 ]
 description = "Framework for development and execution of physics-guided machine learning for application in Model Predictive Control (MPC) of Building Energy Systems (BES)"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 keywords = [
-    "physics-guided", "physics-informed", "machine-learning", "mpc", "model-predictive-control", "building-energy-systems", 
+    "physics-guided", "physics-informed", "machine-learning", "mpc", "model-predictive-control", "building-energy-systems",
 ]
-license = { text = "BSD-3-Clause" }
+license = "BSD-3-Clause"
 classifiers = [
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
-    'Programming Language :: Python :: 3.9',
-    'Programming Language :: Python :: 3.10',
-    'Programming Language :: Python :: 3.11',
-    'Programming Language :: Python :: 3.12',
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
     "numpy>=2.0",
@@ -29,20 +29,24 @@ dependencies = [
     "scikit-learn>=1.6.1",
     "keras>=3.9.2",
     "tensorflow>=2.19.0",
-    "GitPython>=3.1.44",
+    "casadi>=3.6.7",
     "pydantic>=2.11.4",
     "plotly>=6.0.1",
 ]
-
-dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.4.1",
     "pytest-cov>=6.2.1",
-    "anybadge>=1.16.0"
+    "ruff>=0.12",
+    "pre-commit>=4.2",
+    "anybadge>=1.16.0",
 ]
-gh-pages = [
+# Required for the AgentLib-MPC contract tests (unittests/contract). Tests are skipped if not installed.
+agentlib = [
+    "agentlib_mpc[ml]",
+]
+docs = [
     "mkdocs-material>=9.6.15",
     "mkdocstrings[python]>=0.30.0",
 ]
@@ -58,11 +62,29 @@ where = ["."]
 include = ["physXAI*"]
 exclude = ["unittests*", "executables*", "data*", "build*", "docs*"]
 
-[tool.setuptools_scm]
-write_to = "physXAI/_version.py"
-
 [tool.pytest.ini_options]
 cache_dir = "build/.pytest_cache"
+testpaths = ["unittests"]
+markers = [
+    "slow: long running tests (executables, full trainings)",
+    "agentlib: tests requiring agentlib_mpc (contract with AgentLib-MPC)",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:tensorflow.*",
+    "ignore::DeprecationWarning:keras.*",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["external", "build", "docs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "NPY"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]
 
 [tool.coverage.run]
 source = ["physXAI/"]

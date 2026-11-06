@@ -28,7 +28,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install -e .[gh-pages]
+        pip install -e .[docs]
 
     - name: Build documentation
       run: |

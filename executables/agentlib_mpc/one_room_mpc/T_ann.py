@@ -6,7 +6,7 @@ import numpy as np
 from physXAI.models.ann.ann_design import ClassicalANNModel
 from physXAI.preprocessing.constructed import Feature
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
-from physXAI.utils.logging import Logger
+from physXAI.io import Run
 
 
 def train_model(base_path: str, folder_name: str, training_data_path: str, time_step: int,
@@ -15,7 +15,7 @@ def train_model(base_path: str, folder_name: str, training_data_path: str, time_
     Example to demonstrate interplay of physXAI and agentlib_mpc to train a simple ANN for one_room_mpc
     """
 
-    Logger.setup_logger(base_path=base_path, folder_name=folder_name, override=True)
+    run = Run(base_path, folder_name, overwrite=True)
 
     inputs = ['mDot',
               'T',
@@ -27,17 +27,12 @@ def train_model(base_path: str, folder_name: str, training_data_path: str, time_
     x3 = x1 - x2
     x3.rename("Change(T)")
 
-    random_state = np.random.randint(low=0, high=100000000)
+    random_state = int(np.random.default_rng().integers(0, 100000000))
     prep = PreprocessingSingleStep(inputs=inputs, output=output, csv_delimiter=',', time_step=time_step, random_state=random_state)
     td = prep.pipeline(training_data_path)
 
     m = ClassicalANNModel(epochs=1000)
-    Logger.save_name_model = output_name
-    model = m.pipeline(td, plot=True)
+    model = m.pipeline(td, plot=False, save_model=False)
 
-    Logger.log_setup(prep, m, save_name_preprocessing=f'{output_name}_preprocessing.json',
-                     save_name_model=f'{output_name}_model.json',
-                     save_name_constructed=f'{output_name}_constructed.json')
-    Logger.save_training_data(td, path=f'{output_name}_training_data')
-
-    return output_name
+    # Writes {output_name}_preprocessing.json, _model.json, _training_data.json and the model file
+    return run.save_for_agentlib(output_name, prep, m, td, trained_model=model)

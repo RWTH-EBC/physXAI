@@ -4,32 +4,28 @@ import os
 import shutil
 from datetime import datetime
 from typing import Union
-import git
 import pickle
 
 
 def get_parent_working_directory() -> str:
     """
-    Finds the root directory of the Git repository that contains the current working directory.
+    Legacy helper (deprecated, removed together with the Logger in physXAI 1.0.0).
 
-    This function is useful for locating project-relative paths when the script
-    might be run from different subdirectories within a Git project.
+    Walks up from the current working directory to the first directory containing a
+    '.git' folder or a 'pyproject.toml'. Does not depend on GitPython anymore.
 
     Returns:
-        str: The absolute path to the root of the Git working tree if found.
-             Returns an empty string if not in a Git repository or if an error occurs.
+        str: The found project root, or an empty string if none is found.
     """
 
-    try:
-        repo = git.Repo(search_parent_directories=True)
-        git_root = repo.working_tree_dir
-        return git_root
-    except git.InvalidGitRepositoryError:  # pragma: no cover
-        Logger.print(f"Error: Cannot find git root directory.", 'error')  # pragma: no cover
-        return ''  # pragma: no cover
-    except Exception as e:  # pragma: no cover
-        Logger.print(f"Error: An unexpected error occurred when searching for parent directory: {e}", 'error')  # pragma: no cover
-        return ''  # pragma: no cover
+    current = os.path.abspath(os.getcwd())
+    while True:
+        if os.path.isdir(os.path.join(current, '.git')) or os.path.isfile(os.path.join(current, 'pyproject.toml')):
+            return current
+        parent = os.path.dirname(current)
+        if parent == current:
+            return ''
+        current = parent
 
 
 def get_full_path(path: str, raise_error=True) -> str:
@@ -171,7 +167,7 @@ class Logger:
         if base_path is None:
             base_path = Logger.base_path
         if folder_name is None:
-            folder_name = datetime.now().strftime("%d.%m.%y %H:%M:%S")
+            folder_name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             folder_name = os.path.join(base_path, folder_name)
         else:
             folder_name = os.path.join(base_path, folder_name)

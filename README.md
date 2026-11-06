@@ -20,7 +20,7 @@ The toolbox aims to integrate physical knowledge into machine learning models to
 If you have any questions regarding physXAI, feel free to contact us at ebc-tools@eonerc.rwth-aachen.de  
 
 ## Installation
-1. Create virtual environment with Python 3.12 and activate it:
+1. Create a virtual environment with Python >= 3.11 and activate it:
 	```
 	python -m venv physXAI
 	```
@@ -45,9 +45,10 @@ If you have any questions regarding physXAI, feel free to contact us at ebc-tool
 	pip install .
 	```
  
-    B) To install physXAI as a developer:
+    B) To install physXAI as a developer (tests, linting, AgentLib-MPC contract tests):
 	```
-	pip install -e .[dev]
+	pip install -e .[dev,agentlib]
+	pre-commit install
 	```
 
 ## Getting Started

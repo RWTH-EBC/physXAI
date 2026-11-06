@@ -1,0 +1,27 @@
+name: Version Check
+
+# Ensures that the static version in pyproject.toml matches the release tag
+# and that every release has a CHANGELOG entry.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compare pyproject version with tag
+        run: |
+          VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          TAG="${GITHUB_REF_NAME#v}"
+          echo "pyproject: $VERSION, tag: $TAG"
+          if [ "${{ github.event_name }}" = "push" ] && [ "$VERSION" != "$TAG" ]; then
+            echo "::error::Version in pyproject.toml ($VERSION) does not match tag ($TAG)"; exit 1
+          fi
+          grep -q "## \[$VERSION\]" CHANGELOG.md || { echo "::error::CHANGELOG.md has no entry for $VERSION"; exit 1; }
