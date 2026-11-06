@@ -954,14 +954,19 @@ class PCNNModel(RNNModel):
     are trained with the network on the error of the trajectory over the horizon. The saved step model is
     exported to AgentLib-MPC like an RNN.
 
-    The parameters start at physical rules of thumb, given per hour: a heating rate in K/h at u = 1
-    (e.g. "+1 K in 2 h at full power": 0.5) and a loss rate in 1/h (e.g. "-1.5 K in 6 h when it is 25 K colder
-    outside": 1.5 / 25 / 6 = 0.01). They are scaled to the time step, and the network learns a factor on them.
+    The parameters start at initial rates per hour, scaled to the time step; the network learns a factor on them.
+    A rate is either a physical rule of thumb (a heating rate in K/h at u = 1, e.g. "+1 K in 2 h at full power":
+    0.5, a loss rate in 1/h, e.g. "-1.5 K in 6 h when it is 25 K colder outside": 1.5 / 25 / 6 = 0.01) or None:
+    estimated from the training data by nonnegative least squares of the single step energy balance
+    `T(k+1) - T(k) = sum a * u_heating - sum d * u_cooling + sum b * (T_x - T) + c` on the steps of the training
+    split (the offset c belongs to the unforced dynamics D). The initial rates are reported in
+    `td.physics['initial_rates']`.
 
     Args:
-        heating: {input: initial heating rate in K/h per unit of the input}.
-        cooling: {input: initial cooling rate in K/h per unit of the input} (the input is a positive cooling power).
-        losses: {temperature input: initial loss rate in 1/h}.
+        heating: {input: initial heating rate in K/h per unit of the input, or None (from the data)}.
+        cooling: {input: initial cooling rate in K/h per unit of the input, or None} (the input is a positive
+                 cooling power).
+        losses: {temperature input: initial loss rate in 1/h, or None}.
         rnn_units: Units of the recurrent layer of f.
         rnn_layer: 'LSTM' (default), 'GRU' or 'RNN'.
         **kwargs: Training settings of `RNNModel` (epochs, learning_rate, batch_size, early_stopping_epochs,
@@ -970,7 +975,8 @@ class PCNNModel(RNNModel):
     Example:
         >>> prep = PreprocessingMultiStep(inputs=['u_hp', 'T_amb', 'solar', 'T'], output=px.Change('T'),
         ...                               warmup_width='3h', label_width='12h')
-        >>> m = PCNNModel(heating={'u_hp': 0.5}, losses={'T_amb': 0.01})
+        >>> m = PCNNModel(heating={'u_hp': 0.5}, losses={'T_amb': 0.01})   # rules of thumb
+        >>> m = PCNNModel(heating={'u_hp': None}, losses={'T_amb': None})  # estimated from the training data
     """
 
     plot_title = "Physically Consistent Neural Network"
@@ -980,14 +986,18 @@ class PCNNModel(RNNModel):
         if kwargs.get("feature_architecture") is not None:
             raise ValueError("PCNNModel has no feature_architecture, the inputs of f are all non-physics inputs.")
         super().__init__(rnn_units=rnn_units, rnn_layer=rnn_layer, **kwargs)
-        self.heating = {str(k): float(v) for k, v in (heating or {}).items()}
-        self.cooling = {str(k): float(v) for k, v in (cooling or {}).items()}
-        self.losses = {str(k): float(v) for k, v in (losses or {}).items()}
+        def rates_of(values):
+            return {str(k): (None if v is None else float(v)) for k, v in (values or {}).items()}
+
+        self.heating = rates_of(heating)
+        self.cooling = rates_of(cooling)
+        self.losses = rates_of(losses)
         rates = {**self.heating, **self.cooling, **self.losses}
         if not rates:
             raise ValueError("PCNNModel needs at least one term: heating, cooling or losses.")
-        if any(rate <= 0 for rate in rates.values()):
-            raise ValueError(f"The initial rates have to be positive, got {rates}.")
+        if any(rate is not None and rate <= 0 for rate in rates.values()):
+            raise ValueError(f"The initial rates have to be positive (or None: from the data), got {rates}.")
+        self._estimated: tuple[int, dict[str, float]] | None = None  # (id of the series, rates per hour)
         names = [*self.heating, *self.cooling, *self.losses]
         if len(set(names)) != len(names):
             raise ValueError(f"Every input can only be part of one term, got {names}.")
@@ -1002,15 +1012,62 @@ class PCNNModel(RNNModel):
         if not td.time_step:
             raise ValueError("PCNNModel needs the time step of the data to scale its rates.")
         hours = td.time_step / 3600.0
-        terms = list()
-        for kind, rates in (("heating", self.heating), ("cooling", self.cooling), ("loss", self.losses)):
-            for name, rate in rates.items():
+        kinds = (("heating", self.heating), ("cooling", self.cooling), ("loss", self.losses))
+        for kind, rates in kinds:
+            for name in rates:
                 if name not in td.inputs:
                     raise ValueError(f"The {kind} input '{name}' is not an input of the data {td.inputs}.")
                 if name == feature:
                     raise ValueError(f"The predicted feature '{feature}' cannot be a {kind} input.")
-                terms.append(PCNNTerm(kind, td.inputs.index(name), rate * hours))
-        return terms
+        initial = self.initial_rates(td)
+        return [PCNNTerm(kind, td.inputs.index(name), initial[name] * hours) for kind, rates in kinds for name in rates]
+
+    def initial_rates(self, td: TrainingDataMultiStep) -> dict[str, float]:
+        """
+        Initial rates per hour of all terms: the given ones, and the ones given as None estimated from the steps of
+        the training split by nonnegative least squares (see the class docstring).
+        """
+        given = {**self.heating, **self.cooling, **self.losses}
+        fixed = {k: v for k, v in given.items() if v is not None}
+        if len(fixed) == len(given):
+            return fixed
+        if self._estimated is not None and self._estimated[0] == id(td.series):
+            return {**self._estimated[1], **fixed}
+        from physXAI.models.modular.shape_constraints import constrained_least_squares
+        from physXAI.preprocessing.windows import gather_windows
+
+        series = td.series
+        starts = series.window_starts("train", 2, 1)
+        pairs = gather_windows(series.data[:, series._input_index], starts, 2).astype(np.float64)
+        pairs = pairs[np.all(np.isfinite(pairs), axis=(1, 2))]
+        if len(pairs) < 10:
+            raise ValueError("Too few steps in the training data to estimate the initial rates of the PCNN.")
+        t = td.inputs.index(td.features[0])
+        now = pairs[:, 0, :]
+        change = pairs[:, 1, t] - pairs[:, 0, t]
+        columns, names = list(), list()
+        for sign, rates in ((1.0, self.heating), (-1.0, self.cooling)):
+            for name in rates:
+                columns.append(sign * now[:, td.inputs.index(name)])
+                names.append(name)
+        for name in self.losses:
+            columns.append(now[:, td.inputs.index(name)] - now[:, t])
+            names.append(name)
+        features = np.column_stack(columns)
+        weights, _ = constrained_least_squares(features, change, bias=True, weight_signs=[1] * len(names))
+        hours = td.time_step / 3600.0
+        estimated = dict()
+        for k, name in enumerate(names):
+            # a rate of 0 would switch the term off for good (the network only learns a factor): start at a weak one
+            floor = 1e-2 * float(np.std(change)) / max(float(np.std(features[:, k])), 1e-12)
+            if weights[k] < floor:
+                logger.warning("PCNN: the training data show no positive effect of '%s' (estimated %.3g per step), "
+                               "it starts at the weak rate %.3g per step.", name, weights[k], floor)
+            estimated[name] = max(float(weights[k]), floor) / hours
+        self._estimated = (id(td.series), estimated)
+        logger.info("PCNN initial rates estimated from the training data (per hour): %s",
+                    {k: v for k, v in estimated.items() if given[k] is None})
+        return {**estimated, **fixed}
 
     def _check_training_data(self, td: TrainingDataGeneric):
         super()._check_training_data(td)
@@ -1025,7 +1082,7 @@ class PCNNModel(RNNModel):
     def evaluate(self, model, td: TrainingDataMultiStep):
         """Evaluates the model like an RNN and stores the trained physical parameters in `td.physics`."""
         MultiStepModel.evaluate(model, td)
-        td.physics = {"parameters": self.physics_parameters(model, td)}
+        td.physics = {"parameters": self.physics_parameters(model, td), "initial_rates": self.initial_rates(td)}
 
     def physics_parameters(self, model, td: TrainingDataMultiStep) -> dict:
         """

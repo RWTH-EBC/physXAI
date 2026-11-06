@@ -132,3 +132,21 @@ def test_invalid_configurations(csv, data):
     absolute = PreprocessingMultiStep(inputs=INPUTS, output="T", label_width=3).pipeline(csv)
     with pytest.raises(ValueError, match="change of one feature"):
         _train(absolute)
+
+
+def test_initial_rates_from_the_data(data, caplog):
+    """Rates given as None are estimated from the training steps: the load heats by dt / C = 0.003 K/W per step."""
+    _, td = data
+    m, _ = _train(td, heating={"load": None}, losses={"T_in": None})
+    rates = td.physics["initial_rates"]
+    assert rates["load"] == pytest.approx(300.0 / 1e5 * 12, rel=0.05)  # 0.036 K/h per W
+    assert rates["T_in"] > 0
+    config = json.loads(json.dumps(m.get_config()))
+    assert config["heating"] == {"load": None}
+    assert AbstractModel.model_from_config(config).losses == {"T_in": None}
+
+    # mDot cools the room (T_in < T): no positive heating effect, the term starts at a weak rate with a warning
+    caplog.clear()
+    m = PCNNModel(heating={"mDot": None}, losses={"T_in": 0.5}, rnn_units=4, epochs=1, early_stopping_epochs=None)
+    assert m.initial_rates(td)["mDot"] > 0
+    assert "no positive effect of 'mDot'" in caplog.text

@@ -114,8 +114,13 @@ m.pipeline(td)
 td.physics['parameters']        # trained rates per hour and the consistency margin
 ```
 
-- The initial rates are rules of thumb per hour (heating, cooling: K/h per unit of the input; losses: 1/h), they
-  are scaled to the time step.
+- The initial rates are given per hour (heating, cooling: K/h per unit of the input; losses: 1/h) and scaled to the
+  time step: rules of thumb, or `None` to estimate them from the training data by nonnegative least squares of the
+  single step energy balance `T(k+1) − T(k) = Σ a·u_heating − Σ d·u_cooling + Σ b·(T_x − T) + c` (the offset c
+  belongs to D). `td.physics['initial_rates']` reports them. In a seed study on the BOPTEST data, the estimated start
+  values reduced the RMSE over 12 h in 8 of 10 paired runs (−0.05 K on average) and the bias at the end of the
+  horizon. A rate of 0 would switch a term off for good, so a term without positive effect in the data starts at a
+  weak rate (warning).
 - T is an input and fed back (closed loop); the model warms up on the measured past, as in AgentLib-MPC, and is
   trained on the trajectory over `label_width`.
 - The saved step model `[sequence, E, *states of f] → [ΔT, E, *states of f]` consists of layers AgentLib-MPC

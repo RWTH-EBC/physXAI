@@ -42,6 +42,8 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   (`scipy.optimize.least_squares` with the CasADi Jacobian) instead of gradient descent; the parameters no longer
   depend on the seed and reach the minimum of the calibration problem. `px.Param` and `px.Prediction` have a
   CasADi form.
+- `PCNNModel`: initial rates given as `None` are estimated from the training data by nonnegative least squares of
+  the single step energy balance (reported in `td.physics['initial_rates']`); example 10 uses them.
 - Inputs of the preprocessing can be derived from the model: `prep.pipeline(path, model=model)`, ordered as
   AgentLib-MPC expects them (recursive feature and its lags last, missing intermediate lags added).
 - `columns={'name': expression}` in the preprocessing for derived data columns (e.g. PINN targets).
