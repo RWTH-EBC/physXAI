@@ -163,6 +163,8 @@ class ModelComparison:
             preprocessing: Optional preprocessing object.
         """
         config = training_data if isinstance(training_data, dict) else training_data.get_config()
+        prep_config = preprocessing.get_config() if preprocessing is not None else None
+        config = _normalize(config, prep_config)
         if run is None:
             run = str(sum(r.model == label for r in self.records))
         self.records.append(
@@ -171,45 +173,78 @@ class ModelComparison:
                 run=run,
                 training_data=config,
                 model_config=model.get_config() if model is not None else None,
-                preprocessing=preprocessing.get_config() if preprocessing is not None else None,
+                preprocessing=prep_config,
             )
         )
         return self
 
     @classmethod
-    def load(cls, paths: str | Path | Iterable[str | Path] | Mapping[str, str | Path]) -> ModelComparison:
+    def load(
+        cls,
+        paths: str | Path | Iterable[str | Path] | Mapping[str, str | Path],
+        name: str | None = None,
+    ) -> ModelComparison:
         """
-        Loads saved runs (all files `*training_data.json`, also of physXAI < 1.0).
+        Loads saved runs: every file `*training_data.json` is one run, with the configs next to it.
+
+        Supported are runs written by `Run.save` / `save_for_agentlib` (`{name}_training_data.json`) and
+        by the Logger of physXAI < 1.0 (`training_data.json`, `model_config.json`, `preprocessing_config.json`).
+
+        A model is a directory holding its runs, e.g. `results/cmnn/<run>/...` with any number of run
+        directories named arbitrarily (`results/cmnn/a1b2c3/`, `results/cmnn/x9y8z7/`, ...):
+
+        - `load('results')`: every sub directory of `results` is a model (`cmnn`, `ann`, ...),
+        - `load(['results/cmnn', 'other/ann'])`: every given directory is a model, named after it,
+        - `load({'CMNN': 'results/cmnn'})`: every given directory is a model with the given label.
+
+        Runs are named after their directory below the model directory. If a run directory holds several
+        models (e.g. `T_training_data.json` and `P_training_data.json` of AgentLib-MPC), they become separate
+        models (`cmnn/T`, `cmnn/P`), unless `name` selects one of them. Files that cannot be read are
+        skipped with a warning.
 
         Args:
-            paths: Where the runs are and which model they belong to:
+            paths: The model directories, see above.
+            name: Only load the files `{name}_training_data.json` of every run directory.
 
-                - a directory: every sub directory is a model (as written by `repeat_training`),
-                - a list of directories: every directory is a model, named after the directory,
-                - a dict {label: directory}: every directory is a model with the given label.
-
-                Every `*training_data.json` below a model directory is one run of the model.
+        Raises:
+            FileNotFoundError: If a model directory holds no runs.
         """
-        comparison = cls()
+        groups: list[tuple[str, Path, list[Path]]] = list()
         if isinstance(paths, (str, Path)):
             root = Path(paths)
-            files = _find_runs(root)
+            files = _find_runs(root, name)
             if not files:
-                raise FileNotFoundError(f"No '*{TRAINING_DATA_SUFFIX}' found in '{root}'.")
+                raise FileNotFoundError(f"No runs ('*{TRAINING_DATA_SUFFIX}') found in '{root}'.")
+            by_model: dict[tuple[str, Path], list[Path]] = dict()
             for file in files:
                 parts = file.parent.relative_to(root).parts
-                label = parts[0] if parts else root.name
-                comparison.records.append(_read_run(file, label, parts[1:]))
-            return comparison
+                key = (parts[0], root / parts[0]) if parts else (root.name, root)
+                by_model.setdefault(key, []).append(file)
+            groups = [(label, base, model_files) for (label, base), model_files in by_model.items()]
+            if len(groups) > 1 and all(len(g[2]) == 1 for g in groups):
+                logger.warning(
+                    "Every sub directory of '%s' is loaded as a model with one run. If they are runs of one "
+                    "model, use ModelComparison.load(['%s']).", root, root
+                )
+        else:
+            items = paths.items() if isinstance(paths, Mapping) else ((Path(p).name, p) for p in paths)
+            for label, directory in items:
+                directory = Path(directory)
+                files = _find_runs(directory, name)
+                if not files:
+                    raise FileNotFoundError(f"No runs ('*{TRAINING_DATA_SUFFIX}') found in '{directory}'.")
+                groups.append((label, directory, files))
 
-        items = paths.items() if isinstance(paths, Mapping) else ((Path(p).name, p) for p in paths)
-        for label, directory in items:
-            directory = Path(directory)
-            files = _find_runs(directory)
-            if not files:
-                raise FileNotFoundError(f"No '*{TRAINING_DATA_SUFFIX}' found in '{directory}'.")
+        comparison = cls()
+        for label, base, files in groups:
+            several = len({_file_prefix(f) for f in files}) > 1
             for file in files:
-                comparison.records.append(_read_run(file, label, file.parent.relative_to(directory).parts))
+                prefix = _file_prefix(file)
+                model = f"{label}/{prefix}" if several and prefix else label
+                record = _read_run(file, model, file.parent.relative_to(base).parts)
+                if record is not None:
+                    comparison.records.append(record)
+        logger.info("Loaded %r", comparison)
         return comparison
 
     # --- tables --------------------------------------------------------------------------------
@@ -263,9 +298,9 @@ class ModelComparison:
                                 "step": i + 1,
                                 "hours": (i + 1) * time_step / 3600 if time_step else np.nan,
                                 "rmse": rmse,
-                                "mae": kpis["mae"][i] if "mae" in kpis else np.nan,
-                                "bias": kpis["bias"][i],
-                                "std": kpis["std"][i] if "std" in kpis else np.nan,
+                                "mae": _at(kpis, "mae", i),
+                                "bias": _at(kpis, "bias", i),
+                                "std": _at(kpis, "std", i),
                             }
                         )
         columns = ["model", "run", "feature", "split", "step", "hours", "rmse", "mae", "bias", "std"]
@@ -332,20 +367,20 @@ class ModelComparison:
         return summary.rename(columns={"count": "runs"})
 
     # --- plots ---------------------------------------------------------------------------------
-    def plot(self, split: str = "test", horizon: float | None = None, band: str = "range", show: bool = False):
+    def plot(self, split: str = "test", horizon: float | None = None, band: str | None = "iqr", show: bool = False):
         """
         Plots the distributions of the errors of all models:
 
         - box plots of the single step RMSE per output (every point is a run),
-        - RMSE and bias over the horizon: median over the runs and a band ('range': min - max, 'iqr':
-          25 % - 75 %, None: no band),
+        - RMSE and bias over the horizon: median over the runs and a band ('iqr': 25 % - 75 % (default),
+          'range': min - max, None: no band),
         - box plots of the mean RMSE over the horizon and of the RMSE at its end,
         - a table with the summary.
 
         Args:
             split: 'train', 'val' or 'test'.
             horizon: End of the compared horizon (see `scores`).
-            band: 'range', 'iqr' or None.
+            band: 'iqr', 'range' or None.
             show: Whether to open the figure.
 
         Returns:
@@ -480,7 +515,8 @@ class ModelComparison:
         return fig
 
     # --- saving --------------------------------------------------------------------------------
-    def save(self, run, name: str = "comparison", split: str = "test", horizon: float | None = None) -> dict:
+    def save(self, run, name: str = "comparison", split: str = "test", horizon: float | None = None,
+             band: str | None = "iqr") -> dict:
         """
         Saves the comparison into a run directory: `{name}.html` (plot), `{name}_summary.csv`,
         `{name}_scores.csv` (one row per run), `{name}_metrics.csv` and `{name}_horizon.csv`.
@@ -490,7 +526,7 @@ class ModelComparison:
         """
         from physXAI.plotting.plotting import save_figure
 
-        files = {"plot": save_figure(self.plot(split, horizon), run.file(f"{name}.html"))}
+        files = {"plot": save_figure(self.plot(split, horizon, band=band), run.file(f"{name}.html"))}
         tables = {
             "summary": self.summary(split, horizon),
             "scores": self.scores(split, horizon),
@@ -506,8 +542,16 @@ class ModelComparison:
 
 
 # --- helpers -------------------------------------------------------------------------------------
-def _find_runs(directory: Path) -> list[Path]:
-    return sorted(p for p in directory.rglob(f"*{TRAINING_DATA_SUFFIX}") if p.is_file())
+def _find_runs(directory: Path, name: str | None = None) -> list[Path]:
+    files = sorted(p for p in directory.rglob(f"*{TRAINING_DATA_SUFFIX}") if p.is_file())
+    if name is not None:
+        files = [f for f in files if _file_prefix(f) == name]
+    return files
+
+
+def _file_prefix(file: Path) -> str:
+    """'T' for 'T_training_data.json', '' for 'training_data.json'."""
+    return file.name[: -len(TRAINING_DATA_SUFFIX)].rstrip("_")
 
 
 def _read_json(path: Path) -> dict | None:
@@ -517,25 +561,73 @@ def _read_json(path: Path) -> dict | None:
         return json.load(f)
 
 
-def _read_run(file: Path, label: str, parts: tuple[str, ...]) -> RunRecord:
-    """Reads a training data json and its sibling configs ('{prefix}model.json' or legacy 'model_config.json')."""
+def _read_run(file: Path, label: str, parts: tuple[str, ...]) -> RunRecord | None:
+    """Reads a training data json and its sibling configs ('{prefix}_model.json' or legacy 'model_config.json')."""
     prefix = file.name[: -len(TRAINING_DATA_SUFFIX)]
     name = prefix.rstrip("_")
     # runs in sub directories are named after them, runs side by side after the prefix of their files
     run_parts = list(parts) if parts else ([name] if name else [])
-    model_config = _read_json(file.with_name(f"{prefix}model.json"))
-    preprocessing = _read_json(file.with_name(f"{prefix}preprocessing.json"))
-    if not prefix:  # layout of physXAI < 1.0
-        model_config = model_config or _read_json(file.with_name("model_config.json"))
-        preprocessing = preprocessing or _read_json(file.with_name("preprocessing_config.json"))
+    try:
+        training_data = _read_json(file)
+        model_config = _read_json(file.with_name(f"{prefix}model.json"))
+        preprocessing = _read_json(file.with_name(f"{prefix}preprocessing.json"))
+        if not prefix:  # layout of physXAI < 1.0
+            model_config = model_config or _read_json(file.with_name("model_config.json"))
+            preprocessing = preprocessing or _read_json(file.with_name("preprocessing_config.json"))
+    except (OSError, ValueError) as e:
+        logger.warning("Skipped run '%s': %s", file, e)
+        return None
+    if not isinstance(training_data, dict):
+        logger.warning("Skipped run '%s': no training data config.", file)
+        return None
     return RunRecord(
         model=label,
         run="/".join(run_parts) or "run",
-        training_data=_read_json(file),
+        training_data=_normalize(training_data, preprocessing),
         model_config=model_config,
         preprocessing=preprocessing,
         path=str(file),
     )
+
+
+def _output_name(preprocessing: dict | None) -> str:
+    output = (preprocessing or {}).get("output")
+    if isinstance(output, list):
+        return " + ".join(map(str, output)) if output else "output"
+    return str(output) if output else "output"
+
+
+def _normalize(config: dict, preprocessing: dict | None = None) -> dict:
+    """
+    Brings a training data config of physXAI < 1.0 into the current form (without changing `config`):
+
+    - flat metrics ('RMSE Test', ...) become `metrics.by_output`, named after the output of the preprocessing,
+    - the RMSE per step of multi step models ('rmse_test_l', ...) becomes `horizon_metrics`.
+    """
+    metrics = config.get("metrics") or {}
+    if metrics.get("by_output") and config.get("horizon_metrics") is not None:
+        return config
+    config = dict(config)
+    output = _output_name(preprocessing)
+    if not metrics.get("by_output"):
+        by_output = _metrics_by_output(config)
+        if by_output:
+            config["metrics"] = {**metrics, "by_output": {output: by_output["output"]}}
+    if config.get("horizon_metrics") is None:
+        steps = {split: metrics.get(f"rmse_{split}_l") for split in SPLITS}
+        steps = {split: {"rmse": values} for split, values in steps.items() if values}
+        if steps:
+            config["horizon_metrics"] = {
+                "feature": output,
+                "time_step": (preprocessing or {}).get("time_step"),
+                **steps,
+            }
+    return config
+
+
+def _at(kpis: dict, key: str, i: int) -> float:
+    values = kpis.get(key)
+    return values[i] if values is not None and i < len(values) else np.nan
 
 
 def _metrics_by_output(config: dict) -> dict[str, dict[str, dict]]:
@@ -584,3 +676,48 @@ def _deduplicate_legend(fig: go.Figure) -> None:
             trace.showlegend = False
         else:
             seen.add(trace.name)
+
+
+# --- command line --------------------------------------------------------------------------------
+def main(argv: list[str] | None = None) -> ModelComparison:
+    """
+    Compares saved runs from the command line::
+
+        python -m physXAI.evaluation.comparison results                       # sub directories are models
+        python -m physXAI.evaluation.comparison results/cmnn results/ann      # every directory is a model
+        python -m physXAI.evaluation.comparison results/cmnn --models         # one directory as one model
+
+    The summary is printed, plot and tables are saved into `--out` (default: `<first path>/comparison`).
+    """
+    import argparse
+
+    from physXAI.io.run import Run
+
+    parser = argparse.ArgumentParser(prog="python -m physXAI.evaluation.comparison", description=main.__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("paths", nargs="+", help="directory of model directories, or model directories")
+    parser.add_argument("--models", action="store_true", help="every given path is a model (also a single one)")
+    parser.add_argument("--name", help="only files '{name}_training_data.json'")
+    parser.add_argument("--split", default="test", choices=SPLITS)
+    parser.add_argument("--horizon", type=float, help="end of the compared horizon in hours")
+    parser.add_argument("--band", default="iqr", choices=["iqr", "range", "none"])
+    parser.add_argument("--out", help="output directory")
+    parser.add_argument("--show", action="store_true", help="open the plot")
+    args = parser.parse_args(argv)
+
+    paths = args.paths if (args.models or len(args.paths) > 1) else args.paths[0]
+    comparison = ModelComparison.load(paths, name=args.name)
+    band = None if args.band == "none" else args.band
+    with pd.option_context("display.width", 200, "display.max_rows", 500):
+        print(comparison.summary(args.split, args.horizon).to_string(float_format="{:.4g}".format))
+    out = Path(args.out) if args.out else Path(args.paths[0]) / "comparison"
+    run = Run(out.parent, out.name, overwrite=True)
+    comparison.save(run, split=args.split, horizon=args.horizon, band=band)
+    if args.show:
+        comparison.plot(args.split, args.horizon, band=band, show=True)
+    print(f"Saved to {run.path}")
+    return comparison
+
+
+if __name__ == "__main__":  # pragma: no cover
+    main()
