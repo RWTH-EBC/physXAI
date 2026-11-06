@@ -1,0 +1,439 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>physXAI.io package &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../_static/jquery.js"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+      <script src="../_static/doctools.js"></script>
+      <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="physXAI.models package" href="physXAI.models.html" />
+    <link rel="prev" title="physXAI.feature_selection package" href="physXAI.feature_selection.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">physXAI</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="physXAI.html">physXAI package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="physXAI.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="physXAI.agentlib_mpc_plugin.html">physXAI.agentlib_mpc_plugin package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html">physXAI.evaluation package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html">physXAI.expr package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html">physXAI.feature_selection package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">physXAI.io package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html">physXAI.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.plotting.html">physXAI.plotting package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html">physXAI.preprocessing package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html">physXAI.training package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.utils.html">physXAI.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">physXAI</a></li>
+          <li class="breadcrumb-item"><a href="physXAI.html">physXAI package</a></li>
+      <li class="breadcrumb-item active">physXAI.io package</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-physXAI.io">
+<span id="physxai-io-package"></span><h1>physXAI.io package<a class="headerlink" href="#module-physXAI.io" title="Permalink to this heading"></a></h1>
+<p>Input / output of physXAI runs: run directories and the export for AgentLib-MPC.</p>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-physXAI.io.agentlib">
+<span id="physxai-io-agentlib-module"></span><h2>physXAI.io.agentlib module<a class="headerlink" href="#module-physXAI.io.agentlib" title="Permalink to this heading"></a></h2>
+<p>Export of physXAI models for AgentLib-MPC.</p>
+<p>AgentLib-MPC (<code class="code docutils literal notranslate"><span class="pre">agentlib_mpc.machine_learning_plugins.physXAI</span></code>) executes a physXAI training
+script and reads the following files from the run directory:</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">{name}_preprocessing.json</span></code>  (inputs, output, shift, time_step, split info)</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">{name}_model.json</span></code>          (at least <code class="code docutils literal notranslate"><span class="pre">__class_name__</span></code>)</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">{name}_training_data.json</span></code>  (optional, stored as training info)</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">{name}.keras</span></code> or <code class="code docutils literal notranslate"><span class="pre">{name}.joblib</span></code> (the trained model)</p></li>
+</ul>
+<p>The input and output names follow two conventions, which AgentLib-MPC parses:
+<code class="code docutils literal notranslate"><span class="pre">Change(X)</span></code> denotes an output predicting the difference of <code class="code docutils literal notranslate"><span class="pre">X</span></code>, and <code class="code docutils literal notranslate"><span class="pre">X_lagN</span></code> the value of
+<code class="code docutils literal notranslate"><span class="pre">X</span></code> N time steps in the past. <code class="code docutils literal notranslate"><span class="pre">check_agentlib_compatibility</span></code> validates the same rules as
+AgentLib-MPC before a model is trained, so a run fails early instead of after training.</p>
+<dl class="py exception">
+<dt class="sig sig-object py" id="physXAI.io.agentlib.AgentLibCompatibilityError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.io.agentlib.</span></span><span class="sig-name descname"><span class="pre">AgentLibCompatibilityError</span></span><a class="reference internal" href="../_modules/physXAI/io/agentlib.html#AgentLibCompatibilityError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.agentlib.AgentLibCompatibilityError" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></a></p>
+<p>Raised if a preprocessing config cannot be translated by AgentLib-MPC.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.io.agentlib.split_lag">
+<span class="sig-prename descclassname"><span class="pre">physXAI.io.agentlib.</span></span><span class="sig-name descname"><span class="pre">split_lag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/agentlib.html#split_lag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.agentlib.split_lag" title="Permalink to this definition"></a></dt>
+<dd><p>Splits ‘X_lag2’ into (‘X’, 2) and ‘X’ into (‘X’, 0).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.io.agentlib.output_feature">
+<span class="sig-prename descclassname"><span class="pre">physXAI.io.agentlib.</span></span><span class="sig-name descname"><span class="pre">output_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/agentlib.html#output_feature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.agentlib.output_feature" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the name of the predicted feature and the output type (‘absolute’ or ‘difference’).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.io.agentlib.check_agentlib_compatibility">
+<span class="sig-prename descclassname"><span class="pre">physXAI.io.agentlib.</span></span><span class="sig-name descname"><span class="pre">check_agentlib_compatibility</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preprocessing</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/agentlib.html#check_agentlib_compatibility"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.agentlib.check_agentlib_compatibility" title="Permalink to this definition"></a></dt>
+<dd><p>Checks whether AgentLib-MPC can translate a preprocessing config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>preprocessing</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData" title="physXAI.preprocessing.preprocessing.PreprocessingData"><em>PreprocessingData</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – A physXAI preprocessing object or its config dict.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#physXAI.io.agentlib.AgentLibCompatibilityError" title="physXAI.io.agentlib.AgentLibCompatibilityError"><strong>AgentLibCompatibilityError</strong></a> – Listing all violated rules.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.io.agentlib.save_for_agentlib">
+<span class="sig-prename descclassname"><span class="pre">physXAI.io.agentlib.</span></span><span class="sig-name descname"><span class="pre">save_for_agentlib</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocessing</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trained_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/agentlib.html#save_for_agentlib"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.agentlib.save_for_agentlib" title="Permalink to this definition"></a></dt>
+<dd><p>Writes all files AgentLib-MPC reads into the run directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>run</strong> (<a class="reference internal" href="#physXAI.io.run.Run" title="physXAI.io.run.Run"><em>Run</em></a>) – The run directory. AgentLib-MPC passes <code class="code docutils literal notranslate"><span class="pre">base_path</span></code> and <code class="code docutils literal notranslate"><span class="pre">folder_name</span></code> to the training
+script, which correspond to <code class="code docutils literal notranslate"><span class="pre">Run(base_path,</span> <span class="pre">folder_name)</span></code>.</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Name of the model, i.e. the prefix of all files.</p></li>
+<li><p><strong>preprocessing</strong> – The physXAI preprocessing object.</p></li>
+<li><p><strong>model</strong> – The physXAI model object.</p></li>
+<li><p><strong>training_data</strong> – Optional training data, stored as training info.</p></li>
+<li><p><strong>trained_model</strong> – The trained (keras or scikit-learn) model returned by the training pipeline.
+Defaults to <code class="code docutils literal notranslate"><span class="pre">model.trained_model</span></code> if the model object holds it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="code docutils literal notranslate"><span class="pre">name</span></code>, the return value expected from a training script.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-physXAI.io.run">
+<span id="physxai-io-run-module"></span><h2>physXAI.io.run module<a class="headerlink" href="#module-physXAI.io.run" title="Permalink to this heading"></a></h2>
+<p>Output directory of a training run.</p>
+<p>A <code class="code docutils literal notranslate"><span class="pre">Run</span></code> replaces the global <code class="code docutils literal notranslate"><span class="pre">Logger</span></code> of physXAI &lt; 1.0. It is an explicit object holding the
+directory all files of a run are written to. Paths are absolute or relative to the current
+working directory; they are never resolved relative to a git repository, so physXAI behaves
+the same when installed as a package. Nothing is ever deleted and no interactive prompts are
+shown, which makes runs safe for parameter sweeps and CI.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.io.run.set_log_level">
+<span class="sig-prename descclassname"><span class="pre">physXAI.io.run.</span></span><span class="sig-name descname"><span class="pre">set_log_level</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/run.html#set_log_level"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.run.set_log_level" title="Permalink to this definition"></a></dt>
+<dd><p>Sets the log level of physXAI. The default is ‘info’, which shows metrics and the progress of the training.</p>
+<p>Messages are printed to the console, unless the application configured logging (e.g. with
+<code class="code docutils literal notranslate"><span class="pre">logging.basicConfig</span></code>), then they are passed on to the root logger.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>level</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – ‘debug’, ‘info’, ‘warning’, ‘error’ (case insensitive) or a <code class="code docutils literal notranslate"><span class="pre">logging</span></code> level.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.io.run.keras_verbosity">
+<span class="sig-prename descclassname"><span class="pre">physXAI.io.run.</span></span><span class="sig-name descname"><span class="pre">keras_verbosity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/run.html#keras_verbosity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.run.keras_verbosity" title="Permalink to this definition"></a></dt>
+<dd><p>Verbosity of keras <code class="code docutils literal notranslate"><span class="pre">fit</span></code> and <code class="code docutils literal notranslate"><span class="pre">predict</span></code>: progress bars only on log level ‘info’ or lower.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a> | <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.io.run.keras_verbosity_int">
+<span class="sig-prename descclassname"><span class="pre">physXAI.io.run.</span></span><span class="sig-name descname"><span class="pre">keras_verbosity_int</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/run.html#keras_verbosity_int"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.run.keras_verbosity_int" title="Permalink to this definition"></a></dt>
+<dd><p>Verbosity of keras callbacks: 1 on log level ‘info’ or lower, else 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.io.run.output_path">
+<span class="sig-prename descclassname"><span class="pre">physXAI.io.run.</span></span><span class="sig-name descname"><span class="pre">output_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/run.html#output_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.run.output_path" title="Permalink to this definition"></a></dt>
+<dd><p>Path of a file to be written, with its directory created.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – Absolute or relative to the current working directory.</p></li>
+<li><p><strong>suffix</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – Appended if the path does not end with it yet (e.g. ‘.keras’).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.io.run.input_path">
+<span class="sig-prename descclassname"><span class="pre">physXAI.io.run.</span></span><span class="sig-name descname"><span class="pre">input_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/run.html#input_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.run.input_path" title="Permalink to this definition"></a></dt>
+<dd><p>Path of a file to be read.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError" title="(in Python v3.15)"><strong>FileNotFoundError</strong></a> – If the file does not exist.</p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – </p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.io.run.Run">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.io.run.</span></span><span class="sig-name descname"><span class="pre">Run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stored_data'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/run.html#Run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.run.Run" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Directory collecting all files of one training run.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">run</span> <span class="o">=</span> <span class="n">Run</span><span class="p">(</span><span class="s2">"stored_data"</span><span class="p">,</span> <span class="s2">"TAir"</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">run</span><span class="o">.</span><span class="n">save_json</span><span class="p">(</span><span class="s2">"notes.json"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"comment"</span><span class="p">:</span> <span class="s2">"first try"</span><span class="p">})</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>Path</em>) – Parent directory of the run. Absolute or relative to the current working directory.</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – Name of the run directory. Defaults to a timestamp (valid on all operating systems).</p></li>
+<li><p><strong>overwrite</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – If False, writing a file that already exists raises a <code class="code docutils literal notranslate"><span class="pre">FileExistsError</span></code>.
+Existing files are never deleted, so several models can share one run directory.</p></li>
+<li><p><strong>log_level</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – Optional log level, see <code class="code docutils literal notranslate"><span class="pre">set_log_level</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.io.run.Run.file">
+<span class="sig-name descname"><span class="pre">file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/run.html#Run.file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.run.Run.file" title="Permalink to this definition"></a></dt>
+<dd><p>Path of a file inside the run directory. Sub directories are created if necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#FileExistsError" title="(in Python v3.15)"><strong>FileExistsError</strong></a> – If the file exists and the run does not allow overwriting.</p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>file_name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – </p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.io.run.Run.save_json">
+<span class="sig-name descname"><span class="pre">save_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/run.html#Run.save_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.run.Run.save_json" title="Permalink to this definition"></a></dt>
+<dd><p>Writes <code class="code docutils literal notranslate"><span class="pre">data</span></code> as indented json into the run directory and returns the path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – </p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><em>Any</em></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.io.run.Run.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocessing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trained_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/run.html#Run.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.run.Run.save" title="Permalink to this definition"></a></dt>
+<dd><p>Saves a trained model with everything needed to reproduce, compare and use it.</p>
+<p>Files (all optional, depending on the arguments):</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">{name}_preprocessing.json</span></code>: config of the preprocessing (<code class="code docutils literal notranslate"><span class="pre">PreprocessingData.from_config</span></code>).</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">{name}_model.json</span></code>: config of the model (<code class="code docutils literal notranslate"><span class="pre">AbstractModel.model_from_config</span></code>).</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">{name}_training_data.json</span></code>: metrics, horizon metrics, training time and history.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">{name}.keras</span></code> or <code class="code docutils literal notranslate"><span class="pre">{name}.joblib</span></code>: the trained model.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">{name}.html</span></code>: the model report (<code class="code docutils literal notranslate"><span class="pre">plot=True</span></code>).</p></li>
+</ul>
+<p>The files follow the layout AgentLib-MPC reads (see <code class="code docutils literal notranslate"><span class="pre">save_for_agentlib</span></code>), and
+<code class="code docutils literal notranslate"><span class="pre">physXAI.evaluation.comparison.ModelComparison</span></code> compares saved runs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Name of the model, the prefix of all files.</p></li>
+<li><p><strong>preprocessing</strong> – The preprocessing object.</p></li>
+<li><p><strong>model</strong> – The physXAI model object.</p></li>
+<li><p><strong>training_data</strong> – The evaluated training data.</p></li>
+<li><p><strong>trained_model</strong> – The trained model. Defaults to <code class="code docutils literal notranslate"><span class="pre">model.trained_model</span></code>, set by <code class="code docutils literal notranslate"><span class="pre">model.pipeline</span></code>.</p></li>
+<li><p><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether to save the model report (needs the model and the evaluated training data).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The written files by kind (‘preprocessing’, ‘model_config’, ‘training_data’, ‘model’, ‘plot’).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.io.run.Run.save_for_agentlib">
+<span class="sig-name descname"><span class="pre">save_for_agentlib</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocessing</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trained_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/run.html#Run.save_for_agentlib"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.run.Run.save_for_agentlib" title="Permalink to this definition"></a></dt>
+<dd><p>Writes all files AgentLib-MPC reads, see <code class="code docutils literal notranslate"><span class="pre">physXAI.io.agentlib.save_for_agentlib</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="code docutils literal notranslate"><span class="pre">name</span></code>, which is what a training script for AgentLib-MPC has to return.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a></p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.io.run.Run.version_info">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">version_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/run.html#Run.version_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.run.Run.version_info" title="Permalink to this definition"></a></dt>
+<dd><p>Meta information stored with every saved config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="physXAI.feature_selection.html" class="btn btn-neutral float-left" title="physXAI.feature_selection package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="physXAI.models.html" class="btn btn-neutral float-right" title="physXAI.models package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
