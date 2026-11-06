@@ -1,0 +1,50 @@
+name: Verify Examples
+
+# Smoke run of all examples on Linux and Windows: every keras fit is limited to one epoch and no plots are
+# opened (tests/smoke_examples.py), the scripts themselves are unchanged. All 13 examples take about 1-2 min.
+# The examples run whenever something they depend on changes, so an API change that breaks an example fails here.
+on:
+  pull_request:
+    branches:
+    - main
+    - refactoring_v1.0.0  # phase PRs of the 1.0.0 refactoring, remove after the release
+    paths:
+    - 'physXAI/**'
+    - 'examples/**'
+    - 'data/**'
+    - 'tests/smoke_examples.py'
+    - 'pyproject.toml'
+    - '.github/workflows/verify_examples.yml'
+  push:
+    branches:
+    - main
+  workflow_dispatch:
+
+jobs:
+  examples:
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash  # identical commands on Linux and Windows runners
+    strategy:
+      fail-fast: false
+      matrix:
+        # Python versions are covered by the unit tests; the examples run on both operating systems
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: pip
+        cache-dependency-path: pyproject.toml
+
+    - name: Install physXAI
+      run: |
+        python -m pip install --upgrade pip
+        pip install .
+
+    - name: Smoke run of all examples (one epoch per training)
+      run: python tests/smoke_examples.py

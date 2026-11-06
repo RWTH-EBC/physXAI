@@ -8,10 +8,10 @@ from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 """
 Creates standard model to predict the power of the heat pump using the Boptest data
 """
-base_path = os.path.join(pathlib.Path(__file__).resolve().parent.parent, 'stored_data')
+base_path = os.path.join(pathlib.Path(__file__).resolve().parent.parent, 'results')
 
 # Directory of the run
-run = Run(base_path, 'unittests/verify_installation', overwrite=True)
+run = Run(base_path, 'tests/verify_installation', overwrite=True)
 
 # File path to data
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"

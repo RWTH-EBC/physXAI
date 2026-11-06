@@ -11,7 +11,7 @@ a model with several seeds and saves every run with `Run.save`. `ModelComparison
 - plots of the distributions (box plots over the runs, median and band over the horizon).
 
 Example:
-    >>> run = Run("stored_data", "TAir_compare", overwrite=True)
+    >>> run = Run("results", "TAir_compare", overwrite=True)
     >>> repeat_training(file_path, prep, LinearRegressionModel(), seeds=5, run=run, name="linreg")
     >>> repeat_training(file_path, prep, ClassicalANNModel(epochs=50), seeds=5, run=run, name="ann")
     >>> comparison = ModelComparison.load(run.path)  # one model per sub directory

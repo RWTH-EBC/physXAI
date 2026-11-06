@@ -66,7 +66,7 @@ m.physics_parameters                # {'tau': ..., 'K_u': ..., 'K_0': ..., 'log_
 - With `RecursiveTraining`, the residual acts in the single step phase; the multi step phase uses the error of
   the recursive prediction.
 
-See `executables/bestest_hydronic_heat_pump/TAir_physics_residual.py`.
+See `examples/09_physics_residual.py`.
 
 ## Physically consistent neural network (PCNN)
 
@@ -111,4 +111,4 @@ td.physics['parameters']        # trained rates per hour and the consistency mar
 - Consistency only holds for the inputs of the physics module (paper, section 6.3), e.g. not for solar gains
   processed by `f`. Time features (time of day, month) have to be data columns.
 
-See `executables/bestest_hydronic_heat_pump/TAir_pcnn.py`.
+See `examples/10_pcnn.py`.

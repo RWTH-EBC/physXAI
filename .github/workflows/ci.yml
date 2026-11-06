@@ -2,8 +2,8 @@ name: Python CI
 
 # Shared CI of the institute (RWTH-EBC/ci_templates), as used by AgentLib and AgentLib-MPC:
 # Linux tests (3.11-3.13), coverage, package build, pylint/ruff reports, Sphinx documentation and
-# GitHub Pages (branch gh-pages, folder docs/<branch>/). Windows, the executables and strict checks
-# run in windows.yml, verify_executables.yml and quality.yml, the template only runs on Ubuntu.
+# GitHub Pages (branch gh-pages, folder docs/<branch>/). Windows, the examples and strict checks
+# run in windows.yml, verify_examples.yml and quality.yml, the template only runs on Ubuntu.
 on:
   push:
   workflow_dispatch:
@@ -27,7 +27,7 @@ jobs:
       GH_PAGES: true
       EXECUTE_TESTS: true
       TEST_ENGINE: "PYTEST"
-      TEST_PATH: "unittests"
+      TEST_PATH: "tests"
       EXECUTE_COVERAGE_TEST: true
       USE_DYMOLA: false
       PYPI_RELEASE: false  # physXAI is not released on PyPI yet

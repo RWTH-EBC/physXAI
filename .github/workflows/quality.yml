@@ -2,7 +2,7 @@ name: Code Quality
 
 # Strict checks next to the CI template, whose ruff and pylint jobs only report (exit zero) and whose
 # Sphinx build does not fail on warnings:
-# - ruff on the package, the tests and the executables,
+# - ruff on the package, the tests and the examples,
 # - the documentation with the same commands as the template, warnings are errors.
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
     - name: Ruff
       run: |
         pip install "ruff>=0.12"
-        ruff check physXAI unittests executables
+        ruff check physXAI tests examples
 
   docs:
     runs-on: ubuntu-latest

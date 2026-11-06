@@ -7,7 +7,7 @@ script signature and the saved files are the same.
 
 | 0.x | 1.0 |
 |---|---|
-| `Logger.setup_logger(folder_name='x', override=True)` | `run = Run('stored_data', 'x', overwrite=True)` |
+| `Logger.setup_logger(folder_name='x', override=True)` | `run = Run('results', 'x', overwrite=True)` |
 | `Logger.log_setup(prep, m)`, `Logger.save_training_data(td)` | `run.save('model', prep, m, td)` |
 | default save path of `m.pipeline(td)` (Logger directory) | `run.save(...)`, or `m.pipeline(td, save_path=...)` |
 | `Logger.print_level = 'warning'`, `print_level=` | `set_log_level('warning')`, `Run(..., log_level='warning')` |

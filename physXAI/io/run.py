@@ -97,7 +97,7 @@ class Run:
     Directory collecting all files of one training run.
 
     Example:
-        >>> run = Run("stored_data", "TAir", overwrite=True)
+        >>> run = Run("results", "TAir", overwrite=True)
         >>> run.save_json("notes.json", {"comment": "first try"})
 
     Args:
@@ -110,7 +110,7 @@ class Run:
 
     def __init__(
         self,
-        base_path: str | Path = "stored_data",
+        base_path: str | Path = "results",
         name: str | None = None,
         overwrite: bool = False,
         log_level: str | int | None = None,

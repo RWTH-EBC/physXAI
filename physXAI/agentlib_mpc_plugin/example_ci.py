@@ -1,6 +1,7 @@
 """
 Example to demonstrate interplay of physXAI and agentlib_mpc to train a simple ANN for one_room_mpc
-Keep synchronized with executables.agentlib_mpc.one_room_mpc.T_ann
+Training script of the AgentLib-MPC example one_room_mpc (example_ci.py: the same with 10 epochs for its CI).
+A tutorial on the export is examples/13_agentlib_mpc.py.
 """
 from physXAI import expr as px
 from physXAI.io import Run

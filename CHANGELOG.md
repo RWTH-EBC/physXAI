@@ -12,10 +12,11 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 
 ### Added
 - `physXAI.__version__` (read from the installed package metadata).
-- `physXAI.io.Run`: explicit output directory for a training run, replaces the global `Logger`.
+- `physXAI.io.Run`: explicit output directory for a training run, replaces the global `Logger`. The default
+  directory of the runs is `results/` (before `stored_data/`).
 - `physXAI.io.save_for_agentlib` and `check_agentlib_compatibility`: write and validate the files
   consumed by AgentLib-MPC.
-- Contract tests against AgentLib-MPC (`unittests/contract`, optional extra `physXAI[agentlib]`).
+- Contract tests against AgentLib-MPC (`tests/contract`, optional extra `physXAI[agentlib]`).
 - `physXAI.set_seed`: one global seed for Python, NumPy and Keras, default `random_state` of all objects.
 - Leakage free `BlockSplit` (stratified blocks, embargo between splits) with the strategies `blocks`
   (default), `holdout_end` and `random_rows`; windows never cross a split boundary.
@@ -40,7 +41,7 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - Training of single step models on the multi step error: `recursive_training=RecursiveTraining(horizon='24h',
   first_step_weight=0.25, mode='single_then_multi')` for all keras models (and `ModularANN(solver='ols')` as
   initialization). The saved model stays a single step model for AgentLib-MPC.
-- Example `executables/bestest_hydronic_heat_pump/TAir_recursive.py`.
+- Example `examples/06_multi_step.py`.
 - Recurrent models (`RNNModel`) warm themselves up: a sequence of `warmup_width + label_width` steps starts
   from zero states, the warmup is not part of the loss. This is how AgentLib-MPC applies the model.
 - `RNNModel` with `Change(T)` outputs: the trajectory of T (measured start value plus accumulated changes) is
@@ -70,7 +71,7 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   (split and / or initialization) and saves every run; `ModelComparison` loads saved runs (also of physXAI 0.x)
   or takes training data in memory and compares the distributions of the single step metrics and of the errors
   over a common prediction horizon: tables per run, summary per model (mean, std, min, median, max), box plots
-  and horizon plots with median and band. Example `executables/bestest_hydronic_heat_pump/TAir_compare.py`.
+  and horizon plots with median and band. Example `examples/11_compare_models.py`.
   Existing runs are loaded from model directories with arbitrarily named run directories (`results/cmnn/<run>/`),
   also with several models per run directory (AgentLib-MPC) and from the command line
   (`python -m physXAI.evaluation.comparison results`).
@@ -102,7 +103,7 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - Python >= 3.11 is required (3.9 and 3.10 are end of life).
 - CI uses the shared template of the institute (RWTH-EBC/ci_templates, like AgentLib and AgentLib-MPC): tests,
   coverage, package build, pylint/ruff reports, documentation and GitHub Pages; additionally the unit tests on
-  Windows, a smoke run of the executables (one epoch, `unittests/smoke_executables.py`) and strict ruff and Sphinx
+  Windows, a smoke run of the examples (one epoch, `tests/smoke_examples.py`) and strict ruff and Sphinx
   checks. Badges and reports are published on GitHub Pages instead of being committed.
 - Static versioning in `pyproject.toml` instead of `setuptools-scm`.
 - `casadi` is now a declared dependency (it was imported, but missing).
@@ -127,7 +128,11 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   messages are passed on to it.
 - `save_result(result, run)` of the feature selection writes into a `Run`, `recursive_feature_elimination_pipeline`
   takes an optional `run`.
-- The executables use `Run` and save their models with `Run.save`.
+- `executables/` is replaced by `examples/`: a tutorial of 13 numbered, self-contained scripts from a first model
+  to the export for AgentLib-MPC (`examples/README.md`). They use `Run`, save their models with `Run.save` and
+  find the data relative to the repository. The experimental `regression_prototype.py` is replaced by
+  `ConstrainedRegression` (`examples/05_constrained_regression.py`).
+- The test suite moved from `unittests/` to `tests/`.
 - `random_state=None` draws a seed (or uses the global one) and stores it in the config.
 - `PreprocessingData.from_config` restores the class from `__class_name__` and all settings.
 

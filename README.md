@@ -55,8 +55,14 @@ If you have any questions regarding physXAI, feel free to contact us at ebc-tool
 ## Getting Started
 The [documentation](https://rwth-ebc.github.io/physXAI/main/docs/index.html) contains a user guide, the API reference and a
 [migration guide from physXAI 0.x to 1.0](https://rwth-ebc.github.io/physXAI/main/docs/migration.html). <br />
-Executable and commented examples can be found in the `executables` directory. They serve as a starting point
-for new projects. New executable scripts should be added there.
+The [`examples`](https://github.com/RWTH-EBC/physXAI/tree/main/examples) directory is a tutorial in 13 numbered,
+commented scripts, from a first model (`01_first_model.py`) over expressions, recurrent and physics-informed models
+and the comparison of models to the export for AgentLib-MPC (`13_agentlib_mpc.py`). They serve as a starting point
+for new projects:
+
+```bash
+python examples/01_first_model.py
+```
 
 ```python
 from physXAI import expr as px
@@ -64,7 +70,7 @@ from physXAI.io import Run
 from physXAI.models import LinearRegressionModel
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 
-run = Run('stored_data', 'TAir', overwrite=True)
+run = Run('results', 'TAir', overwrite=True)
 prep = PreprocessingSingleStep(inputs=['weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u', 'reaTZon_y'],
                                output=px.Change('reaTZon_y'), time_index_col='time', eval_horizon='12h')
 td = prep.pipeline('data/bestest_hydronic_heat_pump/pid_data.csv')
@@ -96,10 +102,10 @@ Several models, each trained with several seeds, can be compared with `physXAI.e
 ## Project Structure
 The project is organized into the following directories:
 
-- `executables`: Contains executable scripts and configuration files. This is the primary location for users to run and test models.
-	- The base example uses data from the BOPTEST 'Bestest Hydronic Heat Pump' test case: https://ibpsa.github.io/project1-boptest/testcases/ibpsa/testcases_ibpsa_bestest_hydronic_heat_pump/
+- `examples`: Tutorial scripts showing the features of physXAI, the starting point for users (see `examples/README.md`).
+	- The examples use data from the BOPTEST 'Bestest Hydronic Heat Pump' test case: https://ibpsa.github.io/project1-boptest/testcases/ibpsa/testcases_ibpsa_bestest_hydronic_heat_pump/
 - `data`: Storage for input data, typically in `.csv` format. Datasets required for training and evaluating models should be placed here.
-- `stored_data`: Default directory of the runs: trained models, configs, metrics and reports.
+- `results`: Default directory of the runs (`Run`): trained models, configs, metrics and reports.
 - `physXAI`: Contains the core logic and main functionalities of the physXAI Toolbox.
 	- `expr`: Expression language for physically motivated terms and trainable blocks (NumPy, Keras and CasADi).
 	- `preprocessing`: Loading, derived columns, leakage free split and training data.
@@ -112,7 +118,7 @@ The project is organized into the following directories:
 	- `agentlib_mpc_plugin`: Example training scripts for AgentLib-MPC.
 - `docs`: Contains documentation for the project.
 - `build`: Contains saved test reports.
-- `unittests`: Contains unittests for physXAI.
+- `tests`: Tests of physXAI (pytest), the contract tests with AgentLib-MPC and the smoke run of the examples.
 
 ## How to contribute to the development
 

@@ -7,6 +7,7 @@
 :hidden:
 
 guide/getting_started
+guide/examples
 guide/expressions
 guide/data
 guide/models
@@ -28,7 +29,7 @@ code/modules
 
 ## Documentation
 
-- [Getting started](guide/getting_started.md), [expressions](guide/expressions.md),
+- [Getting started](guide/getting_started.md), [examples](guide/examples.md), [expressions](guide/expressions.md),
   [data pipeline and split](guide/data.md), [models](guide/models.md),
   [multi step evaluation and training](guide/multi_step.md), [recurrent models](guide/rnn.md),
   [physics-informed models](guide/physics.md),
