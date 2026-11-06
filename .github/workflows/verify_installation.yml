@@ -2,6 +2,8 @@ name: Verify Installation
 
 on:
   pull_request:
+    # 'edited' covers a changed base branch (stacked PRs), see the job condition
+    types: [opened, synchronize, reopened, edited]
     branches:
     - main
     - refactoring_v1.0.0  # phase PRs of the 1.0.0 refactoring, remove after the release
@@ -11,6 +13,7 @@ on:
 
 jobs:
   build:
+    if: github.event.action != 'edited' || github.event.changes.base
     runs-on: ${{ matrix.os }}
     defaults:
       run:

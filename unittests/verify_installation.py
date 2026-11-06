@@ -15,7 +15,7 @@ Logger.setup_logger(base_path=base_path, folder_name='unittests/verify_installat
 # File path to data
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
 
-# List of input features. Can include constructed features
+# List of input features. Lagged inputs ('X_lag1') are derived automatically
 inputs = ['oveHeaPumY_u', 'Func(logistic)', 'weaSta_reaWeaTDryBul_y', 'reaTZon_y']
 # Output feature
 output = 'reaPHeaPum_y'

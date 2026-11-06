@@ -1,39 +1,30 @@
-from physXAI.models.modular.modular_ann import ModularANN, ModularModel
+from physXAI import expr as px
+from physXAI.models import ModularANN
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
-from physXAI.preprocessing.constructed import Feature
-from physXAI.models.ann.ann_design import ClassicalANNModel
 from physXAI.utils.logging import Logger
 
-
 """
-Creates modular models to predict the power of the heat pump using the Boptest data.
+Creates a modular model to predict the power of the heat pump using the Boptest data.
+
+The architecture is an expression graph (physXAI.expr): physical arithmetic on raw data columns
+combined with trainable blocks. Everything is part of the keras model, so an MPC only needs the
+raw inputs. The inputs of the preprocessing are taken from the model.
 """
 
 Logger.setup_logger(folder_name='P_hp_modular', override=True)
 
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
 
-inputs = ['oveHeaPumY_u', 'Func(logistic)', 'weaSta_reaWeaTDryBul_y', 'reaTZon_y']
-output = 'reaPHeaPum_y'
+v = px.Vars()
+u_hp, logistic = v.oveHeaPumY_u, v['Func(logistic)']
+architecture = px.MLP([u_hp / logistic, logistic ** 2, v.weaSta_reaWeaTDryBul_y, v.reaTZon_y])
+m = ModularANN(architecture=architecture, rescale_output=True)
 
-oveHeaPumY_u = Feature('oveHeaPumY_u')
-func_logistic = Feature('Func(logistic)')
-TDryBul = Feature('weaSta_reaWeaTDryBul_y')
-TZon = Feature('reaTZon_y')
-
-prep = PreprocessingSingleStep(inputs=inputs, output=output)
-td = prep.pipeline(file_path)
-
-"""Example usages of modular models"""
-y = ModularModel(
-    model=ClassicalANNModel(),
-    inputs=[oveHeaPumY_u.input() / func_logistic.input(), func_logistic.input() ** 2, TDryBul.input(), TZon.input()]
-)
-m = ModularANN(architecture=y, rescale_output=True)
+prep = PreprocessingSingleStep(output='reaPHeaPum_y')
+td = prep.pipeline(file_path, model=m)
 
 # Training pipeline
 model = m.pipeline(td)
-
 
 # Log setup of preprocessing and model as json
 Logger.log_setup(prep, m)

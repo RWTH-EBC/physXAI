@@ -1,6 +1,5 @@
 from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
 from physXAI.models.models import LinearRegressionModel
-from physXAI.preprocessing.constructed import Feature
 from physXAI.preprocessing.preprocessing import PreprocessingMultiStep
 from physXAI.utils.logging import Logger
 
@@ -21,15 +20,7 @@ inputs = ['reaTZon_y', 'reaTZon_y_lag1', 'reaTZon_y_lag2', 'weaSta_reaWeaTDryBul
 # Output feature
 output = 'Change(T_zone)'
 
-# Create lags
-x1 = Feature('reaTZon_y')
-x1.lag(2)
-x2 = Feature('weaSta_reaWeaTDryBul_y')
-x2.lag(2)
-x3 = Feature('weaSta_reaWeaHDirNor_y')
-x3.lag(2)
-x4 = Feature('oveHeaPumY_u')
-x4.lag(2)
+# Lagged inputs ('X_lag1', ...) are derived automatically from their names
 
 # Generic Preprocessing Pipeline
 # Model is state model, so multi-step evaluation is choosen

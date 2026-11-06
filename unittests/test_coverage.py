@@ -8,7 +8,7 @@ import pytest
 from physXAI.utils.logging import Logger, get_parent_working_directory
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep, PreprocessingMultiStep, \
     PreprocessingData
-from physXAI.preprocessing.constructed import Feature, FeatureConstruction, FeatureConstant
+from physXAI import expr as px
 from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
 from physXAI.models.models import LinearRegressionModel, AbstractModel
 from physXAI.models.ann.ann_design import ClassicalANNModel, CMNNModel, LinANNModel, PINNModel, RNNModel, \
@@ -54,25 +54,13 @@ def test_preprocessing(monkeypatch, file_path, inputs_php, output_php):
     Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=False)
     Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
 
-    # Constructed features
-    x = Feature('oveHeaPumY_u')
-    y = Feature('weaSta_reaWeaTDryBul_y')
-    x.lag(2)
-    x.lag(4, False)
-    z = x + 1
-    z.rename('new_name')
-    1 + x
-    x - 1
-    1 - x
-    x * 3
-    3 * x
-    y / 3
-    3 / y
-    x**2
-    x.exp()
-    x.sin()
-    x.cos()
-    FeatureConstant(1, 'name')
+    # Derived data columns (expressions evaluated with pandas)
+    v = px.Vars()
+    x, y = v.oveHeaPumY_u, v.weaSta_reaWeaTDryBul_y
+    columns = {'new_name': x + 1, 'a': 1 + x, 'b': x - 1, 'c': 1 - x, 'd': x * 3, 'e': 3 * x, 'f': y / 3, 'g': 3 / y,
+               'h': x ** 2, 'i': px.exp(x), 'j': x.lag(4), 'k': px.Const(1.0)}
+    prep = PreprocessingSingleStep(inputs=inputs_php + ['new_name', 'j'], output=output_php, columns=columns)
+    prep.pipeline(file_path)
 
     # Create & process Training data
     prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php)
@@ -81,12 +69,6 @@ def test_preprocessing(monkeypatch, file_path, inputs_php, output_php):
 def test_preprocessing_multistep(file_path, inputs_tair, output_tair):
     Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
 
-    x1 = Feature('reaTZon_y')
-    x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
-    x2 = Feature('weaSta_reaWeaTDryBul_y')
-    x2.lag(1)  # weaSta_reaWeaTDryBul_y_lag1
-    x3 = Feature('oveHeaPumY_u')
-    x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
 
     # EvaluateMultiStep: Prepare Preprocessing
     prep = PreprocessingMultiStep(inputs=inputs_tair, output=output_tair, label_width=6, warmup_width=6, init_features=['reaTZon_y'],
@@ -105,12 +87,6 @@ def p_hp_data(file_path, inputs_php, output_php):
 @pytest.fixture(scope='module')
 def tair_data_delta(file_path, inputs_tair, output_tair):
     Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-    x1 = Feature('reaTZon_y')
-    x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
-    x2 = Feature('weaSta_reaWeaTDryBul_y')
-    x2.lag(1)  # weaSta_reaWeaTDryBul_y_lag1
-    x3 = Feature('oveHeaPumY_u')
-    x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
     prep = PreprocessingMultiStep(inputs=inputs_tair, output=output_tair, label_width=3, warmup_width=0, init_features=['reaTZon_y'],
                                   overlapping_sequences=False, batch_size=1)
     td = prep.pipeline(file_path)
@@ -119,12 +95,6 @@ def tair_data_delta(file_path, inputs_tair, output_tair):
 @pytest.fixture(scope='module')
 def tair_data_noval(file_path, inputs_tair, output_tair):
     Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-    x1 = Feature('reaTZon_y')
-    x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
-    x2 = Feature('weaSta_reaWeaTDryBul_y')
-    x2.lag(1)  # weaSta_reaWeaTDryBul_y_lag1
-    x3 = Feature('oveHeaPumY_u')
-    x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
     prep = PreprocessingMultiStep(inputs=inputs_tair, output=output_tair, label_width=3, warmup_width=0, init_features=['reaTZon_y'],
                                   overlapping_sequences=False, batch_size=1, val_size=0)
     td = prep.pipeline(file_path)
@@ -134,12 +104,6 @@ def tair_data_noval(file_path, inputs_tair, output_tair):
 @pytest.fixture(scope='module')
 def tair_data_total(file_path, inputs_tair, output_tair):
     Logger.setup_logger(base_path=base_path, folder_name='unittests/test_coverage', override=True)
-    x1 = Feature('reaTZon_y')
-    x1.lag(2)  # reaTZon_y_lag1, reaTZon_y_lag2
-    x2 = Feature('weaSta_reaWeaTDryBul_y')
-    x2.lag(1)  # weaSta_reaWeaTDryBul_y_lag1
-    x3 = Feature('oveHeaPumY_u')
-    x3.lag(2)  # oveHeaPumY_u_lag1, oveHeaPumY_u_lag2
     prep = PreprocessingMultiStep(inputs=inputs_tair, output='reaTZon_y', label_width=3, warmup_width=0, init_features=['reaTZon_y'],
                                   overlapping_sequences=False, batch_size=1)
     td = prep.pipeline(file_path)
@@ -246,20 +210,18 @@ def test_model_pinn(inputs_php, output_php, file_path):
     # Check PINNs
     # PINN: Prepare preprocessing
     output_php = [output_php] + ['pinn']
-    u_hp = Feature('oveHeaPumY_u')
-    u_hp_logistic = Feature('Func(logistic)')
-    t_amb = Feature('weaSta_reaWeaTDryBul_y')
-    TAirRoom = Feature('reaTZon_y')
+    v = px.Vars()
+    u_hp, u_hp_logistic = v.oveHeaPumY_u, v['Func(logistic)']
+    t_amb, TAirRoom = v.weaSta_reaWeaTDryBul_y, v.reaTZon_y
     pinn = (u_hp * 10000 * ((TAirRoom + 15 - t_amb) / ((TAirRoom + 15) * 0.55)) + (1110 + 500) * u_hp_logistic)
-    pinn.rename('pinn')
 
     # PINN: Preprocessing
-    prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php)
+    prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php, columns={'pinn': pinn})
     td = prep.pipeline(file_path)
     m = PINNModel(pinn_weights=[1], epochs=1, n_neurons=4)
     m.pipeline(td, save_model=False, plot=False)
 
-    prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php, val_size=0)
+    prep = PreprocessingSingleStep(inputs=inputs_php, output=output_php, val_size=0, columns={'pinn': pinn})
     td = prep.pipeline(file_path)
     m = PINNModel(pinn_weights=None, epochs=1, n_neurons=4)
     m.pipeline(td, save_model=True, plot=False)
@@ -322,12 +284,6 @@ def test_read_setup():
     with open(path, "r") as f:
         config_prep = json.load(f)
     PreprocessingData.from_config(config_prep)
-
-    save_name_constructed = Logger.save_name_constructed
-    path = os.path.join(Logger._logger, save_name_constructed)
-    with open(path, "r") as f:
-        config_constructed = json.load(f)
-    FeatureConstruction.from_config(config_constructed)
 
     save_name_model = Logger.save_name_model_config
     path = os.path.join(Logger._logger, save_name_model)

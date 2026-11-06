@@ -146,15 +146,6 @@ def save_for_agentlib(run: Run, name: str, preprocessing, model, training_data=N
         raise ValueError("No trained model given. Pass the model returned by the training pipeline as 'trained_model'.")
     model.save_model(trained_model, str(run.file(name)))
 
-    _reset_legacy_registries()
     logger.info("Saved model '%s' for AgentLib-MPC in %s", name, run.path)
     return name
 
-
-def _reset_legacy_registries():
-    """Clears the global registries of physXAI < 1.0 (removed together with them)."""
-    from physXAI.models.modular.modular_expression import ModularExpression
-    from physXAI.preprocessing.constructed import FeatureConstruction
-
-    FeatureConstruction.reset()
-    ModularExpression.reset()

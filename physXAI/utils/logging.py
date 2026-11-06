@@ -202,18 +202,6 @@ class Logger:
             with open(path, "w") as f:
                 json.dump(preprocessing_dict, f, indent=4)
 
-            from physXAI.preprocessing.constructed import FeatureConstruction
-            constructed_config = FeatureConstruction.get_config()
-            if len(constructed_config) > 0:
-                if save_name_constructed is None:
-                    save_name_constructed = Logger.save_name_constructed
-                path = os.path.join(Logger._logger, save_name_constructed)
-                path = create_full_path(path)
-                Logger.override_question(path)
-                with open(path, "w") as f:
-                    json.dump(constructed_config, f, indent=4)
-
-            FeatureConstruction.reset()
 
         if model is not None:
             try:
@@ -228,18 +216,6 @@ class Logger:
             with open(path, "w") as f:
                 json.dump(model_dict, f, indent=4)
 
-            from physXAI.models.modular.modular_expression import ModularExpression
-            modular_expression_config = ModularExpression.get_config()
-            if len(modular_expression_config) > 0:
-                if save_name_modular_expression is None:
-                    save_name_modular_expression = Logger.save_name_modular_expression_config
-                path = os.path.join(Logger._logger, save_name_modular_expression)
-                path = create_full_path(path)
-                Logger.override_question(path)
-                with open(path, "w") as f:
-                    json.dump(modular_expression_config, f, indent=4)
-
-            ModularExpression.reset()
 
     @staticmethod
     def save_training_data(training_data, path: str = None):
