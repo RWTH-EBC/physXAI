@@ -6,13 +6,15 @@ split. The flat dicts `train_kpis`, `val_kpis` and `test_kpis` ('RMSE Train', ..
 compatibility; with several outputs they hold the mean over the outputs.
 """
 
+import logging
 import math
 
 import numpy as np
 from sklearn.metrics import r2_score
 
 from physXAI.preprocessing.training_data import TrainingDataGeneric, TrainingDataMultiStep
-from physXAI.utils.logging import Logger
+
+logger = logging.getLogger("physXAI")
 
 SPLIT_LABELS = {"train": "Train", "val": "Val", "test": "Test"}
 
@@ -86,8 +88,7 @@ class Metrics:
         label = SPLIT_LABELS[split]
         mse = float(np.mean([v["mse"] for v in values]))
         r2 = float(np.mean([v["r2"] for v in values]))
-        Logger.print(f"{label} RMSE: {math.sqrt(mse):.2f}", "info")
-        Logger.print(f"{label} R2: {r2:.2f}", "info")
+        logger.info("%s RMSE: %.4g, R2: %.4f", label, math.sqrt(mse), r2)
         return {f"MSE {label}": mse, f"RMSE {label}": math.sqrt(mse), f"R2 {label}": r2}
 
     @staticmethod
@@ -164,7 +165,7 @@ class MetricsPINN(Metrics):
         for loss in kwargs["pinn_losses"]:
             val = float(loss(y_true, y_pred))
             kpis[loss.__name__ + " " + label] = val
-            Logger.print(f"{loss.__name__ + ' ' + label}: {val:.2f}", "info")
+            logger.info("%s %s: %.4g", loss.__name__, label, val)
 
         return kpis
 

@@ -207,7 +207,9 @@ class MonotoneMLP(Block):
     Args:
         inputs: Input expressions.
         monotonicities: {input name: 1 (increasing) | -1 (decreasing)}.
-        n_layers, n_neurons, activation: See `MLP`.
+        n_layers: Number of hidden layers, see `MLP`.
+        n_neurons: Neurons per hidden layer, see `MLP`.
+        activation: Activation function(s), see `MLP`.
         activation_split: Shares of convex, concave and saturated neurons. Defaults to [1, 1, 1].
     """
 

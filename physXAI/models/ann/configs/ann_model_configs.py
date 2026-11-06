@@ -1,15 +1,16 @@
-from typing import Union, Optional, Literal
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 
 class ClassicalANNConstruction_config(BaseModel):
 
     n_layers: int = Field(..., ge=0)
-    n_neurons: Union[int, list[int]] = 32
-    activation_function: Union[str, list[str]] = 'softplus'
+    n_neurons: int | list[int] = 32
+    activation_function: str | list[str] = 'softplus'
     rescale_output: bool = True
     normalize: bool = True
-    n_features: Optional[int] = None
+    n_features: int | None = None
 
     @field_validator('n_neurons')
     def validate_n_neurons(cls, v, info):
@@ -37,18 +38,18 @@ class RBFConstruction_config(ClassicalANNConstruction_config):
 
     n_layers: int = Field(..., ge=1, le=1)
     random_state: int = 42
-    rescale_mean: Optional[float] = Field(
+    rescale_mean: float | None = Field(
         None, description="Mean value for z-score normalization of outputs"
     )
-    rescale_sigma: Optional[float] = Field(
+    rescale_sigma: float | None = Field(
         None, description="Standard deviation for z-score normalization of outputs"
     )
 
 
 class CMNNModelConstruction_config(ClassicalANNConstruction_config):
 
-    monotonicities: Optional[dict[str, int]] = None
-    activation_split: Optional[list[float]] = [1, 1, 1]
+    monotonicities: dict[str, int] | None = None
+    activation_split: list[float] | None = [1, 1, 1]
 
     @field_validator('monotonicities')
     def validate_monotonicities(cls, v):

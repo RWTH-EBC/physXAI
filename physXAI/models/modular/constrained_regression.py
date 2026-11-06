@@ -1,18 +1,24 @@
+import logging
 import os
 import time
-from typing import Union
 
 import casadi as ca
 import numpy as np
 
-from physXAI.expr import Expr, as_expr, from_config as expr_from_config, to_config as expr_to_config
+from physXAI.expr import Expr, as_expr
+from physXAI.expr import from_config as expr_from_config
+from physXAI.expr import to_config as expr_to_config
 from physXAI.expr.core import BuildContext
+from physXAI.io.run import input_path, output_path
 from physXAI.models.models import SingleStepModel, register_model
 from physXAI.preprocessing.training_data import TrainingDataGeneric
-from physXAI.utils.logging import Logger, create_full_path, get_full_path
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+
+logger = logging.getLogger("physXAI")
 
 #: Name of the dense layer holding the weights. It has to contain 'dense' for the CasADi export.
 LAYER_NAME = 'dense_constrained_regression'
@@ -32,7 +38,7 @@ class ConstrainedRegression(SingleStepModel):
 
     plot_title = "Constrained Regression"
 
-    def __init__(self, inputs: Union[list[Union[Expr, str]], dict], monotonies: dict[str, int] = None,
+    def __init__(self, inputs: list[Expr | str] | dict, monotonies: dict[str, int] = None,
                  convexities: dict[str, int] = None, **kwargs):
         super().__init__()
         if isinstance(inputs, dict):
@@ -76,7 +82,7 @@ class ConstrainedRegression(SingleStepModel):
         # Map constraint names to composite or raw feature indices
         monotonies = {}  # Maps composite feature index to monotonicity value
         monotonies_raw = {}  # Maps raw feature name to monotonicity value
-        
+
         for constraint_name, mono_value in self.monotonies.items():
             found = False
 
@@ -87,7 +93,7 @@ class ConstrainedRegression(SingleStepModel):
                         monotonies_raw[i] = mono_value
                     found = True
                     break
-            
+
             # Check if it's a composite feature (by input name)
             if not found:
                 for i, inp in enumerate(self.inputs):
@@ -96,17 +102,17 @@ class ConstrainedRegression(SingleStepModel):
                             monotonies[i] = mono_value
                         found = True
                         break
-            
+
             if not found:
                 raise ValueError(f"Monotonicity specified for unknown input '{constraint_name}'. "
                                 f"Available raw features: {list(x_sym_raw.keys())}"
                                 f"Available composite features: {[inp.name for inp in self.inputs]}. "
                                 )
-        
+
         # Same for convexities
         convexities = {}
         convexities_raw = {}
-        
+
         for constraint_name, convex_value in self.convexities.items():
             found = False
 
@@ -132,8 +138,8 @@ class ConstrainedRegression(SingleStepModel):
                                 f"Available raw features: {list(x_sym_raw.keys())}"
                                 f"Available composite features: {[inp.name for inp in self.inputs]}. "
                                )
-            
-         
+
+
         x_sym_raw = ca.vertcat(*x_sym_raw.values())
         x_sym_regression = ca.MX.sym('regression_input', len(self.inputs))
         y_sym = 0
@@ -143,15 +149,15 @@ class ConstrainedRegression(SingleStepModel):
         w_sym_list.append(w_0)
         y_sym += w_0
 
-        for i, inp in enumerate(self.inputs):
+        for i in range(len(self.inputs)):
             w_i = self.opti.variable()
             w_sym_list.append(w_i)
             y_sym += w_i * x_sym_regression[i]
-            
+
         w_vec = ca.vertcat(*w_sym_list)
         self.w_vec = w_vec
 
-        f_pred = ca.Function('f_pred', [x_sym_regression, w_vec], [y_sym])  
+        f_pred = ca.Function('f_pred', [x_sym_regression, w_vec], [y_sym])
 
 
         # Symbolic gradients/hessians w.r.t. composite features
@@ -199,7 +205,7 @@ class ConstrainedRegression(SingleStepModel):
                         self.opti.subject_to(grad_val >= 0)
                     elif mono < 0:
                         self.opti.subject_to(grad_val <= 0)
-        
+
         if convexities:
             for feat_idx, convex in convexities.items():
                 hess_i = ca.diag(hess_sym)[feat_idx]
@@ -221,7 +227,7 @@ class ConstrainedRegression(SingleStepModel):
                         self.opti.subject_to(hess_val >= 0)
                     elif convex < 0:
                         self.opti.subject_to(hess_val <= 0)
-        
+
         # Constraints on raw features (via gradients w.r.t. x_sym_raw)
         if monotonies_raw:
             for feat_idx, mono in monotonies_raw.items():
@@ -241,7 +247,7 @@ class ConstrainedRegression(SingleStepModel):
                         self.opti.subject_to(grad_val >= 0)
                     elif mono < 0:
                         self.opti.subject_to(grad_val <= 0)
-        
+
         if convexities_raw:
             for feat_idx, convex in convexities_raw.items():
                 hess_raw_i = ca.diag(hess_sym_raw)[feat_idx]
@@ -263,13 +269,10 @@ class ConstrainedRegression(SingleStepModel):
                     elif convex < 0:
                         self.opti.subject_to(hess_val <= 0)
 
-        return model 
+        return model
 
     def compile_model(self, model):
-        if Logger.check_print_level('INFO'):
-            print_level = 5
-        else:
-            print_level = 0
+        print_level = 5 if logger.isEnabledFor(logging.INFO) else 0
 
         opts = {'ipopt.print_level': print_level, 'expand': True}
         self.opti.solver('ipopt', opts)
@@ -282,16 +285,14 @@ class ConstrainedRegression(SingleStepModel):
 
         weights_val = sol.value(self.w_vec)
 
-        if Logger.check_print_level('INFO'):
-            print("Optimized weights:")
-            print("Bias:", weights_val[0])
-            for i, inp in enumerate(self.inputs):
-                print(f"Weight for {inp.name}:", weights_val[i+1])
+        if logger.isEnabledFor(logging.INFO):
+            weights = "\n".join(f"  {inp.name}: {weights_val[i + 1]:.6g}" for i, inp in enumerate(self.inputs))
+            logger.info("Optimized bias: %.6g, weights:\n%s", weights_val[0], weights)
 
-        for l in model.layers:
-            if l.name == LAYER_NAME:
-                l.set_weights([weights_val[1:].reshape(-1, 1), np.array([weights_val[0]])])
-                l.trainable = False
+        for layer in model.layers:
+            if layer.name == LAYER_NAME:
+                layer.set_weights([weights_val[1:].reshape(-1, 1), np.array([weights_val[0]])])
+                layer.trainable = False
 
     def save_model(self, model, save_path: str):
         """
@@ -301,14 +302,7 @@ class ConstrainedRegression(SingleStepModel):
             model (keras.Model): The Keras model to save.
             save_path (str): The directory or full path where the model should be saved.
         """
-
-        if save_path is None:
-            save_path = Logger.get_model_savepath()
-
-        if not save_path.endswith('.keras'):
-            save_path += '.keras'
-
-        save_path = create_full_path(save_path)
+        save_path = output_path(save_path, '.keras')
         model.save(save_path)
 
     def load_model(self, load_path: str):
@@ -322,10 +316,10 @@ class ConstrainedRegression(SingleStepModel):
             keras.Model: The loaded Keras model.
         """
 
-        load_path = get_full_path(load_path)
+        load_path = input_path(load_path)
         model = keras.saving.load_model(load_path)
         return model
-    
+
     def get_config(self) -> dict:
         c = super().get_config()
         c.update({

@@ -1,15 +1,14 @@
 from physXAI.feature_selection.recursive_feature_elimination import save_result
 from physXAI.feature_selection.selection import FeatureSelection
+from physXAI.io import Run
 from physXAI.models.models import LinearRegressionModel
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
-from physXAI.utils.logging import Logger
-
 
 """
 Feature selection for linear regression to predict the power of the heat pump using the Boptest data
 """
-# Setup up logger for saving
-Logger.setup_logger(folder_name='P_hp_feature', override=True)
+# Directory of the run (stored_data/P_hp_feature)
+run = Run('stored_data', 'P_hp_feature', overwrite=True)
 
 # File path to data
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
@@ -36,4 +35,4 @@ result = fs.run(file_path)
 print('Selected inputs:', result.selected.inputs)
 
 # Save the result (json) and its plot (html) into the run directory
-save_result(result)
+save_result(result, run)

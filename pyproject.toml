@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "physXAI"
 # Single source of truth for the version. Bump manually for each release and add an entry to CHANGELOG.md.
-version = "1.0.0.dev0"
+version = "1.0.0"
 authors = [
     { name = "Patrick Henkel", email = "ebc-tools@eonerc.rwth-aachen.de" }
 ]
@@ -77,7 +77,7 @@ filterwarnings = [
 [tool.ruff]
 line-length = 120
 target-version = "py311"
-extend-exclude = ["external", "build", "docs"]
+extend-exclude = ["external", "build", "docs", "executables/regression_prototype.py"]  # experimental
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "NPY"]

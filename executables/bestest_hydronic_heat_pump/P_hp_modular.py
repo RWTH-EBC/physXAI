@@ -1,7 +1,7 @@
 from physXAI import expr as px
+from physXAI.io import Run
 from physXAI.models import ModularANN
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
-from physXAI.utils.logging import Logger
 
 """
 Creates a modular model to predict the power of the heat pump using the Boptest data.
@@ -11,7 +11,8 @@ combined with trainable blocks. Everything is part of the keras model, so an MPC
 raw inputs. The inputs of the preprocessing are taken from the model.
 """
 
-Logger.setup_logger(folder_name='P_hp_modular', override=True)
+# Directory of the run (stored_data/P_hp_modular)
+run = Run('stored_data', 'P_hp_modular', overwrite=True)
 
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
 
@@ -26,7 +27,5 @@ td = prep.pipeline(file_path, model=m)
 # Training pipeline
 model = m.pipeline(td)
 
-# Log setup of preprocessing and model as json
-Logger.log_setup(prep, m)
-# Log training data as pickle
-Logger.save_training_data(td)
+# Save the configs of preprocessing and model, the metrics (training_data.json), the model and its report
+run.save('model', prep, m, td)

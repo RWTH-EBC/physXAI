@@ -5,7 +5,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 [Semantic Versioning](https://semver.org/). The version is defined once in `pyproject.toml`
 and has to match the git tag of a release.
 
-## [Unreleased] – 1.0.0
+## [1.0.0] – 2026-11-06
 
 Major release, not backwards compatible except for the AgentLib-MPC integration
 (`agentlib_mpc.machine_learning_plugins.physXAI`). A migration guide is part of the documentation.
@@ -63,6 +63,17 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   splits (`n_repeats`, mean and spread), absolute bias at the MPC horizon, plausibility check of the sign of the
   sensitivity to the controls (`controls={'u': 1}`), `tolerance` to prefer fewer inputs. Results as table, json
   and plot.
+- `Run.save(name, preprocessing, model, training_data)`: saves the configs, the metrics, the trained model and its
+  report in the layout AgentLib-MPC reads; `save_for_agentlib` uses it. `model.trained_model` holds the model of
+  the last pipeline.
+- Comparison of models (`physXAI.evaluation.comparison`): `repeat_training` trains a model with several seeds
+  (split and / or initialization) and saves every run; `ModelComparison` loads saved runs (also of physXAI 0.x)
+  or takes training data in memory and compares the distributions of the single step metrics and of the errors
+  over a common prediction horizon: tables per run, summary per model (mean, std, min, median, max), box plots
+  and horizon plots with median and band. Example `executables/bestest_hydronic_heat_pump/TAir_compare.py`.
+- Documentation: user guide (getting started, expressions, data pipeline and split, models, multi step evaluation
+  and training, recurrent models, evaluation and comparison, AgentLib-MPC export), migration guide from 0.x and
+  the API reference of all modules. The CI builds it in strict mode.
 
 ### Changed
 - Python >= 3.11 is required (3.9 and 3.10 are end of life).
@@ -82,8 +93,15 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   feature and the controls are never removed. `recursive_feature_elimination_pipeline` is a wrapper around
   `FeatureSelection`: it no longer asks for input, does not change the preprocessing and saves its result as
   json and html into the run directory.
-- Plots are not opened anymore by default: `pipeline(..., plot=True)` saves them as `<model>.html` next to the
-  model (or into the run directory of the Logger); `show_plot=True` opens them. `Model.plot(td)` returns the figure.
+- Plots are not opened anymore by default: `pipeline(..., save_path=...)` saves them as `<model>.html` next to
+  the model and `Run.save` as `<name>.html`; `show_plot=True` opens them. `Model.plot(td)` returns the figure.
+- `pipeline` and `online_pipeline` save nothing without a `save_path` (there is no default directory anymore).
+- Logging uses the standard `logging` module (logger `physXAI`): `set_log_level('warning')` replaces
+  `Logger.print_level`; keras progress bars follow the log level. If the application configures logging,
+  messages are passed on to it.
+- `save_result(result, run)` of the feature selection writes into a `Run`, `recursive_feature_elimination_pipeline`
+  takes an optional `run`.
+- The executables use `Run` and save their models with `Run.save`.
 - `random_state=None` draws a seed (or uses the global one) and stores it in the config.
 - `PreprocessingData.from_config` restores the class from `__class_name__` and all settings.
 
@@ -122,5 +140,7 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - Multi step evaluation of single step models with `PreprocessingMultiStep` (`SingleStepModel.evaluate_multi`):
   use `PreprocessingSingleStep(eval_horizon=...)`. `physXAI.evaluation.closed_loop` is replaced by the
   closed loop of `RNNModel` and by `physXAI.evaluation.rollout`.
+- `physXAI.utils.logging` (`Logger`, `get_full_path`, `create_full_path`): replaced by `physXAI.io.Run` and the
+  `logging` module, see the migration guide. Training data is no longer pickled (`TrainingData.save`).
 - `GitPython` dependency; paths are no longer resolved relative to the git root.
 - `requirements.txt` with outdated pins (use `pip install -e .[dev]`).

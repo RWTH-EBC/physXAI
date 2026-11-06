@@ -1,15 +1,14 @@
+from physXAI.io import Run
 from physXAI.models.models import LinearRegressionModel
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
-from physXAI.utils.logging import Logger
-
 
 """
 Creates a linear regression to predict the air temperature using the Boptest data.
 The model is trained as a single step model, but also evaluated over a horizon of 48 steps: it is
 applied recursively, as in an MPC, which shows how its error grows over the horizon.
 """
-# Setup up logger for saving
-Logger.setup_logger(folder_name='TAir', override=True)
+# Directory of the run (stored_data/TAir_evaluateMultiStep)
+run = Run('stored_data', 'TAir_evaluateMultiStep', overwrite=True)
 
 # File path to data
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
@@ -31,7 +30,5 @@ m = LinearRegressionModel()
 # Training pipeline
 model = m.pipeline(td)
 
-# Log setup of preprocessing and model as json
-Logger.log_setup(prep, m)
-# Log training data as pickle
-Logger.save_training_data(td)
+# Save the configs of preprocessing and model, the metrics (training_data.json), the model and its report
+run.save('model', prep, m, td)

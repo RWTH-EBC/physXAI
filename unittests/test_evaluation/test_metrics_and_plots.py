@@ -14,7 +14,6 @@ from physXAI.models import LinearRegressionModel
 from physXAI.models.ann.ann_design import RNNModel
 from physXAI.plotting.plotting import binned_median, model_report, plot_horizon_metrics, plot_prediction_correlation
 from physXAI.preprocessing.preprocessing import PreprocessingMultiStep, PreprocessingSingleStep
-from physXAI.utils.logging import Logger
 
 
 @pytest.fixture(scope="module")
@@ -115,12 +114,9 @@ def test_pipeline_saves_but_does_not_show_plots(linreg, tmp_path):
         m.pipeline(td, save_model=False, show_plot=True)
         assert show.called
 
-    # without a path and without a run directory, nothing is written
-    previous, Logger._logger = Logger._logger, None
-    try:
-        assert m.save_plot(m.plot(td)) is None
-    finally:
-        Logger._logger = previous
+    # without a path nothing is written
+    assert m.save_plot(m.plot(td)) is None
+    assert m.trained_model is not None
 
 
 def test_metrics_without_validation(csv):

@@ -1,13 +1,12 @@
+from physXAI.io import Run
 from physXAI.models.ann.ann_design import CMNNModel
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
-from physXAI.utils.logging import Logger
-
 
 """
 Creates a constrained monotonic neural network to predict the air temperature using the Boptest data
 """
-# Setup up logger for saving
-Logger.setup_logger(folder_name='TAir', override=True)
+# Directory of the run (stored_data/TAir)
+run = Run('stored_data', 'TAir', overwrite=True)
 
 # File path to data
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
@@ -42,7 +41,5 @@ m = CMNNModel(monotonies={
 # Training pipeline
 model = m.pipeline(td)
 
-# Log setup of preprocessing and model as json
-Logger.log_setup(prep, m)
-# Log training data as pickle
-Logger.save_training_data(td)
+# Save the configs of preprocessing and model, the metrics (training_data.json), the model and its report
+run.save('model', prep, m, td)

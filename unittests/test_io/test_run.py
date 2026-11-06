@@ -46,3 +46,51 @@ def test_log_level():
     assert logging.getLogger("physXAI").level == logging.WARNING
     with pytest.raises(ValueError):
         set_log_level("loud")
+
+
+def test_keras_verbosity_follows_the_log_level():
+    from physXAI.io.run import keras_verbosity, keras_verbosity_int
+
+    set_log_level("info")
+    assert keras_verbosity() == "auto" and keras_verbosity_int() == 1
+    set_log_level("warning")
+    assert keras_verbosity() == 0 and keras_verbosity_int() == 0
+    set_log_level("info")
+
+
+def test_messages_go_to_the_root_logger_if_configured(monkeypatch):
+    """physXAI prints its messages itself, unless the application configured logging."""
+    import io
+
+    from physXAI.io.run import _ConsoleHandler
+
+    stream = io.StringIO()
+    handler = _ConsoleHandler(stream)
+    record = logging.LogRecord("physXAI", logging.INFO, __file__, 1, "message", None, None)
+    root = logging.getLogger()
+    monkeypatch.setattr(root, "handlers", [])
+    handler.emit(record)
+    monkeypatch.setattr(root, "handlers", [logging.NullHandler()])
+    handler.emit(record)
+    assert stream.getvalue().count("message") == 1
+
+
+def test_save(tmp_path, one_room_csv):
+    from physXAI.models import LinearRegressionModel
+    from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
+
+    prep = PreprocessingSingleStep(inputs=["mDot", "T"], output="Change(T)", csv_delimiter=",")
+    td = prep.pipeline(one_room_csv)
+    m = LinearRegressionModel()
+    m.pipeline(td)
+    run = Run(tmp_path, "run")
+    files = run.save("lr", prep, m, td)
+    assert {p.name for p in files.values()} == {
+        "lr_preprocessing.json", "lr_model.json", "lr_training_data.json", "lr.joblib", "lr.html"
+    }
+    saved = json.loads(files["training_data"].read_text())
+    assert saved["physXAI_version"] == __version__ and "by_output" in saved["metrics"]
+    with pytest.raises(FileExistsError):
+        run.save("lr", prep, m, td)
+    # only configs, without a trained model
+    assert set(Run(tmp_path, "configs").save("x", prep, LinearRegressionModel())) == {"preprocessing", "model_config"}

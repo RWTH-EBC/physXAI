@@ -37,7 +37,11 @@ class ModularANN(ANNModel):
         rescale_output: Rescale the output with mean and standard deviation of the training targets.
         solver: 'adam' (gradient descent) or 'ols' (closed form least squares; the architecture has to
                 be a `Linear` block on data only inputs without monotonicities).
-        batch_size, epochs, learning_rate, early_stopping_epochs, random_seed: Training settings.
+        batch_size: Batch size of the training.
+        epochs: Maximum number of epochs.
+        learning_rate: Learning rate of the Adam optimizer.
+        early_stopping_epochs: Patience of the early stopping on the validation loss (None: no early stopping).
+        random_seed: Seed of the weights and the batch order, set when the model is generated.
     """
 
     plot_title = "Modular ANN"

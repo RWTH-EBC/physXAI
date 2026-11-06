@@ -9,4 +9,9 @@ try:
 except PackageNotFoundError:  # pragma: no cover - package is not installed (e.g. plain source checkout)
     __version__ = "0+unknown"
 
-__all__ = ["__version__", "set_seed", "get_seed"]
+from physXAI.io.run import set_log_level  # noqa: E402  (needs __version__)
+
+# metrics and the training progress are shown by default, see `set_log_level`
+set_log_level("info")
+
+__all__ = ["__version__", "set_seed", "get_seed", "set_log_level"]

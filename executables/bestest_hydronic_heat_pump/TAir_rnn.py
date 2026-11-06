@@ -1,8 +1,7 @@
 from physXAI import expr as px
+from physXAI.io import Run
 from physXAI.models.ann.ann_design import RNNModel
 from physXAI.preprocessing.preprocessing import PreprocessingMultiStep
-from physXAI.utils.logging import Logger
-
 
 """
 Creates a recurrent neural network (RNN) to predict the air temperature using the Boptest data.
@@ -16,8 +15,8 @@ Creates a recurrent neural network (RNN) to predict the air temperature using th
 - label_width (training horizon) should be longer than the MPC horizon, eval_horizon shows the error
   beyond it.
 """
-# Setup up logger for saving
-Logger.setup_logger(folder_name='TAir_rnn', override=True)
+# Directory of the run (stored_data/TAir_rnn)
+run = Run('stored_data', 'TAir_rnn', overwrite=True)
 
 # File path to data
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
@@ -37,7 +36,5 @@ m = RNNModel(epochs=100, rnn_layer='LSTM', rnn_units=16, early_stopping_epochs=2
 # Training pipeline. The saved model is the step model used by AgentLib-MPC.
 model = m.pipeline(td)
 
-# Log setup of preprocessing and model as json
-Logger.log_setup(prep, m)
-# Log training data as pickle
-Logger.save_training_data(td)
+# Save the configs of preprocessing and model, the metrics (training_data.json), the model and its report
+run.save('model', prep, m, td)
