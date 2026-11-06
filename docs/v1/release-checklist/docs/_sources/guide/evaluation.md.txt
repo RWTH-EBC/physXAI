@@ -1,0 +1,118 @@
+# Evaluation, comparison and feature selection
+
+## Metrics
+
+After `model.pipeline(td)`:
+
+- `td.metrics.by_output[output][split]`: MSE, RMSE, MAE, R², bias (mean of prediction − truth) and the
+  number of samples, for every output and split separately; `td.metrics.kpi('test', 'rmse')` returns one
+  value. Splits without data (`test_size=0`, `val_size=0`) are left out.
+- `td.horizon_metrics`: RMSE, MAE, bias and standard deviation per step of the horizon (see
+  [Multi step evaluation](multi_step.md)), per predicted feature in `by_feature`.
+
+Both are written to `<name>_training_data.json` by `Run.save`.
+
+## Report
+
+`model.plot(td)` returns one figure per model: true vs. predicted values (small points, binned median per
+split with its interquartile band), the sorted predictions, RMSE and bias over the horizon, the training
+history and a metrics table. Plots are never opened unless requested (`show_plot=True`).
+
+## Comparing models
+
+One training run says little about a model: the split of the data and the initial weights change the
+errors, often more than the difference between two models. `repeat_training` trains a model with several
+seeds, `ModelComparison` compares the distributions:
+
+```python
+from physXAI.evaluation.comparison import ModelComparison, repeat_training
+
+run = Run("stored_data", "TAir_compare", overwrite=True)
+repeat_training(path, prep, LinearRegressionModel(), seeds=5, run=run, name="linreg")
+repeat_training(path, prep, ClassicalANNModel(epochs=100), seeds=5, run=run, name="ann")
+repeat_training(path, rnn_prep, RNNModel(rnn_layer="LSTM"), seeds=5, run=run, name="rnn")
+
+comparison = ModelComparison.load(run.path)     # one model per sub directory
+comparison.summary()                            # per model: runs, mean, std, min, median, max
+comparison.save(run)                            # comparison.html and csv files
+```
+
+- Every run is saved with `Run.save` into `<run>/<name>/seed_<seed>/`. With the same seeds, all models are
+  trained and tested on the same splits (`vary=('split', 'init')` by default; `vary=('init',)` keeps the
+  split fixed and only varies the weights).
+- Without saving: `comparison = repeat_training(...) + repeat_training(...)`, or
+  `ModelComparison().add("label", td)` for evaluated training data.
+
+### Existing runs
+
+Runs saved earlier, also by physXAI < 1.0 or by AgentLib-MPC training scripts, are compared the same way.
+A model is a directory, every directory below it holding a `*training_data.json` is one run, named
+arbitrarily:
+
+```
+results/
+  cmnn/
+    a1b2c3d4/   training_data.json, model_config.json, preprocessing_config.json   (physXAI < 1.0)
+    x9y8z7w6/   ...
+    ...         (e.g. 50 runs)
+  ann/
+    seed_0/     ann_training_data.json, ann_model.json, ann_preprocessing.json, ann.keras   (Run.save)
+```
+
+```python
+ModelComparison.load("results")                          # every sub directory is a model: cmnn, ann
+ModelComparison.load(["results/cmnn", "old/ann"])        # every given directory is a model
+ModelComparison.load({"CMNN": "results/cmnn"})           # with labels
+ModelComparison.load(["results/cmnn"], name="T")         # only T_training_data.json (AgentLib-MPC runs)
+```
+
+- Outputs are named after the `output` of the saved preprocessing, so old and new runs of `Change(T)` share
+  their scores. The RMSE per step of multi step models of physXAI < 1.0 is used as their error over the
+  horizon (the bias was not stored then).
+- A run directory with several models (`T_…` and `P_…` of AgentLib-MPC) gives separate models `cmnn/T` and
+  `cmnn/P`. Unreadable files are skipped with a warning.
+
+From the command line (prints the summary, saves plot and csv files into `results/comparison`):
+
+```bash
+python -m physXAI.evaluation.comparison results
+python -m physXAI.evaluation.comparison results/cmnn results/ann --split test --horizon 12
+python -m physXAI.evaluation.comparison results/cmnn --models --band range
+```
+
+### Tables and plot
+
+Tables: `runs()` (seeds, model class, training time), `metrics()` (single step metrics),
+`horizon()` (errors per step), `scores(split)` (one row per run) and `summary(split)`.
+
+Models with different outputs (e.g. `Change(T)` of a single step model and the trajectory `T` of an RNN)
+are compared on the error of `T` over the horizon. `scores` and `plot` use the horizon all runs reach,
+or `horizon=` in hours.
+
+The plot shows box plots of the single step RMSE (every point is a run), RMSE and bias over the horizon
+(median over the runs and the interquartile range, or `band='range'` for min - max), box plots of the mean RMSE over the horizon and
+the RMSE at its end, and the summary table.
+See `executables/bestest_hydronic_heat_pump/TAir_compare.py`.
+
+## Feature selection (experimental)
+
+`FeatureSelection` removes inputs one by one (backward elimination) and keeps the best set:
+
+```python
+from physXAI.feature_selection.selection import FeatureSelection
+
+prep = PreprocessingSingleStep(inputs=candidates, output="Change(reaTZon_y)", eval_horizon=48)
+selection = FeatureSelection(prep, LinearRegressionModel(), first_step_weight=0.25, n_repeats=3,
+                             controls={"oveHeaPumY_u": 1}, tolerance=0.02)
+result = selection.run(path)
+result.selected.inputs
+result.table()
+result.save(run)              # feature_selection.json and .html
+```
+
+- The criterion is the step weighted RMSE of the recursive prediction over `eval_horizon` (optionally plus
+  `bias_weight` · |bias| at `mpc_horizon`), or `criterion='single_step'`.
+- `n_repeats` evaluates every candidate on several splits. Differences smaller than the spread are noise.
+- `controls={'u': 1}`: the prediction has to increase with `u` on (almost) all validation samples,
+  otherwise a candidate is implausible and not selected. Controls and the recursive feature are never removed.
+- `tolerance` selects the smallest set within (1 + tolerance) × the best criterion.

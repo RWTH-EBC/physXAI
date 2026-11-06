@@ -1,0 +1,308 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>physXAI.models.ann.model_construction.ann_models &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../../../../../_static/jquery.js"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+      <script src="../../../../../_static/doctools.js"></script>
+      <script src="../../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/physics.html">Physics-informed models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">physXAI.models.ann.model_construction.ann_models</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for physXAI.models.ann.model_construction.ann_models</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.configs.ann_model_configs</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClassicalANNConstruction_config</span><span class="p">,</span> <span class="n">CMNNModelConstruction_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.keras_models.keras_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConcaveActivation</span><span class="p">,</span> <span class="n">NonNegPartial</span><span class="p">,</span> <span class="n">SaturatedActivation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.training_data</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingDataGeneric</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'TF_CPP_MIN_LOG_LEVEL'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'2'</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">keras</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'TF_CPP_MIN_LOG_LEVEL'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'0'</span>
+
+
+<div class="viewcode-block" id="ClassicalANNConstruction"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.ann_models.ClassicalANNConstruction">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">ClassicalANNConstruction</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Constructs a classical Artificial Neural Network (ANN) model using Keras.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config (dict): A dictionary containing the configuration parameters for the ANN.</span>
+<span class="sd">                       This will be validated against `ClassicalANNConstruction_config`.</span>
+<span class="sd">        td (TrainingDataGeneric): An object containing the training data,</span>
+<span class="sd">                           used for adapting normalization and determining input/output shapes.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        keras.Model: The constructed Keras sequential model.</span>
+<span class="sd">    """</span>
+
+    <span class="c1"># Validate the input configuration dictionary using the Pydantic model and convert it to a dictionary</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">ClassicalANNConstruction_config</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
+
+    <span class="c1"># Get config</span>
+    <span class="n">n_layers</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'n_layers'</span><span class="p">]</span>
+    <span class="n">n_neurons</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'n_neurons'</span><span class="p">]</span>
+    <span class="c1"># If n_neurons is a single integer, replicate it for all layers</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">n_neurons</span> <span class="o">=</span> <span class="p">[</span><span class="n">n_neurons</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_layers</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_layers</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'n_features'</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">n_features</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'n_features'</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">n_features</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">activation_function</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'activation_function'</span><span class="p">]</span>
+    <span class="c1"># If activation_function is a single string, replicate it for all layers</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">activation_function</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">activation_function</span> <span class="o">=</span> <span class="p">[</span><span class="n">activation_function</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_layers</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">activation_function</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_layers</span>
+
+    <span class="c1"># Build artificial neural network as Sequential</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Sequential</span><span class="p">()</span>
+
+    <span class="c1"># Add input layer</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_features</span><span class="p">,)))</span>
+
+    <span class="c1"># Add normalization layer</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'normalize'</span><span class="p">]:</span>
+        <span class="n">normalization</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Normalization</span><span class="p">()</span>
+        <span class="n">normalization</span><span class="o">.</span><span class="n">adapt</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">normalization</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">):</span>
+        <span class="c1"># For each layer add dense</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">activation</span><span class="o">=</span><span class="n">activation_function</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+    <span class="c1"># Add output layer</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">'linear'</span><span class="p">))</span>
+    <span class="c1"># Add rescaling</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'rescale_output'</span><span class="p">]:</span>
+        <span class="c1"># Rescaling for output layer</span>
+        <span class="n">rescale_mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">))</span>
+        <span class="n">rescale_sigma</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Rescaling</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">rescale_sigma</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">rescale_mean</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">model</span></div>
+
+
+<div class="viewcode-block" id="CMNNModelConstruction"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.ann_models.CMNNModelConstruction">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">CMNNModelConstruction</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Constructs a Constrained Monotonic Neural Network (CMNN) model using Keras Functional API.</span>
+<span class="sd">    This type of network can enforce monotonicity constraints on the input features.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config (dict): A dictionary containing the configuration parameters for the CMNN.</span>
+<span class="sd">                       Validated against `CMNNModelConstruction_config`.</span>
+<span class="sd">        td (TrainingDataGeneric): An object containing the training data, used for normalization,</span>
+<span class="sd">                           input shape, and determining monotonicity constraints based on column names.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        keras.Model: The constructed Keras functional model.</span>
+<span class="sd">    """</span>
+
+    <span class="c1"># Validate the input configuration dictionary and convert it to a dictionary</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">CMNNModelConstruction_config</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
+
+    <span class="c1"># Get config</span>
+    <span class="n">n_layers</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'n_layers'</span><span class="p">]</span>
+    <span class="n">n_neurons</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'n_neurons'</span><span class="p">]</span>
+    <span class="c1"># If n_neurons is a single integer, replicate it for all layers</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">n_neurons</span> <span class="o">=</span> <span class="p">[</span><span class="n">n_neurons</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_layers</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_layers</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'n_features'</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">n_features</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'n_features'</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">n_features</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">activation_function</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'activation_function'</span><span class="p">]</span>
+    <span class="c1"># If activation_function is a single string, replicate it for all layers</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">activation_function</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">activation_function</span> <span class="o">=</span> <span class="p">[</span><span class="n">activation_function</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_layers</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">activation_function</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_layers</span>
+
+    <span class="c1"># Get monotonicity constraints</span>
+    <span class="n">mono</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'monotonicities'</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">mono</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">monotonicities</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_features</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">monotonicities</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mono</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">else</span> <span class="n">mono</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">td</span><span class="o">.</span><span class="n">inputs</span><span class="p">]</span>
+
+    <span class="c1"># Add input layer</span>
+    <span class="n">input_layer</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_features</span><span class="p">,))</span>
+
+    <span class="c1"># Add normalization layer</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'normalize'</span><span class="p">]:</span>
+        <span class="n">normalization</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Normalization</span><span class="p">()</span>
+        <span class="n">normalization</span><span class="o">.</span><span class="n">adapt</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">normalization</span><span class="p">(</span><span class="n">input_layer</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">input_layer</span>
+
+    <span class="c1"># Add dense layer</span>
+    <span class="n">activation_split</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'activation_split'</span><span class="p">]</span>
+    <span class="c1"># Determine activation split</span>
+    <span class="k">if</span> <span class="n">activation_split</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">mono</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">activation_split</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">activation_split</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="c1"># First layer has partial constraints based on monotonicities</span>
+    <span class="n">kernel_contraint</span> <span class="o">=</span> <span class="n">NonNegPartial</span><span class="p">(</span><span class="n">monotonicities</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">):</span>
+        <span class="n">x_split</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="c1"># Convex activation</span>
+        <span class="k">if</span> <span class="n">activation_split</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">x1</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">activation_split</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">activation_split</span><span class="p">)),</span>
+                                    <span class="n">activation</span><span class="o">=</span><span class="n">activation_function</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">kernel_constraint</span><span class="o">=</span><span class="n">kernel_contraint</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">x_split</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x1</span><span class="p">)</span>
+        <span class="c1"># Concave activation</span>
+        <span class="k">if</span> <span class="n">activation_split</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">x2</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">activation_split</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">activation_split</span><span class="p">)),</span>
+                                    <span class="n">activation</span><span class="o">=</span><span class="n">ConcaveActivation</span><span class="p">(</span><span class="n">activation_function</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
+                                    <span class="n">kernel_constraint</span><span class="o">=</span><span class="n">kernel_contraint</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">x_split</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x2</span><span class="p">)</span>
+        <span class="c1"># Saturated activation</span>
+        <span class="k">if</span> <span class="n">activation_split</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">x3</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">activation_split</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">activation_split</span><span class="p">)),</span>
+                                    <span class="n">activation</span><span class="o">=</span><span class="n">SaturatedActivation</span><span class="p">(</span><span class="n">activation_function</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
+                                    <span class="n">kernel_constraint</span><span class="o">=</span><span class="n">kernel_contraint</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">x_split</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x3</span><span class="p">)</span>
+        <span class="c1"># Concatenate activations</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_split</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">x_split</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x_split</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># after monotonicity constraint was applied,</span>
+        <span class="c1"># in all following layers the weights have to be non-neg to maintain the monotonicity</span>
+        <span class="n">kernel_contraint</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">NonNeg</span><span class="p">()</span>
+
+    <span class="c1"># Add output layer</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">'linear'</span><span class="p">,</span> <span class="n">kernel_constraint</span><span class="o">=</span><span class="n">keras</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">NonNeg</span><span class="p">())(</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="c1"># Add rescaling</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'rescale_output'</span><span class="p">]:</span>
+        <span class="c1"># Rescaling for output layer</span>
+        <span class="n">rescale_mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">))</span>
+        <span class="n">rescale_sigma</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Rescaling</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">rescale_sigma</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">rescale_mean</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="c1"># # Add min / max constraints</span>
+    <span class="c1"># min_value = config['min_value']</span>
+    <span class="c1"># max_value = config['max_value']</span>
+    <span class="c1"># if min_value is not None or max_value is not None:</span>
+    <span class="c1">#     d = keras.layers.Dense(1, activation=LimitedActivation(max_value, min_value),</span>
+    <span class="c1">#                            kernel_initializer=keras.initializers.Ones(), use_bias=False)</span>
+    <span class="c1">#     d.trainable = False</span>
+    <span class="c1">#     x = d(x)</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="n">input_layer</span><span class="p">,</span> <span class="n">outputs</span><span class="o">=</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">model</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

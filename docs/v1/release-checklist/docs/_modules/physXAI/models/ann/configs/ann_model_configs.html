@@ -1,0 +1,193 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>physXAI.models.ann.configs.ann_model_configs &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../../../../../_static/jquery.js"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+      <script src="../../../../../_static/doctools.js"></script>
+      <script src="../../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/physics.html">Physics-informed models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../guide/agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">physXAI.models.ann.configs.ann_model_configs</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for physXAI.models.ann.configs.ann_model_configs</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">field_validator</span>
+
+
+<div class="viewcode-block" id="ClassicalANNConstruction_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ClassicalANNConstruction_config</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+
+    <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">n_neurons</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">32</span>
+    <span class="n">activation_function</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'softplus'</span>
+    <span class="n">rescale_output</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="ClassicalANNConstruction_config.validate_n_neurons"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_n_neurons">[docs]</a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s1">'n_neurons'</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_n_neurons</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
+        <span class="n">ls</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'n_layers'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ls</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'List of n_neurons must have same length than n_layers'</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'n_neurons must be greater than 0'</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'n_neurons must be greater than 0'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v</span></div>
+
+<div class="viewcode-block" id="ClassicalANNConstruction_config.validate_activation"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_activation">[docs]</a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s1">'activation_function'</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_activation</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
+        <span class="n">ls</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'n_layers'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ls</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'List of activation functions must have same length than n_layers'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v</span></div></div>
+
+
+<div class="viewcode-block" id="RBFConstruction_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RBFConstruction_config</span><span class="p">(</span><span class="n">ClassicalANNConstruction_config</span><span class="p">):</span>
+
+    <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span>
+    <span class="n">rescale_mean</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Mean value for z-score normalization of outputs"</span>
+    <span class="p">)</span>
+    <span class="n">rescale_sigma</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Standard deviation for z-score normalization of outputs"</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CMNNModelConstruction_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">CMNNModelConstruction_config</span><span class="p">(</span><span class="n">ClassicalANNConstruction_config</span><span class="p">):</span>
+
+    <span class="n">monotonicities</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">activation_split</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+
+<div class="viewcode-block" id="CMNNModelConstruction_config.validate_monotonicities"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_monotonicities">[docs]</a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s1">'monotonicities'</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_monotonicities</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'monotonicities must be 0 (no monotony), 1 (positive monotony) '</span>
+                                     <span class="s1">'or -1 (negative monotony)'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v</span></div>
+
+<div class="viewcode-block" id="CMNNModelConstruction_config.validate_activation_split"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_activation_split">[docs]</a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s1">'activation_split'</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_activation_split</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'activation_split must have 3 elements'</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'activation_split must be greater than 0'</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"activation_split should contain at least one none-zero value"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v</span></div></div>
+
+
+<div class="viewcode-block" id="RNNModelConstruction_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.RNNModelConstruction_config">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RNNModelConstruction_config</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">rnn_units</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="n">gt</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">rnn_layer</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"RNN"</span><span class="p">,</span> <span class="s2">"GRU"</span><span class="p">,</span> <span class="s2">"LSTM"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"RNN"</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
