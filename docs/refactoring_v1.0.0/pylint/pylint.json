@@ -41,7 +41,7 @@
             "column": 0,
             "path": "physXAI/training/recursive.py",
             "symbol": "astroid-error",
-            "message": "physXAI/training/recursive.py: Fatal error while checking 'physXAI/training/recursive.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-18-15-47.txt'.",
+            "message": "physXAI/training/recursive.py: Fatal error while checking 'physXAI/training/recursive.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-18-34-20.txt'.",
             "message-id": "F0002"
         },
         {
@@ -217,7 +217,7 @@
             "column": 0,
             "path": "physXAI/io/run.py",
             "symbol": "astroid-error",
-            "message": "physXAI/io/run.py: Fatal error while checking 'physXAI/io/run.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-18-15-48.txt'.",
+            "message": "physXAI/io/run.py: Fatal error while checking 'physXAI/io/run.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-18-34-21.txt'.",
             "message-id": "F0002"
         },
         {
@@ -228,7 +228,7 @@
             "column": 0,
             "path": "physXAI/io/agentlib.py",
             "symbol": "astroid-error",
-            "message": "physXAI/io/agentlib.py: Fatal error while checking 'physXAI/io/agentlib.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-18-15-48.txt'.",
+            "message": "physXAI/io/agentlib.py: Fatal error while checking 'physXAI/io/agentlib.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-18-34-21.txt'.",
             "message-id": "F0002"
         },
         {
@@ -855,7 +855,7 @@
             "column": 0,
             "path": "physXAI/expr/core.py",
             "symbol": "astroid-error",
-            "message": "physXAI/expr/core.py: Fatal error while checking 'physXAI/expr/core.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-18-15-49.txt'.",
+            "message": "physXAI/expr/core.py: Fatal error while checking 'physXAI/expr/core.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-18-34-23.txt'.",
             "message-id": "F0002"
         },
         {
@@ -1291,7 +1291,7 @@
             "type": "refactor",
             "module": "physXAI.models.modular.modular_ann",
             "obj": "ModularANN.fit_model",
-            "line": 108,
+            "line": 110,
             "column": 4,
             "path": "physXAI/models/modular/modular_ann.py",
             "symbol": "inconsistent-return-statements",
@@ -1412,7 +1412,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.ann_design",
             "obj": "",
-            "line": 124,
+            "line": 160,
             "column": 0,
             "path": "physXAI/models/ann/ann_design.py",
             "symbol": "line-too-long",
@@ -1423,7 +1423,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.ann_design",
             "obj": "",
-            "line": 159,
+            "line": 207,
             "column": 0,
             "path": "physXAI/models/ann/ann_design.py",
             "symbol": "line-too-long",
@@ -1434,7 +1434,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.ann_design",
             "obj": "",
-            "line": 160,
+            "line": 208,
             "column": 0,
             "path": "physXAI/models/ann/ann_design.py",
             "symbol": "line-too-long",
@@ -1445,7 +1445,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.ann_design",
             "obj": "",
-            "line": 162,
+            "line": 210,
             "column": 0,
             "path": "physXAI/models/ann/ann_design.py",
             "symbol": "line-too-long",
@@ -1456,12 +1456,34 @@
             "type": "convention",
             "module": "physXAI.models.ann.ann_design",
             "obj": "",
-            "line": 170,
+            "line": 218,
             "column": 0,
             "path": "physXAI/models/ann/ann_design.py",
             "symbol": "line-too-long",
             "message": "Line too long (147/120)",
             "message-id": "C0301"
+        },
+        {
+            "type": "convention",
+            "module": "physXAI.models.ann.ann_design",
+            "obj": "",
+            "line": 1,
+            "column": 0,
+            "path": "physXAI/models/ann/ann_design.py",
+            "symbol": "too-many-lines",
+            "message": "Too many lines in module (1050/1000)",
+            "message-id": "C0302"
+        },
+        {
+            "type": "convention",
+            "module": "physXAI.models.ann.ann_design",
+            "obj": "",
+            "line": 1050,
+            "column": 0,
+            "path": "physXAI/models/ann/ann_design.py",
+            "symbol": "trailing-newlines",
+            "message": "Trailing newlines",
+            "message-id": "C0305"
         },
         {
             "type": "convention",
@@ -1482,7 +1504,7 @@
             "column": 0,
             "path": "physXAI/models/ann/ann_design.py",
             "symbol": "astroid-error",
-            "message": "physXAI/models/ann/ann_design.py: Fatal error while checking 'physXAI/models/ann/ann_design.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-18-15-50.txt'.",
+            "message": "physXAI/models/ann/ann_design.py: Fatal error while checking 'physXAI/models/ann/ann_design.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-18-34-24.txt'.",
             "message-id": "F0002"
         },
         {
@@ -1504,7 +1526,7 @@
             "column": 0,
             "path": "physXAI/models/ann/configs/ann_model_configs.py",
             "symbol": "astroid-error",
-            "message": "physXAI/models/ann/configs/ann_model_configs.py: Fatal error while checking 'physXAI/models/ann/configs/ann_model_configs.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-18-15-50.txt'.",
+            "message": "physXAI/models/ann/configs/ann_model_configs.py: Fatal error while checking 'physXAI/models/ann/configs/ann_model_configs.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-18-34-24.txt'.",
             "message-id": "F0002"
         },
         {
@@ -1522,7 +1544,7 @@
             "type": "error",
             "module": "physXAI.models.ann.pinn.physics",
             "obj": "",
-            "line": 24,
+            "line": 25,
             "column": 0,
             "path": "physXAI/models/ann/pinn/physics.py",
             "symbol": "import-error",
@@ -1533,7 +1555,7 @@
             "type": "error",
             "module": "physXAI.models.ann.pinn.physics",
             "obj": "",
-            "line": 25,
+            "line": 26,
             "column": 0,
             "path": "physXAI/models/ann/pinn/physics.py",
             "symbol": "import-error",
@@ -1544,7 +1566,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.pinn.physics",
             "obj": "PhysicsLoss.call",
-            "line": 43,
+            "line": 44,
             "column": 4,
             "path": "physXAI/models/ann/pinn/physics.py",
             "symbol": "missing-function-docstring",
@@ -1555,7 +1577,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.pinn.physics",
             "obj": "PhysicsLoss.get_config",
-            "line": 50,
+            "line": 51,
             "column": 4,
             "path": "physXAI/models/ann/pinn/physics.py",
             "symbol": "missing-function-docstring",
@@ -1566,7 +1588,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.pinn.physics",
             "obj": "TermLoss.update_state",
-            "line": 66,
+            "line": 67,
             "column": 4,
             "path": "physXAI/models/ann/pinn/physics.py",
             "symbol": "missing-function-docstring",
@@ -1577,7 +1599,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.pinn.physics",
             "obj": "TermLoss.get_config",
-            "line": 70,
+            "line": 71,
             "column": 4,
             "path": "physXAI/models/ann/pinn/physics.py",
             "symbol": "missing-function-docstring",
@@ -1588,12 +1610,133 @@
             "type": "convention",
             "module": "physXAI.models.ann.pinn.physics",
             "obj": "OutputRMSE.update_state",
-            "line": 81,
+            "line": 82,
             "column": 4,
             "path": "physXAI/models/ann/pinn/physics.py",
             "symbol": "missing-function-docstring",
             "message": "Missing function or method docstring",
             "message-id": "C0116"
+        },
+        {
+            "type": "refactor",
+            "module": "physXAI.models.ann.pinn.physics",
+            "obj": "PhysicsResidual.named_values",
+            "line": 152,
+            "column": 16,
+            "path": "physXAI/models/ann/pinn/physics.py",
+            "symbol": "use-list-literal",
+            "message": "Consider using [] instead of list()",
+            "message-id": "R1734"
+        },
+        {
+            "type": "warning",
+            "module": "physXAI.models.ann.pinn.physics",
+            "obj": "PhysicsResidual.named_values",
+            "line": 154,
+            "column": 15,
+            "path": "physXAI/models/ann/pinn/physics.py",
+            "symbol": "protected-access",
+            "message": "Access to a protected member _name of a client class",
+            "message-id": "W0212"
+        },
+        {
+            "type": "convention",
+            "module": "physXAI.models.ann.pinn.physics",
+            "obj": "PhysicsResidual.get_config",
+            "line": 161,
+            "column": 4,
+            "path": "physXAI/models/ann/pinn/physics.py",
+            "symbol": "missing-function-docstring",
+            "message": "Missing function or method docstring",
+            "message-id": "C0116"
+        },
+        {
+            "type": "convention",
+            "module": "physXAI.models.ann.pinn.physics",
+            "obj": "PhysicsResidual.from_config",
+            "line": 167,
+            "column": 4,
+            "path": "physXAI/models/ann/pinn/physics.py",
+            "symbol": "missing-function-docstring",
+            "message": "Missing function or method docstring",
+            "message-id": "C0116"
+        },
+        {
+            "type": "warning",
+            "module": "physXAI.models.ann.pinn.physics",
+            "obj": "_term_metrics.physics_loss",
+            "line": 185,
+            "column": 21,
+            "path": "physXAI/models/ann/pinn/physics.py",
+            "symbol": "unused-argument",
+            "message": "Unused argument 'y_true'",
+            "message-id": "W0613"
+        },
+        {
+            "type": "warning",
+            "module": "physXAI.models.ann.pinn.physics",
+            "obj": "_term_metrics.physics_fit_loss",
+            "line": 188,
+            "column": 25,
+            "path": "physXAI/models/ann/pinn/physics.py",
+            "symbol": "unused-argument",
+            "message": "Unused argument 'y_true'",
+            "message-id": "W0613"
+        },
+        {
+            "type": "error",
+            "module": "physXAI.models.ann.pinn.physics",
+            "obj": "fit_with_physics",
+            "line": 226,
+            "column": 4,
+            "path": "physXAI/models/ann/pinn/physics.py",
+            "symbol": "import-error",
+            "message": "Unable to import 'numpy'",
+            "message-id": "E0401"
+        },
+        {
+            "type": "error",
+            "module": "physXAI.models.ann.pinn.physics",
+            "obj": "fit_with_physics",
+            "line": 227,
+            "column": 4,
+            "path": "physXAI/models/ann/pinn/physics.py",
+            "symbol": "import-error",
+            "message": "Unable to import 'tensorflow'",
+            "message-id": "E0401"
+        },
+        {
+            "type": "refactor",
+            "module": "physXAI.models.ann.pinn.physics",
+            "obj": "fit_with_physics",
+            "line": 241,
+            "column": 19,
+            "path": "physXAI/models/ann/pinn/physics.py",
+            "symbol": "use-dict-literal",
+            "message": "Consider using '{}' instead of a call to 'dict'.",
+            "message-id": "R1735"
+        },
+        {
+            "type": "refactor",
+            "module": "physXAI.models.ann.pinn.physics",
+            "obj": "fit_with_physics.fit",
+            "line": 267,
+            "column": 20,
+            "path": "physXAI/models/ann/pinn/physics.py",
+            "symbol": "use-list-literal",
+            "message": "Consider using [] instead of list()",
+            "message-id": "R1734"
+        },
+        {
+            "type": "refactor",
+            "module": "physXAI.models.ann.pinn.physics",
+            "obj": "fit_with_physics",
+            "line": 295,
+            "column": 18,
+            "path": "physXAI/models/ann/pinn/physics.py",
+            "symbol": "use-dict-literal",
+            "message": "Consider using '{}' instead of a call to 'dict'.",
+            "message-id": "R1735"
         },
         {
             "type": "convention",
@@ -2102,6 +2245,17 @@
             "message-id": "C0411"
         },
         {
+            "type": "convention",
+            "module": "physXAI.models.ann.model_construction.rnn_models",
+            "obj": "",
+            "line": 183,
+            "column": 0,
+            "path": "physXAI/models/ann/model_construction/rnn_models.py",
+            "symbol": "line-too-long",
+            "message": "Line too long (121/120)",
+            "message-id": "C0301"
+        },
+        {
             "type": "error",
             "module": "physXAI.models.ann.model_construction.rnn_models",
             "obj": "",
@@ -2146,10 +2300,21 @@
             "message-id": "C0116"
         },
         {
+            "type": "refactor",
+            "module": "physXAI.models.ann.model_construction.rnn_models",
+            "obj": "build_pcnn_step_model",
+            "line": 177,
+            "column": 13,
+            "path": "physXAI/models/ann/model_construction/rnn_models.py",
+            "symbol": "use-list-literal",
+            "message": "Consider using [] instead of list()",
+            "message-id": "R1734"
+        },
+        {
             "type": "convention",
             "module": "physXAI.models.ann.model_construction.rnn_models",
             "obj": "ZeroStates.call",
-            "line": 127,
+            "line": 242,
             "column": 4,
             "path": "physXAI/models/ann/model_construction/rnn_models.py",
             "symbol": "missing-function-docstring",
@@ -2160,7 +2325,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.model_construction.rnn_models",
             "obj": "ZeroStates.get_config",
-            "line": 131,
+            "line": 246,
             "column": 4,
             "path": "physXAI/models/ann/model_construction/rnn_models.py",
             "symbol": "missing-function-docstring",
@@ -2171,7 +2336,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.model_construction.rnn_models",
             "obj": "TimeSlice.call",
-            "line": 143,
+            "line": 258,
             "column": 4,
             "path": "physXAI/models/ann/model_construction/rnn_models.py",
             "symbol": "missing-function-docstring",
@@ -2182,7 +2347,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.model_construction.rnn_models",
             "obj": "TimeSlice.get_config",
-            "line": 146,
+            "line": 261,
             "column": 4,
             "path": "physXAI/models/ann/model_construction/rnn_models.py",
             "symbol": "missing-function-docstring",
@@ -2193,7 +2358,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.model_construction.rnn_models",
             "obj": "Accumulate.call",
-            "line": 158,
+            "line": 273,
             "column": 4,
             "path": "physXAI/models/ann/model_construction/rnn_models.py",
             "symbol": "missing-function-docstring",
@@ -2204,7 +2369,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.model_construction.rnn_models",
             "obj": "Accumulate.get_config",
-            "line": 163,
+            "line": 278,
             "column": 4,
             "path": "physXAI/models/ann/model_construction/rnn_models.py",
             "symbol": "missing-function-docstring",
@@ -2215,7 +2380,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.model_construction.rnn_models",
             "obj": "ClosedLoopCell.call",
-            "line": 188,
+            "line": 303,
             "column": 4,
             "path": "physXAI/models/ann/model_construction/rnn_models.py",
             "symbol": "missing-function-docstring",
@@ -2226,7 +2391,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.model_construction.rnn_models",
             "obj": "TakeFeatures.call",
-            "line": 205,
+            "line": 320,
             "column": 4,
             "path": "physXAI/models/ann/model_construction/rnn_models.py",
             "symbol": "missing-function-docstring",
@@ -2237,7 +2402,7 @@
             "type": "convention",
             "module": "physXAI.models.ann.model_construction.rnn_models",
             "obj": "TakeFeatures.get_config",
-            "line": 208,
+            "line": 323,
             "column": 4,
             "path": "physXAI/models/ann/model_construction/rnn_models.py",
             "symbol": "missing-function-docstring",
@@ -2248,7 +2413,7 @@
             "type": "refactor",
             "module": "physXAI.models.ann.model_construction.rnn_models",
             "obj": "predict_sequences",
-            "line": 302,
+            "line": 417,
             "column": 18,
             "path": "physXAI/models/ann/model_construction/rnn_models.py",
             "symbol": "use-dict-literal",
@@ -2391,7 +2556,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataGeneric.add_file_path",
-            "line": 61,
+            "line": 63,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2402,7 +2567,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataGeneric.get_config",
-            "line": 82,
+            "line": 85,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2413,7 +2578,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataGeneric.X_train_single",
-            "line": 88,
+            "line": 91,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2424,7 +2589,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataGeneric.y_train_single",
-            "line": 92,
+            "line": 95,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2435,7 +2600,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataGeneric.X_val_single",
-            "line": 96,
+            "line": 99,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2446,7 +2611,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataGeneric.y_val_single",
-            "line": 100,
+            "line": 103,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2457,7 +2622,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataGeneric.X_test_single",
-            "line": 104,
+            "line": 107,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2468,17 +2633,6 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataGeneric.y_test_single",
-            "line": 108,
-            "column": 4,
-            "path": "physXAI/preprocessing/training_data.py",
-            "symbol": "missing-function-docstring",
-            "message": "Missing function or method docstring",
-            "message-id": "C0116"
-        },
-        {
-            "type": "convention",
-            "module": "physXAI.preprocessing.training_data",
-            "obj": "TrainingDataGeneric.y_train_pred_single",
             "line": 111,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
@@ -2489,8 +2643,19 @@
         {
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
+            "obj": "TrainingDataGeneric.y_train_pred_single",
+            "line": 114,
+            "column": 4,
+            "path": "physXAI/preprocessing/training_data.py",
+            "symbol": "missing-function-docstring",
+            "message": "Missing function or method docstring",
+            "message-id": "C0116"
+        },
+        {
+            "type": "convention",
+            "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataGeneric.y_val_pred_single",
-            "line": 115,
+            "line": 118,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2501,7 +2666,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataGeneric.y_test_pred_single",
-            "line": 119,
+            "line": 122,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2512,7 +2677,7 @@
             "type": "refactor",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingData.__init__",
-            "line": 195,
+            "line": 198,
             "column": 28,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "use-dict-literal",
@@ -2523,17 +2688,6 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingData.has_split",
-            "line": 236,
-            "column": 4,
-            "path": "physXAI/preprocessing/training_data.py",
-            "symbol": "missing-function-docstring",
-            "message": "Missing function or method docstring",
-            "message-id": "C0116"
-        },
-        {
-            "type": "convention",
-            "module": "physXAI.preprocessing.training_data",
-            "obj": "TrainingData.summary",
             "line": 239,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
@@ -2544,8 +2698,19 @@
         {
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
+            "obj": "TrainingData.summary",
+            "line": 242,
+            "column": 4,
+            "path": "physXAI/preprocessing/training_data.py",
+            "symbol": "missing-function-docstring",
+            "message": "Missing function or method docstring",
+            "message-id": "C0116"
+        },
+        {
+            "type": "convention",
+            "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingData.X_train",
-            "line": 247,
+            "line": 250,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2556,7 +2721,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingData.X_val",
-            "line": 251,
+            "line": 254,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2567,7 +2732,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingData.X_test",
-            "line": 255,
+            "line": 258,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2578,7 +2743,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingData.y_train",
-            "line": 259,
+            "line": 262,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2589,7 +2754,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingData.y_val",
-            "line": 263,
+            "line": 266,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2600,7 +2765,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingData.y_test",
-            "line": 267,
+            "line": 270,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2611,7 +2776,7 @@
             "type": "refactor",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingData.__getstate__",
-            "line": 366,
+            "line": 369,
             "column": 26,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "use-dict-literal",
@@ -2622,7 +2787,7 @@
             "type": "refactor",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingData",
-            "line": 132,
+            "line": 135,
             "column": 0,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "too-many-public-methods",
@@ -2633,7 +2798,7 @@
             "type": "refactor",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataMultiStep.__init__",
-            "line": 419,
+            "line": 422,
             "column": 28,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "use-dict-literal",
@@ -2644,7 +2809,7 @@
             "type": "warning",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataMultiStep._sequences",
-            "line": 459,
+            "line": 462,
             "column": 42,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "protected-access",
@@ -2655,7 +2820,7 @@
             "type": "warning",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataMultiStep._sequences",
-            "line": 460,
+            "line": 463,
             "column": 48,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "protected-access",
@@ -2666,7 +2831,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataMultiStep.has_split",
-            "line": 473,
+            "line": 476,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2677,7 +2842,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataMultiStep.X_train",
-            "line": 497,
+            "line": 500,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2688,7 +2853,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataMultiStep.X_val",
-            "line": 501,
+            "line": 504,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2699,7 +2864,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataMultiStep.X_test",
-            "line": 505,
+            "line": 508,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2710,7 +2875,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataMultiStep.y_train",
-            "line": 509,
+            "line": 512,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2721,7 +2886,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataMultiStep.y_val",
-            "line": 513,
+            "line": 516,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2732,7 +2897,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataMultiStep.y_test",
-            "line": 517,
+            "line": 520,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2743,7 +2908,7 @@
             "type": "convention",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataMultiStep.summary",
-            "line": 548,
+            "line": 551,
             "column": 4,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "missing-function-docstring",
@@ -2754,7 +2919,7 @@
             "type": "refactor",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataMultiStep.summary",
-            "line": 549,
+            "line": 552,
             "column": 20,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "use-dict-literal",
@@ -2765,7 +2930,7 @@
             "type": "refactor",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataMultiStep.__getstate__",
-            "line": 567,
+            "line": 570,
             "column": 26,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "use-dict-literal",
@@ -2776,7 +2941,7 @@
             "type": "refactor",
             "module": "physXAI.preprocessing.training_data",
             "obj": "TrainingDataMultiStep",
-            "line": 370,
+            "line": 373,
             "column": 0,
             "path": "physXAI/preprocessing/training_data.py",
             "symbol": "too-many-public-methods",
@@ -2912,7 +3077,7 @@
             "column": 0,
             "path": "physXAI/preprocessing/splitting.py",
             "symbol": "astroid-error",
-            "message": "physXAI/preprocessing/splitting.py: Fatal error while checking 'physXAI/preprocessing/splitting.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-18-15-52.txt'.",
+            "message": "physXAI/preprocessing/splitting.py: Fatal error while checking 'physXAI/preprocessing/splitting.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-18-34-25.txt'.",
             "message-id": "F0002"
         },
         {
@@ -2934,7 +3099,7 @@
             "column": 0,
             "path": "physXAI/preprocessing/__init__.py",
             "symbol": "duplicate-code",
-            "message": "Similar lines in 2 files\n==physXAI.models.ann.ann_design:[199:220]\n==physXAI.models.modular.constrained_regression:[304:325]\n        save_path = output_path(save_path, '.keras')\n        model.save(save_path)\n\n    def load_model(self, load_path: str):\n        \"\"\"\n        Loads a Keras model from the specified path.\n\n        Args:\n            load_path (str): The path from which to load the model.\n\n        Returns:\n            keras.Model: The loaded Keras model.\n        \"\"\"\n\n        load_path = input_path(load_path)\n        model = keras.saving.load_model(load_path)\n        return model\n\n    def get_config(self) -> dict:\n        c = super().get_config()\n        c.update({",
+            "message": "Similar lines in 2 files\n==physXAI.models.ann.ann_design:[247:268]\n==physXAI.models.modular.constrained_regression:[304:325]\n        save_path = output_path(save_path, '.keras')\n        model.save(save_path)\n\n    def load_model(self, load_path: str):\n        \"\"\"\n        Loads a Keras model from the specified path.\n\n        Args:\n            load_path (str): The path from which to load the model.\n\n        Returns:\n            keras.Model: The loaded Keras model.\n        \"\"\"\n\n        load_path = input_path(load_path)\n        model = keras.saving.load_model(load_path)\n        return model\n\n    def get_config(self) -> dict:\n        c = super().get_config()\n        c.update({",
             "message-id": "R0801"
         },
         {
@@ -2956,7 +3121,7 @@
             "column": 0,
             "path": "physXAI/preprocessing/__init__.py",
             "symbol": "duplicate-code",
-            "message": "Similar lines in 2 files\n==physXAI.models.ann.model_construction.ann_models:[122:129]\n==physXAI.models.ann.model_construction.rbf_models:[71:77]\n    input_layer = keras.layers.Input(shape=(n_features,))\n    # Add normalization layer\n    if config['normalize']:\n        normalization = keras.layers.Normalization()\n        normalization.adapt(td.X_train_single)\n        x = normalization(input_layer)",
+            "message": "Similar lines in 2 files\n==physXAI.models.ann.model_construction.ann_models:[122:129]\n==physXAI.models.ann.model_construction.rbf_models:[71:77]\n    input_layer = keras.layers.Input(shape=(n_features,))\n\n    # Add normalization layer\n    if config['normalize']:\n        normalization = keras.layers.Normalization()\n        normalization.adapt(td.X_train_single)\n        x = normalization(input_layer)",
             "message-id": "R0801"
         },
         {
@@ -2995,7 +3160,7 @@
     ],
     "stats": {
         "bad_names": {
-            "argument": 47,
+            "argument": 50,
             "attr": 9,
             "klass": 0,
             "class_attribute": 0,
@@ -3005,7 +3170,7 @@
             "function": 4,
             "method": 4,
             "module": 1,
-            "variable": 95,
+            "variable": 100,
             "typevar": 0,
             "typealias": 0
         },
@@ -3223,7 +3388,7 @@
                 "fatal": 0,
                 "info": 0,
                 "refactor": 1,
-                "statement": 83,
+                "statement": 85,
                 "warning": 0
             },
             "physXAI.models.modular.constrained_regression": {
@@ -3245,7 +3410,7 @@
                 "warning": 0
             },
             "physXAI.models.ann.ann_design": {
-                "convention": 6,
+                "convention": 8,
                 "error": 0,
                 "fatal": 1,
                 "info": 0,
@@ -3281,13 +3446,13 @@
                 "warning": 0
             },
             "physXAI.models.ann.pinn.physics": {
-                "convention": 5,
-                "error": 2,
+                "convention": 7,
+                "error": 4,
                 "fatal": 0,
                 "info": 0,
-                "refactor": 0,
-                "statement": 37,
-                "warning": 0
+                "refactor": 4,
+                "statement": 155,
+                "warning": 3
             },
             "physXAI.models.ann.pinn.__init__": {
                 "convention": 1,
@@ -3335,12 +3500,12 @@
                 "warning": 0
             },
             "physXAI.models.ann.model_construction.rnn_models": {
-                "convention": 12,
+                "convention": 13,
                 "error": 2,
                 "fatal": 0,
                 "info": 0,
-                "refactor": 1,
-                "statement": 172,
+                "refactor": 2,
+                "statement": 222,
                 "warning": 0
             },
             "physXAI.models.ann.model_construction.rbf_models": {
@@ -3385,7 +3550,7 @@
                 "fatal": 0,
                 "info": 0,
                 "refactor": 7,
-                "statement": 276,
+                "statement": 277,
                 "warning": 2
             },
             "physXAI.preprocessing.preprocessing": {
@@ -3426,16 +3591,16 @@
             }
         },
         "by_msg": {
-            "line-too-long": 12,
+            "line-too-long": 13,
             "astroid-error": 7,
-            "import-error": 47,
-            "use-list-literal": 16,
-            "use-dict-literal": 39,
-            "missing-function-docstring": 83,
-            "trailing-newlines": 8,
+            "import-error": 49,
+            "use-list-literal": 19,
+            "use-dict-literal": 41,
+            "missing-function-docstring": 85,
+            "trailing-newlines": 9,
             "ungrouped-imports": 1,
             "wrong-import-order": 7,
-            "protected-access": 3,
+            "protected-access": 4,
             "abstract-method": 12,
             "missing-module-docstring": 9,
             "missing-class-docstring": 1,
@@ -3444,7 +3609,8 @@
             "fixme": 1,
             "too-many-branches": 2,
             "too-many-statements": 2,
-            "unused-argument": 1,
+            "too-many-lines": 1,
+            "unused-argument": 3,
             "attribute-defined-outside-init": 1,
             "useless-parent-delegation": 2,
             "global-statement": 1,
@@ -3461,46 +3627,48 @@
         },
         "dependencies": {
             "physXAI.utils.seed": [
-                "physXAI.preprocessing.preprocessing",
-                "physXAI"
+                "physXAI",
+                "physXAI.preprocessing.preprocessing"
             ],
             "physXAI.io.run": [
-                "physXAI.models.models",
+                "physXAI.models.ann.pinn.physics",
                 "physXAI.models.modular.constrained_regression",
-                "physXAI",
                 "physXAI.evaluation.comparison",
-                "physXAI.io"
+                "physXAI",
+                "physXAI.io",
+                "physXAI.models.models"
             ],
             "physXAI.expr": [
-                "physXAI.preprocessing.preprocessing",
-                "physXAI.models.modular.modular_ann",
+                "physXAI.models.ann.pinn.physics",
                 "physXAI.models.modular.constrained_regression",
+                "physXAI.evaluation.rollout",
+                "physXAI.agentlib_mpc_plugin.example",
                 "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.agentlib_mpc_plugin.example_ci",
-                "physXAI.evaluation.rollout",
-                "physXAI.agentlib_mpc_plugin.example"
+                "physXAI.models.modular.modular_ann",
+                "physXAI.preprocessing.preprocessing"
             ],
             "physXAI.io": [
-                "physXAI.agentlib_mpc_plugin.example_ci",
-                "physXAI.agentlib_mpc_plugin.example"
+                "physXAI.agentlib_mpc_plugin.example",
+                "physXAI.agentlib_mpc_plugin.example_ci"
             ],
             "physXAI.models.ann.ann_design": [
+                "physXAI.agentlib_mpc_plugin.example",
                 "physXAI.models",
-                "physXAI.agentlib_mpc_plugin.example_ci",
                 "physXAI.models.modular.modular_ann",
-                "physXAI.agentlib_mpc_plugin.example"
+                "physXAI.agentlib_mpc_plugin.example_ci"
             ],
             "physXAI.preprocessing.preprocessing": [
-                "physXAI.feature_selection.selection",
                 "physXAI.preprocessing.training_data",
-                "physXAI.agentlib_mpc_plugin.example_ci",
-                "physXAI.evaluation.comparison",
                 "physXAI.evaluation.rollout",
-                "physXAI.agentlib_mpc_plugin.example"
+                "physXAI.agentlib_mpc_plugin.example",
+                "physXAI.evaluation.comparison",
+                "physXAI.agentlib_mpc_plugin.example_ci",
+                "physXAI.feature_selection.selection"
             ],
             "physXAI.training.recursive": [
-                "physXAI.training",
-                "physXAI.feature_selection.selection"
+                "physXAI.feature_selection.selection",
+                "physXAI.training"
             ],
             "physXAI.plotting.plotting": [
                 "physXAI.models.models",
@@ -3511,53 +3679,54 @@
                 "physXAI.io"
             ],
             "physXAI.expr.core": [
-                "physXAI.models.modular.modular_ann",
-                "physXAI.expr.blocks",
                 "physXAI.models.modular.constrained_regression",
+                "physXAI.evaluation.rollout",
+                "physXAI.expr.blocks",
+                "physXAI.expr",
                 "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.expr.serialization",
-                "physXAI.expr",
-                "physXAI.evaluation.rollout"
+                "physXAI.models.modular.modular_ann"
             ],
             "physXAI.preprocessing.splitting": [
-                "physXAI.preprocessing.preprocessing",
-                "physXAI.preprocessing.training_data",
                 "physXAI.evaluation.rollout",
-                "physXAI.models.ann.model_construction.rnn_models"
+                "physXAI.models.ann.model_construction.rnn_models",
+                "physXAI.preprocessing.preprocessing",
+                "physXAI.preprocessing.training_data"
             ],
             "physXAI.preprocessing.training_data": [
+                "physXAI.plotting.plotting",
+                "physXAI.models.modular.constrained_regression",
+                "physXAI.evaluation.rollout",
+                "physXAI.models.ann.model_construction.ann_models",
+                "physXAI.evaluation.metrics",
+                "physXAI.models.ann.model_construction.rbf_models",
                 "physXAI.models.models",
                 "physXAI.models.modular.modular_ann",
                 "physXAI.preprocessing.preprocessing",
-                "physXAI.models.modular.constrained_regression",
-                "physXAI.models.ann.model_construction.ann_models",
-                "physXAI.evaluation.metrics",
-                "physXAI.plotting.plotting",
-                "physXAI.models.ann.model_construction.rbf_models",
-                "physXAI.models.ann.model_construction.residual_models",
-                "physXAI.evaluation.rollout"
+                "physXAI.models.ann.model_construction.residual_models"
             ],
             "physXAI.models.ann.keras_models.keras_models": [
                 "physXAI.models",
-                "physXAI.models.ann.model_construction.rbf_models",
                 "physXAI.expr.blocks",
-                "physXAI.models.ann.model_construction.ann_models"
+                "physXAI.models.ann.model_construction.ann_models",
+                "physXAI.models.ann.model_construction.rnn_models",
+                "physXAI.models.ann.model_construction.rbf_models"
             ],
             "physXAI.models.ann.model_construction.rbf_models": [
-                "physXAI.models.ann.model_construction.residual_models",
-                "physXAI.expr.blocks"
+                "physXAI.expr.blocks",
+                "physXAI.models.ann.model_construction.residual_models"
             ],
             "physXAI.expr.blocks": [
                 "physXAI.expr"
             ],
             "physXAI.expr.serialization": [
+                "physXAI.expr",
                 "physXAI.preprocessing.preprocessing",
-                "physXAI.preprocessing.training_data",
-                "physXAI.expr"
+                "physXAI.preprocessing.training_data"
             ],
             "physXAI.evaluation.metrics": [
-                "physXAI.plotting.plotting",
                 "physXAI.models.models",
+                "physXAI.plotting.plotting",
                 "physXAI.models.ann.model_construction.rnn_models"
             ],
             "physXAI.evaluation.rollout": [
@@ -3579,8 +3748,8 @@
                 "physXAI.models"
             ],
             "physXAI.models.ann.configs.ann_model_configs": [
-                "physXAI.models.ann.model_construction.rbf_models",
                 "physXAI.models.ann.model_construction.rnn_models",
+                "physXAI.models.ann.model_construction.rbf_models",
                 "physXAI.models.ann.model_construction.ann_models"
             ],
             "physXAI.preprocessing.windows": [
@@ -3592,31 +3761,31 @@
             "percent_duplicated_lines": 0.0
         },
         "node_count": {
-            "function": 81,
-            "klass": 50,
-            "method": 283,
+            "function": 94,
+            "klass": 52,
+            "method": 289,
             "module": 46
         },
         "undocumented": {
             "function": 1,
             "klass": 1,
-            "method": 82,
+            "method": 84,
             "module": 9
         },
-        "convention": 121,
-        "error": 47,
+        "convention": 126,
+        "error": 49,
         "fatal": 7,
         "info": 0,
-        "refactor": 68,
-        "statement": 2818,
-        "warning": 28,
+        "refactor": 73,
+        "statement": 2989,
+        "warning": 31,
         "global_note": 0,
         "nb_duplicated_lines": 24,
-        "percent_duplicated_lines": 0.2837214800803878
+        "percent_duplicated_lines": 0.26463777704267283
     },
     "previous": {
         "bad_names": {
-            "argument": 47,
+            "argument": 50,
             "attr": 9,
             "klass": 0,
             "class_attribute": 0,
@@ -3626,7 +3795,7 @@
             "function": 4,
             "method": 4,
             "module": 1,
-            "variable": 95,
+            "variable": 100,
             "typevar": 0,
             "typealias": 0
         },
@@ -3844,7 +4013,7 @@
                 "fatal": 0,
                 "info": 0,
                 "refactor": 1,
-                "statement": 83,
+                "statement": 85,
                 "warning": 0
             },
             "physXAI.models.modular.constrained_regression": {
@@ -3866,7 +4035,7 @@
                 "warning": 0
             },
             "physXAI.models.ann.ann_design": {
-                "convention": 6,
+                "convention": 8,
                 "error": 0,
                 "fatal": 1,
                 "info": 0,
@@ -3902,13 +4071,13 @@
                 "warning": 0
             },
             "physXAI.models.ann.pinn.physics": {
-                "convention": 5,
-                "error": 2,
+                "convention": 7,
+                "error": 4,
                 "fatal": 0,
                 "info": 0,
-                "refactor": 0,
-                "statement": 37,
-                "warning": 0
+                "refactor": 4,
+                "statement": 155,
+                "warning": 3
             },
             "physXAI.models.ann.pinn.__init__": {
                 "convention": 1,
@@ -3956,12 +4125,12 @@
                 "warning": 0
             },
             "physXAI.models.ann.model_construction.rnn_models": {
-                "convention": 12,
+                "convention": 13,
                 "error": 2,
                 "fatal": 0,
                 "info": 0,
-                "refactor": 1,
-                "statement": 172,
+                "refactor": 2,
+                "statement": 222,
                 "warning": 0
             },
             "physXAI.models.ann.model_construction.rbf_models": {
@@ -4006,7 +4175,7 @@
                 "fatal": 0,
                 "info": 0,
                 "refactor": 7,
-                "statement": 276,
+                "statement": 277,
                 "warning": 2
             },
             "physXAI.preprocessing.preprocessing": {
@@ -4047,16 +4216,16 @@
             }
         },
         "by_msg": {
-            "line-too-long": 12,
+            "line-too-long": 13,
             "astroid-error": 7,
-            "import-error": 47,
-            "use-list-literal": 16,
-            "use-dict-literal": 39,
-            "missing-function-docstring": 83,
-            "trailing-newlines": 8,
+            "import-error": 49,
+            "use-list-literal": 19,
+            "use-dict-literal": 41,
+            "missing-function-docstring": 85,
+            "trailing-newlines": 9,
             "ungrouped-imports": 1,
             "wrong-import-order": 7,
-            "protected-access": 3,
+            "protected-access": 4,
             "abstract-method": 12,
             "missing-module-docstring": 9,
             "missing-class-docstring": 1,
@@ -4065,7 +4234,8 @@
             "fixme": 1,
             "too-many-branches": 2,
             "too-many-statements": 2,
-            "unused-argument": 1,
+            "too-many-lines": 1,
+            "unused-argument": 3,
             "attribute-defined-outside-init": 1,
             "useless-parent-delegation": 2,
             "global-statement": 1,
@@ -4082,46 +4252,48 @@
         },
         "dependencies": {
             "physXAI.utils.seed": [
-                "physXAI.preprocessing.preprocessing",
-                "physXAI"
+                "physXAI",
+                "physXAI.preprocessing.preprocessing"
             ],
             "physXAI.io.run": [
-                "physXAI.models.models",
+                "physXAI.models.ann.pinn.physics",
                 "physXAI.models.modular.constrained_regression",
-                "physXAI",
                 "physXAI.evaluation.comparison",
-                "physXAI.io"
+                "physXAI",
+                "physXAI.io",
+                "physXAI.models.models"
             ],
             "physXAI.expr": [
-                "physXAI.preprocessing.preprocessing",
-                "physXAI.models.modular.modular_ann",
+                "physXAI.models.ann.pinn.physics",
                 "physXAI.models.modular.constrained_regression",
+                "physXAI.evaluation.rollout",
+                "physXAI.agentlib_mpc_plugin.example",
                 "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.agentlib_mpc_plugin.example_ci",
-                "physXAI.evaluation.rollout",
-                "physXAI.agentlib_mpc_plugin.example"
+                "physXAI.models.modular.modular_ann",
+                "physXAI.preprocessing.preprocessing"
             ],
             "physXAI.io": [
-                "physXAI.agentlib_mpc_plugin.example_ci",
-                "physXAI.agentlib_mpc_plugin.example"
+                "physXAI.agentlib_mpc_plugin.example",
+                "physXAI.agentlib_mpc_plugin.example_ci"
             ],
             "physXAI.models.ann.ann_design": [
+                "physXAI.agentlib_mpc_plugin.example",
                 "physXAI.models",
-                "physXAI.agentlib_mpc_plugin.example_ci",
                 "physXAI.models.modular.modular_ann",
-                "physXAI.agentlib_mpc_plugin.example"
+                "physXAI.agentlib_mpc_plugin.example_ci"
             ],
             "physXAI.preprocessing.preprocessing": [
-                "physXAI.feature_selection.selection",
                 "physXAI.preprocessing.training_data",
-                "physXAI.agentlib_mpc_plugin.example_ci",
-                "physXAI.evaluation.comparison",
                 "physXAI.evaluation.rollout",
-                "physXAI.agentlib_mpc_plugin.example"
+                "physXAI.agentlib_mpc_plugin.example",
+                "physXAI.evaluation.comparison",
+                "physXAI.agentlib_mpc_plugin.example_ci",
+                "physXAI.feature_selection.selection"
             ],
             "physXAI.training.recursive": [
-                "physXAI.training",
-                "physXAI.feature_selection.selection"
+                "physXAI.feature_selection.selection",
+                "physXAI.training"
             ],
             "physXAI.plotting.plotting": [
                 "physXAI.models.models",
@@ -4132,53 +4304,54 @@
                 "physXAI.io"
             ],
             "physXAI.expr.core": [
-                "physXAI.models.modular.modular_ann",
-                "physXAI.expr.blocks",
                 "physXAI.models.modular.constrained_regression",
+                "physXAI.evaluation.rollout",
+                "physXAI.expr.blocks",
+                "physXAI.expr",
                 "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.expr.serialization",
-                "physXAI.expr",
-                "physXAI.evaluation.rollout"
+                "physXAI.models.modular.modular_ann"
             ],
             "physXAI.preprocessing.splitting": [
-                "physXAI.preprocessing.preprocessing",
-                "physXAI.preprocessing.training_data",
                 "physXAI.evaluation.rollout",
-                "physXAI.models.ann.model_construction.rnn_models"
+                "physXAI.models.ann.model_construction.rnn_models",
+                "physXAI.preprocessing.preprocessing",
+                "physXAI.preprocessing.training_data"
             ],
             "physXAI.preprocessing.training_data": [
+                "physXAI.plotting.plotting",
+                "physXAI.models.modular.constrained_regression",
+                "physXAI.evaluation.rollout",
+                "physXAI.models.ann.model_construction.ann_models",
+                "physXAI.evaluation.metrics",
+                "physXAI.models.ann.model_construction.rbf_models",
                 "physXAI.models.models",
                 "physXAI.models.modular.modular_ann",
                 "physXAI.preprocessing.preprocessing",
-                "physXAI.models.modular.constrained_regression",
-                "physXAI.models.ann.model_construction.ann_models",
-                "physXAI.evaluation.metrics",
-                "physXAI.plotting.plotting",
-                "physXAI.models.ann.model_construction.rbf_models",
-                "physXAI.models.ann.model_construction.residual_models",
-                "physXAI.evaluation.rollout"
+                "physXAI.models.ann.model_construction.residual_models"
             ],
             "physXAI.models.ann.keras_models.keras_models": [
                 "physXAI.models",
-                "physXAI.models.ann.model_construction.rbf_models",
                 "physXAI.expr.blocks",
-                "physXAI.models.ann.model_construction.ann_models"
+                "physXAI.models.ann.model_construction.ann_models",
+                "physXAI.models.ann.model_construction.rnn_models",
+                "physXAI.models.ann.model_construction.rbf_models"
             ],
             "physXAI.models.ann.model_construction.rbf_models": [
-                "physXAI.models.ann.model_construction.residual_models",
-                "physXAI.expr.blocks"
+                "physXAI.expr.blocks",
+                "physXAI.models.ann.model_construction.residual_models"
             ],
             "physXAI.expr.blocks": [
                 "physXAI.expr"
             ],
             "physXAI.expr.serialization": [
+                "physXAI.expr",
                 "physXAI.preprocessing.preprocessing",
-                "physXAI.preprocessing.training_data",
-                "physXAI.expr"
+                "physXAI.preprocessing.training_data"
             ],
             "physXAI.evaluation.metrics": [
-                "physXAI.plotting.plotting",
                 "physXAI.models.models",
+                "physXAI.plotting.plotting",
                 "physXAI.models.ann.model_construction.rnn_models"
             ],
             "physXAI.evaluation.rollout": [
@@ -4200,9 +4373,9 @@
                 "physXAI.models"
             ],
             "physXAI.models.ann.configs.ann_model_configs": [
-                "physXAI.models.ann.model_construction.rbf_models",
+                "physXAI.models.ann.model_construction.ann_models",
                 "physXAI.models.ann.model_construction.rnn_models",
-                "physXAI.models.ann.model_construction.ann_models"
+                "physXAI.models.ann.model_construction.rbf_models"
             ],
             "physXAI.preprocessing.windows": [
                 "physXAI.preprocessing.training_data"
@@ -4213,26 +4386,26 @@
             "percent_duplicated_lines": 0.0
         },
         "node_count": {
-            "function": 81,
-            "klass": 50,
-            "method": 283,
+            "function": 94,
+            "klass": 52,
+            "method": 289,
             "module": 46
         },
         "undocumented": {
             "function": 1,
             "klass": 1,
-            "method": 82,
+            "method": 84,
             "module": 9
         },
-        "convention": 121,
-        "error": 47,
+        "convention": 126,
+        "error": 49,
         "fatal": 7,
         "info": 0,
-        "refactor": 68,
-        "statement": 2818,
-        "warning": 28,
+        "refactor": 73,
+        "statement": 2989,
+        "warning": 31,
         "global_note": 0,
         "nb_duplicated_lines": 24,
-        "percent_duplicated_lines": 0.2837214800803878
+        "percent_duplicated_lines": 0.26463777704267283
     }
 }

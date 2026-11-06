@@ -48,6 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/models.html">Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/multi_step.html">Multi step evaluation and training</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/physics.html">Physics-informed models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/agentlib.html">Export for AgentLib-MPC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../migration.html">Migration from physXAI 0.x to 1.0</a></li>
@@ -123,6 +124,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">recursive_training_record</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">training_time</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Results of physics-based models, e.g. learned physical parameters (`PCNNModel`, physics residuals)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">physics</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="TrainingDataGeneric.add_training_record"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.add_training_record">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">add_training_record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Stores the training history (e.g. the keras `History` object)."""</span>
@@ -160,6 +163,7 @@
             <span class="s2">"metrics"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="s2">"training_time"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_time</span><span class="p">,</span>
             <span class="s2">"training_record"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_record</span><span class="o">.</span><span class="n">history</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_record</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"physics"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">physics</span><span class="p">,</span>
         <span class="p">}</span>
 
 <div class="viewcode-block" id="TrainingDataGeneric.get_config"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.get_config">[docs]</a>    <span class="nd">@abstractmethod</span>

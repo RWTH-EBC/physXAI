@@ -56,10 +56,10 @@
         </aside>
         <h2>
             <span class="text">281 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">265<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">16<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">266<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">15<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">3<span class="text"> excluded</span></button>
-            <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">17<span class="text"> partial</span></button>
+            <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">16<span class="text"> partial</span></button>
         </h2>
         <p class="text">
             <a id="prevFileLink" class="nav" href="d_af20af0b1aa1c18a_plotting_py.html">&#xab; prev</a> &nbsp; &nbsp;
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="d_46057d332b9d2352_splitting_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.4.4">coverage.py v7.4.4</a>,
-            created at 2026-11-06 18:20 +0000
+            created at 2026-11-06 18:41 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"/>
@@ -413,8 +413,8 @@
     <p class="pln"><span class="n"><a id="t329" href="#t329">329</a></span><span class="t">        <span class="com"># loss columns at the predicted time are shifted like the outputs, the others are taken as they are</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t330" href="#t330">330</a></span><span class="t">        <span class="nam">shifted_loss</span> <span class="op">=</span> <span class="op">[</span><span class="nam">c</span><span class="op">[</span><span class="nam">len</span><span class="op">(</span><span class="nam">TARGET_PREFIX</span><span class="op">)</span><span class="op">:</span><span class="op">]</span> <span class="key">for</span> <span class="nam">c</span> <span class="key">in</span> <span class="nam">self</span><span class="op">.</span><span class="nam">loss_columns</span> <span class="key">if</span> <span class="nam">c</span><span class="op">.</span><span class="nam">startswith</span><span class="op">(</span><span class="nam">TARGET_PREFIX</span><span class="op">)</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t331" href="#t331">331</a></span><span class="t">        <span class="nam">plain_loss</span> <span class="op">=</span> <span class="op">[</span><span class="nam">c</span> <span class="key">for</span> <span class="nam">c</span> <span class="key">in</span> <span class="nam">self</span><span class="op">.</span><span class="nam">loss_columns</span> <span class="key">if</span> <span class="key">not</span> <span class="nam">c</span><span class="op">.</span><span class="nam">startswith</span><span class="op">(</span><span class="nam">TARGET_PREFIX</span><span class="op">)</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
-    <p class="par run show_par"><span class="n"><a id="t332" href="#t332">332</a></span><span class="t">        <span class="key">for</span> <span class="nam">name</span> <span class="key">in</span> <span class="nam">plain_loss</span><span class="op">:</span>&nbsp;</span><span class="r"><span class="annotate short">332&#x202F;&#x219B;&#x202F;333</span><span class="annotate long">line 332 didn't jump to line 333, because the loop on line 332 never started</span></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t333" href="#t333">333</a></span><span class="t">            <span class="nam">ensure_column</span><span class="op">(</span><span class="nam">df</span><span class="op">,</span> <span class="nam">name</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t332" href="#t332">332</a></span><span class="t">        <span class="key">for</span> <span class="nam">name</span> <span class="key">in</span> <span class="nam">plain_loss</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t333" href="#t333">333</a></span><span class="t">            <span class="nam">ensure_column</span><span class="op">(</span><span class="nam">df</span><span class="op">,</span> <span class="nam">name</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t334" href="#t334">334</a></span><span class="t">        <span class="nam">shifted</span> <span class="op">=</span> <span class="nam">list</span><span class="op">(</span><span class="nam">dict</span><span class="op">.</span><span class="nam">fromkeys</span><span class="op">(</span><span class="op">[</span><span class="op">*</span><span class="nam">self</span><span class="op">.</span><span class="nam">output</span><span class="op">,</span> <span class="op">*</span><span class="op">(</span><span class="nam">extra_targets</span> <span class="key">or</span> <span class="op">[</span><span class="op">]</span><span class="op">)</span><span class="op">,</span> <span class="op">*</span><span class="nam">shifted_loss</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t335" href="#t335">335</a></span><span class="t">        <span class="key">for</span> <span class="nam">name</span> <span class="key">in</span> <span class="nam">dict</span><span class="op">.</span><span class="nam">fromkeys</span><span class="op">(</span><span class="op">[</span><span class="op">*</span><span class="nam">self</span><span class="op">.</span><span class="nam">inputs</span><span class="op">,</span> <span class="op">*</span><span class="nam">shifted</span><span class="op">]</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t336" href="#t336">336</a></span><span class="t">            <span class="nam">ensure_column</span><span class="op">(</span><span class="nam">df</span><span class="op">,</span> <span class="nam">name</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -736,7 +736,7 @@
             <a id="nextFileLink" class="nav" href="d_46057d332b9d2352_splitting_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.4.4">coverage.py v7.4.4</a>,
-            created at 2026-11-06 18:20 +0000
+            created at 2026-11-06 18:41 +0000
         </p>
     </div>
 </footer>

@@ -48,6 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/models.html">Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/multi_step.html">Multi step evaluation and training</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/physics.html">Physics-informed models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/agentlib.html">Export for AgentLib-MPC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../migration.html">Migration from physXAI 0.x to 1.0</a></li>
@@ -291,15 +292,26 @@
 <span class="sd">        input_tensor: Keras input holding all input columns on its last axis.</span>
 <span class="sd">        input_names: Names of these columns.</span>
 <span class="sd">        train_values: Training values of the columns, used to adapt normalizations. Optional.</span>
+<span class="sd">        prediction: Tensor of the model output, the value of `Prediction()` in physics residuals. Optional.</span>
+<span class="sd">        layers: Keras layers of parameters and blocks to reuse, by id of the node. Two builds sharing this</span>
+<span class="sd">                dict share their weights (e.g. a residual evaluated with the prediction and with the data).</span>
 <span class="sd">    """</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_tensor</span><span class="p">,</span> <span class="n">input_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">train_values</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_tensor</span><span class="p">,</span>
+        <span class="n">input_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">train_values</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">prediction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">layers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="n">input_tensor</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">input_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">input_names</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">train_values</span> <span class="o">=</span> <span class="n">train_values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prediction</span> <span class="o">=</span> <span class="n">prediction</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tensors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="c1">#: Keras layers holding the weights of blocks, by id of the block</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="c1">#: Keras layers holding the weights of parameters and blocks, by id of the node</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">layers</span> <span class="k">if</span> <span class="n">layers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">dict</span><span class="p">()</span>
 
 <div class="viewcode-block" id="BuildContext.index"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.core.BuildContext.index">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
@@ -436,9 +448,82 @@
 <div class="viewcode-block" id="Param.to_keras"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.core.Param.to_keras">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_keras</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.keras_models.keras_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConstantLayer</span>
 
-        <span class="n">layer</span> <span class="o">=</span> <span class="n">ConstantLayer</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">init</span><span class="p">,</span> <span class="n">trainable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">is_trainable</span><span class="p">,</span> <span class="n">weight_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span>
-        <span class="n">ctx</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)]</span> <span class="o">=</span> <span class="n">layer</span>
+        <span class="n">layer</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">layer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">layer</span> <span class="o">=</span> <span class="n">ConstantLayer</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">init</span><span class="p">,</span> <span class="n">trainable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">is_trainable</span><span class="p">,</span> <span class="n">weight_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)]</span> <span class="o">=</span> <span class="n">layer</span>
         <span class="k">return</span> <span class="n">layer</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">input</span><span class="p">)</span></div></div>
+
+
+<span class="c1">#: Prefix of the columns holding values at the predicted time (see `Target`), as in the preprocessing</span>
+<span class="n">TARGET_PREFIX</span> <span class="o">=</span> <span class="s2">"y:"</span>
+
+
+<div class="viewcode-block" id="Prediction"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.core.Prediction">[docs]</a><span class="nd">@register_expression</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Prediction</span><span class="p">(</span><span class="n">Expr</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    The output of the model, only available in physics residuals (`physXAI.models.ann.pinn.physics`).</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; residual = px.Prediction() - dT_physics   # disagreement of the prediction with the physics</span>
+<span class="sd">    """</span>
+
+<div class="viewcode-block" id="Prediction.default_name"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.core.Prediction.default_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">default_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"prediction"</span></div>
+
+<div class="viewcode-block" id="Prediction.to_keras"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.core.Prediction.to_keras">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_keras</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">prediction</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"px.Prediction() is only available in physics residuals."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ctx</span><span class="o">.</span><span class="n">prediction</span></div></div>
+
+
+<div class="viewcode-block" id="Target"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.core.Target">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">Target</span><span class="p">(</span><span class="n">column</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Var</span><span class="p">:</span>  <span class="c1"># noqa: N802 - reads like an expression class</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A data column at the predicted time (e.g. the measured output), only for physics residuals and loss</span>
+<span class="sd">    columns: `px.Target('Change(T)')` is the column 'y:Change(T)'. It is no input of the model.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">Var</span><span class="p">(</span><span class="n">TARGET_PREFIX</span> <span class="o">+</span> <span class="n">column</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="positive"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.core.positive">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">positive</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trainable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Expr</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A positive (physical) parameter starting at `value`: `value * exp(p)` with a trainable `Param` p = 0</span>
+<span class="sd">    named 'log_&lt;name&gt;'. The scale is set by the physical initial value, the training changes it relatively</span>
+<span class="sd">    and it stays positive.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        value: Initial value (&gt; 0), in physical units.</span>
+<span class="sd">        name: Name of the parameter (the expression is named `name`).</span>
+<span class="sd">        trainable: Whether the parameter is trained.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The initial value of the positive parameter '</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">' has to be positive, got </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">Const</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">*</span> <span class="n">exp</span><span class="p">(</span><span class="n">Param</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">trainable</span><span class="o">=</span><span class="n">trainable</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"log_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span><span class="p">)))</span><span class="o">.</span><span class="n">named</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="freeze"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.core.freeze">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">freeze</span><span class="p">(</span><span class="n">expr</span><span class="p">:</span> <span class="n">Expr</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Expr</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    The expression with every `Param` replaced by a constant: `values[name]`, else its initial value.</span>
+<span class="sd">    Used to evaluate expressions with trained parameters with NumPy or CasADi.</span>
+<span class="sd">    """</span>
+    <span class="n">memo</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Expr</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">rebuild</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">Expr</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Expr</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="ow">in</span> <span class="n">memo</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">memo</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">node</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">Param</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">init</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No value for the parameter '</span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">'."</span><span class="p">)</span>
+            <span class="n">new</span> <span class="o">=</span> <span class="n">Const</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="n">new</span> <span class="o">=</span> <span class="n">node</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">with_children</span><span class="p">([</span><span class="n">rebuild</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">])</span>
+        <span class="n">memo</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">node</span><span class="p">)]</span> <span class="o">=</span> <span class="n">new</span>
+        <span class="k">return</span> <span class="n">new</span>
+
+    <span class="k">return</span> <span class="n">rebuild</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Binary"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.core.Binary">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">Binary</span><span class="p">(</span><span class="n">Expr</span><span class="p">):</span>

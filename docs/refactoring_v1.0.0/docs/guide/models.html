@@ -58,6 +58,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="multi_step.html">Multi step evaluation and training</a></li>
 <li class="toctree-l1"><a class="reference internal" href="rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Physics-informed models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation, comparison and feature selection</a></li>
 <li class="toctree-l1"><a class="reference internal" href="agentlib.html">Export for AgentLib-MPC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
@@ -165,7 +166,10 @@ the step T(t) → T(t+1) computed from the data at t, shift the column: <code cl
 <section id="multi-step-models">
 <h2>Multi step models<a class="headerlink" href="#multi-step-models" title="Permalink to this heading"></a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">RNNModel(rnn_layer='RNN'</span> <span class="pre">|</span> <span class="pre">'GRU'</span> <span class="pre">|</span> <span class="pre">'LSTM',</span> <span class="pre">rnn_units)</span></code> predicts a trajectory, see
-<a class="reference internal" href="rnn.html"><span class="std std-doc">Recurrent models</span></a>.</p>
+<a class="reference internal" href="rnn.html"><span class="std std-doc">Recurrent models</span></a>. <code class="docutils literal notranslate"><span class="pre">PCNNModel(heating,</span> <span class="pre">cooling,</span> <span class="pre">losses)</span></code> is a physically consistent recurrent model, see
+<a class="reference internal" href="physics.html"><span class="std std-doc">Physics-informed models</span></a>.</p>
+<p>Every single step keras model takes a physics residual with trainable physical parameters
+(<code class="docutils literal notranslate"><span class="pre">physics=PhysicsResidual(...)</span></code>), see <a class="reference internal" href="physics.html"><span class="std std-doc">Physics-informed models</span></a>.</p>
 </section>
 <section id="saving-and-loading">
 <h2>Saving and loading<a class="headerlink" href="#saving-and-loading" title="Permalink to this heading"></a></h2>

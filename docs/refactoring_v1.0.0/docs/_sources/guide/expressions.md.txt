@@ -67,6 +67,11 @@ architecture = px.Linear([
 model = ModularANN(architecture, epochs=200)
 ```
 
+Physical parameters: `px.Param(init)` is a trainable scalar, `px.positive(value, name)` a positive one
+(`value · exp(p)`), `px.freeze(expr, values)` replaces the parameters by numbers. `px.Prediction()` (the model
+output) and `px.Target(name)` (a column at the predicted time) are used in physics residuals, see
+[Physics-informed models](physics.md).
+
 The whole graph is stored in the model config (`model.get_config()`), shared nodes stay shared.
 `ConstrainedRegression(inputs, monotonies, convexities)` fits a linear regression on expressions with
 monotonicity and convexity constraints (CasADi / IPOPT).

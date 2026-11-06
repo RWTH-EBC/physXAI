@@ -56,6 +56,7 @@
 <li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="multi_step.html">Multi step evaluation and training</a></li>
 <li class="toctree-l1"><a class="reference internal" href="rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Physics-informed models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation, comparison and feature selection</a></li>
 <li class="toctree-l1"><a class="reference internal" href="agentlib.html">Export for AgentLib-MPC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
@@ -173,6 +174,10 @@ feature are recomputed in every step.</p>
 <span class="n">model</span> <span class="o">=</span> <span class="n">ModularANN</span><span class="p">(</span><span class="n">architecture</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>Physical parameters: <code class="docutils literal notranslate"><span class="pre">px.Param(init)</span></code> is a trainable scalar, <code class="docutils literal notranslate"><span class="pre">px.positive(value,</span> <span class="pre">name)</span></code> a positive one
+(<code class="docutils literal notranslate"><span class="pre">value</span> <span class="pre">·</span> <span class="pre">exp(p)</span></code>), <code class="docutils literal notranslate"><span class="pre">px.freeze(expr,</span> <span class="pre">values)</span></code> replaces the parameters by numbers. <code class="docutils literal notranslate"><span class="pre">px.Prediction()</span></code> (the model
+output) and <code class="docutils literal notranslate"><span class="pre">px.Target(name)</span></code> (a column at the predicted time) are used in physics residuals, see
+<a class="reference internal" href="physics.html"><span class="std std-doc">Physics-informed models</span></a>.</p>
 <p>The whole graph is stored in the model config (<code class="docutils literal notranslate"><span class="pre">model.get_config()</span></code>), shared nodes stay shared.
 <code class="docutils literal notranslate"><span class="pre">ConstrainedRegression(inputs,</span> <span class="pre">monotonies,</span> <span class="pre">convexities)</span></code> fits a linear regression on expressions with
 monotonicity and convexity constraints (CasADi / IPOPT).</p>

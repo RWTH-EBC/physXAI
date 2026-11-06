@@ -31,4 +31,7 @@ model.pipeline(td)
 - **Export:** the saved `.keras` file is the step model `[sequence, *states] -> [prediction, *states]` that
   AgentLib-MPC applies step by step.
 
+For a model whose prediction provably rises with heating and outside temperature over the whole horizon,
+see the PCNN in [Physics-informed models](physics.md).
+
 `feature_architecture` adds an expression graph (e.g. physical features) in front of the recurrent layer.

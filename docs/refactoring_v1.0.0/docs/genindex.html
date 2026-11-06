@@ -48,6 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="guide/models.html">Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="guide/multi_step.html">Multi step evaluation and training</a></li>
 <li class="toctree-l1"><a class="reference internal" href="guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/physics.html">Physics-informed models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
 <li class="toctree-l1"><a class="reference internal" href="guide/agentlib.html">Export for AgentLib-MPC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migration.html">Migration from physXAI 0.x to 1.0</a></li>
@@ -181,6 +182,8 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.build_pcnn_step_model">build_pcnn_step_model() (in module physXAI.models.ann.model_construction.rnn_models)</a>
+</li>
       <li><a href="code/physXAI.evaluation.html#physXAI.evaluation.rollout.build_rollout_model">build_rollout_model() (in module physXAI.evaluation.rollout)</a>
 </li>
       <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.build_sequence_model">build_sequence_model() (in module physXAI.models.ann.model_construction.rnn_models)</a>
@@ -239,14 +242,18 @@
 </li>
       <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.CMNNModel">CMNNModel (class in physXAI.models.ann.ann_design)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.ann_models.CMNNModelConstruction">CMNNModelConstruction() (in module physXAI.models.ann.model_construction.ann_models)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="code/physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.column">column() (physXAI.preprocessing.training_data.TrainingData method)</a>
 </li>
       <li><a href="code/physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec.columns">columns (physXAI.evaluation.rollout.RecursionSpec attribute)</a>
+
+      <ul>
+        <li><a href="code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsResidual.columns">(physXAI.models.ann.pinn.physics.PhysicsResidual property)</a>
 </li>
+      </ul></li>
       <li><a href="code/physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.common_horizon">common_horizon() (physXAI.evaluation.comparison.ModelComparison method)</a>
 </li>
       <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.compile_model">compile_model() (physXAI.models.ann.ann_design.ANNModel method)</a>
@@ -302,6 +309,8 @@
 </li>
         <li><a href="code/physXAI.expr.html#physXAI.expr.core.Param.default_name">(physXAI.expr.core.Param method)</a>
 </li>
+        <li><a href="code/physXAI.expr.html#physXAI.expr.core.Prediction.default_name">(physXAI.expr.core.Prediction method)</a>
+</li>
         <li><a href="code/physXAI.expr.html#physXAI.expr.core.Var.default_name">(physXAI.expr.core.Var method)</a>
 </li>
       </ul></li>
@@ -355,6 +364,8 @@
         <li><a href="code/physXAI.expr.html#physXAI.expr.core.Var.evaluate">(physXAI.expr.core.Var method)</a>
 </li>
         <li><a href="code/physXAI.feature_selection.html#physXAI.feature_selection.selection.FeatureSelection.evaluate">(physXAI.feature_selection.selection.FeatureSelection method)</a>
+</li>
+        <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.evaluate">(physXAI.models.ann.ann_design.PCNNModel method)</a>
 </li>
         <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.evaluate">(physXAI.models.ann.ann_design.PINNModel method)</a>
 </li>
@@ -421,7 +432,11 @@
 </li>
       <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.fit_single_step">fit_single_step() (physXAI.models.ann.ann_design.ANNModel method)</a>
 </li>
+      <li><a href="code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.fit_with_physics">fit_with_physics() (in module physXAI.models.ann.pinn.physics)</a>
+</li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.core.Expr.free_vars">free_vars() (physXAI.expr.core.Expr method)</a>
+</li>
+      <li><a href="code/physXAI.expr.html#physXAI.expr.core.freeze">freeze() (in module physXAI.expr.core)</a>
 </li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.serialization.from_config">from_config() (in module physXAI.expr.serialization)</a>
 
@@ -443,6 +458,8 @@
         <li><a href="code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.RBFLayer.from_config">(physXAI.models.ann.keras_models.keras_models.RBFLayer class method)</a>
 </li>
         <li><a href="code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.SaturatedActivation.from_config">(physXAI.models.ann.keras_models.keras_models.SaturatedActivation class method)</a>
+</li>
+        <li><a href="code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsResidual.from_config">(physXAI.models.ann.pinn.physics.PhysicsResidual class method)</a>
 </li>
         <li><a href="code/physXAI.models.html#physXAI.models.models.AbstractModel.from_config">(physXAI.models.models.AbstractModel class method)</a>
 </li>
@@ -492,6 +509,8 @@
 </li>
         <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.LinANNModel.generate_model">(physXAI.models.ann.ann_design.LinANNModel method)</a>
 </li>
+        <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.generate_model">(physXAI.models.ann.ann_design.PCNNModel method)</a>
+</li>
         <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.generate_model">(physXAI.models.ann.ann_design.PINNModel method)</a>
 </li>
         <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.RBFModel.generate_model">(physXAI.models.ann.ann_design.RBFModel method)</a>
@@ -523,6 +542,8 @@
         <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.CMNNModel.get_config">(physXAI.models.ann.ann_design.CMNNModel method)</a>
 </li>
         <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.LinANNModel.get_config">(physXAI.models.ann.ann_design.LinANNModel method)</a>
+</li>
+        <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.get_config">(physXAI.models.ann.ann_design.PCNNModel method)</a>
 </li>
         <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.get_config">(physXAI.models.ann.ann_design.PINNModel method)</a>
 </li>
@@ -557,6 +578,8 @@
         <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.ZeroStates.get_config">(physXAI.models.ann.model_construction.rnn_models.ZeroStates method)</a>
 </li>
         <li><a href="code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsLoss.get_config">(physXAI.models.ann.pinn.physics.PhysicsLoss method)</a>
+</li>
+        <li><a href="code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsResidual.get_config">(physXAI.models.ann.pinn.physics.PhysicsResidual method)</a>
 </li>
         <li><a href="code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.TermLoss.get_config">(physXAI.models.ann.pinn.physics.TermLoss method)</a>
 </li>
@@ -637,12 +660,16 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="code/physXAI.expr.html#physXAI.expr.core.BuildContext.index">index() (physXAI.expr.core.BuildContext method)</a>
 </li>
+      <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.PCNNTerm.initial">initial (physXAI.models.ann.model_construction.rnn_models.PCNNTerm attribute)</a>
+</li>
       <li><a href="code/physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.initial">initial() (physXAI.preprocessing.training_data.TrainingDataMultiStep method)</a>
 </li>
-      <li><a href="code/physXAI.io.html#physXAI.io.run.input_path">input_path() (in module physXAI.io.run)</a>
+      <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.PCNNTerm.input">input (physXAI.models.ann.model_construction.rnn_models.PCNNTerm attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="code/physXAI.io.html#physXAI.io.run.input_path">input_path() (in module physXAI.io.run)</a>
+</li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.blocks.Block.input_tensor">input_tensor() (physXAI.expr.blocks.Block method)</a>
 </li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.blocks.Block.inputs">inputs (physXAI.expr.blocks.Block property)</a>
@@ -661,9 +688,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="code/physXAI.io.html#physXAI.io.run.keras_verbosity">keras_verbosity() (in module physXAI.io.run)</a>
 </li>
+      <li><a href="code/physXAI.io.html#physXAI.io.run.keras_verbosity_int">keras_verbosity_int() (in module physXAI.io.run)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="code/physXAI.io.html#physXAI.io.run.keras_verbosity_int">keras_verbosity_int() (in module physXAI.io.run)</a>
+      <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.PCNNTerm.kind">kind (physXAI.models.ann.model_construction.rnn_models.PCNNTerm attribute)</a>
 </li>
       <li><a href="code/physXAI.evaluation.html#physXAI.evaluation.metrics.Metrics.kpi">kpi() (physXAI.evaluation.metrics.Metrics method)</a>
 </li>
@@ -890,12 +919,14 @@
 </li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.core.Expr.named">named() (physXAI.expr.core.Expr method)</a>
 </li>
-      <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.needs_initial">needs_initial() (in module physXAI.models.ann.model_construction.rnn_models)</a>
+      <li><a href="code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsResidual.named_values">named_values() (physXAI.models.ann.pinn.physics.PhysicsResidual method)</a>
 </li>
-      <li><a href="code/physXAI.expr.html#physXAI.expr.core.Expr.nodes">nodes() (physXAI.expr.core.Expr method)</a>
+      <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.needs_initial">needs_initial() (in module physXAI.models.ann.model_construction.rnn_models)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="code/physXAI.expr.html#physXAI.expr.core.Expr.nodes">nodes() (physXAI.expr.core.Expr method)</a>
+</li>
       <li><a href="code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.NonNegPartial">NonNegPartial (class in physXAI.models.ann.keras_models.keras_models)</a>
 </li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.blocks.Normalize">Normalize (class in physXAI.expr.blocks)</a>
@@ -956,6 +987,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="code/physXAI.expr.html#physXAI.expr.core.Param">Param (class in physXAI.expr.core)</a>
 </li>
+      <li><a href="code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsResidual.parameters">parameters() (physXAI.models.ann.pinn.physics.PhysicsResidual method)</a>
+</li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.blocks.Block.params">params() (physXAI.expr.blocks.Block method)</a>
 
       <ul>
@@ -988,9 +1021,27 @@
       </ul></li>
       <li><a href="code/physXAI.evaluation.html#physXAI.evaluation.comparison.RunRecord.path">path (physXAI.evaluation.comparison.RunRecord attribute)</a>
 </li>
+      <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.pcnn_parameters">pcnn_parameters() (in module physXAI.models.ann.model_construction.rnn_models)</a>
+</li>
+      <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.PCNN_PHYSICS_LAYER">PCNN_PHYSICS_LAYER (in module physXAI.models.ann.model_construction.rnn_models)</a>
+</li>
+      <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.PCNN_TERMS">PCNN_TERMS (in module physXAI.models.ann.model_construction.rnn_models)</a>
+</li>
+      <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel">PCNNModel (class in physXAI.models.ann.ann_design)</a>
+</li>
+      <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.PCNNTerm">PCNNTerm (class in physXAI.models.ann.model_construction.rnn_models)</a>
+</li>
+      <li><a href="code/physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.physics">physics (physXAI.preprocessing.training_data.TrainingDataGeneric attribute)</a>
+</li>
       <li><a href="code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.physics_metrics">physics_metrics() (in module physXAI.models.ann.pinn.physics)</a>
 </li>
+      <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.physics_parameters">physics_parameters (physXAI.models.ann.ann_design.ANNModel attribute)</a>
+</li>
+      <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.physics_parameters">physics_parameters() (physXAI.models.ann.ann_design.PCNNModel method)</a>
+</li>
       <li><a href="code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsLoss">PhysicsLoss (class in physXAI.models.ann.pinn.physics)</a>
+</li>
+      <li><a href="code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.PhysicsResidual">PhysicsResidual (class in physXAI.models.ann.pinn.physics)</a>
 </li>
       <li>
     physXAI
@@ -1167,6 +1218,8 @@
         <li><a href="code/physXAI.models.ann.model_construction.html#module-physXAI.models.ann.model_construction">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     physXAI.models.ann.model_construction.ann_models
 
@@ -1181,8 +1234,6 @@
         <li><a href="code/physXAI.models.ann.model_construction.html#module-physXAI.models.ann.model_construction.rbf_models">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     physXAI.models.ann.model_construction.residual_models
 
@@ -1349,6 +1400,8 @@
       <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.plot_title">plot_title (physXAI.models.ann.ann_design.ANNModel attribute)</a>
 
       <ul>
+        <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.plot_title">(physXAI.models.ann.ann_design.PCNNModel attribute)</a>
+</li>
         <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.plot_title">(physXAI.models.ann.ann_design.PINNModel attribute)</a>
 </li>
         <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.plot_title">(physXAI.models.ann.ann_design.RNNModel attribute)</a>
@@ -1366,11 +1419,15 @@
 </li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.blocks.Polynomial">Polynomial (class in physXAI.expr.blocks)</a>
 </li>
+      <li><a href="code/physXAI.expr.html#physXAI.expr.core.positive">positive() (in module physXAI.expr.core)</a>
+</li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.core.Pow">Pow (class in physXAI.expr.core)</a>
 </li>
       <li><a href="code/physXAI.models.ann.keras_models.html#physXAI.models.ann.keras_models.keras_models.PowerLayer">PowerLayer (class in physXAI.models.ann.keras_models.keras_models)</a>
 </li>
       <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.predict_sequences">predict_sequences() (in module physXAI.models.ann.model_construction.rnn_models)</a>
+</li>
+      <li><a href="code/physXAI.expr.html#physXAI.expr.core.Prediction">Prediction (class in physXAI.expr.core)</a>
 </li>
       <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.prepare">prepare() (physXAI.models.ann.ann_design.ANNModel method)</a>
 
@@ -1442,8 +1499,12 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.required_loss_columns">required_loss_columns (physXAI.models.ann.ann_design.PINNModel property)</a>
+      <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.required_loss_columns">required_loss_columns (physXAI.models.ann.ann_design.ANNModel property)</a>
+
+      <ul>
+        <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PINNModel.required_loss_columns">(physXAI.models.ann.ann_design.PINNModel property)</a>
 </li>
+      </ul></li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.blocks.Block.rescale">rescale() (physXAI.expr.blocks.Block method)</a>
 </li>
       <li><a href="code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config.rescale_mean">rescale_mean (physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config attribute)</a>
@@ -1606,6 +1667,10 @@
 </li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.core.tanh">tanh() (in module physXAI.expr.core)</a>
 </li>
+      <li><a href="code/physXAI.expr.html#physXAI.expr.core.Target">Target() (in module physXAI.expr.core)</a>
+</li>
+      <li><a href="code/physXAI.expr.html#physXAI.expr.core.TARGET_PREFIX">TARGET_PREFIX (in module physXAI.expr.core)</a>
+</li>
       <li><a href="code/physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.targets">targets() (physXAI.preprocessing.training_data.TrainingDataMultiStep method)</a>
 </li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.core.BuildContext.tensor">tensor() (physXAI.expr.core.BuildContext method)</a>
@@ -1666,6 +1731,8 @@
         <li><a href="code/physXAI.expr.html#physXAI.expr.core.Param.to_keras">(physXAI.expr.core.Param method)</a>
 </li>
         <li><a href="code/physXAI.expr.html#physXAI.expr.core.Pow.to_keras">(physXAI.expr.core.Pow method)</a>
+</li>
+        <li><a href="code/physXAI.expr.html#physXAI.expr.core.Prediction.to_keras">(physXAI.expr.core.Prediction method)</a>
 </li>
         <li><a href="code/physXAI.expr.html#physXAI.expr.core.Sub.to_keras">(physXAI.expr.core.Sub method)</a>
 </li>

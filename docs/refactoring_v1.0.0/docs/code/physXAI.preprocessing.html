@@ -51,6 +51,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../guide/models.html">Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/multi_step.html">Multi step evaluation and training</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/physics.html">Physics-informed models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/agentlib.html">Export for AgentLib-MPC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
@@ -634,6 +635,12 @@ training time.</p>
 <dt class="sig sig-object py" id="physXAI.preprocessing.training_data.TrainingDataGeneric.recursive_training_record">
 <span class="sig-name descname"><span class="pre">recursive_training_record</span></span><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataGeneric.recursive_training_record" title="Permalink to this definition"></a></dt>
 <dd><p>History of the training on the multi step error (<code class="code docutils literal notranslate"><span class="pre">physXAI.training.RecursiveTraining</span></code>)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.preprocessing.training_data.TrainingDataGeneric.physics">
+<span class="sig-name descname"><span class="pre">physics</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataGeneric.physics" title="Permalink to this definition"></a></dt>
+<dd><p>Results of physics-based models, e.g. learned physical parameters (<code class="code docutils literal notranslate"><span class="pre">PCNNModel</span></code>, physics residuals)</p>
 </dd></dl>
 
 <dl class="py method">

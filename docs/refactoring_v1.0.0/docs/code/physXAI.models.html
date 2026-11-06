@@ -51,6 +51,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../guide/models.html">Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/multi_step.html">Multi step evaluation and training</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/physics.html">Physics-informed models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/agentlib.html">Export for AgentLib-MPC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
@@ -140,6 +141,8 @@
 <li class="toctree-l2"><a class="reference internal" href="physXAI.models.ann.html#module-physXAI.models.ann.ann_design">physXAI.models.ann.ann_design module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel"><code class="docutils literal notranslate"><span class="pre">ANNModel</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.plot_title"><code class="docutils literal notranslate"><span class="pre">ANNModel.plot_title</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.physics_parameters"><code class="docutils literal notranslate"><span class="pre">ANNModel.physics_parameters</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.required_loss_columns"><code class="docutils literal notranslate"><span class="pre">ANNModel.required_loss_columns</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.generate_model"><code class="docutils literal notranslate"><span class="pre">ANNModel.generate_model()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.compile_model"><code class="docutils literal notranslate"><span class="pre">ANNModel.compile_model()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.prepare"><code class="docutils literal notranslate"><span class="pre">ANNModel.prepare()</span></code></a></li>
@@ -193,6 +196,14 @@
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.load_model"><code class="docutils literal notranslate"><span class="pre">RNNModel.load_model()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.get_config"><code class="docutils literal notranslate"><span class="pre">RNNModel.get_config()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.RNNModel.from_config"><code class="docutils literal notranslate"><span class="pre">RNNModel.from_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel"><code class="docutils literal notranslate"><span class="pre">PCNNModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.plot_title"><code class="docutils literal notranslate"><span class="pre">PCNNModel.plot_title</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.generate_model"><code class="docutils literal notranslate"><span class="pre">PCNNModel.generate_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.evaluate"><code class="docutils literal notranslate"><span class="pre">PCNNModel.evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.physics_parameters"><code class="docutils literal notranslate"><span class="pre">PCNNModel.physics_parameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.get_config"><code class="docutils literal notranslate"><span class="pre">PCNNModel.get_config()</span></code></a></li>
 </ul>
 </li>
 </ul>

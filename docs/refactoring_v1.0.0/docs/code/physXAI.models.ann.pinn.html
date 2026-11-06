@@ -51,6 +51,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../guide/models.html">Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/multi_step.html">Multi step evaluation and training</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/physics.html">Physics-informed models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/agentlib.html">Export for AgentLib-MPC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
@@ -218,6 +219,123 @@ Column 0 is the data term (‘data_loss’), columns 1, … the physics targets.
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[keras.src.metrics.metric.Metric]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.PhysicsResidual">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.pinn.physics.</span></span><span class="sig-name descname"><span class="pre">PhysicsResidual</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">residual</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'physics'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#PhysicsResidual"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.PhysicsResidual" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A physics residual r(x, y; theta) to be close to zero, e.g. the disagreement of the prediction with a
+grey-box model with trainable physical parameters theta (<code class="code docutils literal notranslate"><span class="pre">px.Param</span></code>, <code class="code docutils literal notranslate"><span class="pre">px.positive</span></code>):</p>
+<blockquote>
+<div><p>dT = (1 - px.exp(-dt / tau)) * (v.T_amb - v.T + K_u * v.u_hp)       # exact zero order hold
+residual = PhysicsResidual(px.Prediction() - dT, weight=1.0)</p>
+</div></blockquote>
+<p><code class="code docutils literal notranslate"><span class="pre">px.Prediction()</span></code> is the output of the model. All other variables are data columns at the time of the
+inputs, <code class="code docutils literal notranslate"><span class="pre">px.Target(name)</span></code> at the predicted time; they become loss columns of the preprocessing and do
+not have to be inputs of the model. Only the network is saved and exported, the residual is used in the
+training only.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>residual</strong> – The residual expression. It has to contain <code class="code docutils literal notranslate"><span class="pre">px.Prediction()</span></code>; parameters (<code class="code docutils literal notranslate"><span class="pre">px.Param</span></code>) are
+the only trainable parts (no blocks), so they keep their physical meaning.</p></li>
+<li><p><strong>weight</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Weight of the residual in the loss (relative to the data term).</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Name of the term, in lower case (history: ‘&lt;name&gt;_loss’, ‘&lt;name&gt;_fit_loss’).</p></li>
+<li><p><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – Characteristic squared magnitude of the residual (the loss term is mean(r^2) / scale).
+Defaults to the variance of the training targets, i.e. a residual in output units.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.PhysicsResidual.columns">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.models.ann.pinn.physics.PhysicsResidual.columns" title="Permalink to this definition"></a></dt>
+<dd><p>Data columns the residual needs (loss columns of the preprocessing).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.PhysicsResidual.parameters">
+<span class="sig-name descname"><span class="pre">parameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#PhysicsResidual.parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.PhysicsResidual.parameters" title="Permalink to this definition"></a></dt>
+<dd><p>The parameters (<code class="code docutils literal notranslate"><span class="pre">px.Param</span></code>) of the residual.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.PhysicsResidual.named_values">
+<span class="sig-name descname"><span class="pre">named_values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#PhysicsResidual.named_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.PhysicsResidual.named_values" title="Permalink to this definition"></a></dt>
+<dd><p>Named sub expressions of parameters only (e.g. <code class="code docutils literal notranslate"><span class="pre">px.positive(...,</span> <span class="pre">'tau')</span></code>), reported after training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.PhysicsResidual.get_config">
+<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#PhysicsResidual.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.PhysicsResidual.get_config" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.PhysicsResidual.from_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#PhysicsResidual.from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.PhysicsResidual.from_config" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#physXAI.models.ann.pinn.physics.PhysicsResidual" title="physXAI.models.ann.pinn.physics.PhysicsResidual"><em>PhysicsResidual</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.fit_with_physics">
+<span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.pinn.physics.</span></span><span class="sig-name descname"><span class="pre">fit_with_physics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">physics</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'calibrate'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">physics_learning_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#fit_with_physics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.fit_with_physics" title="Permalink to this definition"></a></dt>
+<dd><p>Trains a single output keras model on the data and a physics residual.</p>
+<p>The residual is evaluated twice with shared parameters theta: with the prediction (r_hat, the physics
+term of the network) and with the measured target (r_y, the fit of the physics model to the data).</p>
+<ul class="simple">
+<li><p>‘calibrate’ (default): 1. theta is fitted to the data on mean(r_y^2) (grey-box identification, the network
+is frozen), 2. theta is frozen and the network is trained on the data and w * mean(r_hat^2). The
+parameters cannot drift to follow the network.</p></li>
+<li><p>‘joint’: network and theta together on data + w * r_hat + r_y.</p></li>
+<li><p>‘fixed’: theta stays at its initial values, the network is trained on data + w * r_hat.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – The keras model (one output). It is trained in place.</p></li>
+<li><p><strong>td</strong> – Single step training data holding the loss columns of the residual.</p></li>
+<li><p><strong>settings</strong> – The physXAI model (epochs, batch_size, learning_rate, early_stopping_epochs, random_seed).</p></li>
+<li><p><strong>physics</strong> (<a class="reference internal" href="#physXAI.models.ann.pinn.physics.PhysicsResidual" title="physXAI.models.ann.pinn.physics.PhysicsResidual"><em>PhysicsResidual</em></a>) – The residual.</p></li>
+<li><p><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – ‘calibrate’, ‘joint’ or ‘fixed’.</p></li>
+<li><p><strong>physics_learning_rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – Learning rate of the calibration. Defaults to 10 x the learning rate.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>‘parameters’ (trained values by name), ‘fit’ (RMSE of the physics term and of the physics model</dt><dd><p>per split), ‘calibration_record’ (history of the calibration or None) and ‘record’ (keras
+history of the training of the network).</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
 </dd>
 </dl>
 </dd></dl>

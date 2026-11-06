@@ -20,7 +20,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Evaluation, comparison and feature selection" href="evaluation.html" />
+    <link rel="next" title="Physics-informed models" href="physics.html" />
     <link rel="prev" title="Multi step evaluation and training" href="multi_step.html" /> 
 </head>
 
@@ -51,6 +51,7 @@
 <li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="multi_step.html">Multi step evaluation and training</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Physics-informed models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation, comparison and feature selection</a></li>
 <li class="toctree-l1"><a class="reference internal" href="agentlib.html">Export for AgentLib-MPC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
@@ -115,6 +116,8 @@ the MPC.</p></li>
 <li><p><strong>Export:</strong> the saved <code class="docutils literal notranslate"><span class="pre">.keras</span></code> file is the step model <code class="docutils literal notranslate"><span class="pre">[sequence,</span> <span class="pre">*states]</span> <span class="pre">-&gt;</span> <span class="pre">[prediction,</span> <span class="pre">*states]</span></code> that
 AgentLib-MPC applies step by step.</p></li>
 </ul>
+<p>For a model whose prediction provably rises with heating and outside temperature over the whole horizon,
+see the PCNN in <a class="reference internal" href="physics.html"><span class="std std-doc">Physics-informed models</span></a>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">feature_architecture</span></code> adds an expression graph (e.g. physical features) in front of the recurrent layer.</p>
 </section>
 
@@ -123,7 +126,7 @@ AgentLib-MPC applies step by step.</p></li>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="multi_step.html" class="btn btn-neutral float-left" title="Multi step evaluation and training" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="evaluation.html" class="btn btn-neutral float-right" title="Evaluation, comparison and feature selection" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="physics.html" class="btn btn-neutral float-right" title="Physics-informed models" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
