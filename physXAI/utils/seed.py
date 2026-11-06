@@ -2,28 +2,45 @@
 Global random seed of physXAI.
 
 `set_seed` seeds Python, NumPy and Keras (TensorFlow) once for a whole script and acts as the
-default `random_state` of all physXAI objects. A `random_state` passed to an object explicitly
+default `random_state` / `random_seed` of all physXAI objects. A seed passed to an object explicitly
 takes precedence. Without any seed, a fresh one is drawn and stored in the configs, so every run
 can be reproduced afterwards.
+
+On a CPU, a seeded run is reproduced exactly. On a GPU, some TensorFlow kernels are not deterministic
+(e.g. reductions with atomic additions), so two runs with the same seed differ slightly, unless
+`set_seed(seed, deterministic=True)` enables the deterministic kernels of TensorFlow.
 """
 
 from __future__ import annotations
 
+import logging
 import random
 
 import numpy as np
 
+logger = logging.getLogger("physXAI")
+
 _global_seed: int | None = None
 
 
-def set_seed(seed: int | None) -> None:
+def set_seed(seed: int | None, deterministic: bool = False) -> None:
     """
     Sets the global seed of physXAI.
 
     Args:
         seed: The seed. None clears the global seed, so objects draw fresh seeds again.
+        deterministic: Also enables the deterministic operations of TensorFlow
+                       (`tf.config.experimental.enable_op_determinism`), so runs on a GPU are reproduced
+                       exactly as well. It slows down the training on a GPU, operations without a
+                       deterministic implementation raise an error, and it stays enabled for the rest of the
+                       process (TensorFlow cannot disable it again). On a CPU it is not needed.
     """
     global _global_seed
+    if deterministic:
+        import tensorflow as tf
+
+        tf.config.experimental.enable_op_determinism()
+        logger.info("Deterministic TensorFlow operations are enabled.")
     if seed is None:
         _global_seed = None
         return

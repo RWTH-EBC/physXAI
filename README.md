@@ -41,6 +41,8 @@ If you have any questions regarding physXAI, feel free to contact us at ebc-tool
     pip install -e .[dev,agentlib]
     pre-commit install
     ```
+   Options: `-c constraints.txt` installs the versions physXAI was tested with, `.[gpu]` TensorFlow with CUDA
+   (Linux or WSL2, see the [documentation](https://rwth-ebc.github.io/physXAI/main/docs/guide/getting_started.html#gpu)).
 
 ## Getting Started
 The [documentation](https://rwth-ebc.github.io/physXAI/main/docs/index.html) contains a user guide, the API reference and a

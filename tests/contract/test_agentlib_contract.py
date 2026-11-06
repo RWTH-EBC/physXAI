@@ -14,9 +14,10 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from conftest import import_agentlib
 
-agentlib_mpc = pytest.importorskip("agentlib_mpc")
-model_generation = pytest.importorskip("agentlib_mpc.machine_learning_plugins.physXAI.model_generation")
+agentlib_mpc = import_agentlib("agentlib_mpc")
+model_generation = import_agentlib("agentlib_mpc.machine_learning_plugins.physXAI.model_generation")
 from agentlib_mpc.models.casadi_predictor import CasadiPredictor  # noqa: E402
 from agentlib_mpc.models.serialized_ml_model import SerializedMLModel  # noqa: E402
 

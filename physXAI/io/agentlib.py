@@ -29,6 +29,8 @@ if TYPE_CHECKING:  # pragma: no cover
 CHANGE_PATTERN = re.compile(r"Change\((.*)\)")
 LAG_PATTERN = re.compile(r"_lag(\d+)$")
 MULTI_STEP_CLASS = "PreprocessingMultiStep"
+#: Branch of AgentLib-MPC supporting recurrent models (not released yet, AgentLib-MPC 1.1.1 has no support)
+AGENTLIB_RNN_BRANCH = "143-feature-multistep-model-support"
 
 
 class AgentLibCompatibilityError(ValueError):
@@ -49,6 +51,30 @@ def output_feature(name: str) -> tuple[str, str]:
     if match is None:
         return name, "absolute"
     return match.group(1).strip(), "difference"
+
+
+def agentlib_supports_recurrent_models() -> bool | None:
+    """Whether the installed AgentLib-MPC loads recurrent models (`RNNModel`, `PCNNModel`), None if not installed."""
+    try:
+        from agentlib_mpc.models import casadi_predictor
+    except ImportError:
+        return None
+    return hasattr(casadi_predictor, "CasadiRNN")
+
+
+def _check_recurrent_support(config: dict) -> None:
+    """Recurrent models need an AgentLib-MPC with support for them: warns if the installed one has none."""
+    if config.get("__class_name__") != MULTI_STEP_CLASS:
+        return
+    supported = agentlib_supports_recurrent_models()
+    message = (
+        "Recurrent models (RNNModel, PCNNModel) need AgentLib-MPC with support for recurrent models (branch "
+        f"'{AGENTLIB_RNN_BRANCH}'); the released AgentLib-MPC 1.1.1 cannot load them."
+    )
+    if supported is False:
+        logger.warning("%s The installed AgentLib-MPC has no support.", message)
+    elif supported is None:
+        logger.info(message)
 
 
 def check_agentlib_compatibility(preprocessing: PreprocessingData | dict) -> None:
@@ -92,6 +118,7 @@ def check_agentlib_compatibility(preprocessing: PreprocessingData | dict) -> Non
     if errors:
         raise AgentLibCompatibilityError("Config cannot be used in AgentLib-MPC:\n- " + "\n- ".join(errors))
     _warn_derived_inputs(config, inputs)
+    _check_recurrent_support(config)
 
 
 def _warn_derived_inputs(config: dict, inputs: list[str]) -> None:

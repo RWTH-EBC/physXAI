@@ -10,8 +10,9 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from conftest import import_agentlib
 
-pytest.importorskip("agentlib_mpc")
+import_agentlib("agentlib_mpc")
 from agentlib_mpc.models.casadi_predictor import FunctionalWrapper  # noqa: E402
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
@@ -28,15 +29,8 @@ from physXAI.models.ann.keras_models.keras_models import (  # noqa: E402
 
 pytestmark = pytest.mark.agentlib
 
-LEGACY_MODEL = (
-    Path(__file__).resolve().parents[2]
-    / "external"
-    / "AgentLib-MPC"
-    / "tests"
-    / "test_physXAI_plugin"
-    / "models"
-    / "model.keras"
-)
+#: A model saved with physXAI < 1.0 (copy of AgentLib-MPC/tests/test_physXAI_plugin/models/model.keras)
+LEGACY_MODEL = Path(__file__).parent / "data" / "legacy_model_0x.keras"
 
 
 def _save_and_load(model: keras.Model, tmp_path: Path) -> keras.Model:
@@ -94,7 +88,6 @@ def test_nested_sequential(x, tmp_path):
     _assert_casadi_matches(model, x, tmp_path)
 
 
-@pytest.mark.skipif(not LEGACY_MODEL.exists(), reason="AgentLib-MPC test model not available")
 def test_legacy_model_still_loads():
     """Models saved with physXAI < 1.0 have to keep loading (registered custom object names)."""
     model = keras.saving.load_model(LEGACY_MODEL)
