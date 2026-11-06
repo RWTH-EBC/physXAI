@@ -99,3 +99,43 @@ def test_legacy_model_still_loads():
     """Models saved with physXAI < 1.0 have to keep loading (registered custom object names)."""
     model = keras.saving.load_model(LEGACY_MODEL)
     _assert_casadi_matches(model, np.array([[1.0, 2.0, 3.0], [-4.0, 0.5, 10.0]], dtype="float32"))
+
+
+def _block_architectures():
+    from physXAI import expr as px
+
+    v = px.Vars()
+    heat = (v.mDot * (v.T_in - v.T)).named("heat")
+    return {
+        "linear": px.Linear([v.mDot, heat, v.T], monotonicities={"heat": 1}, nominal_range=(-1, 1)),
+        "mlp": px.MLP([v.mDot, v.load, v.T], n_layers=2, n_neurons=4, activation=["softplus", "tanh"]),
+        "monotone_mlp": px.MonotoneMLP([v.mDot, v.load, heat], monotonicities={"load": 1}, n_neurons=6),
+        "polynomial": px.Polynomial([v.mDot, v.T], degree=3, interaction_degree=2),
+        "rbf": px.RBF([v.mDot, v.T], units=4),
+        "mean_param_normalize": px.Linear(
+            [
+                px.Mean([v.load, v.T]),
+                px.Param(0.3, name="k") * heat,
+                px.Normalize(heat),
+                px.softplus(v.mDot),
+                v.T / v.T_in,
+                v.T**2,
+            ]
+        ),
+    }
+
+
+@pytest.mark.parametrize("name", list(_block_architectures()))
+def test_modular_blocks_translate_to_casadi(name, tmp_path):
+    from conftest import simulate_one_room
+
+    from physXAI import expr as px
+    from physXAI.models import ModularANN
+    from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
+
+    csv = tmp_path / "data.csv"
+    simulate_one_room(n_steps=300).to_csv(csv, sep=";")
+    m = ModularANN(_block_architectures()[name], epochs=1, early_stopping_epochs=None, rescale_output=True)
+    td = PreprocessingSingleStep(output=px.Change("T"), random_state=0).pipeline(str(csv), model=m)
+    model = m.pipeline(td, plot=False, save_model=False)
+    _assert_casadi_matches(model, td.X_test[:6], tmp_path)

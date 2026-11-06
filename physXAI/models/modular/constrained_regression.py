@@ -1,86 +1,76 @@
-from abc import abstractmethod
 import os
 import time
 from typing import Union
-import numpy as np
-from physXAI.models.models import SingleStepModel, register_model
-from physXAI.models.modular.modular_expression import (ModularActivation, ModularAdd, ModularExpression, ModularFeature,
-                                                       ModularMul, ModularPow, ModularSub, ModularTrueDiv)
-from physXAI.plotting.plotting import plot_metrics_table, plot_multi_rmse, plot_prediction_correlation, plot_predictions, subplots
-from physXAI.preprocessing.constructed import FeatureBase
-from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneric, TrainingDataMultiStep
+
 import casadi as ca
+import numpy as np
+
+from physXAI.expr import Expr, as_expr, from_config as expr_from_config, to_config as expr_to_config
+from physXAI.expr.core import BuildContext
+from physXAI.models.models import SingleStepModel, register_model
+from physXAI.plotting.plotting import plot_metrics_table, plot_multi_rmse, plot_prediction_correlation, plot_predictions, subplots
+from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneric, TrainingDataMultiStep
 from physXAI.utils.logging import Logger, create_full_path, get_full_path
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
+#: Name of the dense layer holding the weights. It has to contain 'dense' for the CasADi export.
+LAYER_NAME = 'dense_constrained_regression'
+
 
 @register_model
 class ConstrainedRegression(SingleStepModel):
     """
-    A constrained (montonone, convex, concave) regression model solved using Casadi / IPOPT.
+    A constrained (monotone, convex, concave) linear regression on expressions, solved with CasADi / IPOPT.
+
+    Args:
+        inputs: Data only expressions (`physXAI.expr`) or column names, combined linearly.
+        monotonies: {name: 1 | -1}. The name is either the name of an input expression or of a raw
+                    data column, in which case the derivative with respect to the raw column is constrained.
+        convexities: {name: 1 (convex) | -1 (concave)}, names as for `monotonies`.
     """
-    allowed_input_types = [
-        ModularFeature,
-        ModularAdd,
-        ModularSub,
-        ModularMul,
-        ModularTrueDiv,
-        ModularPow,
-        ModularActivation,
-    ]
 
-    def __init__(self, inputs: list[Union[ModularExpression, FeatureBase]], monotonies: dict[str, int] = None, convexities: dict[str, int] = None):
+    def __init__(self, inputs: Union[list[Union[Expr, str]], dict], monotonies: dict[str, int] = None,
+                 convexities: dict[str, int] = None, **kwargs):
         super().__init__()
-        self.inputs = [inp if isinstance(inp, ModularExpression) else inp.input() for inp in inputs]
-
-        for inp in self.inputs:
-            if type(inp) not in self.allowed_input_types:
-                raise ValueError(f"Input type {type(inp)} is not allowed for ConstrainedRegression. Allowed types: {self.allowed_input_types}")
-            
-        if monotonies is None:
-            monotonies = {}
-        self.monotonies = monotonies
-            
-        if convexities is None:
-            convexities = {}
-        self.convexities = convexities
-            
-        self.opti = ca.Opti()
+        if isinstance(inputs, dict):
+            inputs = expr_from_config(inputs)
+        self.inputs = [as_expr(inp) for inp in inputs]
+        trainable = [inp.name for inp in self.inputs if inp.trainable]
+        if trainable:
+            raise ValueError(f"ConstrainedRegression requires data only inputs, but {trainable} are trainable.")
+        self.monotonies = dict(monotonies or {})
+        self.convexities = dict(convexities or {})
+        self.opti = None
         self.w_vec = None
 
+    @property
+    def required_inputs(self) -> list[str]:
+        return list(dict.fromkeys(v for inp in self.inputs for v in inp.free_vars()))
 
     def generate_model(self, **kwargs):
         """
-        Generates Casadi optimization problem based on the specified inputs and constraints.
+        Generates the keras model and the CasADi optimization problem of the regression.
         """
         td = kwargs['td']
-        n_features = td.X_train_single.shape[1]
-        input_layer = keras.layers.Input(shape=(n_features,))
+        columns = list(td.columns)
+        X_data = td.X_train_single
+        train_values = {name: X_data[:, i] for i, name in enumerate(columns)}
+        ctx = BuildContext(keras.layers.Input(shape=(len(columns),)), columns, train_values)
+        tensors = [ctx.tensor(inp) for inp in self.inputs]
+        x = tensors[0] if len(tensors) == 1 else keras.layers.Concatenate()(tensors)
+        output = keras.layers.Dense(units=1, activation='linear', name=LAYER_NAME)(x)
+        model = keras.models.Model(inputs=ctx.input, outputs=output)
 
-        inps = list()
-        for x in self.inputs:
-            y = x.construct(input_layer, td)
-            inps.append(y)
-        l = keras.layers.Dense(units=1, activation='linear', name='ConstrainedRegression')(keras.layers.Concatenate()(inps))
-        model = keras.models.Model(inputs=input_layer, outputs=l)
-
-        X = list()
-        X_raw = dict()
-        x_sym = list()
-        x_sym_raw = dict()
-        
-        for inp in self.inputs:
-            try:
-                X_0, x_sym_0 = inp.get_value(td, input_layer, x_sym_raw, X_raw)
-                X.append(X_0)
-                x_sym.append(x_sym_0)
-            except NotImplementedError:
-                raise ValueError(f"Input type {type(inp)} does not implement get_value method, but is specified as allowed type for ConstrainedRegression. Please implement get_value method for this input type or remove it from allowed_input_types.")
-        X = np.column_stack(X)
-        X_raw = np.column_stack(list(X_raw.values()))
-        x_sym = ca.vertcat(*x_sym)
+        # A new problem for every fit, so constraints are not added twice
+        self.opti = ca.Opti()
+        n_samples = X_data.shape[0]
+        X = np.column_stack([np.broadcast_to(inp.evaluate(train_values), (n_samples,)) for inp in self.inputs])
+        raw_names = self.required_inputs
+        x_sym_raw = {name: ca.MX.sym(name) for name in raw_names}
+        X_raw = np.column_stack([train_values[name] for name in raw_names])
+        x_sym = ca.vertcat(*[inp.to_casadi(x_sym_raw) for inp in self.inputs])
 
         # Map constraint names to composite or raw feature indices
         monotonies = {}  # Maps composite feature index to monotonicity value
@@ -298,7 +288,7 @@ class ConstrainedRegression(SingleStepModel):
                 print(f"Weight for {inp.name}:", weights_val[i+1])
 
         for l in model.layers:
-            if l.name == 'ConstrainedRegression':
+            if l.name == LAYER_NAME:
                 l.set_weights([weights_val[1:].reshape(-1, 1), np.array([weights_val[0]])])
                 l.trainable = False
 
@@ -369,7 +359,7 @@ class ConstrainedRegression(SingleStepModel):
     def get_config(self) -> dict:
         c = super().get_config()
         c.update({
-            'inputs': [inp.name for inp in self.inputs],
+            'inputs': expr_to_config(self.inputs),
             'monotonies': self.monotonies,
             'convexities': self.convexities
         })

@@ -31,6 +31,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from physXAI.expr.serialization import to_config as expr_to_config
 from physXAI.preprocessing.splitting import SPLITS, BlockSplit, split_summary
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneric, TrainingDataMultiStep
 from physXAI.utils.seed import resolve_seed
@@ -98,6 +99,41 @@ def ensure_column(df: pd.DataFrame, name: str) -> None:
     raise KeyError(f"Column '{name}' is not part of the data and cannot be derived from it.")
 
 
+def _split_lag(name: str) -> tuple[str, int]:
+    match = LAG_PATTERN.match(name)
+    return (match.group(1), int(match.group(2))) if match else (name, 0)
+
+
+def output_feature(output: str) -> str:
+    """Feature predicted by an output: 'T' for 'Change(T)' and for 'T'."""
+    change = CHANGE_PATTERN.match(output)
+    return change.group(1).strip() if change else output
+
+
+def order_inputs(names: list[str], outputs: list[str]) -> list[str]:
+    """
+    Orders input names as AgentLib-MPC expects them: lags directly after their feature in
+    ascending order (missing intermediate lags are added), the recursive feature (predicted by an
+    output) and its lags last.
+
+    Example:
+        >>> order_inputs(["T_lag2", "u", "T"], ["Change(T)"])
+        ['u', 'T', 'T_lag1', 'T_lag2']
+    """
+    groups: dict[str, list[int]] = dict()
+    for name in names:
+        base, lag = _split_lag(name)
+        groups.setdefault(base, []).append(lag)
+    recursive = {output_feature(o) for o in outputs}
+    ordered = [b for b in groups if b not in recursive] + [b for b in groups if b in recursive]
+    result = list()
+    for base in ordered:
+        lags = groups[base]
+        for lag in range(min(lags), max(lags) + 1):
+            result.append(base if lag == 0 else f"{base}_lag{lag}")
+    return result
+
+
 def _try_ensure_column(df: pd.DataFrame, name: str) -> bool:
     try:
         ensure_column(df, name)
@@ -112,8 +148,11 @@ class PreprocessingData(ABC):
 
     Args:
         inputs: Input features of the model. Lagged inputs ('X_lag1') and changes ('Change(X)')
-                are derived automatically.
+                are derived automatically. If None, the inputs are taken from the model passed to
+                `pipeline` (the free variables of its expression graph).
         output: Output feature(s), e.g. 'Change(T)' for a model predicting the change of T.
+        columns: Optional derived data columns {name: expression}, e.g. {'Q': v.mDot * (v.T_in - v.T)}.
+                 Prefer expressions inside the model, then the MPC does not need to compute them.
         lags: Optional number of lags per feature, e.g. {'T': 2}.
         shift: Number of steps between the inputs and the predicted output (1: next time step).
         time_step: Sampling time in seconds. The data is sub-sampled to it. Defaults to the
@@ -135,9 +174,10 @@ class PreprocessingData(ABC):
 
     def __init__(
         self,
-        inputs: list[str],
-        output: str | list[str],
+        inputs: list[str] | None = None,
+        output: str | list[str] | None = None,
         lags: dict[str, int] | None = None,
+        columns: dict | None = None,
         shift: int = 1,
         time_step: float | None = None,
         test_size: float = 0.1,
@@ -157,8 +197,16 @@ class PreprocessingData(ABC):
     ):
         if shift < 1:
             raise ValueError("shift has to be at least 1.")
-        self.inputs: list[str] = expand_lags(list(inputs), lags)
+        if output is None:
+            raise ValueError("An output is required.")
+        self.inputs: list[str] | None = expand_lags(list(inputs), lags) if inputs is not None else None
+        self._lags = lags if inputs is None else None
         self.output: list[str] = [output] if isinstance(output, str) else list(output)
+        from physXAI.expr import from_config as expr_from_config
+
+        self.columns: dict = {
+            name: expr_from_config(e) if isinstance(e, dict) else e for name, e in (columns or {}).items()
+        }
         self.shift: int = shift
         self.time_step: float | None = time_step
         self.random_state: int = resolve_seed(random_state)
@@ -271,8 +319,11 @@ class PreprocessingData(ABC):
         df = df.copy()
         if self.transform is not None:
             df = self.transform(df)
-        _process_legacy_constructed_features(df)
 
+        for name, expression in self.columns.items():
+            for variable in expression.free_vars():
+                ensure_column(df, variable)
+            df[name] = np.broadcast_to(expression.evaluate(df), (len(df),))
         shifted = list(dict.fromkeys([*self.output, *(extra_targets or [])]))
         for name in dict.fromkeys([*self.inputs, *shifted]):
             ensure_column(df, name)
@@ -314,9 +365,29 @@ class PreprocessingData(ABC):
         logger.info("Split of the data: %s", {k: round(v, 3) for k, v in split_summary(labels[valid]).items()})
         return td
 
+    def resolve_inputs(self, model=None) -> list[str]:
+        """
+        Determines the inputs: the given ones or, if None, the inputs required by the model.
+
+        Raises:
+            ValueError: If the model needs inputs which are not part of the given inputs.
+        """
+        required = getattr(model, "required_inputs", None) if model is not None else None
+        if self.inputs is None:
+            if required is None:
+                raise ValueError("No inputs given: pass inputs or a model with an expression graph to pipeline().")
+            self.inputs = order_inputs(expand_lags(required, self._lags), self.output)
+        elif required is not None:
+            missing = [name for name in required if name not in self.inputs]
+            if missing:
+                raise ValueError(
+                    f"The model needs the inputs {missing}, which are not part of the inputs {self.inputs}."
+                )
+        return self.inputs
+
     @abstractmethod
-    def pipeline(self, file_path: str | Path) -> TrainingDataGeneric:
-        """Loads and preprocesses a csv file."""
+    def pipeline(self, file_path: str | Path, model=None) -> TrainingDataGeneric:
+        """Loads and preprocesses a csv file. Inputs can be taken from `model`."""
 
     # --- (de)serialization ----------------------------------------------------------------------
     def get_config(self) -> dict:
@@ -324,6 +395,7 @@ class PreprocessingData(ABC):
             "__class_name__": self.__class__.__name__,
             "inputs": self.inputs,
             "output": self.output,
+            "columns": {name: expr_to_config(e) for name, e in self.columns.items()} or None,
             "shift": self.shift,
             "test_size": self.test_size,
             "val_size": self.val_size,
@@ -374,14 +446,6 @@ def _is_multiple(value: float, base: float) -> bool:
     return bool(np.isclose(ratio, round(ratio)) and round(ratio) >= 1)
 
 
-def _process_legacy_constructed_features(df: pd.DataFrame) -> None:
-    """Applies features of `physXAI.preprocessing.constructed` (physXAI < 1.0, removed in 1.0)."""
-    from physXAI.preprocessing.constructed import FeatureConstruction
-
-    if FeatureConstruction.features:
-        FeatureConstruction.process(df)
-
-
 def _resolve_steps(value: int | str | None, time_step: float) -> int | None:
     """Converts a number of steps or a time delta string ('24h') into steps."""
     if value is None or isinstance(value, (int, np.integer)):
@@ -404,8 +468,8 @@ class PreprocessingSingleStep(PreprocessingData):
 
     def __init__(
         self,
-        inputs: list[str],
-        output: str | list[str],
+        inputs: list[str] | None = None,
+        output: str | list[str] | None = None,
         eval_horizon: int | str | None = None,
         eval_stride: int | str | None = None,
         **kwargs,
@@ -425,13 +489,18 @@ class PreprocessingSingleStep(PreprocessingData):
         horizon, _ = self._horizon_steps()
         return horizon or 1
 
-    def pipeline(self, file_path: str | Path) -> TrainingData:
+    def pipeline(self, file_path: str | Path, model=None) -> TrainingData:
         """
         Loads and preprocesses a csv file.
 
         Returns:
             TrainingData: Single step data, split leakage free.
+
+        Args:
+            file_path: Path to the csv file.
+            model: Optional model; without explicit inputs, its required inputs are used.
         """
+        self.resolve_inputs(model)
         df = self.load_data(file_path)
         horizon, stride = self._horizon_steps()
         td = self.build_training_data(df, eval_horizon=horizon, eval_stride=stride)
@@ -467,7 +536,7 @@ class PreprocessingMultiStep(PreprocessingData):
         inputs: list[str],
         output: str | list[str],
         label_width: int,
-        warmup_width: int,
+        warmup_width: int = 0,
         overlapping_sequences: bool = True,
         batch_size: int = 32,
         init_features: list[str] | None = None,
@@ -487,13 +556,18 @@ class PreprocessingMultiStep(PreprocessingData):
     def _window_length(self) -> int:
         return self.warmup_width + self.label_width + self.shift
 
-    def pipeline(self, file_path: str | Path) -> TrainingDataMultiStep:
+    def pipeline(self, file_path: str | Path, model=None) -> TrainingDataMultiStep:
         """
         Loads a csv file and cuts it into windows.
 
         Returns:
             TrainingDataMultiStep: Windows of inputs, warmup and labels for every split.
+
+        Args:
+            file_path: Path to the csv file.
+            model: Optional model; without explicit inputs, its required inputs are used.
         """
+        self.resolve_inputs(model)
         df = self.load_data(file_path)
         td = self.build_training_data(df, extra_targets=self.warmup_columns_labels)
         windows = {split: self._windows(td, split) for split in SPLITS}

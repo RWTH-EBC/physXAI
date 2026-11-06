@@ -12,7 +12,7 @@ from physXAI.models.ann.model_construction.ann_models import ClassicalANNConstru
 from physXAI.models.ann.model_construction.rbf_models import RBFModelConstruction
 from physXAI.models.ann.model_construction.residual_models import LinResidualANNConstruction
 from physXAI.models.ann.model_construction.rnn_models import RNNModelConstruction
-from physXAI.models.modular.modular_expression import ModularExpression
+from physXAI.expr import Expr, from_config as expr_from_config, to_config as expr_to_config
 from physXAI.models.ann.pinn.pinn_loss import multi_y_loss
 from physXAI.plotting.plotting import plot_prediction_correlation, plot_predictions, plot_training_history, \
     plot_metrics_table, subplots, plot_multi_rmse
@@ -642,7 +642,7 @@ class RNNModel(MultiStepModel):
 
     def __init__(self, rnn_units: int = 32, rnn_layer: str = 'RNN', init_layer=None, epochs: int = 1000,
                  learning_rate: float = 0.001, early_stopping_epochs: Optional[int] = 100, random_seed: int = 42,
-                 feature_architecture: Optional[Union[ModularExpression, list[ModularExpression]]] = None,
+                 feature_architecture: Optional[Union[Expr, list[Expr], dict]] = None,
                  **kwargs):
         """
         Initializes the RNNModel.
@@ -665,8 +665,10 @@ class RNNModel(MultiStepModel):
             early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
                                          If None, early stopping is disabled.
             random_seed (int): Seed for random number generators to ensure reproducibility.
-            feature_architecture (optional): A modular expression, or a list of them, building
-                                        the inputs of the recurrent layer out of the input features.
+            feature_architecture (optional): An expression (`physXAI.expr`), or a list of them,
+                                        building the inputs of the recurrent layer out of the input
+                                        features. Variables are not normalized, wrap them in
+                                        `px.Normalize` where needed.
         """
 
         super().__init__(**kwargs)
@@ -680,9 +682,11 @@ class RNNModel(MultiStepModel):
         self.rnn_units: int = rnn_units
         self.rnn_layer: str = rnn_layer
         self.init_layer: str = init_layer
-        if isinstance(feature_architecture, ModularExpression):
+        if isinstance(feature_architecture, dict):
+            feature_architecture = expr_from_config(feature_architecture)
+        if isinstance(feature_architecture, Expr):
             feature_architecture = [feature_architecture]
-        self.feature_architecture: Optional[list[ModularExpression]] = feature_architecture
+        self.feature_architecture: Optional[list[Expr]] = feature_architecture
 
         self.model_config = {
             'rnn_units': rnn_units,
@@ -808,20 +812,13 @@ class RNNModel(MultiStepModel):
             'learning_rate': self.learning_rate,
             'early_stopping_epochs': self.early_stopping_epochs,
             'random_seed': self.random_seed,
-            'feature_architecture': [expression.name for expression in self.feature_architecture]
+            'feature_architecture': expr_to_config(self.feature_architecture)
                                     if self.feature_architecture is not None else None,
         })
         return config
 
     @classmethod
     def from_config(cls, config: dict) -> 'RNNModel':
-        architecture = config.get('feature_architecture')
-        if architecture is not None:
-            expressions = list()
-            for name in architecture:
-                a = ModularExpression.get_existing_modular_expression(name)
-                assert a is not None, (f"ModularExpression {name} not found, make sure to construct required "
-                                       f"modular expressions before constructing {cls.__name__}.")
-                expressions.append(a)
-            config['feature_architecture'] = expressions
+        config = dict(config)
+        config.pop('physXAI_version', None)
         return cls(**config)

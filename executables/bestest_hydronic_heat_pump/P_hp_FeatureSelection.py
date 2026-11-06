@@ -1,6 +1,5 @@
 from physXAI.feature_selection.recursive_feature_elimination import recursive_feature_elimination_pipeline
 from physXAI.models.models import LinearRegressionModel
-from physXAI.preprocessing.constructed import Feature
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 from physXAI.utils.logging import Logger
 
@@ -21,15 +20,7 @@ inputs = ['oveHeaPumY_u', 'oveHeaPumY_u_lag1', 'oveHeaPumY_u_lag2', 'Func(logist
 # Output feature
 output = 'reaPHeaPum_y'
 
-# Create lags
-x1 = Feature('oveHeaPumY_u')
-x1.lag(2)
-x2 = Feature('Func(logistic)')
-x2.lag(2)
-x3 = Feature('weaSta_reaWeaTDryBul_y')
-x3.lag(2)
-x4 = Feature('reaTZon_y')
-x4.lag(2)
+# Lagged inputs ('X_lag1', ...) are derived automatically from their names
 
 # Generic Preprocessing Pipeline
 # Model is output model, so single step evaluation is choosen

@@ -14,7 +14,7 @@ file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
 
 
 """
-List of input features. Can include constructed features and lagged inputs.
+List of input features. Lagged inputs are derived automatically from their names.
 As a RNN is applied, there is no need to add the recursive feature 'reaTZon_y' to the inputs.
 RNNs need to be initialized. Therefore a initialization model is trained based on the 'inits' features.
 The RNN directly predicts the air temperature instead of the air temperature change.

@@ -1,7 +1,7 @@
 import os
 
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
-from physXAI.preprocessing.constructed import Feature
+from physXAI import expr as px
 from physXAI.models.models import LinearRegressionModel
 from physXAI.models.ann.ann_design import ClassicalANNModel, CMNNModel, LinANNModel
 from physXAI.utils.logging import Logger
@@ -17,26 +17,21 @@ Logger.setup_logger(folder_name='P_hp', override=True, print_level='warning')
 # File path to data
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
 
-# List of input features. Can include constructed features
+# List of input features. Lagged inputs ('X_lag1') are derived automatically
 inputs = ['oveHeaPumY_u', 'Func(logistic)', 'weaSta_reaWeaTDryBul_y', 'reaTZon_y']
 # Output feature
 output = 'reaPHeaPum_y'
 
-""" 
-Example how to use constructed features. 
-The constructed features are automatically added to the data via 'physXAI.preprocessing.constructed.py' 
-The names of the constructed features should be added to the input list
 """
-# x = Feature('weaSta_reaWeaTDryBul_y')  # Create Feature for calculation
-# x.lag(1)  # Lags can be added directly based on the feature
-# x.exp()
-# y = Feature('reaTZon_y')
-# z = x + y  # Arithmetic operations can be performed on Features to create constructed Features
-# z.rename('test')  # Constructed features derive a name based on the arithmetic operation.
-# It is recommended to rename features, so that they can be easily added to the input list
+Derived inputs: lagged inputs ('weaSta_reaWeaTDryBul_y_lag1') are derived from their names.
+Other derived quantities are best placed inside the model (see P_hp_modular.py). If a derived
+quantity has to be a data column, it can be added as expression:
+"""
+v = px.Vars()
+columns = {'T_sum': v.weaSta_reaWeaTDryBul_y + v.reaTZon_y}  # not used as input in this example
 
 # Create Training data
-prep = PreprocessingSingleStep(inputs=inputs, output=output)
+prep = PreprocessingSingleStep(inputs=inputs, output=output, columns=columns)
 # Process Training data
 td = prep.pipeline(file_path)
 

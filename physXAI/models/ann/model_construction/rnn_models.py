@@ -3,14 +3,15 @@ from typing import Optional, Union
 import numpy as np
 from physXAI.preprocessing.training_data import TrainingDataMultiStep
 from physXAI.models.ann.configs.ann_model_configs import RNNModelConstruction_config
-from physXAI.models.modular.modular_expression import ModularExpression
+from physXAI.expr import Expr
+from physXAI.expr.core import BuildContext
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 
 def RNNModelConstruction(config: dict, td: TrainingDataMultiStep,
-                         feature_architecture: Optional[ModularExpression] = None):
+                         feature_architecture: Optional[list[Expr]] = None):
     """
     Constructs a Recurrent Neural Network (RNN) model for multi-step time series forecasting.
     The model can optionally use a "warmup" sequence to initialize the RNN's hidden state.
@@ -20,7 +21,7 @@ def RNNModelConstruction(config: dict, td: TrainingDataMultiStep,
                        Validated against `RNNModelConstruction_config`.
         td (TrainingDataMultiStep): An object containing the multi-step training data.
                                     It provides shapes for inputs, outputs, and warmup sequences.
-        feature_architecture (list[ModularExpression], optional): Modular expressions that build
+        feature_architecture (list[Expr], optional): Expressions (physXAI.expr) that build
                                     the inputs of the recurrent layer out of the input features. If
                                     None, the normalized input features are used directly.
 
@@ -209,7 +210,7 @@ def init_zeros(num_features: int, rnn_units: int, out_steps: int):
 
 def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_units: int, num_outputs: int,
               rescale_mean: float, rescale_sigma: float, td: TrainingDataMultiStep = None,
-              feature_architecture: Optional[ModularExpression] = None):
+              feature_architecture: Optional[list[Expr]] = None):
     """
     Creates the main Keras model that processes an input sequence with an initial RNN state
     to produce predictions and the final RNN state.
@@ -224,7 +225,7 @@ def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_unit
         rescale_mean (float): Mean value for denormalizing the model's normalized predictions back to the original scale (used as the offset in the Rescaling layer; inverse z-score transformation: value * sigma + mean).
         rescale_sigma (float): Standard deviation for denormalizing the model's normalized predictions back to the original scale (used as the scale in the Rescaling layer; inverse z-score transformation: value * sigma + mean).
         td (TrainingDataMultiStep, optional): The training data, needed if a feature architecture is used.
-        feature_architecture (list[ModularExpression], optional): Modular expressions that build the
+        feature_architecture (list[Expr], optional): Expressions (physXAI.expr) that build the
                                 inputs of the recurrent layer out of the input features. This allows using
                                 physically motivated combinations of features. If None, the normalized input
                                 features are used directly.
@@ -245,7 +246,9 @@ def out_model(inputs_df: np.ndarray, num_features: int, rnn_layer: str, rnn_unit
         # The modular expressions slice the features they need out of the last axis of the
         # input, so they work on sequences just as well as on single time steps. Like for
         # a ModularANN, they bring their own normalization.
-        channels = [expression.construct(inputs, td) for expression in feature_architecture]
+        X = td.X_train_single
+        ctx = BuildContext(inputs, td.columns, {name: X[:, i] for i, name in enumerate(td.columns)})
+        channels = [ctx.tensor(expression) for expression in feature_architecture]
         if len(channels) == 1:
             normalized_inputs = channels[0]
         else:

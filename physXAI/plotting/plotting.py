@@ -125,6 +125,8 @@ def plot_predictions(td: TrainingDataGeneric) -> go.Figure:
 
 
 def plot_training_history(td: TrainingDataGeneric) -> go.Figure:
+    if td.training_record is None:  # e.g. closed form solutions
+        return go.Figure(layout=dict(xaxis_title="Epochs", yaxis_title="RMSE"))
     history = td.training_record.history
     # Plot training history using plotly library
     training_rmse = history['rmse']

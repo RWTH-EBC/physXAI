@@ -7,9 +7,8 @@ import pytest
 ######################################################################################################################
 from physXAI.utils.logging import Logger
 from physXAI.preprocessing.preprocessing import PreprocessingMultiStep
-from physXAI.preprocessing.constructed import Feature
+from physXAI import expr as px
 from physXAI.models.ann.ann_design import RNNModel
-from physXAI.models.modular.modular_ann import ModularNormalization
 from physXAI.evaluation.closed_loop import closed_loop_predictions, derive_feedback
 
 
@@ -96,16 +95,11 @@ def test_feature_architecture(recursive_data):
     This makes a physically motivated combination of features part of the model instead
     of the data, which an MPC would otherwise need a measured history of.
     """
-    heat_pump = Feature('oveHeaPumY_u')
-    ambient = Feature('weaSta_reaWeaTDryBul_y')
-    zone = Feature('reaTZon_y')
-
+    v = px.Vars()
     # a product of raw features, normalized afterwards
-    heat_flow = heat_pump.input(normalize=False) * (zone.input(normalize=False)
-                                                    - ambient.input(normalize=False))
-    heat_flow.rename('heat_flow')
-    architecture = [Feature(name).input() for name in recursive_data.columns]
-    architecture.append(ModularNormalization(heat_flow))
+    heat_flow = (v.oveHeaPumY_u * (v.reaTZon_y - v.weaSta_reaWeaTDryBul_y)).named('heat_flow')
+    architecture = [px.Normalize(v[name]) for name in recursive_data.columns]
+    architecture.append(px.Normalize(heat_flow))
 
     m = RNNModel(epochs=1, rnn_layer='GRU', feature_architecture=architecture)
     model = m.pipeline(recursive_data, save_model=False, plot=False)
@@ -115,12 +109,14 @@ def test_feature_architecture(recursive_data):
     layers = [layer.name for layer in step_model.layers]
     assert any('multiply' in name for name in layers), layers
     assert any('subtract' in name for name in layers), layers
-    assert any('batch_normalization' in name for name in layers), layers
+    assert any('normalization' in name for name in layers), layers
     assert 'heat_flow' not in recursive_data.columns
 
-    # and the model config keeps track of it
+    # and the model config holds the whole expression graph
     config = m.get_config()
-    assert config['feature_architecture'][-1].startswith('ModularNormalization')
+    restored = RNNModel.from_config(config)
+    assert [e.name for e in restored.feature_architecture] == [e.name for e in architecture]
+    assert restored.feature_architecture[-1].inputs[0].name == 'heat_flow'
 
 
 @pytest.fixture

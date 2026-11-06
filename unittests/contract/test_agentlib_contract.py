@@ -85,6 +85,27 @@ def test_linreg_change_with_derived_input(tmp_path, monkeypatch, one_room_csv):
     _casadi_vs_physxai(serialized, x, linear_model.predict(x))
 
 
+def test_derived_input_inside_the_model(tmp_path, monkeypatch, one_room_csv):
+    """With the derived input inside the model, AgentLib-MPC only sees raw inputs (KerasANN)."""
+    monkeypatch.chdir(tmp_path)
+    files = _generate({"T": "modular_linreg"}, SCRIPTS, one_room_csv)
+
+    config = json.loads(Path(files[0]).read_text())
+    assert config["model_type"] == "KerasANN"
+    assert list(config["input"]) == ["mDot", "load", "T_in"]
+    assert config["output"] == {"T": {"name": "T", "lag": 1, "output_type": "difference", "recursive": True}}
+
+    serialized = SerializedMLModel.load_serialized_model(Path(files[0]))
+    keras_model = serialized.deserialize()
+    x = np.array([[0.01, 100.0, 290.0, 293.0], [0.04, 0.0, 291.0, 291.5]], dtype=np.float32)
+    prediction = keras_model.predict(x, verbose=0)
+    _casadi_vs_physxai(serialized, x, prediction)
+    # the simulated system is linear in these features: dT = dt/C * (cp * mDot * (T_in - T) + load)
+    m_dot, load, t_in, t = x.T
+    expected = 300 / 1e5 * (1000 * m_dot * (t_in - t) + load)
+    np.testing.assert_allclose(prediction.reshape(-1), expected, rtol=1e-3, atol=1e-4)
+
+
 def test_existing_models_are_copied(tmp_path, monkeypatch, one_room_csv):
     """A string as model spec reuses an existing run folder."""
     monkeypatch.chdir(tmp_path)
