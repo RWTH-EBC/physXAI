@@ -283,7 +283,7 @@ def test_models_rnn(file_path):
 
     m = RNNModel(epochs=1, rnn_layer='LSTM', init_layer='dense')
     m.pipeline(td, os.path.join(Logger._logger, 'model2.keras'))
-    Logger.log_setup(td, m, 'preprocessing_config2.json',
+    Logger.log_setup(prep, m, 'preprocessing_config2.json',
                      save_name_constructed='constructed_config2.json')
     Logger.save_training_data(td)
 

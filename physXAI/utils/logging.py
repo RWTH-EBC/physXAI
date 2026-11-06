@@ -1,4 +1,3 @@
-import copy
 import json
 import os
 import shutil
@@ -264,13 +263,6 @@ class Logger:
         Logger.override_question(p)
         with open(p, "w") as f:
             json.dump(td_dict, f, indent=4)
-
-        from physXAI.preprocessing.training_data import TrainingDataMultiStep
-        if isinstance(training_data, TrainingDataMultiStep):
-            training_data = copy.copy(training_data)
-            training_data.train_ds = None
-            training_data.val_ds = None
-            training_data.test_ds = None
 
         p = p.split('.json')[0]
         with open(p + '.pkl', "wb") as f:
