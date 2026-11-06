@@ -1,511 +1,551 @@
-import os
+"""
+Preprocessing of time series data for single step and multi step models.
+
+Both preprocessings share one pipeline:
+
+1. Load the csv file onto a regular time grid of `time_step` (missing time stamps become rows
+   with missing values instead of silently joining the neighbouring rows).
+2. Apply an optional `transform(df) -> df` hook (not serialized).
+3. Create derived columns from the naming conventions used by AgentLib-MPC:
+   `X_lagN` is `X` shifted by N steps, `Change(X)` is `X(t) - X(t-1)`. Lags can also be given as
+   `lags={'X': 2}`, which adds `X_lag1` and `X_lag2` directly after `X` to the inputs.
+4. Shift the outputs by `shift` steps, so row t holds the target predicted from the inputs at t.
+5. Mark rows with missing values as invalid (with `ignore_nan=False`, missing values between
+   valid rows raise an error).
+6. Split the rows leakage free into training, validation and test data
+   (`physXAI.preprocessing.splitting.BlockSplit`).
+
+The class names `PreprocessingSingleStep` and `PreprocessingMultiStep` and the keys of
+`get_config()` are read by AgentLib-MPC and must not change.
+"""
+
+from __future__ import annotations
+
+import logging
+import re
 from abc import ABC, abstractmethod
-from typing import Optional, Union
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from physXAI.preprocessing.constructed import FeatureConstruction
-from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
-from physXAI.utils.logging import get_full_path
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-import keras
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+
+from physXAI.preprocessing.splitting import SPLITS, BlockSplit, split_summary
+from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneric, TrainingDataMultiStep
+from physXAI.utils.seed import resolve_seed
+
+logger = logging.getLogger("physXAI")
+
+LAG_PATTERN = re.compile(r"^(.*)_lag(\d+)$")
+CHANGE_PATTERN = re.compile(r"^Change\((.*)\)$")
+TARGET_PREFIX = "y:"
+
+PREPROCESSING_CLASS_REGISTRY: dict[str, type[PreprocessingData]] = dict()
+
+
+def register_preprocessing(cls):
+    PREPROCESSING_CLASS_REGISTRY[cls.__name__] = cls
+    return cls
+
+
+def expand_lags(inputs: list[str], lags: dict[str, int] | None) -> list[str]:
+    """
+    Adds lagged inputs: `lags={'X': 2}` inserts 'X_lag1', 'X_lag2' directly after 'X'.
+    Lags of features which are no input are appended at the end.
+    """
+    if not lags:
+        return list(inputs)
+    result = list()
+    for name in inputs:
+        result.append(name)
+        for lag in range(1, lags.get(name, 0) + 1):
+            if f"{name}_lag{lag}" not in inputs:
+                result.append(f"{name}_lag{lag}")
+    for name, n in lags.items():
+        if name not in inputs:
+            result.extend(f"{name}_lag{lag}" for lag in range(1, n + 1))
+    return result
+
+
+def max_lag(names: list[str]) -> int:
+    """Largest lag of a list of feature names."""
+    lags = [int(m.group(2)) for m in (LAG_PATTERN.match(n) for n in names) if m]
+    return max(lags, default=0)
+
+
+def ensure_column(df: pd.DataFrame, name: str) -> None:
+    """
+    Creates `name` from the naming conventions if it is not a column of `df`.
+
+    Raises:
+        KeyError: If the column neither exists nor can be derived.
+    """
+    if name in df.columns:
+        return
+    lag = LAG_PATTERN.match(name)
+    if lag:
+        base, n = lag.group(1), int(lag.group(2))
+        ensure_column(df, base)
+        df[name] = df[base].shift(n)
+        return
+    change = CHANGE_PATTERN.match(name)
+    if change:
+        base = change.group(1).strip()
+        ensure_column(df, base)
+        df[name] = df[base] - df[base].shift(1)
+        return
+    raise KeyError(f"Column '{name}' is not part of the data and cannot be derived from it.")
+
+
+def _try_ensure_column(df: pd.DataFrame, name: str) -> bool:
+    try:
+        ensure_column(df, name)
+        return True
+    except KeyError:
+        return False
 
 
 class PreprocessingData(ABC):
     """
-    Abstract Preprocessing Class
+    Common preprocessing of single step and multi step models, see the module docstring.
+
+    Args:
+        inputs: Input features of the model. Lagged inputs ('X_lag1') and changes ('Change(X)')
+                are derived automatically.
+        output: Output feature(s), e.g. 'Change(T)' for a model predicting the change of T.
+        lags: Optional number of lags per feature, e.g. {'T': 2}.
+        shift: Number of steps between the inputs and the predicted output (1: next time step).
+        time_step: Sampling time in seconds. The data is sub-sampled to it. Defaults to the
+                   sampling time of the data.
+        test_size: Fraction of the data used for testing.
+        val_size: Fraction of the data used for validation.
+        random_state: Seed of the split. Defaults to the global seed (`physXAI.set_seed`), else a
+                      new seed is drawn. The used seed is stored in the config.
+        split: Split strategy ('blocks', 'holdout_end', 'random_rows') or a `BlockSplit`.
+        block_length: Block length of the split in steps or as time delta string ('7D').
+        gap_steps: Embargo between splits in steps. Defaults to the maximum lag + shift.
+        time_index_col: Name or index of the time column of the csv file.
+        csv_delimiter, csv_encoding, csv_header, csv_skiprows: Options of `pandas.read_csv`.
+        ignore_nan: If False, missing values between valid rows raise an error. If True, rows
+                    with missing values are left out.
+        transform: Optional function `df -> df` applied after loading, e.g. to add columns that are
+                   no inputs of the model. It is not serialized.
     """
 
-    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: int = 1,
-                 time_step: Optional[Union[int, float]] = None,
-                 test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
-                 time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
-                 csv_header: int = 0, csv_skiprows: Union[int, list[int]] = [], ignore_nan: bool = False):
-        """
-        Initializes the Preprocessing instance.
+    def __init__(
+        self,
+        inputs: list[str],
+        output: str | list[str],
+        lags: dict[str, int] | None = None,
+        shift: int = 1,
+        time_step: float | None = None,
+        test_size: float = 0.1,
+        val_size: float = 0.1,
+        random_state: int | None = None,
+        split: str | BlockSplit | dict = "blocks",
+        block_length: int | str | None = None,
+        gap_steps: int | None = None,
+        time_index_col: str | int = 0,
+        csv_delimiter: str = ";",
+        csv_encoding: str = "latin1",
+        csv_header: int = 0,
+        csv_skiprows: int | list[int] | None = None,
+        ignore_nan: bool = False,
+        transform: Callable[[pd.DataFrame], pd.DataFrame] | None = None,
+        **kwargs,
+    ):
+        if shift < 1:
+            raise ValueError("shift has to be at least 1.")
+        self.inputs: list[str] = expand_lags(list(inputs), lags)
+        self.output: list[str] = [output] if isinstance(output, str) else list(output)
+        self.shift: int = shift
+        self.time_step: float | None = time_step
+        self.random_state: int = resolve_seed(random_state)
 
-        Args:
-            inputs (List[str]): List of column names to be used as input features.
-            output (Union[str, List[str]]): Column name(s) for the target variable(s).
-            shift (int): The number of time steps to shift the target variable for forecasting.
-                         A shift of one means predicting the next time step.
-            time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
-            test_size (float): Proportion of the dataset to allocate to the test set.
-            val_size (float): Proportion of the dataset to allocate to the validation set.
-            random_state (int): Seed for random number generators to ensure reproducible splits.
-            time_index_col (Union[str, float]): Optional name or index of the time index column.
-            csv_delimiter (str): Delimiter for csv data. Default is ';'.
-            csv_encoding (str): Encoding for csv data. Default is 'latin1'.
-            csv_header (int): Row number of csv header. Default is 0.
-            csv_skiprows (Union[int, list[int]]): Row numbers of skipped data in csv. Default is no skipping.
-            ignore_nan (bool): If True, rows with NaN values will be dropped. If False, an error is raised if NaNs are present. Default is False.
-        """
+        if isinstance(split, dict):
+            split = BlockSplit.from_config(split)
+        elif isinstance(split, str):
+            split = BlockSplit(test_size, val_size, strategy=split, block_length=block_length, gap_steps=gap_steps)
+        self.split: BlockSplit = split
+
         self.time_index_col = time_index_col
         self.csv_delimiter = csv_delimiter
         self.csv_encoding = csv_encoding
         self.csv_header = csv_header
         self.csv_skiprows = csv_skiprows
-
-        self.inputs: list[str] = inputs
-        if isinstance(output, str):
-            output = [output]
-        self.output: list[str] = output
-        self.shift: int = shift
-        self.time_step = time_step
-
-        # Training, validation and test size should be equal to 1
-        assert test_size + val_size < 1
-        self.test_size: float = test_size
-        self.val_size: float = val_size
-
-        self.random_state: int = random_state
-
         self.ignore_nan: bool = ignore_nan
+        self.transform = transform
 
-    def load_data(self, file_path: str) -> pd.DataFrame:
+    # The split sizes are part of the AgentLib-MPC contract
+    @property
+    def test_size(self) -> float:
+        return self.split.test_size
+
+    @property
+    def val_size(self) -> float:
+        return self.split.val_size
+
+    # --- loading --------------------------------------------------------------------------------
+    def load_data(self, file_path: str | Path) -> pd.DataFrame:
         """
-        Loads data from a CSV file into a Pandas DataFrame. CSV file should have a delimiter ';'
+        Loads a csv file onto a regular time grid of `time_step`.
+
+        The time column may hold seconds or date times. Time stamps which are not on the grid are
+        dropped; missing time stamps become rows with missing values.
 
         Args:
-            file_path (str): The path to the CSV file.
+            file_path: Path to the csv file (absolute or relative to the working directory).
 
         Returns:
-            pd.DataFrame: The loaded DataFrame.
+            pd.DataFrame: Data indexed by the regular time grid.
         """
+        df = pd.read_csv(
+            Path(file_path),
+            delimiter=self.csv_delimiter,
+            index_col=self.time_index_col,
+            encoding=self.csv_encoding,
+            header=self.csv_header,
+            skiprows=self.csv_skiprows,
+        )
+        df = df[~df.index.duplicated(keep="first")].sort_index()
 
-        file_path = get_full_path(file_path)
-        df = pd.read_csv(file_path,
-                         delimiter=self.csv_delimiter,
-                         index_col=self.time_index_col,
-                         encoding=self.csv_encoding,
-                         header=self.csv_header,
-                         skiprows=self.csv_skiprows)
+        index = df.index
+        if not pd.api.types.is_numeric_dtype(index) and not isinstance(index, pd.DatetimeIndex):
+            index = pd.to_datetime(index)
+        is_datetime = isinstance(index, pd.DatetimeIndex)
+        seconds = ((index - index[0]).total_seconds() if is_datetime else index - index[0]).to_numpy(dtype=float)
 
-        # Determine Sampling
-        sampling = df.index.to_series().diff().dropna().unique()
-        assert len(sampling) == 1, f"Data Error: Training Data has different sampling times: {sampling}"
-        time_step = sampling[0]
+        data_step = _sampling_time(seconds)
         if self.time_step is None:
-            self.time_step = time_step
-        else:
-            assert self.time_step % time_step == 0, (f"Value Error: Given time step {self.time_step} is not a multiple "
-                                                     f"of data time step: {time_step}.")
-            filtering = (df.index - df.index[0]) % self.time_step == 0
-            df = df[filtering]
+            self.time_step = data_step
+        elif not _is_multiple(self.time_step, data_step):
+            raise ValueError(f"Given time step {self.time_step} is not a multiple of data time step {data_step}.")
 
+        positions = seconds / self.time_step
+        on_grid = np.isclose(positions, np.round(positions), atol=1e-6)
+        df = df.iloc[on_grid]
+        positions = np.round(positions[on_grid]).astype(np.int64)
+        df.index = positions
+        df = df.reindex(np.arange(positions[-1] + 1))
+
+        if is_datetime:
+            df.index = index[0] + pd.to_timedelta(df.index * self.time_step, unit="s")
+        else:
+            df.index = float(index[0]) + df.index * self.time_step
+        df.index.name = "time"
         return df
 
-    @abstractmethod
-    def pipeline(self, file_path: str) -> TrainingDataGeneric:
+    # --- processing -----------------------------------------------------------------------------
+    def _required_columns(self) -> list[str]:
+        """Raw columns (besides inputs and outputs) needed in the data."""
+        columns = list()
+        for out in self.output:
+            change = CHANGE_PATTERN.match(out)
+            if change:
+                columns.append(change.group(1).strip())
+        return columns
+
+    def _window_length(self) -> int:
+        return 1
+
+    def _default_gap(self) -> int:
+        return max_lag(self.inputs) + self.shift
+
+    def build_training_data(
+        self,
+        df: pd.DataFrame,
+        extra_targets: list[str] | None = None,
+        eval_horizon: int | None = None,
+        eval_stride: int = 1,
+    ) -> TrainingData:
         """
-                Executes the full preprocessing pipeline.
+        Turns a loaded DataFrame into `TrainingData` (derived columns, shifted targets, split).
 
-                Args:
-                    file_path (str): Path to the raw data CSV file.
-
-                Returns:
-                    TrainingDataGeneric: Preprocessed data ready for (multi-step) model training.
+        Args:
+            df: Data on a regular time grid, see `load_data`.
+            extra_targets: Further columns to shift like the outputs (e.g. warmup features).
+            eval_horizon: Steps of the multi step evaluation stored in the training data.
+            eval_stride: Distance between two evaluation windows.
         """
-        pass
+        df = df.copy()
+        if self.transform is not None:
+            df = self.transform(df)
+        _process_legacy_constructed_features(df)
+
+        shifted = list(dict.fromkeys([*self.output, *(extra_targets or [])]))
+        for name in dict.fromkeys([*self.inputs, *shifted]):
+            ensure_column(df, name)
+        # raw features of 'Change(X)' outputs are kept for multi step evaluations, if available
+        aux = [c for c in self._required_columns() if c not in self.inputs and _try_ensure_column(df, c)]
+
+        target_columns = [TARGET_PREFIX + name for name in shifted]
+        targets = pd.DataFrame({TARGET_PREFIX + name: df[name].shift(-self.shift) for name in shifted}, index=df.index)
+        columns = list(dict.fromkeys([*self.inputs, *aux]))
+        frame = pd.concat([df[columns], targets], axis=1)
+
+        used = [*self.inputs, *target_columns]
+        valid = frame[used].notna().all(axis=1).to_numpy()
+        if not valid.any():
+            raise ValueError("Data Error: No row holds valid values for all inputs and outputs.")
+        first, last = np.flatnonzero(valid)[[0, -1]]
+        if not valid[first : last + 1].all() and not self.ignore_nan:
+            raise ValueError(
+                "Data Error: The data contains missing values (or missing time stamps) in intermediate rows. "
+                f"If this is intended, set ignore_nan=True in {self.__class__.__name__}."
+            )
+
+        labels = self.split.assign(
+            len(frame), self.random_state, self._window_length(), self.time_step, self._default_gap()
+        )
+        td = TrainingData(
+            frame.to_numpy(dtype=np.float64),
+            list(frame.columns),
+            self.inputs,
+            self.output,
+            labels,
+            valid,
+            time=frame.index.to_numpy(),
+            time_step=self.time_step,
+            eval_horizon=eval_horizon,
+            eval_stride=eval_stride,
+            targets=[TARGET_PREFIX + name for name in self.output],
+        )
+        logger.info("Split of the data: %s", {k: round(v, 3) for k, v in split_summary(labels[valid]).items()})
+        return td
 
     @abstractmethod
+    def pipeline(self, file_path: str | Path) -> TrainingDataGeneric:
+        """Loads and preprocesses a csv file."""
+
+    # --- (de)serialization ----------------------------------------------------------------------
     def get_config(self) -> dict:
-        pass
+        return {
+            "__class_name__": self.__class__.__name__,
+            "inputs": self.inputs,
+            "output": self.output,
+            "shift": self.shift,
+            "test_size": self.test_size,
+            "val_size": self.val_size,
+            "random_state": self.random_state,
+            "time_step": self.time_step,
+            "split": self.split.get_config(),
+            "time_index_col": self.time_index_col,
+            "csv_delimiter": self.csv_delimiter,
+            "csv_encoding": self.csv_encoding,
+            "csv_header": self.csv_header,
+            "csv_skiprows": self.csv_skiprows,
+            "ignore_nan": self.ignore_nan,
+            "transform": getattr(self.transform, "__name__", None) if self.transform is not None else None,
+        }
 
     @classmethod
-    @abstractmethod
-    def from_config(cls, config: dict) -> 'PreprocessingData':
-        pass
+    def from_config(cls, config: dict) -> PreprocessingData:
+        """
+        Creates a preprocessing from its config. Called on `PreprocessingData`, the class is taken
+        from '__class_name__'. A `transform` hook is not serialized and has to be set again.
+        """
+        config = dict(config)
+        class_name = config.pop("__class_name__", cls.__name__)
+        target = cls if cls is not PreprocessingData else PREPROCESSING_CLASS_REGISTRY[class_name]
+        config.pop("physXAI_version", None)
+        transform = config.pop("transform", None)
+        if isinstance(transform, str):
+            logger.warning("The transform '%s' is not serialized and has to be set again.", transform)
+            transform = None
+        if isinstance(config.get("split"), dict):
+            split = config["split"]
+            config["test_size"], config["val_size"] = split["test_size"], split["val_size"]
+        return target(transform=transform, **config)
 
 
+def _sampling_time(seconds: np.ndarray) -> float:
+    """Most frequent positive difference of the time stamps."""
+    diffs = np.diff(seconds)
+    diffs = diffs[diffs > 0]
+    if len(diffs) == 0:
+        raise ValueError("Data Error: The data needs at least two time stamps.")
+    values, counts = np.unique(np.round(diffs, 6), return_counts=True)
+    return float(values[np.argmax(counts)])
+
+
+def _is_multiple(value: float, base: float) -> bool:
+    ratio = value / base
+    return bool(np.isclose(ratio, round(ratio)) and round(ratio) >= 1)
+
+
+def _process_legacy_constructed_features(df: pd.DataFrame) -> None:
+    """Applies features of `physXAI.preprocessing.constructed` (physXAI < 1.0, removed in 1.0)."""
+    from physXAI.preprocessing.constructed import FeatureConstruction
+
+    if FeatureConstruction.features:
+        FeatureConstruction.process(df)
+
+
+def _resolve_steps(value: int | str | None, time_step: float) -> int | None:
+    """Converts a number of steps or a time delta string ('24h') into steps."""
+    if value is None or isinstance(value, (int, np.integer)):
+        return value
+    return int(round(pd.Timedelta(value).total_seconds() / time_step))
+
+
+@register_preprocessing
 class PreprocessingSingleStep(PreprocessingData):
     """
-    Handles preprocessing for single-step forecasting models.
-    This includes loading data, applying feature constructions, selecting input/output columns,
-    shifting the target variable for forecasting, and splitting data into training,
-    validation, and test sets.
+    Preprocessing of single step models, which predict the output of the next time step.
+
+    Args:
+        eval_horizon: Optional horizon of the multi step (recursive) evaluation of the model, in
+                      steps or as time delta string (e.g. '24h').
+        eval_stride: Distance between two evaluation windows, in steps or as time delta string.
+                     Defaults to a quarter of the horizon.
+        **kwargs: See `PreprocessingData`.
     """
 
-    def __init__(self, inputs: list[str], output: Union[str, list[str]], shift: int = 1,
-                 time_step: Optional[Union[int, float]] = None,
-                 test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
-                 time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
-                 csv_header: int = 0, csv_skiprows: Union[int, list[int]] = [], ignore_nan: bool = False, **kwargs):
+    def __init__(
+        self,
+        inputs: list[str],
+        output: str | list[str],
+        eval_horizon: int | str | None = None,
+        eval_stride: int | str | None = None,
+        **kwargs,
+    ):
+        super().__init__(inputs, output, **kwargs)
+        self.eval_horizon = eval_horizon
+        self.eval_stride = eval_stride
+
+    def _horizon_steps(self) -> tuple[int | None, int]:
+        horizon = _resolve_steps(self.eval_horizon, self.time_step) if self.time_step else None
+        stride = _resolve_steps(self.eval_stride, self.time_step) if self.time_step else None
+        if stride is None:
+            stride = max((horizon or 4) // 4, 1)
+        return horizon, stride
+
+    def _window_length(self) -> int:
+        horizon, _ = self._horizon_steps()
+        return horizon or 1
+
+    def pipeline(self, file_path: str | Path) -> TrainingData:
         """
-        Initializes the PreprocessingSingleStep instance.
-
-        Args:
-            inputs (List[str]): List of column names to be used as input features.
-            output (Union[str, List[str]]): Column name(s) for the target variable(s).
-            shift (int): The number of time steps to shift the target variable for forecasting.
-                         A shift of one means predicting the next time step.
-            time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
-            test_size (float): Proportion of the dataset to allocate to the test set.
-            val_size (float): Proportion of the dataset to allocate to the validation set.
-            random_state (int): Seed for random number generators to ensure reproducible splits.
-            time_index_col (Union[str, float]): Optional name or index of the time index column.
-            csv_delimiter (str): Delimiter for csv data. Default is ';'.
-            csv_encoding (str): Encoding for csv data. Default is 'latin1'.
-            csv_header (int): Row number of csv header. Default is 0.
-            csv_skiprows (Union[int, list[int]]): Row numbers of skipped data in csv. Default is no skipping.
-            ignore_nan (bool): If True, rows with NaN values will be dropped. If False, an error is raised if NaNs are present. Default is False.
-        """
-
-        super().__init__(inputs=inputs, output=output, shift=shift, time_step=time_step, test_size=test_size, val_size=val_size, random_state=random_state, time_index_col=time_index_col,
-                         csv_delimiter=csv_delimiter, csv_encoding=csv_encoding, csv_header=csv_header, csv_skiprows=csv_skiprows, ignore_nan=ignore_nan)
-
-    def process_data(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-        """
-                Processes the loaded DataFrame:
-                1. Applies feature constructions defined in `FeatureConstruction`.
-                2. Selects relevant input and output columns.
-                3. Handles missing values by dropping rows.
-                4. Shifts the target variable(s) `y` for forecasting.
-
-                Args:
-                    df (pd.DataFrame): The input DataFrame.
-
-                Returns:
-                    Tuple[pd.DataFrame, pd.DataFrame]: A tuple containing the processed features (X)
-                                                       and target (y) DataFrames.
-        """
-
-        # Applies feature constructions defined in `FeatureConstruction`.
-        FeatureConstruction.process(df)
-
-        df = df[self.inputs + [out for out in self.output if out not in self.inputs]]
-
-        # Nan handling
-        non_nan_rows = df.notna().all(axis=1)
-        first_valid_index = non_nan_rows.idxmax() if non_nan_rows.any() else None
-        last_valid_index = non_nan_rows.iloc[::-1].idxmax() if non_nan_rows.any() else None
-        df = df.loc[first_valid_index:last_valid_index]
-        if df.isnull().values.any():
-            if self.ignore_nan:
-                df.dropna(inplace=True)
-            else:
-                raise ValueError("Data Error: The TrainingData contains NaN values in intermediate rows. If this is intended, set ignore_nan=True in PreprocessingSingleStep.")
-
-        X = df[self.inputs]
-        y = df[self.output].shift(-self.shift)
-        if self.shift > 0:  # pragma: no cover
-            y = y.iloc[:-self.shift]
-            X = X.iloc[:-self.shift]
-
-        return X, y
-
-    def split_data(self, X: pd.DataFrame, y: pd.DataFrame) -> TrainingData:
-        """
-        Splits the processed features (X) and target (y) into training, validation, and test sets.
-        The data is converted to NumPy arrays before being stored in a TrainingData object.
-
-        Args:
-            X (pd.DataFrame): The DataFrame of input features.
-            y (pd.DataFrame): The DataFrame of target variables.
+        Loads and preprocesses a csv file.
 
         Returns:
-            TrainingData: A data container with NumPy arrays for X_train, X_val, X_test,
-                          y_train, y_val, y_test, and original column names.
+            TrainingData: Single step data, split leakage free.
         """
-
-        # Train - Test split
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=(self.test_size + self.val_size),
-                                                            random_state=self.random_state)
-
-        # Validation - Test split
-        split = self.test_size / (self.test_size + self.val_size)
-        if self.val_size != 0:
-            X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, test_size=split,
-                                                            random_state=self.random_state)
-            X_val, y_val = X_val.to_numpy(), y_val.to_numpy()
-        else:
-            X_val, y_val = None, None
-
-        # Return TrainingData object
-        return TrainingData(X_train.to_numpy(), X_val, X_test.to_numpy(),
-                            y_train.to_numpy(), y_val, y_test.to_numpy(),
-                            X.columns.values.tolist())
-
-    def pipeline(self, file_path: str) -> TrainingData:
-        """
-        Executes the full preprocessing pipeline: load, process, and split data.
-
-        Args:
-            file_path (str): Path to the raw data CSV file.
-
-        Returns:
-            TrainingData: The preprocessed data ready for model training.
-        """
-
         df = self.load_data(file_path)
-        X, y = self.process_data(df)
-        td = self.split_data(X, y)
+        horizon, stride = self._horizon_steps()
+        td = self.build_training_data(df, eval_horizon=horizon, eval_stride=stride)
         td.add_file_path(file_path)
         return td
 
     def get_config(self) -> dict:
-        config = {
-            '__class_name__': self.__class__.__name__,
-            'inputs': self.inputs,
-            'output': self.output,
-            'shift': self.shift,
-            'test_size': self.test_size,
-            'val_size': self.val_size,
-            'random_state': self.random_state,
-            'time_step': self.time_step,
-        }
+        config = super().get_config()
+        config.update({"eval_horizon": self.eval_horizon, "eval_stride": self.eval_stride})
         return config
 
-    @classmethod
-    def from_config(cls, config: dict) -> 'PreprocessingSingleStep':
-        return cls(**config)
 
-
-class PreprocessingMultiStep (PreprocessingData):
+@register_preprocessing
+class PreprocessingMultiStep(PreprocessingData):
     """
-    Handles preprocessing for multi-step forecasting models, typically RNNs.
-    This involves creating windowed datasets suitable for sequence models,
-    including optional warmup sequences.
+    Preprocessing of multi step (recurrent) models.
+
+    A window holds `warmup_width` steps to warm up the model followed by `label_width` steps to
+    predict. Windows are only cut out of one split, so training and test windows never overlap.
+
+    Args:
+        label_width: Number of predicted steps.
+        warmup_width: Number of warmup steps (0: no warmup).
+        overlapping_sequences: If True, windows start at every step, else every `label_width` steps.
+        batch_size: Batch size of the tf.data pipelines.
+        init_features: Features of the warmup sequence. Defaults to the inputs. Features which are
+                       no inputs are taken shifted like the outputs (removed in phase 4 of 1.0.0).
+        **kwargs: See `PreprocessingData`.
     """
 
-    def __init__(self, inputs: list[str], output: Union[str, list[str]], label_width: int,  warmup_width: int, shift: int = 1,
-                 time_step: Optional[Union[int, float]] = None,
-                 test_size: float = 0.1, val_size: float = 0.1, random_state: int = 42,
-                 time_index_col: Union[str, float] = 0, csv_delimiter: str = ';', csv_encoding: str = 'latin1',
-                 csv_header: int = 0, csv_skiprows: Union[int, list[int]] = [],
-                 overlapping_sequences: bool = True, batch_size=32, init_features: list[str] = None,**kwargs):
-        """
-        Initializes the PreprocessingMultiStep instance.
-
-        Args:
-            inputs (List[str]): Column names for input features to the main RNN.
-            output (Union[str, List[str]]): Column name(s) for target variable(s).
-            label_width (int): Number of time steps in the output (label) sequence.
-            warmup_width (int): Number of time steps in the warmup sequence (for RNN state initialization).
-                                If 0, no warmup sequence is used.
-            shift (int): Offset between the end of the input window and the start of the label window.
-            time_step (Optional[Union[int, float]]): Optional time step sampling. If None, sampling of data is used.
-            test_size (float): Proportion for the test set.
-            val_size (float): Proportion for the validation set.
-            random_state (int): Seed for reproducibility (though shuffle in timeseries_dataset_from_array
-                                might behave differently with seeds across calls if not reset).
-            time_index_col (Union[str, float]): Optional name or index of the time index column.
-            csv_delimiter (str): Delimiter for csv data. Default is ';'.
-            csv_encoding (str): Encoding for csv data. Default is 'latin1'.
-            csv_header (int): Row number of csv header. Default is 0.
-            csv_skiprows (Union[int, list[int]]): Row numbers of skipped data in csv. Default is no skipping.
-            overlapping_sequences (bool): Whether to use overlapping sequences to generate multi-step sequences.
-            batch_size (int): Batch size for creating tf.data.Dataset objects.
-            init_features (Optional[List[str]]): Features to include in the warmup sequence.
-                                                 Defaults to `inputs`, which lets a model warm up its
-                                                 own states on the warmup sequence. A separate
-                                                 initialization model can use other features, e.g. the
-                                                 measured output.
-        """
-        super().__init__(inputs=inputs, output=output, shift=shift, time_step=time_step, test_size=test_size, val_size=val_size, random_state=random_state, time_index_col=time_index_col,
-                         csv_delimiter=csv_delimiter, csv_encoding=csv_encoding, csv_header=csv_header, csv_skiprows=csv_skiprows)
-
-        self.overlapping_sequences = overlapping_sequences
-
-        # Determine initialization features.
-        if init_features is None:
-            self.init_features: list[str] = list(inputs)
-        else:
-            self.init_features: list[str] = init_features
-
-        keras.utils.set_random_seed(random_state)
-
-        # Determine necessary parameters for window creation
-        self.features: list[str] = (inputs + self.output +
-                                    [f for f in self.init_features if f not in inputs and f not in self.output])
-        self.column_indices: dict[str, int] = {name: i for i, name in enumerate(self.features)}
-        # The order of these lists defines the column order of the warmup sequence.
-        # It has to be derived from the init_features list, since the iteration order
-        # of a set is not stable across processes.
-        self.warmup_columns_input: list[str] = [f for f in self.init_features if f in inputs]
-        self.warmup_columns_labels: list[str] = [f for f in self.init_features if f not in inputs]
-
+    def __init__(
+        self,
+        inputs: list[str],
+        output: str | list[str],
+        label_width: int,
+        warmup_width: int,
+        overlapping_sequences: bool = True,
+        batch_size: int = 32,
+        init_features: list[str] | None = None,
+        **kwargs,
+    ):
+        for legacy in ("warmup_columns_input", "warmup_columns_labels"):
+            kwargs.pop(legacy, None)
+        super().__init__(inputs, output, **kwargs)
         self.label_width: int = label_width
         self.warmup_width: int = warmup_width
-        self.shift: int = shift
-        self.total_window_size: int = warmup_width + label_width + shift
-
-        self.input_end: int = warmup_width + label_width
-        self.label_start: int = shift + warmup_width
-
-        self.input_slice = slice(self.warmup_width, self.input_end)
-        self.labels_slice = slice(self.label_start, None)
-        self.warmup_slice_input = slice(0, self.warmup_width)
-        self.warmup_slice_labels = slice(shift, self.label_start)
-
+        self.overlapping_sequences = overlapping_sequences
         self.batch_size: int = batch_size
+        self.init_features: list[str] = list(self.inputs) if init_features is None else list(init_features)
+        self.warmup_columns_input: list[str] = [f for f in self.init_features if f in self.inputs]
+        self.warmup_columns_labels: list[str] = [f for f in self.init_features if f not in self.inputs]
 
-    def process_data(self, df: pd.DataFrame) -> TrainingDataMultiStep:
+    def _window_length(self) -> int:
+        return self.warmup_width + self.label_width + self.shift
+
+    def pipeline(self, file_path: str | Path) -> TrainingDataMultiStep:
         """
-        Processes the loaded DataFrame for multi-step forecasting:
-        1. Applies feature constructions defined in `FeatureConstruction`.
-        2. Selects relevant features.
-        3. Handles missing values by dropping rows.
-        4. Creates windowed tf.data.Dataset objects for training, validation, and testing.
-        5. Maps these datasets to split windows into (inputs, warmup_sequence), labels structure.
-
-        Args:
-            df (pd.DataFrame): Input DataFrame.
+        Loads a csv file and cuts it into windows.
 
         Returns:
-            TrainingDataMultiStep: Container with tf.data.Dataset objects.
+            TrainingDataMultiStep: Windows of inputs, warmup and labels for every split.
         """
-
-        # Applies feature constructions defined in `FeatureConstruction`.
-        FeatureConstruction.process(df)
-
-        df = df[self.features]
-        non_nan_rows = df.notna().all(axis=1)
-        first_valid_index = non_nan_rows.idxmax() if non_nan_rows.any() else None
-        last_valid_index = non_nan_rows.iloc[::-1].idxmax() if non_nan_rows.any() else None
-        df = df.loc[first_valid_index:last_valid_index]
-        if df.isnull().values.any():
-            raise ValueError("Data Error: The TrainingData contains NaN values in intermediate rows.")
-
-        # Create windowed dataset
-        train_ds, val_ds, test_ds = self._make_dataset(df)
-
-        # Split data
-        train_ds = train_ds.map(lambda x: self._split_window(x))
-        if val_ds is not None:
-            val_ds = val_ds.map(lambda x: self._split_window(x))
-        test_ds = test_ds.map(lambda x: self._split_window(x))
-
-        return TrainingDataMultiStep(train_ds, val_ds, test_ds, self.inputs, self.output, self.init_features)
-
-    def _split_window(self, features):   # pragma: no cover
-        """
-        Splits a batch of windows into inputs, (optional) warmup, and labels.
-        This function is designed to be used with `tf.data.Dataset.map()`.
-
-        Args:
-            features (tf.Tensor): A batch of windows from `timeseries_dataset_from_array`.
-                                      Shape: (batch_size, total_window_size, num_all_df_features).
-
-        Returns:
-            Tuple: Depending on `warmup_width`:
-                   - If `warmup_width > 0`: `((main_inputs, warmup_inputs), labels)`
-                   - If `warmup_width == 0`: `(main_inputs, labels)`
-        """
-
-        # Get inputs
-        inputs = keras.ops.stack([features[:, self.input_slice, self.column_indices[name]]
-                                  for name in self.inputs], axis=-1)
-
-        # Get labels
-        labels = keras.ops.stack([features[:, self.labels_slice, self.column_indices[name]]
-                                  for name in self.output], axis=-1)
-
-        # Warmup
-        if self.warmup_width > 0:
-            if len(self.warmup_columns_input) > 0 and len(self.warmup_columns_labels) > 0:
-                # Get warmup features from labels and features
-                warmup_inputs = keras.ops.stack([features[:, self.warmup_slice_input, self.column_indices[name]]
-                                                 for name in self.warmup_columns_input], axis=-1)
-                warmup_labels = keras.ops.stack([features[:, self.warmup_slice_labels, self.column_indices[name]]
-                                                 for name in self.warmup_columns_labels], axis=-1)
-                warmup = keras.ops.concatenate([warmup_inputs, warmup_labels], axis=-1)
-            elif len(self.warmup_columns_input) > 0:
-                # Get warmup features from features
-                warmup = keras.ops.stack([features[:, self.warmup_slice_input, self.column_indices[name]]
-                                          for name in self.warmup_columns_input], axis=-1)
-            else:
-                # Get warmup features from labels
-                warmup = keras.ops.stack([features[:, self.warmup_slice_labels, self.column_indices[name]]
-                                          for name in self.warmup_columns_labels], axis=-1)
-            return (inputs, warmup), labels
-        else:
-            return inputs, labels
-
-    def _make_dataset(self, df: pd.DataFrame):
-        """
-        Creates windowed tf.data.Dataset objects for training, validation, and testing
-        from the input DataFrame.
-
-        Args:
-            df (pd.DataFrame): The processed DataFrame containing all necessary features.
-
-        Returns:
-            Tuple[tf.data.Dataset, Optional[tf.data.Dataset], tf.data.Dataset]:
-                Train, validation (or None), and test datasets.
-        """
-
-        data = np.array(df, dtype=np.float32)
-
-        if self.overlapping_sequences:
-            sequence_stride = 1
-        else:
-            sequence_stride = self.label_width
-
-        # et a batch of sequences
-        ds = keras.utils.timeseries_dataset_from_array(
-            data=data,
-            targets=None,
-            sequence_length=self.total_window_size,
-            sequence_stride=sequence_stride,
-            shuffle=True,
-            batch_size=self.batch_size)
-
-        # Split the dataset into training and temporary batch_dataset
-        total_batches = len(ds)
-        train_batches = int(total_batches * (1 - self.val_size - self.test_size))
-        train_ds = ds.take(train_batches)
-        temp_ds = ds.skip(train_batches)
-
-        # Split the dataset into validation and test batch_dataset
-        val_ratio_temp = self.val_size / (self.val_size + self.test_size)
-        total_batches = len(temp_ds)
-        train_batches = int(total_batches * val_ratio_temp)
-        val_ds = temp_ds.take(train_batches)
-        test_ds = temp_ds.skip(train_batches)
-
-        if len(val_ds) == 0:
-            val_ds = None
-
-        return train_ds, val_ds, test_ds
-
-    def pipeline(self, file_path: str) -> TrainingDataMultiStep:
-        """
-        Executes the full multi-step preprocessing pipeline.
-
-        Args:
-            file_path (str): Path to the raw data CSV file.
-
-        Returns:
-            TrainingDataMultiStep: Preprocessed data ready for multi-step model training.
-        """
-
         df = self.load_data(file_path)
-        td = self.process_data(df)
-        td.add_file_path(file_path)
-        return td
+        td = self.build_training_data(df, extra_targets=self.warmup_columns_labels)
+        windows = {split: self._windows(td, split) for split in SPLITS}
+        X_val, y_val = windows["val"]
+        if y_val is None or len(y_val) == 0:
+            X_val, y_val = None, None
+        result = TrainingDataMultiStep(
+            windows["train"][0],
+            X_val,
+            windows["test"][0],
+            windows["train"][1],
+            y_val,
+            windows["test"][1],
+            self.inputs,
+            self.output,
+            self.init_features,
+            batch_size=self.batch_size,
+            seed=self.random_state,
+        )
+        result.add_file_path(file_path)
+        return result
+
+    def _windows(self, td: TrainingData, split: str) -> tuple[Any, np.ndarray | None]:
+        length = self.warmup_width + self.label_width
+        stride = 1 if self.overlapping_sequences else self.label_width
+        targets = [TARGET_PREFIX + name for name in self.output]
+        warm_labels = [TARGET_PREFIX + name for name in self.warmup_columns_labels]
+        windows = td.windows(split, length, stride, columns=[*self.inputs, *targets, *warm_labels])
+        windows = windows.astype(np.float32)
+        n_in, n_out = len(self.inputs), len(targets)
+
+        main = windows[:, self.warmup_width :, :n_in]
+        labels = windows[:, self.warmup_width :, n_in : n_in + n_out]
+        if self.warmup_width == 0:
+            return main, labels
+        parts = list()
+        if self.warmup_columns_input:
+            idx = [self.inputs.index(f) for f in self.warmup_columns_input]
+            parts.append(windows[:, : self.warmup_width, idx])
+        if self.warmup_columns_labels:
+            parts.append(windows[:, : self.warmup_width, n_in + n_out :])
+        return (main, np.concatenate(parts, axis=-1)), labels
 
     def get_config(self) -> dict:
-        config = {
-            '__class_name__': self.__class__.__name__,
-            'inputs': self.inputs,
-            'output': self.output,
-            'label_width': self.label_width,
-            'warmup_width': self.warmup_width,
-            'overlapping_sequences': self.overlapping_sequences,
-            'batch_size': self.batch_size,
-            'init_features': self.init_features,
-            'warmup_columns_input': self.warmup_columns_input,
-            'warmup_columns_labels': self.warmup_columns_labels,
-            'shift': self.shift,
-            'test_size': self.test_size,
-            'val_size': self.val_size,
-            'random_state': self.random_state,
-            'time_step': self.time_step,
-        }
+        config = super().get_config()
+        config.update(
+            {
+                "label_width": self.label_width,
+                "warmup_width": self.warmup_width,
+                "overlapping_sequences": self.overlapping_sequences,
+                "batch_size": self.batch_size,
+                "init_features": self.init_features,
+            }
+        )
         return config
-
-    @classmethod
-    def from_config(cls, config: dict) -> 'PreprocessingMultiStep':
-        return cls(**config)

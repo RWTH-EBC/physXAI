@@ -3,7 +3,8 @@ name: Pytest Coverage
 on:
   pull_request:
     branches:
-    - main # Runs on PRs targeting the main branch
+    - main
+    - refactoring_v1.0.0  # phase PRs of the 1.0.0 refactoring, remove after the release
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
