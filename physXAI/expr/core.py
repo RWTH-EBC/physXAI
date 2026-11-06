@@ -207,15 +207,26 @@ class BuildContext:
         input_tensor: Keras input holding all input columns on its last axis.
         input_names: Names of these columns.
         train_values: Training values of the columns, used to adapt normalizations. Optional.
+        prediction: Tensor of the model output, the value of `Prediction()` in physics residuals. Optional.
+        layers: Keras layers of parameters and blocks to reuse, by id of the node. Two builds sharing this
+                dict share their weights (e.g. a residual evaluated with the prediction and with the data).
     """
 
-    def __init__(self, input_tensor, input_names: list[str], train_values: Mapping[str, np.ndarray] | None = None):
+    def __init__(
+        self,
+        input_tensor,
+        input_names: list[str],
+        train_values: Mapping[str, np.ndarray] | None = None,
+        prediction=None,
+        layers: dict[int, Any] | None = None,
+    ):
         self.input = input_tensor
         self.input_names = list(input_names)
         self.train_values = train_values
+        self.prediction = prediction
         self._tensors: dict[int, Any] = dict()
-        #: Keras layers holding the weights of blocks, by id of the block
-        self.layers: dict[int, Any] = dict()
+        #: Keras layers holding the weights of parameters and blocks, by id of the node
+        self.layers: dict[int, Any] = layers if layers is not None else dict()
 
     def index(self, column: str) -> int:
         try:
@@ -352,9 +363,82 @@ class Param(Expr):
     def to_keras(self, ctx):
         from physXAI.models.ann.keras_models.keras_models import ConstantLayer
 
-        layer = ConstantLayer(value=self.init, trainable=self.is_trainable, weight_name=self._name)
-        ctx.layers[id(self)] = layer
+        layer = ctx.layers.get(id(self))
+        if layer is None:
+            layer = ConstantLayer(value=self.init, trainable=self.is_trainable, weight_name=self._name)
+            ctx.layers[id(self)] = layer
         return layer(ctx.input)
+
+
+#: Prefix of the columns holding values at the predicted time (see `Target`), as in the preprocessing
+TARGET_PREFIX = "y:"
+
+
+@register_expression
+class Prediction(Expr):
+    """
+    The output of the model, only available in physics residuals (`physXAI.models.ann.pinn.physics`).
+
+    Example:
+        >>> residual = px.Prediction() - dT_physics   # disagreement of the prediction with the physics
+    """
+
+    def default_name(self) -> str:
+        return "prediction"
+
+    def to_keras(self, ctx):
+        if ctx.prediction is None:
+            raise ValueError("px.Prediction() is only available in physics residuals.")
+        return ctx.prediction
+
+
+def Target(column: str) -> Var:  # noqa: N802 - reads like an expression class
+    """
+    A data column at the predicted time (e.g. the measured output), only for physics residuals and loss
+    columns: `px.Target('Change(T)')` is the column 'y:Change(T)'. It is no input of the model.
+    """
+    return Var(TARGET_PREFIX + column)
+
+
+def positive(value: float, name: str, trainable: bool = True) -> Expr:
+    """
+    A positive (physical) parameter starting at `value`: `value * exp(p)` with a trainable `Param` p = 0
+    named 'log_<name>'. The scale is set by the physical initial value, the training changes it relatively
+    and it stays positive.
+
+    Args:
+        value: Initial value (> 0), in physical units.
+        name: Name of the parameter (the expression is named `name`).
+        trainable: Whether the parameter is trained.
+    """
+    if not value > 0:
+        raise ValueError(f"The initial value of the positive parameter '{name}' has to be positive, got {value}.")
+    return (Const(value) * exp(Param(0.0, trainable=trainable, name=f"log_{name}"))).named(name)
+
+
+def freeze(expr: Expr, values: Mapping[str, float]) -> Expr:
+    """
+    The expression with every `Param` replaced by a constant: `values[name]`, else its initial value.
+    Used to evaluate expressions with trained parameters with NumPy or CasADi.
+    """
+    memo: dict[int, Expr] = dict()
+
+    def rebuild(node: Expr) -> Expr:
+        if id(node) in memo:
+            return memo[id(node)]
+        if isinstance(node, Param):
+            value = values.get(node.name, node.init)
+            if value is None:
+                raise ValueError(f"No value for the parameter '{node.name}'.")
+            new = Const(value, name=node._name)
+        elif not node.children:
+            new = node
+        else:
+            new = node.with_children([rebuild(c) for c in node.children])
+        memo[id(node)] = new
+        return new
+
+    return rebuild(expr)
 
 
 class Binary(Expr):

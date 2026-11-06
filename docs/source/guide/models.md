@@ -53,7 +53,11 @@ m.pipeline(td)
 ## Multi step models
 
 `RNNModel(rnn_layer='RNN' | 'GRU' | 'LSTM', rnn_units)` predicts a trajectory, see
-[Recurrent models](rnn.md).
+[Recurrent models](rnn.md). `PCNNModel(heating, cooling, losses)` is a physically consistent recurrent model, see
+[Physics-informed models](physics.md).
+
+Every single step keras model takes a physics residual with trainable physical parameters
+(`physics=PhysicsResidual(...)`), see [Physics-informed models](physics.md).
 
 ## Saving and loading
 

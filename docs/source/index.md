@@ -12,6 +12,7 @@ guide/data
 guide/models
 guide/multi_step
 guide/rnn
+guide/physics
 guide/evaluation
 guide/agentlib
 migration
@@ -30,6 +31,7 @@ code/modules
 - [Getting started](guide/getting_started.md), [expressions](guide/expressions.md),
   [data pipeline and split](guide/data.md), [models](guide/models.md),
   [multi step evaluation and training](guide/multi_step.md), [recurrent models](guide/rnn.md),
+  [physics-informed models](guide/physics.md),
   [evaluation and comparison](guide/evaluation.md), [AgentLib-MPC export](guide/agentlib.md)
 - [Migration from physXAI 0.x to 1.0](migration.md)
 - [API reference](code/modules)

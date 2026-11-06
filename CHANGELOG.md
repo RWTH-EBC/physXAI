@@ -79,6 +79,17 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   comparison, AgentLib-MPC export) and migration guide from 0.x. Published at
   https://rwth-ebc.github.io/physXAI/main/docs/index.html.
 
+- `PCNNModel`: physically consistent neural network after Di Natale et al. (2022): energy accumulator with
+  positive heating, cooling and loss rates (initial rules of thumb per hour) in parallel to a recurrent network of
+  the unforced dynamics; the predicted temperature provably rises with heating and outside temperature over the
+  horizon. Closed loop, warmup and step model export as for `RNNModel`, verified against AgentLib-MPC (CasADi).
+  Example `TAir_pcnn.py`.
+- Physics residuals with trainable physical parameters for all single step keras models:
+  `physics=PhysicsResidual(px.Prediction() - model, weight)`, `physics_fit='calibrate'` (grey-box identification
+  first, then the network), `'joint'` or `'fixed'`; `px.Prediction`, `px.Target`, `px.positive`, `px.freeze`;
+  trained parameters in `td.physics`. Only the network is exported. Example `TAir_physics_residual.py`.
+- User guide page on physics-informed models; `docs/branch_review.md` documents the review of the old branches.
+
 ### Changed
 - `PINNModel(physics_targets={'pinn': w})`: physics targets are loss columns, no model outputs, so a PINN has one
   output and is exportable to AgentLib-MPC. The loss `mse(ŷ, y)/s + Σ w_i·mse(ŷ, p_i)/s` is normalized by the

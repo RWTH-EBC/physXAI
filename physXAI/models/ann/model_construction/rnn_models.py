@@ -111,6 +111,121 @@ def build_step_model(
     return keras.Model([sequence, *states], [prediction, *new_states], name=name)
 
 
+#: Kinds of terms of the physics-inspired module of a PCNN and the sign of their effect
+PCNN_TERMS = {"heating": 1.0, "cooling": -1.0, "loss": 1.0}
+#: Name of the dense layer holding the (relative) physical parameters of a PCNN
+PCNN_PHYSICS_LAYER = "dense_pcnn_physics"
+
+
+@dataclass
+class PCNNTerm:
+    """
+    One term of the energy accumulator of a PCNN.
+
+    Attributes:
+        kind: 'heating' (+ s * u), 'cooling' (- s * u) or 'loss' (+ s * (T_x - T), e.g. the outside temperature).
+        input: Index of the input feature in the sequence.
+        initial: Initial value of the parameter s per time step (> 0). The trained parameter is
+                 `initial * weight`, the weight starts at 1 (s = s0 * s~ as in Di Natale et al. 2022).
+    """
+
+    kind: str
+    input: int
+    initial: float
+
+
+def build_pcnn_step_model(config: dict, td, terms: list[PCNNTerm], name: str = STEP_MODEL_NAME) -> keras.Model:
+    """
+    Builds the step model of a physically consistent neural network (PCNN, Di Natale et al. 2022,
+    Applied Energy 325, 119806), `[sequence, E, *states of f] -> [change of T, E, *states of f]`.
+
+    The predicted feature T (input and output `Change(T)`) is the sum of the unforced dynamics D and the
+    energy accumulator E:
+
+        E(k+1) = E(k) + sum_heating a * u(k) - sum_cooling d * u(k) + sum_losses b * (T_x(k) - T(k))
+        D(k+1) = D(k) + f(D(k), x(k)),   D(k) = T(k) - E(k)
+
+    f is a recurrent network on D and the remaining inputs x, which excludes the controls and the
+    temperatures of the losses. With a, b, d > 0 and 1 - sum b > 0, T increases with heating, decreases
+    with cooling and increases with the temperatures T_x over the whole horizon, for any f. The parameters
+    work in physical units, f on normalized values.
+
+    Only keras layers translated by AgentLib-MPC are used (input slices, constants, subtract, multiply,
+    concatenate, dense, simple_rnn, normalization, rescaling, add), the layer names carry their types.
+
+    Args:
+        config: Settings, validated by `RNNModelConstruction_config` (rnn_units, rnn_layer of f).
+        td: `TrainingDataMultiStep` with one output `Change(T)` and T as input.
+        terms: The terms of the energy accumulator.
+        name: Name of the model.
+    """
+    from physXAI.models.ann.keras_models.keras_models import ConstantLayer, InputSliceLayer
+
+    config = RNNModelConstruction_config.model_validate(config).model_dump()
+    units, rnn_layer = config["rnn_units"], config["rnn_layer"]
+    n_inputs = len(td.inputs)
+    X = td.X_train_single
+    feature = td.inputs.index(td.features[0])
+    change = td.targets("train").reshape(-1)
+
+    sequence = keras.Input(shape=(None, n_inputs), name="sequence_input")
+    energy_state = keras.Input(shape=(1,), name="state_input_0")
+    states = [keras.Input(shape=(units,), name=f"state_input_{i + 1}") for i in range(number_of_states(rnn_layer))]
+
+    # --- physics-inspired module: increment of the energy accumulator in physical units -----------
+    temperature = InputSliceLayer([feature], name="input_slice_pcnn_feature")(sequence)
+    scaled = list()
+    for j, term in enumerate(terms):
+        column = InputSliceLayer([term.input], name=f"input_slice_pcnn_term_{j}")(sequence)
+        if term.kind == "loss":
+            column = keras.layers.Subtract(name=f"subtract_pcnn_gradient_{j}")([column, temperature])
+        initial = keras.layers.Multiply(name=f"multiply_pcnn_scale_{j}")
+        constant = ConstantLayer(value=PCNN_TERMS[term.kind] * term.initial, shape=(1,), name=f"constant_pcnn_scale_{j}")
+        scaled.append(initial([column, constant(column)]))
+    physics = scaled[0] if len(scaled) == 1 else keras.layers.Concatenate(name="concatenate_pcnn_physics")(scaled)
+    increment = keras.layers.Dense(
+        1, use_bias=False, kernel_initializer="ones", kernel_constraint=keras.constraints.NonNeg(),
+        name=PCNN_PHYSICS_LAYER,
+    )(physics)
+    # E(k+1) = E(k) + increment(k): a linear recurrent layer with fixed weights 1
+    accumulator = keras.layers.SimpleRNN(
+        1, activation="linear", use_bias=False, kernel_initializer="ones", recurrent_initializer="ones",
+        return_sequences=True, return_state=True, trainable=False, name="simple_rnn_pcnn_energy",
+    )
+    energy_next, new_energy_state = accumulator(increment, initial_state=[energy_state])
+    energy = keras.layers.Subtract(name="subtract_pcnn_energy")([energy_next, increment])
+    unforced = keras.layers.Subtract(name="subtract_pcnn_unforced")([temperature, energy])
+
+    # --- black-box module f(D, x) ----------------------------------------------------------------
+    used = {feature, *(term.input for term in terms)}
+    others = [i for i in range(n_inputs) if i not in used]
+    columns = [feature, *others]
+    if others:
+        disturbances = InputSliceLayer(others, name="input_slice_pcnn_disturbances")(sequence)
+        features = keras.layers.Concatenate(name="concatenate_pcnn_unforced")([unforced, disturbances])
+    else:
+        features = unforced
+    normalized = keras.layers.Normalization(
+        mean=X[:, columns].mean(axis=0), variance=np.maximum(X[:, columns].var(axis=0), 1e-12),
+        name="normalization_pcnn",
+    )(features)
+    prefix = {"RNN": "simple_rnn", "GRU": "gru", "LSTM": "lstm"}[rnn_layer]
+    rnn = RNN_LAYERS[rnn_layer](units, return_sequences=True, return_state=True, name=f"{prefix}_pcnn_unforced")
+    hidden, *new_states = rnn(normalized, initial_state=states)
+    unforced_change = keras.layers.Dense(1, name="dense_pcnn_unforced")(hidden)
+    unforced_change = keras.layers.Rescaling(
+        scale=float(max(change.std(), 1e-12)), offset=0.0, name="rescaling_pcnn"
+    )(unforced_change)
+    prediction = keras.layers.Add(name="add_pcnn_change")([unforced_change, increment])
+    return keras.Model([sequence, energy_state, *states], [prediction, new_energy_state, *new_states], name=name)
+
+
+def pcnn_parameters(step_model: keras.Model, terms: list[PCNNTerm]) -> list[float]:
+    """Trained parameters of the energy accumulator per time step, in the order of `terms`."""
+    weights = step_model.get_layer(PCNN_PHYSICS_LAYER).get_weights()[0][:, 0]
+    return [float(w * term.initial) for w, term in zip(weights, terms, strict=True)]
+
+
 def state_sizes(step_model: keras.Model) -> list[int]:
     """Sizes of the states of a step model."""
     return [int(t.shape[-1]) for t in step_model.inputs[1:]]
