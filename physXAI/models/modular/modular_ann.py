@@ -59,7 +59,8 @@ class ModularANN(ANNModel):
         epochs: Maximum number of epochs.
         learning_rate: Learning rate of the Adam optimizer.
         early_stopping_epochs: Patience of the early stopping on the validation loss (None: no early stopping).
-        random_seed: Seed of the weights and the batch order, set when the model is generated.
+        random_seed: Seed of the weights and the batch order, set when the model is generated. Defaults to the global
+                     seed (`physXAI.set_seed`), else a new seed is drawn (stored in the config).
         warm_start: With solver='adam' and a normalized `Linear` block as architecture: the training starts at the
                     least squares solution of its data only terms (sign bounds of its monotonicities included), the
                     trainable terms (e.g. a `px.MLP` for the remaining dynamics) start with weight 0. The model starts
@@ -78,7 +79,7 @@ class ModularANN(ANNModel):
         epochs: int = 1000,
         learning_rate: float = 0.001,
         early_stopping_epochs: int | None = 100,
-        random_seed: int = 42,
+        random_seed: int | None = None,
         shape: ShapeConstraints | dict | None = None,
         warm_start: bool = True,
         **kwargs,
@@ -234,9 +235,3 @@ class ModularANN(ANNModel):
         )
         return config
 
-    @classmethod
-    def from_config(cls, config: dict) -> ModularANN:
-        config = dict(config)
-        config.pop("__class_name__", None)
-        config.pop("physXAI_version", None)
-        return cls(**config)

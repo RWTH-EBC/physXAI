@@ -28,6 +28,7 @@ import keras  # noqa: E402
 
 logger = logging.getLogger("physXAI")
 
+#: Modes of the training of a single step model ('single_step': the training without `RecursiveTraining`)
 Mode = Literal["single_step", "multi_step", "single_then_multi"]
 
 
@@ -181,6 +182,8 @@ def fit_recursive(keras_model: keras.Model, td, config: RecursiveTraining, model
     from physXAI.evaluation.rollout import build_rollout_model, recursion_spec, rollout_data
     from physXAI.io.run import keras_verbosity
 
+    if getattr(td, "shift", 1) != 1:
+        raise ValueError("Multi step training predicts the next step recursively and needs shift=1.")
     spec = recursion_spec(td)
     if spec is None:
         raise ValueError(

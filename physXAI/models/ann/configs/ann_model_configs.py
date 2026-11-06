@@ -1,9 +1,12 @@
+"""Validation of the settings of the keras model constructions (pydantic)."""
+
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
 
 class ClassicalANNConstruction_config(BaseModel):
+    """Settings of a feed forward network: layers, neurons, activations, normalization and output rescaling."""
 
     n_layers: int = Field(..., ge=0)
     n_neurons: int | list[int] = 32
@@ -35,6 +38,7 @@ class ClassicalANNConstruction_config(BaseModel):
 
 
 class RBFConstruction_config(ClassicalANNConstruction_config):
+    """Settings of an RBF network (one layer), the k-means seed and an optional fixed output rescaling."""
 
     n_layers: int = Field(..., ge=1, le=1)
     random_state: int = 42
@@ -47,6 +51,7 @@ class RBFConstruction_config(ClassicalANNConstruction_config):
 
 
 class CMNNModelConstruction_config(ClassicalANNConstruction_config):
+    """Settings of a CMNN: monotonicities per input and the shares of convex, concave and saturated neurons."""
 
     monotonicities: dict[str, int] | None = None
     activation_split: list[float] | None = [1, 1, 1]
@@ -74,5 +79,6 @@ class CMNNModelConstruction_config(ClassicalANNConstruction_config):
 
 
 class RNNModelConstruction_config(BaseModel):
+    """Settings of the recurrent layer of an RNN or PCNN."""
     rnn_units: int = Field(32, gt=0)
     rnn_layer: Literal["RNN", "GRU", "LSTM"] = "RNN"

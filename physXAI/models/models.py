@@ -1,3 +1,12 @@
+"""
+Base classes of all physXAI models and the scikit-learn linear regression.
+
+A model object holds the settings of a model (its config) and runs the training pipeline: generate, compile,
+fit, evaluate, save. The trained (keras or scikit-learn) model is returned by `pipeline` and kept in
+`trained_model`. Models are registered by class name (`register_model`), so they can be created from their
+saved config (`AbstractModel.model_from_config`); AgentLib-MPC reads the class name from `{name}_model.json`.
+"""
+
 import logging
 import os
 import time
@@ -22,8 +31,21 @@ logger = logging.getLogger("physXAI")
 
 MODEL_CLASS_REGISTRY: dict[str, type['AbstractModel']] = dict()
 
+#: Keys of a saved model config which are no arguments of the model (see `Run.save`)
+CONFIG_META_KEYS = ("__class_name__", "physXAI_version", "environment")
+
+
+def _reject_unknown_arguments(model, kwargs: dict) -> None:
+    """Unknown arguments are errors, so a misspelled setting does not silently fall back to its default."""
+    if kwargs:
+        raise TypeError(f"{model.__class__.__name__} got unknown arguments {sorted(kwargs)}.")
+
 
 class AbstractModel(ABC):
+    """
+    Base class of all models: the training pipeline (`pipeline`, `online_pipeline`), saving, loading and the
+    config (`get_config`, `from_config`, `model_from_config`).
+    """
 
     @abstractmethod
     def generate_model(self, **kwargs):
@@ -57,6 +79,7 @@ class AbstractModel(ABC):
     @staticmethod
     @abstractmethod
     def evaluate(model, td: TrainingDataGeneric):
+        """Predicts all splits of `td` with the trained model and stores predictions and metrics in `td`."""
         pass
 
     #: Title of the plots of the model
@@ -174,6 +197,7 @@ class AbstractModel(ABC):
         """
 
         self._check_training_data(td)
+        self.prepare()
         model = self.load_model(load_path)
         self.compile_model(model)
 
@@ -211,9 +235,12 @@ class AbstractModel(ABC):
         }
 
     @classmethod
-    @abstractmethod
     def from_config(cls, config: dict) -> 'AbstractModel':
-        pass
+        """
+        Creates the model from its config (`get_config`). Meta keys of saved configs (`__class_name__`,
+        `physXAI_version`, `environment`) are ignored, unknown settings raise a `TypeError`.
+        """
+        return cls(**{k: v for k, v in config.items() if k not in CONFIG_META_KEYS})
 
     @staticmethod
     def model_from_config(item_conf: dict) -> 'AbstractModel':
@@ -222,13 +249,13 @@ class AbstractModel(ABC):
 
         Args:
             item_conf (dict): The configuration dictionary for a model.
-                              Must contain 'class_name' and other necessary parameters.
+                              Must contain '__class_name__' and other necessary parameters.
 
         Returns:
             AbstractModel: An instance of the appropriate model subclass.
 
         Raises:
-            KeyError: If 'class_name' is not in `item_conf` or if the class_name is not in `MODEL_CLASS_REGISTRY`.
+            KeyError: If '__class_name__' is not in `item_conf` or the class is not in `MODEL_CLASS_REGISTRY`.
         """
         class_name = item_conf['__class_name__']
         model_class = MODEL_CLASS_REGISTRY[class_name]
@@ -255,7 +282,7 @@ class SingleStepModel(AbstractModel, ABC):
     """
 
     def __init__(self, **kwargs):
-        pass
+        _reject_unknown_arguments(self, kwargs)
 
     @staticmethod
     def evaluate(model, td: TrainingData):
@@ -289,10 +316,6 @@ class SingleStepModel(AbstractModel, ABC):
                 f"{self.__class__.__name__} is a single step model and needs PreprocessingSingleStep data. "
                 "To evaluate it over a horizon, use PreprocessingSingleStep(eval_horizon=...)."
             )
-
-    @classmethod
-    def from_config(cls, config: dict) -> 'SingleStepModel':
-        return cls(**config)
 
 
 @register_model
@@ -368,7 +391,7 @@ class MultiStepModel(AbstractModel, ABC):
     """
 
     def __init__(self, **kwargs):
-        pass
+        _reject_unknown_arguments(self, kwargs)
 
     @abstractmethod
     def fit_model(self, model, td: TrainingDataMultiStep):
@@ -397,7 +420,3 @@ class MultiStepModel(AbstractModel, ABC):
     def _check_training_data(self, td: TrainingDataGeneric):
         if not isinstance(td, TrainingDataMultiStep):
             raise TypeError(f"{self.__class__.__name__} is a multi step model and needs PreprocessingMultiStep data.")
-
-    @classmethod
-    def from_config(cls, config: dict) -> 'MultiStepModel':
-        return cls(**config)

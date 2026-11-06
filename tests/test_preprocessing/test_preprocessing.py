@@ -114,13 +114,83 @@ def test_global_seed():
 
 
 def test_training_data_save_and_load(frame, tmp_path):
-    td = PreprocessingSingleStep(inputs=["mDot", "T"], output="Change(T)").pipeline(_csv(frame, tmp_path))
+    from physXAI import expr as px
+
+    frame = frame.set_index(pd.Timestamp("2024-03-01") + pd.to_timedelta(frame.index, unit="s"))
+    frame.index.name = "time"
+    v = px.Vars()
+    prep = PreprocessingSingleStep(inputs=["mDot", "q", "T"], output="Change(T)", columns={"q": v.mDot * v.T},
+                                   loss_columns=["y:load"], eval_horizon=6)
+    td = prep.pipeline(_csv(frame, tmp_path))
     td.save(tmp_path / "td")
     loaded = TrainingData.load(tmp_path / "td")
     np.testing.assert_array_equal(loaded.X("test"), td.X("test"))
     np.testing.assert_array_equal(loaded.y("val"), td.y("val"))
+    np.testing.assert_array_equal(loaded.labels, td.labels)
+    np.testing.assert_array_equal(loaded.valid, td.valid)
+    np.testing.assert_array_equal(loaded.time, td.time)
+    assert np.issubdtype(loaded.time.dtype, np.datetime64)
     assert loaded.inputs == td.inputs
     assert loaded.outputs == td.outputs
+    assert loaded.loss_columns == ["y:load"] and loaded.eval_horizon == 6 and loaded.shift == 1
+    assert list(loaded.derived) == ["q"] and loaded.derived["q"].free_vars() == ["mDot", "T"]
+
+
+@pytest.mark.parametrize("shift", [2, -1, True])
+def test_shift_is_zero_or_one(shift):
+    with pytest.raises(ValueError, match="shift"):
+        PreprocessingSingleStep(inputs=["mDot", "T"], output="Change(T)", shift=shift)
+
+
+def test_recursive_predictions_need_shift_one():
+    with pytest.raises(ValueError, match="eval_horizon"):
+        PreprocessingSingleStep(inputs=["mDot", "T_lag1"], output="T", shift=0, eval_horizon=4)
+    with pytest.raises(ValueError, match="Multi step"):
+        PreprocessingMultiStep(inputs=["mDot"], output="T", label_width=3, shift=0)
+
+
+def test_shift_zero_predicts_the_output_at_the_time_of_the_inputs(frame, tmp_path):
+    """An algebraic output of point sampled data, the target is taken at the time of the inputs."""
+    from physXAI.io import AgentLibCompatibilityError, check_agentlib_compatibility
+    from physXAI.models import LinearRegressionModel
+    from physXAI.training import RecursiveTraining
+
+    prep = PreprocessingSingleStep(inputs=["mDot", "T_lag1"], output="T", shift=0, random_state=0)
+    td = prep.pipeline(_csv(frame, tmp_path))
+    rows = td.rows("train")
+    T = frame["T"].to_numpy()
+    np.testing.assert_allclose(td.y("train")[:, 0], T[rows], rtol=1e-6)
+    np.testing.assert_allclose(td.X("train")[:, 1], T[rows - 1], rtol=1e-6)
+    assert td.shift == 0 and prep._default_gap() == 1  # embargo: largest lag + shift
+    # no recursive evaluation, no multi step training, no export to AgentLib-MPC
+    LinearRegressionModel().pipeline(td, plot=False)
+    assert td.horizon_metrics is None
+    from physXAI.models import ClassicalANNModel
+
+    with pytest.raises(ValueError, match="shift=1"):
+        ClassicalANNModel(epochs=1, recursive_training=RecursiveTraining(horizon=4)).pipeline(td, plot=False)
+    with pytest.raises(AgentLibCompatibilityError, match="shift"):
+        check_agentlib_compatibility(prep)
+
+
+@pytest.mark.parametrize(
+    "settings",
+    [
+        dict(inputs=["mDot", "T"], output="T"),  # the target itself is an input
+        dict(inputs=["mDot", "Change(T)"], output="T"),  # the change holds the target as well
+        dict(inputs=["mDot", "T_lag1"], output="Change(T)"),  # a change is defined to the next step
+        dict(inputs=["mDot", "q"], output="T", columns="q"),  # a derived input depends on the target
+    ],
+)
+def test_shift_zero_rejects_inputs_holding_the_target(frame, tmp_path, settings):
+    from physXAI import expr as px
+
+    settings = dict(settings)
+    if settings.pop("columns", None):
+        v = px.Vars()
+        settings["columns"] = {"q": v.mDot * v.T}
+    with pytest.raises(ValueError, match="shift"):
+        PreprocessingSingleStep(shift=0, **settings).pipeline(_csv(frame, tmp_path))
 
 
 def test_multi_step_sequences_do_not_leak(frame, tmp_path):

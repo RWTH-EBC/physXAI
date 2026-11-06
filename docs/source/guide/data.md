@@ -7,7 +7,9 @@
 | Option | Meaning |
 |---|---|
 | `inputs`, `output` | column names; `X_lagN` and `Change(X)` are derived, `lags={'X': 2}` adds `X_lag1`, `X_lag2` |
+| `shift` | 1 (default): the output at the next time step, for states (`Change(T)`) and as AgentLib-MPC uses it; 0: the output at the time of the inputs, for algebraic outputs of point sampled data (the output feature must not be an input, no recursive evaluation, not exportable) |
 | `columns` | derived data columns as expressions, see [Expressions](expressions.md) |
+| `loss_columns` | columns used only in the training loss (e.g. physics targets), `'y:name'` at the predicted time; added by models via `prep.pipeline(path, model=model)` |
 | `time_index_col`, `time_step` | time column (seconds or date time); the data is put onto a regular grid of `time_step` |
 | `csv_delimiter`, `csv_encoding`, `csv_header`, `csv_skiprows` | csv options |
 | `ignore_nan` | drop rows with missing values (targets are never taken across gaps) |
@@ -26,7 +28,9 @@ training and test data and overestimates the test performance. physXAI splits bl
 - the time axis is cut into blocks (default: the longer of four windows and one day),
 - validation and test blocks are drawn in every stratum of neighbouring blocks, so all seasons are part of
   every split,
-- an embargo of `gap_steps` (default: the largest lag plus the warmup) separates blocks of different splits,
+- an embargo of `gap_steps` (default: the largest lag plus `shift`, plus the warmup of multi step data) separates
+  blocks of different splits; the rows are taken from the training side, so validation and test blocks stay
+  complete,
 - windows of multi step data never cross a split boundary.
 
 `split='holdout_end'` uses the end of the data for validation and test (non-stationary data),
@@ -41,5 +45,6 @@ on the split, see [Comparing models](evaluation.md#comparing-models).
 
 - `td.X_train`, `td.y_train`, ... the samples of a split, `td.inputs`, `td.outputs`,
 - after training: predictions, `td.metrics` and `td.horizon_metrics`,
-- `td.save(path)` / `TrainingData.load(path)` (npz and json, no pickle),
+- `td.save(path)` / `TrainingData.load(path)` for single step data (npz and json, no pickle; multi step data is
+  created from the same csv file and preprocessing config),
 - `td.get_config()` holds metrics and history, as written by `Run.save`.
