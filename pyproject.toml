@@ -41,7 +41,7 @@ dev = [
     "ruff>=0.12",
     "pre-commit>=4.2",
 ]
-# Required for the AgentLib-MPC contract tests (unittests/contract). Tests are skipped if not installed.
+# Required for the AgentLib-MPC contract tests (tests/contract). Tests are skipped if not installed.
 agentlib = [
     "agentlib_mpc[ml]",
 ]
@@ -62,13 +62,13 @@ documentation = "https://rwth-ebc.github.io/physXAI/main/docs/index.html"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["physXAI*"]
-exclude = ["unittests*", "executables*", "data*", "build*", "docs*"]
+exclude = ["tests*", "examples*", "data*", "build*", "docs*"]
 
 [tool.pytest.ini_options]
 cache_dir = "build/.pytest_cache"
-testpaths = ["unittests"]
+testpaths = ["tests"]
 markers = [
-    "slow: long running tests (executables, full trainings)",
+    "slow: long running tests (examples, full trainings)",
     "agentlib: tests requiring agentlib_mpc (contract with AgentLib-MPC)",
 ]
 filterwarnings = [
@@ -79,7 +79,7 @@ filterwarnings = [
 [tool.ruff]
 line-length = 120
 target-version = "py311"
-extend-exclude = ["external", "build", "docs", "executables/regression_prototype.py"]  # experimental
+extend-exclude = ["external", "build", "docs"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "NPY"]
@@ -93,9 +93,9 @@ source = ["physXAI/"]
 branch = true
 omit = [
     "conftest.py",
-    "unittests/*",
+    "tests/*",
     "*/__init__.py",
-    "executables/*"
+    "examples/*"
 ]
 
 [tool.coverage.report]

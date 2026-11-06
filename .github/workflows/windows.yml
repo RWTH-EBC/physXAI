@@ -28,7 +28,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e .[dev,agentlib]
     - name: Unit tests
-      run: python -m pytest unittests
+      run: python -m pytest tests
 
   verify-installation:
     strategy:
@@ -51,4 +51,4 @@ jobs:
         python -m pip install --upgrade pip
         pip install .
     - name: Verify installation with a simple example script
-      run: python unittests/verify_installation.py
+      run: python tests/verify_installation.py

@@ -42,4 +42,4 @@ model = ClassicalANNModel(
 - The saved model stays a single step model, AgentLib-MPC uses it unchanged.
 
 All keras models support it, `ModularANN(solver='ols')` uses the closed form solution as initialization.
-See `executables/bestest_hydronic_heat_pump/TAir_recursive.py`.
+See `examples/06_multi_step.py`.

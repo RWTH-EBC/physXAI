@@ -35,7 +35,7 @@ exceeds it.
 ## simplify-executables-structure
 A `TestCase` helper inside the library (`physXAI/utils`), run names from the caller's stack frame, shared mutable
 `Feature` objects between examples and `from configuration import *`, built on the removed `Logger` and constructed
-features. 1.0's executables are short (`Run`, preprocessing, model, `run.save`) and deliberately self-contained.
+features. 1.0's examples are short (`Run`, preprocessing, model, `run.save`) and deliberately self-contained.
 Not adopted.
 
 ## 45-add-interpolation-methods-for-input-output

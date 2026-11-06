@@ -63,9 +63,9 @@ Every single step keras model takes a physics residual with trainable physical p
 
 ```python
 run.save("model", prep, model, td)                       # recommended
-model.pipeline(td, save_path="stored_data/x/model")      # only the model file and its report
-trained = model.load_model("stored_data/x/model.keras")
-model = AbstractModel.model_from_config(json.load(open("stored_data/x/model_model.json")))
+model.pipeline(td, save_path="results/x/model")      # only the model file and its report
+trained = model.load_model("results/x/model.keras")
+model = AbstractModel.model_from_config(json.load(open("results/x/model_model.json")))
 ```
 
 `online_pipeline(td, load_path)` loads a saved model and trains it further on new data.

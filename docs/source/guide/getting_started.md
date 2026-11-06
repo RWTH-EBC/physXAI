@@ -32,7 +32,7 @@ from physXAI.io import Run
 from physXAI.models import LinearRegressionModel
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 
-run = Run("stored_data", "TAir", overwrite=True)
+run = Run("results", "TAir", overwrite=True)
 
 prep = PreprocessingSingleStep(
     inputs=["weaSta_reaWeaTDryBul_y", "oveHeaPumY_u", "oveHeaPumY_u_lag1", "reaTZon_y"],
@@ -48,7 +48,7 @@ model.pipeline(td)                   # train and evaluate
 run.save("model", prep, model, td)   # configs, metrics, model and report
 ```
 
-`run.save` writes into `stored_data/TAir/`:
+`run.save` writes into `results/TAir/`:
 
 | File | Content |
 |---|---|
@@ -59,7 +59,7 @@ run.save("model", prep, model, td)   # configs, metrics, model and report
 | `model.html` | report: true vs. predicted, errors over the horizon, training history, metrics |
 
 Lagged inputs such as `oveHeaPumY_u_lag1` and the output `Change(reaTZon_y)` are derived from the data
-automatically. More examples are in `executables/`.
+automatically. The [examples](examples.md) continue this tutorial step by step.
 
 ## Run directories and logging
 

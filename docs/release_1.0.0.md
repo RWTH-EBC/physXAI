@@ -66,11 +66,11 @@ Every other branch gets its own preview after a push: `https://rwth-ebc.github.i
 2. **`gh-pages`:** the template deletes folders of branches without commits for 30 days, but only top-level folders.
    Folders of branch names with `/` (`docs/v1/...`) stay; delete them on the branch `gh-pages` if wanted.
 3. **`.github/workflows`:** remove the branch `refactoring_v1.0.0` from the `pull_request` triggers of
-   `verify_executables.yml` (marked with a comment).
+   `verify_examples.yml` (marked with a comment).
 4. **Optional, required status checks for `main`** (*Settings → Branches*; currently none are required): useful are
    `ci / tests / test (3.11)` … `(3.13)`, `tests (3.11)` … `(3.13)` (Windows), `lint`, `docs`,
-   `verify-installation (ubuntu-latest)` and `verify-installation (windows-latest)`. Not `run-scripts` (only runs
-   when executables change) and not the report jobs of the template (coverage, pylint, ruff), which never fail.
+   `verify-installation (ubuntu-latest)` and `verify-installation (windows-latest)`. Not `examples (...)` (only runs
+   when the package, the examples or the data change) and not the report jobs of the template (coverage, pylint, ruff), which never fail.
 
 ## 7. AgentLib-MPC
 
