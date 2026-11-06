@@ -10,9 +10,10 @@ A neural network for the change of the air temperature, regularized by a 1R1C mo
 - `px.positive(value, name)` is a positive parameter (value * exp(p), p trainable), `px.Param` a signed one.
 - The residual `prediction - dT_1R1C` (`px.Prediction()` is the output of the network) enters the loss with
   weight 0.5 relative to the data term.
-- physics_fit='calibrate' (default): the parameters are fitted to the data first (grey-box identification), then
-  fixed while the network is trained, so they keep their physical meaning instead of following the network.
-  'joint' trains both together, 'fixed' keeps the initial values.
+- physics_fit='calibrate' (default): the parameters are fitted to the data first (grey-box identification, a
+  deterministic least squares fit, independent of the seed), then fixed while the network is trained, so they keep
+  their physical meaning instead of following the network. 'joint' trains both together, 'fixed' keeps the initial
+  values.
 - Only the network is saved (and exported to AgentLib-MPC), the parameters are part of the metrics and the report.
 - The data was recorded under PID control: the heat pump signal correlates with T_amb - T, so the estimates of
   tau and K_u are correlated. Data with more excitation gives better estimates.

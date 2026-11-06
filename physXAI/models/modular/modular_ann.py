@@ -19,10 +19,16 @@ import time
 import numpy as np
 
 from physXAI.expr import Expr, Linear, from_config, to_config
+from physXAI.expr.blocks import _nominal
 from physXAI.expr.core import BuildContext
 from physXAI.models.ann.ann_design import ANNModel
 from physXAI.models.models import register_model
-from physXAI.models.modular.shape_constraints import ShapeConstraints, ShapeFitResult, fit_shape_constrained
+from physXAI.models.modular.shape_constraints import (
+    ShapeConstraints,
+    ShapeFitResult,
+    constrained_least_squares,
+    fit_shape_constrained,
+)
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
@@ -54,6 +60,11 @@ class ModularANN(ANNModel):
         learning_rate: Learning rate of the Adam optimizer.
         early_stopping_epochs: Patience of the early stopping on the validation loss (None: no early stopping).
         random_seed: Seed of the weights and the batch order, set when the model is generated.
+        warm_start: With solver='adam' and a normalized `Linear` block as architecture: the training starts at the
+                    least squares solution of its data only terms (sign bounds of its monotonicities included), the
+                    trainable terms (e.g. a `px.MLP` for the remaining dynamics) start with weight 0. The model starts
+                    as the linear model and the network learns its residual, which makes the training independent of
+                    a bad initialization. No effect for other architectures.
     """
 
     plot_title = "Modular ANN"
@@ -69,6 +80,7 @@ class ModularANN(ANNModel):
         early_stopping_epochs: int | None = 100,
         random_seed: int = 42,
         shape: ShapeConstraints | dict | None = None,
+        warm_start: bool = True,
         **kwargs,
     ):
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
@@ -82,6 +94,7 @@ class ModularANN(ANNModel):
         self.rescale_output = rescale_output
         self.solver = solver
         self.shape: ShapeConstraints | None = shape
+        self.warm_start = bool(warm_start)
         self._ctx: BuildContext | None = None
         self._rescaling: tuple[float, float] | None = None
         if shape is not None and solver != "qp":
@@ -128,8 +141,41 @@ class ModularANN(ANNModel):
         self._ctx = ctx
         return keras.Model(ctx.input, x)
 
+    @property
+    def warm_start_applies(self) -> bool:
+        """Whether the training starts at the least squares solution (see `warm_start`)."""
+        arch = self.architecture
+        return (self.warm_start and self.solver == "adam" and isinstance(arch, Linear) and arch.normalize
+                and any(not c.trainable for c in arch.inputs))
+
+    def _initialize_least_squares(self, model, td: TrainingDataGeneric):
+        """Warm start: the Linear block starts at the least squares solution of its data only terms."""
+        start = time.perf_counter()
+        arch: Linear = self.architecture
+        dense = self._ctx.layers[id(arch)]
+        # the inputs of the dense layer: the (normalized) terms, as the model computes them
+        features = keras.Model(model.inputs, dense.input).predict(td.X_train_single, verbose=0, batch_size=4096)
+        y = td.y_train_single[:, 0].astype(np.float64)
+        if self._rescaling is not None:
+            y = (y - self._rescaling[0]) / self._rescaling[1]
+        nominal = _nominal(arch.nominal_range)
+        if nominal is not None:
+            y = (y - nominal[0]) / nominal[1]
+        data = [i for i, c in enumerate(arch.inputs) if not c.trainable]
+        signs = arch._per_input(arch.monotonicities)
+        weights, bias = constrained_least_squares(features[:, data], y, bias=arch.bias,
+                                                  weight_signs=[signs[i] for i in data])
+        kernel = np.zeros(len(arch.inputs))
+        kernel[data] = weights
+        dense.set_weights([kernel.reshape(-1, 1).astype(np.float32)]
+                          + ([np.array([bias], dtype=np.float32)] if arch.bias else []))
+        logger.info("Warm start: least squares solution of %d data only term(s), %d trainable term(s) start at 0 "
+                    "(%.2f s)", len(data), len(arch.inputs) - len(data), time.perf_counter() - start)
+
     def fit_model(self, model, td: TrainingDataGeneric):
         if self.solver == "adam":
+            if self.warm_start_applies:
+                self._initialize_least_squares(model, td)
             return super().fit_model(model, td)
 
         start = time.perf_counter()
@@ -183,6 +229,7 @@ class ModularANN(ANNModel):
                 "rescale_output": self.rescale_output,
                 "solver": self.solver,
                 "shape": self.shape.get_config() if self.shape is not None else None,
+                "warm_start": self.warm_start,
             }
         )
         return config

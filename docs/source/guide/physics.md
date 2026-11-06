@@ -55,6 +55,13 @@ m.physics_parameters                # {'tau': ..., 'K_u': ..., 'K_0': ..., 'log_
   then fixed while the network is trained. When parameters are trained together with the network only through
   the physics term, they follow the network and lose their physical meaning. `'joint'` trains both together
   (including the fit term), `'fixed'` keeps the initial values.
+- The calibration is a nonlinear least squares problem in the few parameters, `min Σ r(x, y; θ)²` on the training
+  data. It is solved deterministically with a trust region method (`scipy.optimize.least_squares`) and the exact
+  Jacobian of the residual (CasADi), independent of the seed, the batch order and a learning rate, and converged to
+  the minimum (gradient descent with early stopping stops somewhere in the flat valley of correlated parameters, so
+  its estimates depend on the seed). `td.physics['calibration_record']` holds the result of the solver. Residuals
+  without CasADi form (e.g. a `px.Param` without initial value) are calibrated by gradient descent
+  (`physics_learning_rate`).
 - History: `data_loss`, `<name>_loss`, `<name>_fit_loss`; results in `td.physics` (parameters, fit per split,
   history of the calibration). Only parameters are trainable in residuals, no blocks.
 - The variables of the residual are data columns at the time of the inputs; `px.Target(name)` is a column at the

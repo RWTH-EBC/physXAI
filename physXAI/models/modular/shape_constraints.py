@@ -222,19 +222,8 @@ def fit_shape_constrained(
     n = len(y)
     features = np.column_stack([np.broadcast_to(np.asarray(t.evaluate(values), dtype=np.float64), (n,)) for t in terms])
     p = features.shape[1]
-    weight_signs = list(weight_signs) if weight_signs is not None else [0] * p
-    if len(weight_signs) != p:
-        raise ValueError(f"weight_signs needs one sign per term ({p}), but has {len(weight_signs)}.")
-
-    # Standardized problem: centering removes the bias exactly (it is not constrained)
-    mean = features.mean(axis=0) if bias else np.zeros(p)
-    scales = features.std(axis=0)
-    scales[scales < 1e-12] = 1.0
-    y_mean = float(y.mean()) if bias else 0.0
-    y_scale = float(y.std()) or 1.0
-    F = (features - mean) / scales
-    target = (y - y_mean) / y_scale
-    problem = _LeastSquares(F, target, shape.ridge if shape is not None else 1e-10, weight_signs,
+    F, target, mean, scales, y_mean, y_scale = _standardize(features, y, bias)
+    problem = _LeastSquares(F, target, shape.ridge if shape is not None else 1e-10, _signs_per_term(weight_signs, p),
                             shape.qp_solver if shape is not None else "highs")
 
     unconstrained = problem.unconstrained()
@@ -251,6 +240,53 @@ def fit_shape_constrained(
     result.rmse_train = float(np.sqrt(np.mean((F @ w - target) ** 2)) * y_scale)
     result.seconds = time.perf_counter() - start
     return result
+
+
+def constrained_least_squares(features: np.ndarray, y: np.ndarray, bias: bool = True,
+                              weight_signs: list[int] | None = None, ridge: float = 1e-10) -> tuple[np.ndarray, float]:
+    """
+    Least squares `y = b + features @ w` with optional sign bounds on the weights, deterministic (no seed).
+
+    Used for the closed form solvers and as initialization of gradient based training (warm start). The problem is
+    standardized and solved in QR coordinates, sign bounds as QP (HiGHS).
+
+    Args:
+        features: (samples, terms) matrix.
+        y: Targets.
+        bias: Whether to fit a bias.
+        weight_signs: Optional sign per term: 1 (w >= 0), -1 (w <= 0), 0 (free).
+        ridge: Relative Tikhonov regularization (unique solution for collinear terms).
+
+    Returns:
+        (weights, bias) in the units of the data.
+    """
+    features = np.asarray(features, dtype=np.float64)
+    y = np.asarray(y, dtype=np.float64).ravel()
+    F, target, mean, scales, y_mean, y_scale = _standardize(features, y, bias)
+    problem = _LeastSquares(F, target, ridge, _signs_per_term(weight_signs, features.shape[1]), "highs")
+    w, success = problem.solve(np.zeros((0, features.shape[1])))
+    if not success:
+        logger.warning("The constrained least squares problem was not solved successfully.")
+    weights = y_scale * w / scales
+    return weights, y_mean - float(weights @ mean)
+
+
+def _standardize(features: np.ndarray, y: np.ndarray, bias: bool):
+    """Standardized terms and target. Centering removes the (unconstrained) bias exactly."""
+    p = features.shape[1]
+    mean = features.mean(axis=0) if bias else np.zeros(p)
+    scales = features.std(axis=0)
+    scales[scales < 1e-12] = 1.0
+    y_mean = float(y.mean()) if bias else 0.0
+    y_scale = float(y.std()) or 1.0
+    return (features - mean) / scales, (y - y_mean) / y_scale, mean, scales, y_mean, y_scale
+
+
+def _signs_per_term(weight_signs: list[int] | None, p: int) -> list[int]:
+    signs = list(weight_signs) if weight_signs is not None else [0] * p
+    if len(signs) != p or any(s not in (-1, 0, 1) for s in signs):
+        raise ValueError(f"weight_signs needs one sign (-1, 0, 1) per term ({p}), but is {signs}.")
+    return signs
 
 
 class _LeastSquares:

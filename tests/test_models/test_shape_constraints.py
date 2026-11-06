@@ -246,3 +246,48 @@ def test_online_learning_of_closed_form_solvers(csv, tmp_path, solver):
     model.pipeline(td, plot=False, save_path=str(tmp_path / "m"))
     with pytest.raises(NotImplementedError, match="closed form"):
         model.online_pipeline(td, str(tmp_path / "m.keras"))
+
+
+# --- warm start of gradient based training -------------------------------------------------------------------
+def _hybrid(**kwargs):
+    return ModularANN(px.Linear([v.u, v.u * v.T_amb, v.T_amb, px.MLP([v.u, v.T], n_neurons=4)], normalize=True,
+                                **kwargs.pop("linear", {})), epochs=1, **kwargs)
+
+
+def test_warm_start_starts_at_the_least_squares_solution(csv):
+    model = _hybrid()
+    assert model.warm_start_applies
+    prep = PreprocessingSingleStep(output="P", random_state=0)
+    td = prep.pipeline(csv, model=model)
+    keras_model = model.generate_model(td=td)
+    model.compile_model(keras_model)
+    model._initialize_least_squares(keras_model, td)
+
+    ols = ModularANN(px.Linear([v.u, v.u * v.T_amb, v.T_amb]), solver="ols")
+    td_ols = prep.pipeline(csv, model=ols)
+    ols.pipeline(td_ols, plot=False)
+    np.testing.assert_allclose(keras_model.predict(td.X_test, verbose=0),
+                               ols.trained_model.predict(td_ols.X_test, verbose=0), rtol=1e-4, atol=1e-2)
+
+
+def test_warm_start_keeps_sign_bounds(csv):
+    def initial_kernel(**linear):
+        model = _hybrid(linear=linear)
+        td = PreprocessingSingleStep(output="P", random_state=0).pipeline(csv, model=model)
+        keras_model = model.generate_model(td=td)
+        model.compile_model(keras_model)
+        model._initialize_least_squares(keras_model, td)
+        return model._ctx.layers[id(model.architecture)].get_weights()[0].ravel()
+
+    assert initial_kernel()[2] > 0  # the data contain conflict * T_amb: the power rises with T_amb
+    kernel = initial_kernel(monotonicities={"T_amb": -1})
+    assert kernel[2] <= 0
+    assert kernel[3] == 0  # the MLP starts at 0
+
+
+def test_warm_start_applies_only_to_normalized_linear_blocks():
+    assert not ModularANN(px.Linear([v.u, px.MLP([v.u])])).warm_start_applies  # not normalized
+    assert not ModularANN(px.MLP([v.u, v.T])).warm_start_applies
+    assert not _hybrid(warm_start=False).warm_start_applies
+    config = json.loads(json.dumps(_hybrid(warm_start=False).get_config()))
+    assert AbstractModel.model_from_config(config).warm_start is False

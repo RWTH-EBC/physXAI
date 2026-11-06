@@ -67,7 +67,9 @@ def test_calibration_recovers_the_physical_parameters(csv, tmp_path):
     assert td.physics["fit"]["test"]["fit_rmse"] < 0.2 * float(np.std(td.y_test))
     history = td.training_record.history
     assert {"data_loss", "room_loss", "room_fit_loss", "rmse", "val_data_loss"} <= set(history)
-    assert "val_room_fit_loss" in td.physics["calibration_record"]
+    record = td.physics["calibration_record"]  # deterministic least squares, not gradient descent
+    assert record["method"] == "least_squares" and record["success"]
+    assert record["fit_loss"] < record["fit_loss_initial"]
     json.dumps(td.get_config())
 
     # only the network is saved and exported: inputs of the model, one output, no physics layers
@@ -120,3 +122,19 @@ def test_invalid_residuals():
         ModularANN(px.Linear([v.T]), solver="ols", physics=_residual())
     with pytest.raises(ValueError, match="physics targets"):
         PINNModel(physics_targets={"a": 1.0}, physics=_residual())
+
+
+def test_calibration_is_deterministic(csv):
+    """The calibration does not depend on the seed of the network (batch order, initialization)."""
+    parameters = [_fit(csv, epochs=1, random_seed=seed)[1].physics_parameters for seed in (0, 1)]
+    assert parameters[0]["k1"] == parameters[1]["k1"] and parameters[0]["k2"] == parameters[1]["k2"]
+    assert parameters[0]["k1"] == pytest.approx(K1, rel=1e-3)
+    assert parameters[0]["k2"] == pytest.approx(K2, rel=1e-3)
+
+
+def test_calibration_by_gradient_descent_without_casadi_form(csv):
+    """A parameter without initial value has no least squares start, the calibration falls back to gradients."""
+    v = px.Vars()
+    residual = PhysicsResidual(px.Prediction() - px.Param(None, name="k") * v.load, name="room")
+    _, _, td, _ = _fit(csv, physics=residual, epochs=2)
+    assert "val_room_fit_loss" in td.physics["calibration_record"]
