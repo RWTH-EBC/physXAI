@@ -52,7 +52,7 @@ class ModularANN(ANNModel):
         random_seed: int = 42,
         **kwargs,
     ):
-        super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
+        super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         if isinstance(architecture, dict):
             architecture = from_config(architecture)
         if solver not in ("adam", "ols"):
@@ -115,8 +115,12 @@ class ModularANN(ANNModel):
         dense = self._ctx.layers[id(arch)]
         weights = [coef[: len(arch.inputs)].reshape(-1, 1)] + ([coef[-1:]] if arch.bias else [])
         dense.set_weights([w.astype(np.float32) for w in weights])
-        dense.trainable = False
         td.add_training_time(time.perf_counter() - start)
+        if self.recursive_training is not None:
+            # the least squares solution initializes the training on the multi step error
+            self.fit_multi_step(model, td)
+        else:
+            dense.trainable = False
 
     def get_config(self) -> dict:
         config = super().get_config()

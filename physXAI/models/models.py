@@ -10,7 +10,7 @@ from physXAI.utils.logging import get_full_path, create_full_path, Logger
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
 from physXAI.evaluation.metrics import Metrics, MetricsMultiStep
 from physXAI.plotting.plotting import (plot_prediction_correlation, plot_metrics_table, subplots,
-                                              plot_predictions, plot_multi_rmse)
+                                              plot_predictions, plot_multi_rmse, plot_horizon_metrics)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
@@ -89,6 +89,9 @@ class AbstractModel(ABC):
         """
         pass
 
+    def prepare(self):
+        """Hook called before the model is generated (e.g. to set random seeds)."""
+
     def pipeline(self, td: TrainingDataGeneric, save_path: str = None, plot: bool = True, save_model: bool = True):
         """
           Defines a standard pipeline for single-step models:
@@ -109,6 +112,7 @@ class AbstractModel(ABC):
               The trained model instance.
           """
 
+        self.prepare()
         model = self.generate_model(td=td)
         self.compile_model(model)
         self.fit_model(model, td)
@@ -243,6 +247,9 @@ class SingleStepModel(AbstractModel, ABC):
         metrics = Metrics(td)
         if isinstance(td, TrainingData):
             td.add_metrics(metrics)
+            # Error over the horizon of a recursive application, as in an MPC (if td.eval_horizon is set)
+            from physXAI.evaluation.rollout import evaluate_horizon
+            evaluate_horizon(model, td)
         elif isinstance(td, TrainingDataMultiStep):
             td.add_single_step_metrics(metrics)
             SingleStepModel.evaluate_multi(model, td)
@@ -255,14 +262,15 @@ class SingleStepModel(AbstractModel, ABC):
             delta_prediction = True
         else:
             delta_prediction = False
-        y_pred_train, y_train = SingleStepModel._evaluate_multi_inner_loop(model, td.X_train_features, td.y_train,
+        # copies: the recursion writes its predictions into the inputs
+        y_pred_train, y_train = SingleStepModel._evaluate_multi_inner_loop(model, td.X_train_features.copy(), td.y_train,
                                                                            td.columns, td.init_columns[0],
                                                                            delta_prediction)
-        y_pred_test, y_test = SingleStepModel._evaluate_multi_inner_loop(model, td.X_test_features, td.y_test,
+        y_pred_test, y_test = SingleStepModel._evaluate_multi_inner_loop(model, td.X_test_features.copy(), td.y_test,
                                                                          td.columns, td.init_columns[0],
                                                                          delta_prediction)
         if td.X_val_features is not None:
-            y_pred_val, y_val = SingleStepModel._evaluate_multi_inner_loop(model, td.X_val_features, td.y_val,
+            y_pred_val, y_val = SingleStepModel._evaluate_multi_inner_loop(model, td.X_val_features.copy(), td.y_val,
                                                                            td.columns, td.init_columns[0],
                                                                            delta_prediction)
         else:
@@ -392,12 +400,15 @@ class LinearRegressionModel(SingleStepModel):
         fig3 = plot_metrics_table(td)
 
         if isinstance(td, TrainingData):
-            subplots(
-                "Linear Regression",
+            figures = [
                 {"title": "Prediction Correlation", "type": "scatter", "figure": fig1},
                 {"title": "Predictions Sorted", "type": "scatter", "figure": fig2},
-                {"title": "Performance Metrics", "type": "table", "figure": fig3}
-            )
+                {"title": "Performance Metrics", "type": "table", "figure": fig3},
+            ]
+            if td.horizon_metrics is not None:
+                figures.insert(2, {"title": "Recursive Prediction Error", "type": "scatter",
+                                   "figure": plot_horizon_metrics(td)})
+            subplots("Linear Regression", *figures)
         elif isinstance(td, TrainingDataMultiStep):
             fig4 = plot_multi_rmse(td)
             subplots(

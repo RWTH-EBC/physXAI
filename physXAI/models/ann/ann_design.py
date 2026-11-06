@@ -15,7 +15,7 @@ from physXAI.models.ann.model_construction.rnn_models import RNNModelConstructio
 from physXAI.expr import Expr, from_config as expr_from_config, to_config as expr_to_config
 from physXAI.models.ann.pinn.pinn_loss import multi_y_loss
 from physXAI.plotting.plotting import plot_prediction_correlation, plot_predictions, plot_training_history, \
-    plot_metrics_table, subplots, plot_multi_rmse
+    plot_metrics_table, subplots, plot_multi_rmse, plot_horizon_metrics
 from physXAI.evaluation.metrics import MetricsPINN
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
@@ -30,7 +30,8 @@ class ANNModel(SingleStepModel, ABC):
     """
 
     def __init__(self, batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: Optional[int] = 100, random_seed: int = 42, **kwargs):
+                 early_stopping_epochs: Optional[int] = 100, random_seed: int = 42,
+                 recursive_training: Optional[Union['RecursiveTraining', dict]] = None, **kwargs):
         """
         Initializes common hyperparameters for ANN training.
 
@@ -40,7 +41,10 @@ class ANNModel(SingleStepModel, ABC):
             learning_rate (float): Learning rate for the Adam optimizer.
             early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
                                          If None, early stopping is disabled.
-            random_seed (int): Seed for random number generators to ensure reproducibility.
+            random_seed (int): Seed for random number generators to ensure reproducibility. It is set when
+                               the model is generated, not when the object is created.
+            recursive_training (RecursiveTraining, optional): Train on the multi step (recursive) error,
+                               see `physXAI.training.RecursiveTraining`. None trains on the single step error.
         """
         super().__init__(**kwargs)
         self.batch_size: int = batch_size
@@ -48,7 +52,10 @@ class ANNModel(SingleStepModel, ABC):
         self.learning_rate: float = learning_rate
         self.early_stopping_epochs: Optional[int] = early_stopping_epochs
         self.random_seed: int = random_seed
-        keras.utils.set_random_seed(random_seed)
+        from physXAI.training.recursive import RecursiveTraining
+        if isinstance(recursive_training, dict):
+            recursive_training = RecursiveTraining.from_config(recursive_training)
+        self.recursive_training: Optional[RecursiveTraining] = recursive_training
 
         self.model_config = dict()
 
@@ -72,18 +79,42 @@ class ANNModel(SingleStepModel, ABC):
         model.compile(keras.optimizers.Adam(learning_rate=self.learning_rate), loss='mse',
                       metrics=[keras.metrics.RootMeanSquaredError(name='rmse', dtype=None)])
 
+    def prepare(self):
+        """Seeds keras before the model is generated, so weight initializations are reproducible."""
+        keras.utils.set_random_seed(self.random_seed)
+
     def fit_model(self, model, td: TrainingDataGeneric):
         """
-         Fits the Keras model to the training data.
+        Fits the Keras model to the training data: on the single step error and / or, with
+        `recursive_training`, on the multi step error of a recursive application.
 
-         Args:
-             model (keras.Model): The Keras model to fit.
-             td (TrainingDataGeneric): The TrainingData object
-         """
+        Args:
+            model (keras.Model): The Keras model to fit.
+            td (TrainingDataGeneric): The TrainingData object
+        """
+        mode = self.recursive_training.mode if self.recursive_training is not None else 'single_step'
+        if mode in ('single_step', 'single_then_multi'):
+            self.fit_single_step(model, td)
+        if mode in ('multi_step', 'single_then_multi'):
+            self.fit_multi_step(model, td)
 
-        # Early stopping
+    def fit_multi_step(self, model, td: TrainingDataGeneric):
+        """Trains the model on the multi step error (`physXAI.training.recursive`)."""
+        from physXAI.training.recursive import fit_recursive
+        if not isinstance(td, TrainingData):
+            raise NotImplementedError('Multi step training of single step models requires PreprocessingSingleStep data.')
+        start_time = time.perf_counter()
+        record = fit_recursive(model, td, self.recursive_training, self)
+        td.add_training_time((td.training_time or 0) + time.perf_counter() - start_time)
+        td.recursive_training_record = record
+        if td.training_record is None:
+            td.add_training_record(record)
+
+    def fit_single_step(self, model, td: TrainingDataGeneric):
+        """Fits the Keras model on the single step error."""
+        # Early stopping (only possible with validation data)
         callbacks = list()
-        if self.early_stopping_epochs is not None:
+        if self.early_stopping_epochs is not None and td.y_val_single is not None:
             es = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', patience=self.early_stopping_epochs,
                                                restore_best_weights=True, verbose=Logger.verbosity_int())
             callbacks.append(es)
@@ -142,13 +173,16 @@ class ANNModel(SingleStepModel, ABC):
 
         # Create main plot
         if isinstance(td, TrainingData):
-            subplots(
-                "Artificial Neural Network",
+            figures = [
                 {"title": "Prediction Correlation", "type": "scatter", "figure": fig1},
                 {"title": "Predictions Sorted", "type": "scatter", "figure": fig2},
                 {"title": "Training History", "type": "scatter", "figure": fig3},
-                {"title": "Performance Metrics", "type": "table", "figure": fig4}
-            )
+                {"title": "Performance Metrics", "type": "table", "figure": fig4},
+            ]
+            if td.horizon_metrics is not None:
+                figures.insert(2, {"title": "Recursive Prediction Error", "type": "scatter",
+                                   "figure": plot_horizon_metrics(td)})
+            subplots("Artificial Neural Network", *figures)
         elif isinstance(td, TrainingDataMultiStep):
             fig5 = plot_multi_rmse(td)
             subplots(
@@ -202,7 +236,8 @@ class ANNModel(SingleStepModel, ABC):
             'epochs': self.epochs,
             'learning_rate': self.learning_rate,
             'early_stopping_epochs': self.early_stopping_epochs,
-            'random_seed': self.random_seed
+            'random_seed': self.random_seed,
+            'recursive_training': self.recursive_training.get_config() if self.recursive_training is not None else None,
         })
         return c
 
@@ -235,7 +270,7 @@ class ClassicalANNModel(ANNModel):
               random_seed (int): Seed for random number generators to ensure reproducibility.
         """
 
-        super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
+        super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         self.n_layers: int = n_layers
         self.n_neurons: Union[int, list[int]] = n_neurons
         self.activation_function: Union[str, list[str]] = activation_function
@@ -292,7 +327,7 @@ class LinANNModel(ANNModel):
                                            If None, early stopping is disabled.
             random_seed (int): Seed for random number generators to ensure reproducibility.
         """
-        super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
+        super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         self.n_layers: int = n_layers
         self.n_neurons: Union[int, list[int]] = n_neurons
         self.rescale_output: bool = rescale_output
@@ -356,7 +391,7 @@ class RBFModel(ANNModel):
                                            If None, early stopping is disabled.
             random_seed (int): Seed for random number generators to ensure reproducibility.
         """
-        super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
+        super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         self.n_layers: int = n_layers
         self.n_neurons: Union[int, list[int]] = n_neurons
         self.rescale_output: bool = rescale_output
@@ -418,7 +453,7 @@ class CMNNModel(ANNModel):
                                            If None, early stopping is disabled.
             random_seed (int): Seed for random number generators to ensure reproducibility.
         """
-        super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
+        super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         self.n_layers: int = n_layers
         self.n_neurons: Union[int, list[int]] = n_neurons
         self.activation_function: Union[str, list[str]] = activation_function
@@ -491,7 +526,7 @@ class PINNModel(ANNModel):
                                            If None, early stopping is disabled.
             random_seed (int): Seed for random number generators to ensure reproducibility.
         """
-        super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed)
+        super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         self.n_layers: int = n_layers
         self.n_neurons: Union[int, list[int]] = n_neurons
         self.activation_function: Union[str, list[str]] = activation_function

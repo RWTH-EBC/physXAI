@@ -32,6 +32,15 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - `columns={'name': expression}` in the preprocessing for derived data columns (e.g. PINN targets).
 - Contract tests: every block translates to CasADi; a linear model with a derived input inside the model
   is exported as KerasANN on raw inputs only.
+- Recursive (multi step) evaluation of single step models (`physXAI.evaluation.rollout`): with
+  `eval_horizon='24h'` every single step model that predicts one of its inputs (e.g. `Change(T)` with input
+  `T` and its lags) is applied recursively on windows of the data, as in an MPC. RMSE, MAE and bias per step
+  of the horizon are stored in `td.horizon_metrics` and the training data json, and plotted over the horizon.
+  Derived data columns depending on the recursive feature are recomputed in every step.
+- Training of single step models on the multi step error: `recursive_training=RecursiveTraining(horizon='24h',
+  first_step_weight=0.25, mode='single_then_multi')` for all keras models (and `ModularANN(solver='ols')` as
+  initialization). The saved model stays a single step model for AgentLib-MPC.
+- Example `executables/bestest_hydronic_heat_pump/TAir_recursive.py`.
 
 ### Changed
 - Python >= 3.11 is required (3.9 and 3.10 are end of life).
@@ -60,6 +69,10 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - `ConstrainedRegression`: the layer name did not contain 'dense', so the model could not be translated to
   CasADi by AgentLib-MPC; a second fit added all constraints again.
 - The training history plot failed for models trained without keras history.
+- The multi step evaluation of single step models wrote its predictions into the training data.
+- `BuildContext` cached tensors by `id()` of temporary expressions, which Python reuses.
+- Early stopping on `val_loss` without validation data; random seeds were set when a model object was
+  created instead of when the model is generated.
 
 ### Removed
 - `physXAI.preprocessing.constructed` (`Feature`, `FeatureConstruction`): lags and `Change(X)` are derived
