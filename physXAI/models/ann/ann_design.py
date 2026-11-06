@@ -17,8 +17,6 @@ from physXAI.models.ann.model_construction.rnn_models import (SequenceSpec, buil
 from physXAI.training.recursive import step_weights, weighted_step_loss
 from physXAI.expr import Expr, from_config as expr_from_config, to_config as expr_to_config
 from physXAI.models.ann.pinn.pinn_loss import multi_y_loss
-from physXAI.plotting.plotting import plot_prediction_correlation, plot_predictions, plot_training_history, \
-    plot_metrics_table, subplots, plot_horizon_metrics
 from physXAI.evaluation.metrics import MetricsPINN
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
@@ -31,6 +29,8 @@ class ANNModel(SingleStepModel, ABC):
     Provides common functionality for compiling, fitting, plotting, saving,
     loading, and managing configurations for Keras-based ANN models.
     """
+
+    plot_title = "Artificial Neural Network"
 
     def __init__(self, batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
                  early_stopping_epochs: Optional[int] = 100, random_seed: int = 42,
@@ -161,30 +161,6 @@ class ANNModel(SingleStepModel, ABC):
 
         if Logger.check_print_level('info'):
             model.summary()
-
-    def plot(self, td: TrainingDataGeneric):
-        """
-        Generates and displays various plots related to model performance and training.
-
-        Args:
-            td (TrainingDataGeneric): The TrainingData object
-        """
-
-        fig1 = plot_prediction_correlation(td)
-        fig2 = plot_predictions(td)
-        fig3 = plot_training_history(td)
-        fig4 = plot_metrics_table(td)
-
-        figures = [
-            {"title": "Prediction Correlation", "type": "scatter", "figure": fig1},
-            {"title": "Predictions Sorted", "type": "scatter", "figure": fig2},
-            {"title": "Training History", "type": "scatter", "figure": fig3},
-            {"title": "Performance Metrics", "type": "table", "figure": fig4},
-        ]
-        if td.horizon_metrics is not None:
-            figures.insert(2, {"title": "Recursive Prediction Error", "type": "scatter",
-                               "figure": plot_horizon_metrics(td)})
-        subplots("Artificial Neural Network", *figures)
 
     def save_model(self, model, save_path: str):
         """
@@ -581,7 +557,7 @@ class PINNModel(ANNModel):
             f'Shape of y values does not match length of pinn weights'
 
     def pipeline(self, td: TrainingDataGeneric,
-                 save_path: str = None, plot: bool = True, save_model: bool = True):
+                 save_path: str = None, plot: bool = True, save_model: bool = True, show_plot: bool = False):
         """
         Overrides the base pipeline to include PINN weight checking.
 
@@ -593,10 +569,10 @@ class PINNModel(ANNModel):
         """
 
         self._check_pinn_weights(td)
-        return super().pipeline(td, save_path, plot, save_model)
+        return super().pipeline(td, save_path, plot, save_model, show_plot)
 
     def online_pipeline(self, td: TrainingDataGeneric, load_path: str = None, save_path: str = None,
-                        plot: bool = True, save_model: bool = True):
+                        plot: bool = True, save_model: bool = True, show_plot: bool = False):
         """
         Overrides the online pipeline to include PINN weight checking.
 
@@ -608,7 +584,7 @@ class PINNModel(ANNModel):
             save_model (bool, optional): Whether to save the trained model. Defaults to True.
         """
         self._check_pinn_weights(td)
-        return super().online_pipeline(td, load_path, save_path, plot, save_model)
+        return super().online_pipeline(td, load_path, save_path, plot, save_model, show_plot)
 
     def evaluate(self, model, td: TrainingDataGeneric):
         """
@@ -692,6 +668,8 @@ class RNNModel(MultiStepModel):
                            the rest. None weights all steps equally.
         step_weights: Optional weight per predicted step (overrides `first_step_weight`).
     """
+
+    plot_title = "Recurrent Neural Network"
 
     def __init__(
         self,
@@ -836,34 +814,17 @@ class RNNModel(MultiStepModel):
         td.add_training_record(training_history)
 
     def online_pipeline(self, td: TrainingDataMultiStep, load_path: str, save_path: str = None,
-                        plot: bool = True, save_model: bool = True):
+                        plot: bool = True, save_model: bool = True, show_plot: bool = False):
         """Loads a saved step model, trains it further on `td`, evaluates, plots and saves it."""
         self._check_training_data(td)
         model = self._training_model(self.load_model(load_path), td)
         self.compile_model(model)
         model = self.online_pipeline_internal(td, model)
         if plot:
-            self.plot(td)
+            self.save_plot(self.plot(td, show=show_plot), save_path)
         if save_model:
             self.save_model(model, save_path=save_path)
         return model
-
-    def plot(self, td: TrainingDataMultiStep):
-        """
-        Plots the predictions, the error over the horizon, the training history and the metrics.
-
-        Args:
-            td (TrainingDataMultiStep): The evaluated training data.
-        """
-        figures = [
-            {"title": "Predictions Sorted", "type": "scatter", "figure": plot_predictions(td)},
-            {"title": "Training History", "type": "scatter", "figure": plot_training_history(td)},
-            {"title": "Performance Metrics", "type": "table", "figure": plot_metrics_table(td)},
-        ]
-        if td.horizon_metrics is not None:
-            figures.insert(1, {"title": "Prediction Error over the Horizon", "type": "scatter",
-                               "figure": plot_horizon_metrics(td)})
-        subplots("Recurrent Neural Network", *figures)
 
     def save_model(self, model, save_path: str):
         """

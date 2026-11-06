@@ -8,8 +8,7 @@ from sklearn.linear_model import LinearRegression
 from physXAI.utils.logging import get_full_path, create_full_path, Logger
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
 from physXAI.evaluation.metrics import Metrics
-from physXAI.plotting.plotting import (plot_prediction_correlation, plot_metrics_table, subplots,
-                                              plot_predictions, plot_horizon_metrics)
+from physXAI.plotting.plotting import model_report, save_figure
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
@@ -54,15 +53,34 @@ class AbstractModel(ABC):
     def evaluate(model, td: TrainingDataGeneric):
         pass
 
-    @abstractmethod
-    def plot(self, td: TrainingDataGeneric):
-        """
-         Abstract method for generating and displaying plots related to model performance.
+    #: Title of the plots of the model
+    plot_title: str = "Model"
 
-         Args:
-             td (TrainingDataGeneric): The TrainingData object containing true values and predictions.
-         """
-        pass
+    def plot(self, td: TrainingDataGeneric, show: bool = False):
+        """
+        Plots the predictions, the errors (over the horizon), the training history and the metrics.
+
+        Args:
+            td (TrainingDataGeneric): The evaluated training data.
+            show (bool): Whether to open the figure.
+
+        Returns:
+            plotly.graph_objects.Figure: The figure.
+        """
+        return model_report(td, self.plot_title, show=show)
+
+    @staticmethod
+    def save_plot(figure, save_path: str | None = None):
+        """
+        Saves the figure of `plot` as html file next to the model: `<save_path>.html`, or in the run
+        directory of the Logger if no path is given. Nothing is saved without any of both.
+        """
+        if save_path is None:
+            if Logger._logger is None:
+                return None
+            save_path = Logger.get_model_savepath()
+        stem = os.path.splitext(save_path)[0] if save_path.endswith((".keras", ".joblib")) else save_path
+        return save_figure(figure, create_full_path(stem + ".html"))
 
     @abstractmethod
     def save_model(self, model, save_path: str):
@@ -94,7 +112,8 @@ class AbstractModel(ABC):
     def _check_training_data(self, td: TrainingDataGeneric):
         """Hook checking that the training data fits the model, called before the model is generated."""
 
-    def pipeline(self, td: TrainingDataGeneric, save_path: str = None, plot: bool = True, save_model: bool = True):
+    def pipeline(self, td: TrainingDataGeneric, save_path: str = None, plot: bool = True, save_model: bool = True,
+                 show_plot: bool = False):
         """
           Defines a standard pipeline for single-step models:
           1. Generate model
@@ -107,8 +126,9 @@ class AbstractModel(ABC):
           Args:
               td (TrainingDataGeneric): The training data.
               save_path (str, optional): Path to save the trained model. Defaults to None (Saving path from Logger).
-              plot (bool, optional): Whether to plot the results. Defaults to True.
+              plot (bool, optional): Whether to plot the results (saved as html next to the model). Defaults to True.
               save_model (bool, optional): Whether to save the trained model. Defaults to True.
+              show_plot (bool, optional): Whether to open the plot. Defaults to False.
 
           Returns:
               The trained model instance.
@@ -122,14 +142,14 @@ class AbstractModel(ABC):
 
         self.evaluate(model, td)
         if plot:
-            self.plot(td)
+            self.save_plot(self.plot(td, show=show_plot), save_path)
         if save_model:
             self.save_model(model, save_path=save_path)
 
         return model
 
     def online_pipeline(self, td: TrainingDataGeneric, load_path: str, save_path: str = None,
-                        plot: bool = True, save_model: bool = True):
+                        plot: bool = True, save_model: bool = True, show_plot: bool = False):
         """
         Implements an "online" training pipeline: loads a pre-existing model,
         further trains it on new data, evaluates, plots, and saves it back.
@@ -152,7 +172,7 @@ class AbstractModel(ABC):
         model = self.online_pipeline_internal(td, model)
 
         if plot:
-            self.plot(td)
+            self.save_plot(self.plot(td, show=show_plot), save_path)
         if save_model:
             self.save_model(model, save_path=save_path)
 
@@ -271,6 +291,8 @@ class LinearRegressionModel(SingleStepModel):
     A concrete implementation of SingleStepModel for scikit-learn's Linear Regression.
     """
 
+    plot_title = "Linear Regression"
+
     def generate_model(self, **kwargs):
         """
         Generates an instance of scikit-learn's LinearRegression model.
@@ -303,28 +325,6 @@ class LinearRegressionModel(SingleStepModel):
         No compilation step is needed for scikit-learn models.
         """
         pass
-
-    def plot(self, td: TrainingDataGeneric):
-        """
-        Generates and displays various plots related to model performance.
-
-        Args:
-            td (TrainingDataGeneric): The TrainingData object
-        """
-
-        fig1 = plot_prediction_correlation(td)
-        fig2 = plot_predictions(td)
-        fig3 = plot_metrics_table(td)
-
-        figures = [
-            {"title": "Prediction Correlation", "type": "scatter", "figure": fig1},
-            {"title": "Predictions Sorted", "type": "scatter", "figure": fig2},
-            {"title": "Performance Metrics", "type": "table", "figure": fig3},
-        ]
-        if td.horizon_metrics is not None:
-            figures.insert(2, {"title": "Recursive Prediction Error", "type": "scatter",
-                               "figure": plot_horizon_metrics(td)})
-        subplots("Linear Regression", *figures)
 
     def save_model(self, model, save_path: str):
         """
@@ -397,16 +397,6 @@ class MultiStepModel(AbstractModel, ABC):
     def _check_training_data(self, td: TrainingDataGeneric):
         if not isinstance(td, TrainingDataMultiStep):
             raise TypeError(f"{self.__class__.__name__} is a multi step model and needs PreprocessingMultiStep data.")
-
-    @abstractmethod
-    def plot(self, td: TrainingDataMultiStep):
-        """
-         Abstract method for generating and displaying plots related to model performance.
-
-         Args:
-             td (TrainingDataMultiStep): The TrainingDataMultiStep object containing true values and predictions.
-         """
-        pass
 
     @classmethod
     def from_config(cls, config: dict) -> 'MultiStepModel':

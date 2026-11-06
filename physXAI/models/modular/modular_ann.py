@@ -40,6 +40,8 @@ class ModularANN(ANNModel):
         batch_size, epochs, learning_rate, early_stopping_epochs, random_seed: Training settings.
     """
 
+    plot_title = "Modular ANN"
+
     def __init__(
         self,
         architecture: Expr | dict,
