@@ -18,7 +18,7 @@ Ancestor check: `git merge-base --is-ancestor origin/<branch> origin/refactoring
 
 ## 26-integrate-modular-anns
 Its tip is an ancestor of `refactoring_v1.0.0`. The modular expressions, `closed_loop` and `init_layer` were replaced
-on purpose (see CHANGELOG, *Removed*); `constrained_regression.py` was kept and fixed.
+on purpose (see CHANGELOG, *Removed*); the constrained regression was kept and rebuilt as `ModularANN(solver='qp')`.
 
 ## 14-integrate-developments-from-gitlab
 - `MultiStepModel.evaluate(..., clipped_warmup_length)`: in 1.0 the warmup is never part of loss or metrics.

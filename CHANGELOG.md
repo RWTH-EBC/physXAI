@@ -28,6 +28,12 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   `Polynomial`, `RBF`, `Mean`, `Normalize`, `Pretrained`) in one graph, evaluated with NumPy, Keras or CasADi.
 - `ModularANN(architecture, solver='adam' | 'ols')`: the whole graph is part of the keras model, the MPC only
   needs raw inputs. `solver='ols'` solves linear regressions on expressions in closed form.
+- Constrained regression: `ModularANN(px.Linear(terms), solver='qp', shape=ShapeConstraints(...))` fits a linear
+  regression on expressions whose prediction is monotonic or convex in raw data columns, guaranteed on a domain (the
+  box of the data or `bounds`) by an exchange method for the semi-infinite program, with a certificate per
+  constraint (`exact`, `verified`, `data`, `violated`), the cost of the constraints and a report table. Solved as QP
+  (HiGHS) in QR coordinates, about 1 s for 1e5 samples. `px.Linear(monotonicities=...)` bounds the sign of weights
+  with `solver='qp'`.
 - Inputs of the preprocessing can be derived from the model: `prep.pipeline(path, model=model)`, ordered as
   AgentLib-MPC expects them (recursive feature and its lags last, missing intermediate lags added).
 - `columns={'name': expression}` in the preprocessing for derived data columns (e.g. PINN targets).
@@ -130,8 +136,8 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   takes an optional `run`.
 - `executables/` is replaced by `examples/`: a tutorial of 13 numbered, self-contained scripts from a first model
   to the export for AgentLib-MPC (`examples/README.md`). They use `Run`, save their models with `Run.save` and
-  find the data relative to the repository. The experimental `regression_prototype.py` is replaced by
-  `ConstrainedRegression` (`examples/05_constrained_regression.py`).
+  find the data relative to the repository. The experimental `regression_prototype.py` is replaced by the
+  constrained regression (`examples/05_constrained_regression.py`).
 - The test suite moved from `unittests/` to `tests/`.
 - `random_state=None` draws a seed (or uses the global one) and stores it in the config.
 - `PreprocessingData.from_config` restores the class from `__class_name__` and all settings.
@@ -151,8 +157,8 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - Modular models: `ModularModel` with `LinearRegressionModel` crashed; loading a config twice failed
   (config mutated in place); references to not yet built expressions became None; global caches of keras
   tensors broke a second model in the same process; auto names depended on the process history.
-- `ConstrainedRegression`: the layer name did not contain 'dense', so the model could not be translated to
-  CasADi by AgentLib-MPC; a second fit added all constraints again.
+- `ModularANN(solver='ols')`: `online_pipeline` set the weights of a stale model; closed form solvers now raise a
+  `NotImplementedError` (train a new model on the combined data).
 - The training history plot failed for models trained without keras history.
 - The multi step evaluation of single step models wrote its predictions into the training data.
 - `BuildContext` cached tensors by `id()` of temporary expressions, which Python reuses.

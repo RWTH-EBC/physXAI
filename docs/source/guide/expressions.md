@@ -73,5 +73,6 @@ output) and `px.Target(name)` (a column at the predicted time) are used in physi
 [Physics-informed models](physics.md).
 
 The whole graph is stored in the model config (`model.get_config()`), shared nodes stay shared.
-`ConstrainedRegression(inputs, monotonies, convexities)` fits a linear regression on expressions with
-monotonicity and convexity constraints (CasADi / IPOPT).
+`ModularANN(px.Linear(terms), solver='qp', shape=ShapeConstraints(...))` fits a linear regression on expressions
+whose prediction is monotonic or convex in raw columns on a whole domain, see
+[constrained regression](models.md#constrained-regression).

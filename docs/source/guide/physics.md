@@ -1,11 +1,12 @@
 # Physics-informed models
 
-physXAI offers four ways to bring physical knowledge into a model. They differ in where the physics acts and
+physXAI offers five ways to bring physical knowledge into a model. They differ in where the physics acts and
 what it guarantees:
 
 | Approach | Physics | Guarantee | Exported model |
 |---|---|---|---|
 | Structure ([expressions](expressions.md)) | inside the model, e.g. `px.Linear(monotonicities=...)` | by construction | the model including the physics |
+| [Constrained regression](models.md#constrained-regression) | monotonicity / convexity in raw columns of a linear regression on physical terms | on the domain (box or data), with certificate | the model |
 | [PINN](#pinn-physics-targets) | data column of a physical model with fixed parameters, in the loss | none (soft) | the network |
 | [Physics residual](#physics-residuals-with-trainable-parameters) | residual with trainable physical parameters, in the loss | none (soft) | the network |
 | [PCNN](#physically-consistent-neural-network-pcnn) | linear energy balance in parallel to a recurrent network | sign of the effects of controls and temperatures over the whole horizon | step model (multi step) |

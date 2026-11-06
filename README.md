@@ -92,7 +92,7 @@ Models in this repository are categorized into two main types:
 	- Constrained Monotonic Neural Network (CMNN): Allows enforcing monotonicity, convex and concave constraints on input features.
 	- Physics-Informed Neural Network (PINN): Allows to add physics-informed loss functions
 	- Modular ANN: physically motivated expressions and trainable blocks (linear, MLP, CMNN, RBF, ...) in one model
-	- Constrained Regression: linear regression on expressions with monotonicity and convexity constraints
+	- Constrained Regression: linear regression on physical terms, monotonic or convex in raw inputs on the whole operating range (certified)
 - Multi-Step Models: Predicting a trajectory.
 	- Recurrent Neural Network: SimpleRNN, GRU and LSTM, warmed up on the measured past.
 
