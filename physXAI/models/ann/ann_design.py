@@ -16,13 +16,16 @@ from physXAI.models.ann.model_construction.ann_models import ClassicalANNConstru
 from physXAI.models.ann.model_construction.rbf_models import RBFModelConstruction
 from physXAI.models.ann.model_construction.residual_models import LinResidualANNConstruction
 from physXAI.models.ann.model_construction.rnn_models import (
+    PCNNTerm,
     SequenceSpec,
+    build_pcnn_step_model,
     build_sequence_model,
     build_step_model,
     find_step_model,
+    pcnn_parameters,
     sequence_inputs,
 )
-from physXAI.models.ann.pinn.physics import PhysicsLoss, physics_metrics
+from physXAI.models.ann.pinn.physics import PhysicsLoss, PhysicsResidual, fit_with_physics, physics_metrics
 from physXAI.models.models import LinearRegressionModel, MultiStepModel, SingleStepModel, register_model
 from physXAI.preprocessing.preprocessing import TARGET_PREFIX
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneric, TrainingDataMultiStep
@@ -50,7 +53,9 @@ class ANNModel(SingleStepModel, ABC):
 
     def __init__(self, batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
                  early_stopping_epochs: int | None = 100, random_seed: int = 42,
-                 recursive_training: Union['RecursiveTraining', dict] | None = None, **kwargs):
+                 recursive_training: Union['RecursiveTraining', dict] | None = None,
+                 physics: PhysicsResidual | dict | None = None, physics_fit: str = 'calibrate',
+                 physics_learning_rate: float | None = None, **kwargs):
         """
         Initializes common hyperparameters for ANN training.
 
@@ -64,6 +69,11 @@ class ANNModel(SingleStepModel, ABC):
                                the model is generated, not when the object is created.
             recursive_training (RecursiveTraining, optional): Train on the multi step (recursive) error,
                                see `physXAI.training.RecursiveTraining`. None trains on the single step error.
+            physics (PhysicsResidual, optional): A physics residual with trainable physical parameters, used in
+                               the (single step) training, see `physXAI.models.ann.pinn.physics.PhysicsResidual`.
+            physics_fit (str): How the parameters of the residual are trained: 'calibrate' (fitted to the data
+                               first, then fixed while the network is trained), 'joint' or 'fixed'.
+            physics_learning_rate (float, optional): Learning rate of the calibration (default 10 x learning_rate).
         """
         super().__init__(**kwargs)
         self.batch_size: int = batch_size
@@ -75,8 +85,34 @@ class ANNModel(SingleStepModel, ABC):
         if isinstance(recursive_training, dict):
             recursive_training = RecursiveTraining.from_config(recursive_training)
         self.recursive_training: RecursiveTraining | None = recursive_training
+        if isinstance(physics, dict):
+            physics = PhysicsResidual.from_config(physics)
+        if physics_fit not in ('calibrate', 'joint', 'fixed'):
+            raise ValueError(f"Unknown physics_fit '{physics_fit}', use 'calibrate', 'joint' or 'fixed'.")
+        self.physics: PhysicsResidual | None = physics
+        self.physics_fit: str = physics_fit
+        self.physics_learning_rate: float | None = physics_learning_rate
+        #: Trained values of the parameters of the physics residual (after the pipeline)
+        self.physics_parameters: dict | None = None
 
         self.model_config = dict()
+
+    @property
+    def required_loss_columns(self) -> list[str] | None:
+        """Data columns of the physics residual, added to the loss columns of the preprocessing."""
+        return self.physics.columns if self.physics is not None else None
+
+    def _check_training_data(self, td: TrainingDataGeneric):
+        super()._check_training_data(td)
+        if self.physics is not None:
+            missing = [c for c in self.physics.columns if c not in td.loss_columns]
+            if missing:
+                raise ValueError(
+                    f"The training data holds no columns {missing} of the physics residual. Pass the model to the "
+                    "preprocessing, prep.pipeline(path, model=model), so it adds them as loss columns."
+                )
+            if len(td.outputs) != 1:
+                raise ValueError(f"Physics residuals need a model with one output, got {td.outputs}.")
 
 
     @abstractmethod
@@ -139,7 +175,19 @@ class ANNModel(SingleStepModel, ABC):
         return 'val_loss'
 
     def fit_single_step(self, model, td: TrainingDataGeneric):
-        """Fits the Keras model on the single step error."""
+        """Fits the Keras model on the single step error (and the physics residual, if any)."""
+        if self.physics is not None:
+            start_time = time.perf_counter()
+            result = fit_with_physics(model, td, self, self.physics, self.physics_fit, self.physics_learning_rate)
+            td.add_training_time(time.perf_counter() - start_time)
+            td.add_training_record(result.pop('record'))
+            td.physics = result
+            self.physics_parameters = result['parameters']
+            # the network was trained inside a wrapper: build its own optimizer, so the saved model loads cleanly
+            if getattr(model, 'optimizer', None) is not None and not model.optimizer.built:
+                model.optimizer.build(model.trainable_variables)
+            logger.info("Physics parameters: %s", self.physics_parameters)
+            return
         train, val = self._fit_data(td, 'train'), self._fit_data(td, 'val')
         # Early stopping (only possible with validation data)
         callbacks = list()
@@ -224,6 +272,9 @@ class ANNModel(SingleStepModel, ABC):
             'early_stopping_epochs': self.early_stopping_epochs,
             'random_seed': self.random_seed,
             'recursive_training': self.recursive_training.get_config() if self.recursive_training is not None else None,
+            'physics': self.physics.get_config() if self.physics is not None else None,
+            'physics_fit': self.physics_fit,
+            'physics_learning_rate': self.physics_learning_rate,
         })
         return c
 
@@ -536,6 +587,9 @@ class PINNModel(ANNModel):
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         if not physics_targets:
             raise ValueError("PINNModel needs physics targets, e.g. physics_targets={'pinn': 1.0}.")
+        if self.physics is not None:
+            raise ValueError("PINNModel uses physics targets; for a physics residual use another model, e.g. "
+                             "CMNNModel(physics=...).")
         if early_stopping_on not in ('data', 'total'):
             raise ValueError("early_stopping_on has to be 'data' or 'total'.")
         self.physics_targets: dict[str, float] = {str(k): float(w) for k, w in physics_targets.items()}
@@ -872,3 +926,125 @@ class RNNModel(MultiStepModel):
         config.pop('physXAI_version', None)
         config.pop('__class_name__', None)
         return cls(**config)
+
+@register_model
+class PCNNModel(RNNModel):
+    """
+    Physically consistent neural network (PCNN, Di Natale et al. 2022, Applied Energy 325, 119806) for the
+    multi step prediction of a temperature.
+
+    The temperature T is the sum of two states: an energy accumulator E, a linear physics-inspired module
+    driven by the heating and cooling inputs and the heat losses to the outside (or neighbouring zones), and the
+    unforced dynamics D, a recurrent network f on D and the remaining inputs (e.g. solar radiation):
+
+        E(k+1) = E(k) + sum a * u_heating(k) - sum d * u_cooling(k) + sum b * (T_x(k) - T(k))
+        D(k+1) = D(k) + f(D(k), x(k)),   T = D + E
+
+    Since D does not depend on the controls and T_x, the prediction is physically consistent over the whole
+    horizon for any f: T increases with heating, decreases with cooling and increases with T_x, if the
+    parameters a, b, d are positive (enforced) and 1 - sum b > 0 per time step (checked after the training).
+
+    The data are `PreprocessingMultiStep` sequences with the output `px.Change('T')` and T as input; T is
+    fed back during the prediction (closed loop), the model warms up on the measured past, and the parameters
+    are trained with the network on the error of the trajectory over the horizon. The saved step model is
+    exported to AgentLib-MPC like an RNN.
+
+    The parameters start at physical rules of thumb, given per hour: a heating rate in K/h at u = 1
+    (e.g. "+1 K in 2 h at full power": 0.5) and a loss rate in 1/h (e.g. "-1.5 K in 6 h when it is 25 K colder
+    outside": 1.5 / 25 / 6 = 0.01). They are scaled to the time step, and the network learns a factor on them.
+
+    Args:
+        heating: {input: initial heating rate in K/h per unit of the input}.
+        cooling: {input: initial cooling rate in K/h per unit of the input} (the input is a positive cooling power).
+        losses: {temperature input: initial loss rate in 1/h}.
+        rnn_units: Units of the recurrent layer of f.
+        rnn_layer: 'LSTM' (default), 'GRU' or 'RNN'.
+        **kwargs: Training settings of `RNNModel` (epochs, learning_rate, batch_size, early_stopping_epochs,
+                  random_seed, loss_on, first_step_weight, step_weights).
+
+    Example:
+        >>> prep = PreprocessingMultiStep(inputs=['u_hp', 'T_amb', 'solar', 'T'], output=px.Change('T'),
+        ...                               warmup_width='3h', label_width='12h')
+        >>> m = PCNNModel(heating={'u_hp': 0.5}, losses={'T_amb': 0.01})
+    """
+
+    plot_title = "Physically Consistent Neural Network"
+
+    def __init__(self, heating: dict[str, float] | None = None, cooling: dict[str, float] | None = None,
+                 losses: dict[str, float] | None = None, rnn_units: int = 32, rnn_layer: str = "LSTM", **kwargs):
+        if kwargs.get("feature_architecture") is not None:
+            raise ValueError("PCNNModel has no feature_architecture, the inputs of f are all non-physics inputs.")
+        super().__init__(rnn_units=rnn_units, rnn_layer=rnn_layer, **kwargs)
+        self.heating = {str(k): float(v) for k, v in (heating or {}).items()}
+        self.cooling = {str(k): float(v) for k, v in (cooling or {}).items()}
+        self.losses = {str(k): float(v) for k, v in (losses or {}).items()}
+        rates = {**self.heating, **self.cooling, **self.losses}
+        if not rates:
+            raise ValueError("PCNNModel needs at least one term: heating, cooling or losses.")
+        if any(rate <= 0 for rate in rates.values()):
+            raise ValueError(f"The initial rates have to be positive, got {rates}.")
+        names = [*self.heating, *self.cooling, *self.losses]
+        if len(set(names)) != len(names):
+            raise ValueError(f"Every input can only be part of one term, got {names}.")
+
+    def _terms(self, td: TrainingDataMultiStep) -> list[PCNNTerm]:
+        """The terms of the energy accumulator with their initial values per time step."""
+        if len(td.outputs) != 1 or not td.difference[0]:
+            raise ValueError(f"PCNNModel predicts the change of one feature (px.Change('T')), got {td.outputs}.")
+        feature = td.features[0]
+        if feature not in td.inputs:
+            raise ValueError(f"The predicted feature '{feature}' has to be an input of the PCNN (closed loop).")
+        if not td.time_step:
+            raise ValueError("PCNNModel needs the time step of the data to scale its rates.")
+        hours = td.time_step / 3600.0
+        terms = list()
+        for kind, rates in (("heating", self.heating), ("cooling", self.cooling), ("loss", self.losses)):
+            for name, rate in rates.items():
+                if name not in td.inputs:
+                    raise ValueError(f"The {kind} input '{name}' is not an input of the data {td.inputs}.")
+                if name == feature:
+                    raise ValueError(f"The predicted feature '{feature}' cannot be a {kind} input.")
+                terms.append(PCNNTerm(kind, td.inputs.index(name), rate * hours))
+        return terms
+
+    def _check_training_data(self, td: TrainingDataGeneric):
+        super()._check_training_data(td)
+        self._terms(td)
+
+    def generate_model(self, **kwargs):
+        """Builds the PCNN step model and the sequence model used for training."""
+        td = kwargs["td"]
+        step_model = build_pcnn_step_model(self.model_config, td, self._terms(td))
+        return self._training_model(step_model, td)
+
+    def evaluate(self, model, td: TrainingDataMultiStep):
+        """Evaluates the model like an RNN and stores the trained physical parameters in `td.physics`."""
+        MultiStepModel.evaluate(model, td)
+        td.physics = {"parameters": self.physics_parameters(model, td)}
+
+    def physics_parameters(self, model, td: TrainingDataMultiStep) -> dict:
+        """
+        Trained parameters of the energy accumulator per hour (heating and cooling rates in K/h per unit of
+        the input, loss rates in 1/h) and the check of the physical consistency 1 - sum(loss rates per step) > 0.
+        """
+        terms = self._terms(td)
+        per_step = pcnn_parameters(find_step_model(model), terms)
+        hours = td.time_step / 3600.0
+        kinds = {"heating": "heating", "cooling": "cooling", "loss": "losses"}
+        parameters = {"heating": {}, "cooling": {}, "losses": {}}
+        for term, value in zip(terms, per_step, strict=True):
+            parameters[kinds[term.kind]][td.inputs[term.input]] = value / hours
+        margin = 1.0 - sum(v for term, v in zip(terms, per_step, strict=True) if term.kind == "loss")
+        parameters["consistency_margin"] = margin
+        if margin <= 0:
+            logger.warning("PCNN: the loss rates per time step sum up to %.3g >= 1, the prediction is not "
+                           "physically consistent anymore.", 1.0 - margin)
+        logger.info("PCNN parameters (per hour): %s", parameters)
+        return parameters
+
+    def get_config(self) -> dict:
+        config = super().get_config()
+        config.pop("feature_architecture", None)
+        config.update({"heating": self.heating, "cooling": self.cooling, "losses": self.losses})
+        return config
+

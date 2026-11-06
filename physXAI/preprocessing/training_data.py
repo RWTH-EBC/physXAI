@@ -39,6 +39,8 @@ class TrainingDataGeneric(ABC):
         self.recursive_training_record = None
         self.training_time = None
         self.metrics = None
+        #: Results of physics-based models, e.g. learned physical parameters (`PCNNModel`, physics residuals)
+        self.physics: dict | None = None
 
     def add_training_record(self, data):
         """Stores the training history (e.g. the keras `History` object)."""
@@ -76,6 +78,7 @@ class TrainingDataGeneric(ABC):
             "metrics": self.metrics.get_config() if self.metrics is not None else None,
             "training_time": self.training_time,
             "training_record": self.training_record.history if self.training_record is not None else None,
+            "physics": self.physics,
         }
 
     @abstractmethod

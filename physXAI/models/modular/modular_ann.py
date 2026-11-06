@@ -70,6 +70,8 @@ class ModularANN(ANNModel):
         self._rescaling: tuple[float, float] | None = None
         if solver == "ols":
             self._check_ols()
+            if self.physics is not None:
+                raise ValueError("solver='ols' cannot be combined with a physics residual, use solver='adam'.")
 
     @property
     def required_inputs(self) -> list[str]:

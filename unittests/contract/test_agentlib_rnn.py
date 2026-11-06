@@ -23,22 +23,24 @@ from agentlib_mpc.models.serialized_ml_model import SerializedKerasRNN  # noqa: 
 
 from physXAI import expr as px  # noqa: E402
 from physXAI.io import Run  # noqa: E402
-from physXAI.models.ann.ann_design import RNNModel  # noqa: E402
+from physXAI.models.ann.ann_design import PCNNModel, RNNModel  # noqa: E402
 from physXAI.preprocessing.preprocessing import PreprocessingMultiStep  # noqa: E402
 
 pytestmark = pytest.mark.agentlib
 WARMUP = 3
 
 
-@pytest.mark.parametrize("rnn_layer", ["RNN", "GRU", "LSTM"])
-def test_casadi_step_function_reproduces_the_rnn(rnn_layer, tmp_path):
+@pytest.mark.parametrize("rnn_layer, pcnn", [("RNN", False), ("GRU", False), ("LSTM", False), ("LSTM", True)])
+def test_casadi_step_function_reproduces_the_rnn(rnn_layer, pcnn, tmp_path):
     csv = tmp_path / "one_room.csv"
     simulate_one_room(n_steps=800).to_csv(csv, sep=";")
     prep = PreprocessingMultiStep(
         inputs=["T_in", "load", "mDot", "T"], output=px.Change("T"), label_width=4, warmup_width=WARMUP, random_state=0
     )
     td = prep.pipeline(csv)
-    m = RNNModel(rnn_units=4, rnn_layer=rnn_layer, epochs=1, early_stopping_epochs=None)
+    settings = dict(rnn_units=4, rnn_layer=rnn_layer, epochs=1, early_stopping_epochs=None)
+    # the PCNN step model has the energy accumulator as additional state
+    m = PCNNModel(heating={"load": 0.03}, losses={"T_in": 0.5}, **settings) if pcnn else RNNModel(**settings)
     model = m.pipeline(td, plot=False, save_model=False)
     run = Run(tmp_path, "rnn")
     run.save_for_agentlib("T", prep, m, td, trained_model=model)
@@ -55,7 +57,8 @@ def test_casadi_step_function_reproduces_the_rnn(rnn_layer, tmp_path):
     sequence = td.X("test")[0]
     step_model = keras.saving.load_model(run.path / "T.keras")
     expected = np.asarray(
-        step_model.predict([sequence[None], *[np.zeros((1, 4))] * (len(step_model.inputs) - 1)], verbose=0)[0]
+        step_model.predict([sequence[None], *[np.zeros((1, int(t.shape[-1]))) for t in step_model.inputs[1:]]],
+                           verbose=0)[0]
     ).reshape(-1)
     states = ca.DM.zeros(predictor.state_dimension, 1)
     predictions = list()
