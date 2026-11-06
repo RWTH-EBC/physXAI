@@ -1,0 +1,54 @@
+name: Windows
+
+# The CI template (ci.yml) only runs on Ubuntu. physXAI has to run on Windows and Linux, so the unit
+# tests run here on Windows, and the installation (non editable) is checked on both systems.
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: pip
+        cache-dependency-path: pyproject.toml
+    - name: Install physXAI
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .[dev,agentlib]
+    - name: Unit tests
+      run: python -m pytest unittests
+
+  verify-installation:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: pip
+        cache-dependency-path: pyproject.toml
+    - name: Install physXAI (not editable)
+      run: |
+        python -m pip install --upgrade pip
+        pip install .
+    - name: Verify installation with a simple example script
+      run: python unittests/verify_installation.py

@@ -1,4 +1,0 @@
-- **[Preprocessing](preprocessing/preprocessing.md)**
-- **[Split](preprocessing/splitting.md)**
-- **[Windows](preprocessing/windows.md)**
-- **[Training Data](preprocessing/training_data.md)**

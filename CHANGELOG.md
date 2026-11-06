@@ -74,13 +74,17 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   Existing runs are loaded from model directories with arbitrarily named run directories (`results/cmnn/<run>/`),
   also with several models per run directory (AgentLib-MPC) and from the command line
   (`python -m physXAI.evaluation.comparison results`).
-- Documentation: user guide (getting started, expressions, data pipeline and split, models, multi step evaluation
-  and training, recurrent models, evaluation and comparison, AgentLib-MPC export), migration guide from 0.x and
-  the API reference of all modules. The CI builds it in strict mode.
+- Documentation with Sphinx (MyST Markdown, API reference from the docstrings): user guide (getting started,
+  expressions, data pipeline and split, models, multi step evaluation and training, recurrent models, evaluation and
+  comparison, AgentLib-MPC export) and migration guide from 0.x. Published at
+  https://rwth-ebc.github.io/physXAI/main/docs/index.html.
 
 ### Changed
 - Python >= 3.11 is required (3.9 and 3.10 are end of life).
-- CI runs on Linux and Windows.
+- CI uses the shared template of the institute (RWTH-EBC/ci_templates, like AgentLib and AgentLib-MPC): tests,
+  coverage, package build, pylint/ruff reports, documentation and GitHub Pages; additionally the unit tests on
+  Windows, a smoke run of the executables (one epoch, `unittests/smoke_executables.py`) and strict ruff and Sphinx
+  checks. Badges and reports are published on GitHub Pages instead of being committed.
 - Static versioning in `pyproject.toml` instead of `setuptools-scm`.
 - `casadi` is now a declared dependency (it was imported, but missing).
 - Default run folder names no longer contain `:` (invalid on Windows).

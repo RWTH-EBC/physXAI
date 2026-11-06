@@ -40,21 +40,23 @@ dev = [
     "pytest-cov>=6.2.1",
     "ruff>=0.12",
     "pre-commit>=4.2",
-    "anybadge>=1.16.0",
 ]
 # Required for the AgentLib-MPC contract tests (unittests/contract). Tests are skipped if not installed.
 agentlib = [
     "agentlib_mpc[ml]",
 ]
+# Sphinx documentation, as built by the EBC CI template (sphinx-apidoc + sphinx-build, see docs/source/conf.py)
 docs = [
-    "mkdocs-material>=9.6.15",
-    "mkdocstrings[python]>=0.30.0",
+    "sphinx>=6.2",
+    "myst-parser>=2.0",
+    "sphinx-rtd-theme>=1.2",
+    "autodoc_pydantic>=2.0",
 ]
 
 [project.urls]
 homepage = "https://github.com/RWTH-EBC/physXAI"
 repository = "https://github.com/RWTH-EBC/physXAI"
-documentation = "https://github.com/RWTH-EBC/physXAI/blob/main/README.md"
+documentation = "https://rwth-ebc.github.io/physXAI/main/docs/index.html"
 "Bug Tracker" = "https://github.com/RWTH-EBC/physXAI/issues"
 
 [tool.setuptools.packages.find]
@@ -88,7 +90,6 @@ ignore = ["E501"]
 
 [tool.coverage.run]
 source = ["physXAI/"]
-data_file = "build/.coverage"
 branch = true
 omit = [
     "conftest.py",
@@ -103,12 +104,20 @@ exclude_lines = [
     "pragma: no cover",
     "raise NotImplementedError",
     "@abstractmethod",
-    "if Logger._logger is None:",
-    "Logger.setup_logger()"
 ]
 
-[tool.coverage.xml]
-output = "build/reports/coverage.xml"
+# Static analysis report of the EBC CI template (pylint, score only)
+[tool.pylint.format]
+max-line-length = 120
 
-[tool.coverage.html]
-directory = "build/reports/coverage_html"
+[tool.pylint."messages control"]
+disable = [
+    "invalid-name",            # physical symbols (T, dT, X_train) and keras conventions
+    "too-many-arguments",
+    "too-many-positional-arguments",
+    "too-many-locals",
+    "too-many-instance-attributes",
+    "too-few-public-methods",
+    "import-outside-toplevel",  # heavy imports (tensorflow, casadi) are deferred on purpose
+    "wrong-import-position",    # TF_CPP_MIN_LOG_LEVEL has to be set before importing keras
+]

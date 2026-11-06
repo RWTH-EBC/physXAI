@@ -1,3 +1,0 @@
-# Training
-
-::: physXAI.training.recursive
