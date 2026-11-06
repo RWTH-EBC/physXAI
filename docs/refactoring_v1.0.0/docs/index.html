@@ -45,6 +45,7 @@
               <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="guide/expressions.html">Expressions: physics inside the model</a></li>
 <li class="toctree-l1"><a class="reference internal" href="guide/data.html">Data pipeline and split</a></li>
 <li class="toctree-l1"><a class="reference internal" href="guide/models.html">Models</a></li>
@@ -148,14 +149,19 @@ If you have any questions regarding physXAI, feel free to contact us at ebc-tool
 <h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this heading"></a></h2>
 <p>The <a class="reference external" href="https://rwth-ebc.github.io/physXAI/main/docs/index.html">documentation</a> contains a user guide, the API reference and a
 <a class="reference external" href="https://rwth-ebc.github.io/physXAI/main/docs/migration.html">migration guide from physXAI 0.x to 1.0</a>. <br />
-Executable and commented examples can be found in the <code class="docutils literal notranslate"><span class="pre">executables</span></code> directory. They serve as a starting point
-for new projects. New executable scripts should be added there.</p>
+The <a class="reference external" href="https://github.com/RWTH-EBC/physXAI/tree/main/examples"><code class="docutils literal notranslate"><span class="pre">examples</span></code></a> directory is a tutorial in 13 numbered,
+commented scripts, from a first model (<code class="docutils literal notranslate"><span class="pre">01_first_model.py</span></code>) over expressions, recurrent and physics-informed models
+and the comparison of models to the export for AgentLib-MPC (<code class="docutils literal notranslate"><span class="pre">13_agentlib_mpc.py</span></code>). They serve as a starting point
+for new projects:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/01_first_model.py
+</pre></div>
+</div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI</span><span class="w"> </span><span class="kn">import</span> <span class="n">expr</span> <span class="k">as</span> <span class="n">px</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">Run</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegressionModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreprocessingSingleStep</span>
 
-<span class="n">run</span> <span class="o">=</span> <span class="n">Run</span><span class="p">(</span><span class="s1">'stored_data'</span><span class="p">,</span> <span class="s1">'TAir'</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">run</span> <span class="o">=</span> <span class="n">Run</span><span class="p">(</span><span class="s1">'results'</span><span class="p">,</span> <span class="s1">'TAir'</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">prep</span> <span class="o">=</span> <span class="n">PreprocessingSingleStep</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="s1">'weaSta_reaWeaTDryBul_y'</span><span class="p">,</span> <span class="s1">'oveHeaPumY_u'</span><span class="p">,</span> <span class="s1">'reaTZon_y'</span><span class="p">],</span>
                                <span class="n">output</span><span class="o">=</span><span class="n">px</span><span class="o">.</span><span class="n">Change</span><span class="p">(</span><span class="s1">'reaTZon_y'</span><span class="p">),</span> <span class="n">time_index_col</span><span class="o">=</span><span class="s1">'time'</span><span class="p">,</span> <span class="n">eval_horizon</span><span class="o">=</span><span class="s1">'12h'</span><span class="p">)</span>
 <span class="n">td</span> <span class="o">=</span> <span class="n">prep</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="s1">'data/bestest_hydronic_heat_pump/pid_data.csv'</span><span class="p">)</span>
@@ -196,13 +202,13 @@ Several models, each trained with several seeds, can be compared with <code clas
 <h2>Project Structure<a class="headerlink" href="#project-structure" title="Permalink to this heading"></a></h2>
 <p>The project is organized into the following directories:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">executables</span></code>: Contains executable scripts and configuration files. This is the primary location for users to run and test models.</p>
+<li><p><code class="docutils literal notranslate"><span class="pre">examples</span></code>: Tutorial scripts showing the features of physXAI, the starting point for users (see <code class="docutils literal notranslate"><span class="pre">examples/README.md</span></code>).</p>
 <ul>
-<li><p>The base example uses data from the BOPTEST ‘Bestest Hydronic Heat Pump’ test case: https://ibpsa.github.io/project1-boptest/testcases/ibpsa/testcases_ibpsa_bestest_hydronic_heat_pump/</p></li>
+<li><p>The examples use data from the BOPTEST ‘Bestest Hydronic Heat Pump’ test case: https://ibpsa.github.io/project1-boptest/testcases/ibpsa/testcases_ibpsa_bestest_hydronic_heat_pump/</p></li>
 </ul>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">data</span></code>: Storage for input data, typically in <code class="docutils literal notranslate"><span class="pre">.csv</span></code> format. Datasets required for training and evaluating models should be placed here.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">stored_data</span></code>: Default directory of the runs: trained models, configs, metrics and reports.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">results</span></code>: Default directory of the runs (<code class="docutils literal notranslate"><span class="pre">Run</span></code>): trained models, configs, metrics and reports.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">physXAI</span></code>: Contains the core logic and main functionalities of the physXAI Toolbox.</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">expr</span></code>: Expression language for physically motivated terms and trainable blocks (NumPy, Keras and CasADi).</p></li>
@@ -218,7 +224,7 @@ Several models, each trained with several seeds, can be compared with <code clas
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">docs</span></code>: Contains documentation for the project.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">build</span></code>: Contains saved test reports.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">unittests</span></code>: Contains unittests for physXAI.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tests</span></code>: Tests of physXAI (pytest), the contract tests with AgentLib-MPC and the smoke run of the examples.</p></li>
 </ul>
 </section>
 <section id="how-to-contribute-to-the-development">
@@ -257,7 +263,7 @@ https://www.ebc.eonerc.rwth-aachen.de/cms/~dmzz/E-ON-ERC-EBC/</p>
 <section id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading"></a></h2>
 <ul class="simple">
-<li><p><a class="reference internal" href="guide/getting_started.html"><span class="std std-doc">Getting started</span></a>, <a class="reference internal" href="guide/expressions.html"><span class="std std-doc">expressions</span></a>,
+<li><p><a class="reference internal" href="guide/getting_started.html"><span class="std std-doc">Getting started</span></a>, <a class="reference internal" href="guide/examples.html"><span class="std std-doc">examples</span></a>, <a class="reference internal" href="guide/expressions.html"><span class="std std-doc">expressions</span></a>,
 <a class="reference internal" href="guide/data.html"><span class="std std-doc">data pipeline and split</span></a>, <a class="reference internal" href="guide/models.html"><span class="std std-doc">models</span></a>,
 <a class="reference internal" href="guide/multi_step.html"><span class="std std-doc">multi step evaluation and training</span></a>, <a class="reference internal" href="guide/rnn.html"><span class="std std-doc">recurrent models</span></a>,
 <a class="reference internal" href="guide/physics.html"><span class="std std-doc">physics-informed models</span></a>,

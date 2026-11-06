@@ -27,7 +27,7 @@ seeds, `ModelComparison` compares the distributions:
 ```python
 from physXAI.evaluation.comparison import ModelComparison, repeat_training
 
-run = Run("stored_data", "TAir_compare", overwrite=True)
+run = Run("results", "TAir_compare", overwrite=True)
 repeat_training(path, prep, LinearRegressionModel(), seeds=5, run=run, name="linreg")
 repeat_training(path, prep, ClassicalANNModel(epochs=100), seeds=5, run=run, name="ann")
 repeat_training(path, rnn_prep, RNNModel(rnn_layer="LSTM"), seeds=5, run=run, name="rnn")
@@ -92,7 +92,7 @@ or `horizon=` in hours.
 The plot shows box plots of the single step RMSE (every point is a run), RMSE and bias over the horizon
 (median over the runs and the interquartile range, or `band='range'` for min - max), box plots of the mean RMSE over the horizon and
 the RMSE at its end, and the summary table.
-See `executables/bestest_hydronic_heat_pump/TAir_compare.py`.
+See `examples/11_compare_models.py`.
 
 ## Feature selection (experimental)
 

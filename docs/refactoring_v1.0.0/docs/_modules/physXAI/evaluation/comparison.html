@@ -43,6 +43,7 @@
               <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/expressions.html">Expressions: physics inside the model</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/data.html">Data pipeline and split</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/models.html">Models</a></li>
@@ -96,7 +97,7 @@
 <span class="sd">- plots of the distributions (box plots over the runs, median and band over the horizon).</span>
 
 <span class="sd">Example:</span>
-<span class="sd">    &gt;&gt;&gt; run = Run("stored_data", "TAir_compare", overwrite=True)</span>
+<span class="sd">    &gt;&gt;&gt; run = Run("results", "TAir_compare", overwrite=True)</span>
 <span class="sd">    &gt;&gt;&gt; repeat_training(file_path, prep, LinearRegressionModel(), seeds=5, run=run, name="linreg")</span>
 <span class="sd">    &gt;&gt;&gt; repeat_training(file_path, prep, ClassicalANNModel(epochs=50), seeds=5, run=run, name="ann")</span>
 <span class="sd">    &gt;&gt;&gt; comparison = ModelComparison.load(run.path)  # one model per sub directory</span>

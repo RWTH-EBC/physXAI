@@ -46,6 +46,7 @@
               <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="expressions.html">Expressions: physics inside the model</a></li>
 <li class="toctree-l1"><a class="reference internal" href="data.html">Data pipeline and split</a></li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
@@ -121,7 +122,7 @@ errors, often more than the difference between two models. <code class="docutils
 seeds, <code class="docutils literal notranslate"><span class="pre">ModelComparison</span></code> compares the distributions:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.evaluation.comparison</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelComparison</span><span class="p">,</span> <span class="n">repeat_training</span>
 
-<span class="n">run</span> <span class="o">=</span> <span class="n">Run</span><span class="p">(</span><span class="s2">"stored_data"</span><span class="p">,</span> <span class="s2">"TAir_compare"</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">run</span> <span class="o">=</span> <span class="n">Run</span><span class="p">(</span><span class="s2">"results"</span><span class="p">,</span> <span class="s2">"TAir_compare"</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">repeat_training</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">prep</span><span class="p">,</span> <span class="n">LinearRegressionModel</span><span class="p">(),</span> <span class="n">seeds</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"linreg"</span><span class="p">)</span>
 <span class="n">repeat_training</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">prep</span><span class="p">,</span> <span class="n">ClassicalANNModel</span><span class="p">(</span><span class="n">epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">),</span> <span class="n">seeds</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"ann"</span><span class="p">)</span>
 <span class="n">repeat_training</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">rnn_prep</span><span class="p">,</span> <span class="n">RNNModel</span><span class="p">(</span><span class="n">rnn_layer</span><span class="o">=</span><span class="s2">"LSTM"</span><span class="p">),</span> <span class="n">seeds</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"rnn"</span><span class="p">)</span>
@@ -182,7 +183,7 @@ or <code class="docutils literal notranslate"><span class="pre">horizon=</span><
 <p>The plot shows box plots of the single step RMSE (every point is a run), RMSE and bias over the horizon
 (median over the runs and the interquartile range, or <code class="docutils literal notranslate"><span class="pre">band='range'</span></code> for min - max), box plots of the mean RMSE over the horizon and
 the RMSE at its end, and the summary table.
-See <code class="docutils literal notranslate"><span class="pre">executables/bestest_hydronic_heat_pump/TAir_compare.py</span></code>.</p>
+See <code class="docutils literal notranslate"><span class="pre">examples/11_compare_models.py</span></code>.</p>
 </section>
 </section>
 <section id="feature-selection-experimental">

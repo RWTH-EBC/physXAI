@@ -43,6 +43,7 @@
               <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/expressions.html">Expressions: physics inside the model</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/data.html">Data pipeline and split</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/models.html">Models</a></li>
@@ -182,7 +183,7 @@
 <span class="sd">    Directory collecting all files of one training run.</span>
 
 <span class="sd">    Example:</span>
-<span class="sd">        &gt;&gt;&gt; run = Run("stored_data", "TAir", overwrite=True)</span>
+<span class="sd">        &gt;&gt;&gt; run = Run("results", "TAir", overwrite=True)</span>
 <span class="sd">        &gt;&gt;&gt; run.save_json("notes.json", {"comment": "first try"})</span>
 
 <span class="sd">    Args:</span>
@@ -195,7 +196,7 @@
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">=</span> <span class="s2">"stored_data"</span><span class="p">,</span>
+        <span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">=</span> <span class="s2">"results"</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">log_level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
