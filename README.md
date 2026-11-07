@@ -21,36 +21,28 @@ The toolbox aims to integrate physical knowledge into machine learning models to
 If you have any questions regarding physXAI, feel free to contact us at ebc-tools@eonerc.rwth-aachen.de  
 
 ## Installation
-1. Create a virtual environment with Python >= 3.11 and activate it:
-	```
-	python -m venv physXAI
-	```
-	- **On Windows:**
-	  ```
-	  physXAI\Scripts\activate.bat
-	  ```
-	- **On Unix/Linux/macOS:**
-	  ```
-	  source physXAI/bin/activate
-	  ```
-2. Clone physXAI git repo:
-	```
-	git clone https://github.com/RWTH-EBC/physXAI.git
-	```
-3. Switch in project directory:
-	```
-	cd <path_to_repository>
-	```
-4. A) To install physXAI as a user:
-	```
-	pip install .
-	```
- 
-    B) To install physXAI as a developer (tests, linting, AgentLib-MPC contract tests):
-	```
-	pip install -e .[dev,agentlib]
-	pre-commit install
-	```
+1. Clone the physXAI repository and switch into it:
+    ```
+    git clone https://github.com/RWTH-EBC/physXAI.git
+    cd physXAI
+    ```
+2. Create a virtual environment with Python >= 3.11 and activate it:
+    ```
+    python -m venv .venv
+    ```
+    - **On Windows:** `.venv\Scripts\activate`
+    - **On Unix/Linux/macOS:** `source .venv/bin/activate`
+3. A) To install physXAI as a user:
+    ```
+    pip install .
+    ```
+   B) To install physXAI as a developer (tests, linting, AgentLib-MPC contract tests):
+    ```
+    pip install -e .[dev,agentlib]
+    pre-commit install
+    ```
+   Options: `-c constraints.txt` installs the versions physXAI was tested with, `.[gpu]` TensorFlow with CUDA
+   (Linux or WSL2, see the [documentation](https://rwth-ebc.github.io/physXAI/main/docs/guide/getting_started.html#gpu)).
 
 ## Getting Started
 The [documentation](https://rwth-ebc.github.io/physXAI/main/docs/index.html) contains a user guide, the API reference and a
@@ -80,7 +72,7 @@ run.save('model', prep, model, td)    # configs, metrics, model and report (html
 ```
 
 ## Current Model Types
-The physXAI currently focuses on physics-guided neural networks build with Keras and Tensorflow.
+physXAI currently focuses on physics-guided neural networks built with Keras and TensorFlow.
 Models in this repository are categorized into two main types:
 
 - Single-Step Models: Predicting one step ahead. Applied recursively in the MPC, evaluated and optionally
@@ -89,12 +81,13 @@ Models in this repository are categorized into two main types:
 	- Classical ANN
 	- Radial Basis Function Network (RBF): RBF Models extrapolate to 0. Useful for residual models.
 	- Residual Model: hybrid model combining a Linear Regression model with an RBF, that models the residuals of the linear regression.
-	- Constrained Monotonic Neural Network (CMNN): Allows enforcing monotonicity, convex and concave constraints on input features.
+	- Constrained Monotonic Neural Network (CMNN): Enforces monotonicity in selected inputs (with convex, concave and saturated activations).
 	- Physics-Informed Neural Network (PINN): Allows to add physics-informed loss functions
 	- Modular ANN: physically motivated expressions and trainable blocks (linear, MLP, CMNN, RBF, ...) in one model
 	- Constrained Regression: linear regression on expressions with monotonicity and convexity constraints
 - Multi-Step Models: Predicting a trajectory.
 	- Recurrent Neural Network: SimpleRNN, GRU and LSTM, warmed up on the measured past.
+	- Physically Consistent Neural Network (PCNN, Di Natale et al. 2022): the predicted temperature rises with heating and outside temperature by construction.
 
 Trained models can be used in [AgentLib-MPC](https://github.com/RWTH-EBC/AgentLib-MPC).
 Several models, each trained with several seeds, can be compared with `physXAI.evaluation.comparison`.
@@ -116,8 +109,8 @@ The project is organized into the following directories:
 	- `plotting`: Reports of trained models.
 	- `io`: Run directories and the export for AgentLib-MPC.
 	- `agentlib_mpc_plugin`: Example training scripts for AgentLib-MPC.
+	- `utils`: The global random seed (`physXAI.set_seed`).
 - `docs`: Contains documentation for the project.
-- `build`: Contains saved test reports.
 - `tests`: Tests of physXAI (pytest), the contract tests with AgentLib-MPC and the smoke run of the examples.
 
 ## How to contribute to the development

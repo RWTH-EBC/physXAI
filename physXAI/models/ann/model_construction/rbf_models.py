@@ -1,3 +1,5 @@
+"""Construction of radial basis function networks (`RBFModel`): k-means centers and the width of the gaussians."""
+
 import logging
 
 import keras
@@ -46,7 +48,7 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
 
     Args:
         config (dict): A dictionary containing the configuration parameters for the RBF network.
-                       This is validated against `ClassicalANNConstruction_config`.
+                       This is validated against `RBFConstruction_config`.
         td (TrainingDataGeneric): An object containing the training data,
                            used for adapting normalization, K-Means clustering, and
                            determining input/output shapes.
@@ -78,7 +80,7 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
         training_data = normalization(td.X_train_single).numpy()
     else:
         x = input_layer
-        training_data = td.X_train_single.numpy()
+        training_data = np.asarray(td.X_train_single)
 
     kmeans = KMeans(n_clusters=n_neurons, random_state=config['random_state'], n_init='auto')
     kmeans.fit(training_data)

@@ -1,7 +1,8 @@
 """
-Example to demonstrate interplay of physXAI and agentlib_mpc to train a simple ANN for one_room_mpc
-Training script of the AgentLib-MPC example one_room_mpc (example_ci.py: the same with 10 epochs for its CI).
-A tutorial on the export is examples/13_agentlib_mpc.py.
+Training script of the AgentLib-MPC example 'one_room_mpc': a classical ANN of the room temperature (10 epochs).
+
+`example.py` is used by the example, `example_ci.py` (the same with 10 epochs) by the CI of AgentLib-MPC. A tutorial
+on the export is `examples/13_agentlib_mpc.py`.
 """
 from physXAI import expr as px
 from physXAI.io import Run
@@ -11,9 +12,7 @@ from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 
 def train_model(base_path: str, folder_name: str, training_data_path: str, time_step: int,
                    output_name: str = 'T') -> str:
-    """
-    Example to demonstrate interplay of physXAI and agentlib_mpc to train a simple ANN for one_room_mpc
-    """
+    """Trains the model of the room temperature, saves it for AgentLib-MPC and returns its name."""
 
     run = Run(base_path, folder_name, overwrite=True)
 

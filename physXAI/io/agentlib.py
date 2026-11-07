@@ -29,6 +29,8 @@ if TYPE_CHECKING:  # pragma: no cover
 CHANGE_PATTERN = re.compile(r"Change\((.*)\)")
 LAG_PATTERN = re.compile(r"_lag(\d+)$")
 MULTI_STEP_CLASS = "PreprocessingMultiStep"
+#: Branch of AgentLib-MPC supporting recurrent models (not released yet, AgentLib-MPC 1.1.1 has no support)
+AGENTLIB_RNN_BRANCH = "143-feature-multistep-model-support"
 
 
 class AgentLibCompatibilityError(ValueError):
@@ -51,6 +53,30 @@ def output_feature(name: str) -> tuple[str, str]:
     return match.group(1).strip(), "difference"
 
 
+def agentlib_supports_recurrent_models() -> bool | None:
+    """Whether the installed AgentLib-MPC loads recurrent models (`RNNModel`, `PCNNModel`), None if not installed."""
+    try:
+        from agentlib_mpc.models import casadi_predictor
+    except ImportError:
+        return None
+    return hasattr(casadi_predictor, "CasadiRNN")
+
+
+def _check_recurrent_support(config: dict) -> None:
+    """Recurrent models need an AgentLib-MPC with support for them: warns if the installed one has none."""
+    if config.get("__class_name__") != MULTI_STEP_CLASS:
+        return
+    supported = agentlib_supports_recurrent_models()
+    message = (
+        "Recurrent models (RNNModel, PCNNModel) need AgentLib-MPC with support for recurrent models (branch "
+        f"'{AGENTLIB_RNN_BRANCH}'); the released AgentLib-MPC 1.1.1 cannot load them."
+    )
+    if supported is False:
+        logger.warning("%s The installed AgentLib-MPC has no support.", message)
+    elif supported is None:
+        logger.info(message)
+
+
 def check_agentlib_compatibility(preprocessing: PreprocessingData | dict) -> None:
     """
     Checks whether AgentLib-MPC can translate a preprocessing config.
@@ -65,7 +91,10 @@ def check_agentlib_compatibility(preprocessing: PreprocessingData | dict) -> Non
     errors = list()
 
     if config.get("shift", 1) != 1:
-        errors.append(f"'shift' has to be 1, but is {config.get('shift')}.")
+        errors.append(
+            f"'shift' has to be 1, but is {config.get('shift')} (AgentLib-MPC evaluates outputs over the interval "
+            "[t, t+1) of the inputs, as trained with shift=1)."
+        )
     inputs = list(config.get("inputs") or [])
     outputs = config.get("output")
     if isinstance(outputs, str):
@@ -88,6 +117,25 @@ def check_agentlib_compatibility(preprocessing: PreprocessingData | dict) -> Non
 
     if errors:
         raise AgentLibCompatibilityError("Config cannot be used in AgentLib-MPC:\n- " + "\n- ".join(errors))
+    _warn_derived_inputs(config, inputs)
+    _check_recurrent_support(config)
+
+
+def _warn_derived_inputs(config: dict, inputs: list[str]) -> None:
+    """Inputs computed by the preprocessing are no variables of the MPC: AgentLib-MPC has to compute them itself."""
+    derived = set(config.get("columns") or {})
+    computed = [name for name in inputs if split_lag(name)[0] in derived or CHANGE_PATTERN.fullmatch(split_lag(name)[0])]
+    if computed:
+        logger.warning(
+            "The inputs %s are computed by the preprocessing, AgentLib-MPC needs them as variables of the MPC model. "
+            "Expressions inside the model (physXAI.expr, ModularANN) need only the raw inputs.",
+            computed,
+        )
+    if config.get("transform"):
+        logger.warning(
+            "The preprocessing uses the transform '%s': inputs it creates have to be variables of the MPC model.",
+            config["transform"],
+        )
 
 
 def _check_lag_order(inputs: list[str], recursive_feature: str) -> list[str]:

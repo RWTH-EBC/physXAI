@@ -72,7 +72,8 @@ ModelComparison.load(["results/cmnn"], name="T")         # only T_training_data.
 - A run directory with several models (`T_…` and `P_…` of AgentLib-MPC) gives separate models `cmnn/T` and
   `cmnn/P`. Unreadable files are skipped with a warning.
 
-From the command line (prints the summary, saves plot and csv files into `results/comparison`):
+From the command line (prints the summary, saves plot and csv files into `--out`, by default
+`<first path>/comparison`, e.g. `results/comparison` for the first command):
 
 ```bash
 python -m physXAI.evaluation.comparison results
@@ -114,5 +115,5 @@ result.save(run)              # feature_selection.json and .html
   `bias_weight` · |bias| at `mpc_horizon`), or `criterion='single_step'`.
 - `n_repeats` evaluates every candidate on several splits. Differences smaller than the spread are noise.
 - `controls={'u': 1}`: the prediction has to increase with `u` on (almost) all validation samples,
-  otherwise a candidate is implausible and not selected. Controls and the recursive feature are never removed.
+  otherwise a candidate is implausible and not selected. Controls (and with `criterion='horizon'` the recursive feature) are never removed.
 - `tolerance` selects the smallest set within (1 + tolerance) × the best criterion.

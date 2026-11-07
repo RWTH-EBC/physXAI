@@ -9,7 +9,7 @@
   `criterion='single_step'`, the single step error.
 - `n_repeats` evaluates every candidate on several splits. Differences smaller than the spread are noise.
 - `controls={'u': 1}`: the prediction has to increase with `u` on (almost) all validation samples, otherwise a
-  candidate is implausible and not selected. Controls and the recursive feature are never removed.
+  candidate is implausible and not selected. Controls (and with `criterion='horizon'` the recursive feature) are never removed.
 - `tolerance` selects the smallest set within (1 + tolerance) x the best criterion.
 
 The single step error hardly correlates with the performance in an MPC, so the result is a suggestion, not a

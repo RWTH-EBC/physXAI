@@ -48,6 +48,27 @@ def test_embargo_keeps_test_data():
     assert list(purged[8:10]) == [UNUSED, UNUSED]
 
 
+@pytest.mark.parametrize(
+    "labels, expected",
+    [
+        # a training block shorter than the gap is purged completely, the test data stays complete
+        ([TEST] * 3 + [TRAIN] + [TEST] * 3, [TEST] * 3 + [UNUSED] + [TEST] * 3),
+        # train | val | test: the training side and the validation side of the val / test boundary are purged
+        ([TRAIN] * 4 + [VAL] * 3 + [TEST] * 3, [TRAIN] * 2 + [UNUSED] * 2 + [VAL] + [UNUSED] * 2 + [TEST] * 3),
+        # a validation block shorter than the gap next to test data is used up, the test data stays complete
+        ([TRAIN] * 4 + [VAL] + [TEST] * 3, [TRAIN] * 2 + [UNUSED] * 3 + [TEST] * 3),
+        # test | val: the validation side is purged
+        ([TEST] * 3 + [VAL] * 4, [TEST] * 3 + [UNUSED] * 2 + [VAL] * 2),
+        # boundaries at the start and the end of the data
+        ([TRAIN] + [TEST] * 4 + [TRAIN], [UNUSED] + [TEST] * 4 + [UNUSED]),
+    ],
+)
+def test_embargo_only_purges_the_block_at_the_boundary(labels, expected):
+    purged = apply_embargo(np.array(labels, dtype=np.int8), 2)
+    np.testing.assert_array_equal(purged, expected)
+    assert np.sum(purged == TEST) == labels.count(TEST)
+
+
 def test_holdout_end_is_chronological():
     labels = BlockSplit(0.1, 0.1, strategy="holdout_end").assign(100, seed=0)
     assert list(labels[:80]) == [TRAIN] * 80

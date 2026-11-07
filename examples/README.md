@@ -18,7 +18,7 @@ metrics, models and html reports) are written to `results/<script>/`.
 | `01_first_model.py` | A first model | `Run`, `set_seed`, `PreprocessingSingleStep`, `Change(T)` and lags, metrics, error over the horizon, `run.save`, loading a run |
 | `02_data_and_split.py` | Data pipeline | `lags`, derived `columns`, split strategies (blocks, holdout, random rows) and leakage, saving training data |
 | `03_neural_networks.py` | Keras models | `ClassicalANNModel`, `CMNNModel` (monotonicity), `RBFModel`, `LinANNModel`, online learning |
-| `04_expressions_modular.py` | Physics inside the model | `px` expressions, `ModularANN` (`solver='ols'` and neural blocks), inputs taken from the model |
+| `04_expressions_modular.py` | Physics inside the model | `px` expressions, `ModularANN` (`solver='ols'` and neural blocks), inputs taken from the model, `px.Pretrained` and `px.Polynomial` |
 | `05_constrained_regression.py` | Constrained regression | `ConstrainedRegression` with monotonicity constraints on raw columns, compared with least squares |
 | `06_multi_step.py` | Prediction horizon | `eval_horizon` (recursive evaluation), `RecursiveTraining` |
 | `07_rnn.py` | Recurrent models | `PreprocessingMultiStep`, `RNNModel` with warmup, closed loop and trajectory loss |

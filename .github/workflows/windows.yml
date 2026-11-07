@@ -1,7 +1,8 @@
 name: Windows
 
 # The CI template (ci.yml) only runs on Ubuntu. physXAI has to run on Windows and Linux, so the unit
-# tests run here on Windows, and the installation (non editable) is checked on both systems.
+# tests run here on Windows (the AgentLib-MPC contract tests are required, PHYSXAI_REQUIRE_AGENTLIB), the
+# installation (non editable) is checked on both systems, and so are the tested versions of constraints.txt.
 on:
   push:
   workflow_dispatch:
@@ -27,6 +28,30 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e .[dev,agentlib]
+    - name: Unit tests
+      env:
+        PHYSXAI_REQUIRE_AGENTLIB: "1"  # the AgentLib-MPC contract tests fail instead of being skipped
+      run: python -m pytest tests
+
+  tested-versions:
+    # The versions of constraints.txt (the tested combination of the release) install and pass the tests
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Install physXAI with the versions of constraints.txt
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .[dev] -c constraints.txt
     - name: Unit tests
       run: python -m pytest tests
 

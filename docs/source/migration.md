@@ -96,14 +96,19 @@ If the model has to stay a scikit-learn linear regression (`.joblib`), `vT` is a
 MPC then has to compute:
 
 ```python
-v = px.Vars()
-prep = PreprocessingSingleStep(inputs=['V_flow_AHU', 'y_valve_h', 'T_sup_w_h', 'TDryBul', 'HDirNor', 'vT', 'TAir'],
-                               output='Change(TAir)', columns={'vT': v.V_flow_AHU * (v.T_AHU_sup - v.TAir)},
-                               csv_delimiter=',', time_step=time_step, ignore_nan=True)
-td = prep.pipeline(training_data_path)
-model = LinearRegressionModel()
-model.pipeline(td)
-return run.save_for_agentlib(output_name, prep, model, td)
+from physXAI.models import LinearRegressionModel
+
+
+def train_model(base_path, folder_name, training_data_path, time_step, output_name='TAir'):
+    run = Run(base_path, folder_name, overwrite=True)
+    v = px.Vars()
+    prep = PreprocessingSingleStep(inputs=['V_flow_AHU', 'y_valve_h', 'T_sup_w_h', 'TDryBul', 'HDirNor', 'vT', 'TAir'],
+                                   output='Change(TAir)', columns={'vT': v.V_flow_AHU * (v.T_AHU_sup - v.TAir)},
+                                   csv_delimiter=',', time_step=time_step, ignore_nan=True)
+    td = prep.pipeline(training_data_path)
+    model = LinearRegressionModel()
+    model.pipeline(td)
+    return run.save_for_agentlib(output_name, prep, model, td)   # warns that the MPC has to compute 'vT'
 ```
 
 ## Behaviour that changed

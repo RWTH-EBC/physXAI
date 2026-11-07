@@ -1,3 +1,11 @@
+"""
+Keras models of physXAI: single step networks (`ClassicalANNModel`, `CMNNModel`, `RBFModel`, `LinANNModel`,
+`PINNModel`, base class `ANNModel`) and recurrent multi step models (`RNNModel`, `PCNNModel`).
+
+All of them share the training settings (epochs, learning rate, batch size, early stopping, seed); single step networks
+can additionally be trained on the multi step error (`recursive_training`) and with a physics residual (`physics`).
+"""
+
 import logging
 import os
 import time
@@ -30,6 +38,7 @@ from physXAI.models.models import LinearRegressionModel, MultiStepModel, SingleS
 from physXAI.preprocessing.preprocessing import TARGET_PREFIX
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneric, TrainingDataMultiStep
 from physXAI.training.recursive import step_weights, weighted_step_loss
+from physXAI.utils.seed import resolve_seed
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import keras
@@ -52,7 +61,7 @@ class ANNModel(SingleStepModel, ABC):
     plot_title = "Artificial Neural Network"
 
     def __init__(self, batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: int | None = 100, random_seed: int = 42,
+                 early_stopping_epochs: int | None = 100, random_seed: int | None = None,
                  recursive_training: Union['RecursiveTraining', dict] | None = None,
                  physics: PhysicsResidual | dict | None = None, physics_fit: str = 'calibrate',
                  physics_learning_rate: float | None = None, **kwargs):
@@ -65,8 +74,9 @@ class ANNModel(SingleStepModel, ABC):
             learning_rate (float): Learning rate for the Adam optimizer.
             early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
                                          If None, early stopping is disabled.
-            random_seed (int): Seed for random number generators to ensure reproducibility. It is set when
-                               the model is generated, not when the object is created.
+            random_seed (int, optional): Seed of the weight initialization and the batch order, set when the model
+                               is generated. Defaults to the global seed (`physXAI.set_seed`), else a new seed is
+                               drawn. The used seed is stored in the config.
             recursive_training (RecursiveTraining, optional): Train on the multi step (recursive) error,
                                see `physXAI.training.RecursiveTraining`. None trains on the single step error.
             physics (PhysicsResidual, optional): A physics residual with trainable physical parameters, used in
@@ -80,7 +90,7 @@ class ANNModel(SingleStepModel, ABC):
         self.epochs: int = epochs
         self.learning_rate: float = learning_rate
         self.early_stopping_epochs: int | None = early_stopping_epochs
-        self.random_seed: int = random_seed
+        self.random_seed: int = resolve_seed(random_seed)
         from physXAI.training.recursive import RecursiveTraining
         if isinstance(recursive_training, dict):
             recursive_training = RecursiveTraining.from_config(recursive_training)
@@ -104,6 +114,12 @@ class ANNModel(SingleStepModel, ABC):
 
     def _check_training_data(self, td: TrainingDataGeneric):
         super()._check_training_data(td)
+        if len(td.outputs) != 1:
+            # the networks have one output neuron: several targets would be broadcast against it in the loss
+            raise ValueError(
+                f"{self.__class__.__name__} predicts one output, got {td.outputs}. Train one model per output "
+                "(as AgentLib-MPC expects it), or use LinearRegressionModel or an RNNModel for several outputs."
+            )
         if self.physics is not None:
             missing = [c for c in self.physics.columns if c not in td.loss_columns]
             if missing:
@@ -111,9 +127,6 @@ class ANNModel(SingleStepModel, ABC):
                     f"The training data holds no columns {missing} of the physics residual. Pass the model to the "
                     "preprocessing, prep.pipeline(path, model=model), so it adds them as loss columns."
                 )
-            if len(td.outputs) != 1:
-                raise ValueError(f"Physics residuals need a model with one output, got {td.outputs}.")
-
 
     @abstractmethod
     def generate_model(self, **kwargs):
@@ -136,7 +149,7 @@ class ANNModel(SingleStepModel, ABC):
 
     def prepare(self):
         """Seeds keras before the model is generated, so weight initializations are reproducible."""
-        keras.utils.set_random_seed(self.random_seed)
+        keras.utils.set_random_seed(self.random_seed % 2**32)
 
     def fit_model(self, model, td: TrainingDataGeneric):
         """
@@ -288,7 +301,7 @@ class ClassicalANNModel(ANNModel):
     def __init__(self, n_layers: int = 1, n_neurons: int | list[int] = 32,
                  activation_function: str | list[str] = 'softplus', rescale_output: bool = True,
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: int | None = 100, random_seed: int = 42, **kwargs):
+                 early_stopping_epochs: int | None = 100, random_seed: int | None = None, **kwargs):
         """
           Initializes the ClassicalANNModel.
 
@@ -304,7 +317,7 @@ class ClassicalANNModel(ANNModel):
               learning_rate (float): Learning rate for the Adam optimizer.
               early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
                                            If None, early stopping is disabled.
-              random_seed (int): Seed for random number generators to ensure reproducibility.
+              random_seed (int, optional): Seed of the weights and the batch order, defaults to the global seed.
         """
 
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
@@ -343,13 +356,12 @@ class ClassicalANNModel(ANNModel):
 @register_model
 class LinANNModel(ANNModel):
     """
-    A hybrid model combining a Linear Regression model with an ANN (likely RBF)
-    that models the residuals of the linear regression.
+    A hybrid model: a linear regression (fitted first, then frozen) plus an RBF network trained on its residuals.
     """
 
     def __init__(self, n_layers: int = 1, n_neurons: int | list[int] = 32, rescale_output: bool = True,
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
+                 early_stopping_epochs: int | None = 100, random_seed: int | None = None, **kwargs):
         """
         Initializes the LinANNModel.
 
@@ -362,7 +374,7 @@ class LinANNModel(ANNModel):
             learning_rate (float): Learning rate for the Adam optimizer.
             early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
                                            If None, early stopping is disabled.
-            random_seed (int): Seed for random number generators to ensure reproducibility.
+            random_seed (int, optional): Seed of the weights and the batch order, defaults to the global seed.
         """
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         self.n_layers: int = n_layers
@@ -373,26 +385,24 @@ class LinANNModel(ANNModel):
             "n_layers": self.n_layers,
             "n_neurons": self.n_neurons,
             "rescale_output": self.rescale_output,
-            "random_state": random_seed
         })
 
     def generate_model(self, **kwargs):
         """
         Generates the hybrid Linear + ANN model.
-        First, a Linear Regression model is trained. Then, an ANN (e.g., RBF)
+        First, a Linear Regression model is trained. Then, an RBF network
         is constructed to model its residuals.
         """
 
         td = kwargs['td']
 
-        # Train linear regression
-        lr = LinearRegressionModel()
-        lr_model = lr.generate_model()
-        lr.fit_model(lr_model, td)
-        lr.evaluate(lr_model, td)
+        # Fit the linear regression (only fitted: its evaluation would overwrite the results in td)
+        lr_model = LinearRegressionModel().generate_model()
+        lr_model.fit(td.X_train_single, td.y_train_single)
 
-        # Construct residual model
-        model = LinResidualANNConstruction(self.model_config, td, lr_model)
+        # Construct residual model (the k-means seed is the seed of the model, also if it changed after __init__)
+        config = {**self.model_config, "random_state": self.random_seed % 2**32}
+        model = LinResidualANNConstruction(config, td, lr_model)
         return model
 
     def get_config(self) -> dict:
@@ -413,20 +423,20 @@ class RBFModel(ANNModel):
 
     def __init__(self, n_layers: int = 1, n_neurons: int | list[int] = 32, rescale_output: bool = True,
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
+                 early_stopping_epochs: int | None = 100, random_seed: int | None = None, **kwargs):
         """
         Initializes the RBFModel.
 
         Args:
-            n_layers (int): Number of RBF layers.
-            n_neurons (int or list[int]): Number of RBF neurons in each layer.
+            n_layers (int): Number of RBF layers, only 1 is supported.
+            n_neurons (int or list[int]): Number of RBF neurons (k-means centers).
             rescale_output (bool): Whether to rescale the model's output.
             batch_size (int): Number of samples per gradient update.
             epochs (int): Number of times to iterate over the entire training dataset.
             learning_rate (float): Learning rate for the Adam optimizer.
             early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
                                            If None, early stopping is disabled.
-            random_seed (int): Seed for random number generators to ensure reproducibility.
+            random_seed (int, optional): Seed of the weights and the batch order, defaults to the global seed.
         """
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         self.n_layers: int = n_layers
@@ -437,7 +447,6 @@ class RBFModel(ANNModel):
             "n_layers": self.n_layers,
             "n_neurons": self.n_neurons,
             "rescale_output": self.rescale_output,
-            "random_state": random_seed
         })
 
     def generate_model(self, **kwargs):
@@ -446,7 +455,8 @@ class RBFModel(ANNModel):
         """
 
         td = kwargs['td']
-        model = RBFModelConstruction(self.model_config, td)
+        # the k-means seed is the seed of the model, also if it changed after __init__ (repeat_training)
+        model = RBFModelConstruction({**self.model_config, "random_state": self.random_seed % 2**32}, td)
         return model
 
     def get_config(self) -> dict:
@@ -470,7 +480,7 @@ class CMNNModel(ANNModel):
                  activation_function: str | list[str] = 'softplus', rescale_output: bool = True,
                  monotonies: dict[str, int] = None, activation_split: list[float] = None,
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
+                 early_stopping_epochs: int | None = 100, random_seed: int | None = None, **kwargs):
         """
         Initializes the CMNNModel.
 
@@ -488,7 +498,7 @@ class CMNNModel(ANNModel):
             learning_rate (float): Learning rate for the Adam optimizer.
             early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
                                            If None, early stopping is disabled.
-            random_seed (int): Seed for random number generators to ensure reproducibility.
+            random_seed (int, optional): Seed of the weights and the batch order, defaults to the global seed.
         """
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         self.n_layers: int = n_layers
@@ -559,7 +569,7 @@ class PINNModel(ANNModel):
                  monotonies: dict[str, int] = None, activation_split: list[float] = None,
                  normalize_terms: bool = True, early_stopping_on: str = 'data',
                  batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: int = 100, random_seed: int = 42, **kwargs):
+                 early_stopping_epochs: int | None = 100, random_seed: int | None = None, **kwargs):
         """
         Initializes the PINNModel.
 
@@ -582,7 +592,7 @@ class PINNModel(ANNModel):
             learning_rate (float): Learning rate for the Adam optimizer.
             early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
                                            If None, early stopping is disabled.
-            random_seed (int): Seed for random number generators to ensure reproducibility.
+            random_seed (int, optional): Seed of the weights and the batch order, defaults to the global seed.
         """
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
         if not physics_targets:
@@ -721,7 +731,8 @@ class RNNModel(MultiStepModel):
         learning_rate: Learning rate of the Adam optimizer.
         batch_size: Number of sequences per batch.
         early_stopping_epochs: Patience of the early stopping on the validation loss (None disables it).
-        random_seed: Seed of the weight initialization, set when the model is generated.
+        random_seed: Seed of the weight initialization and the batch order, set when the model is generated.
+                     Defaults to the global seed (`physXAI.set_seed`), else a new seed is drawn (stored in the config).
         feature_architecture: An expression (`physXAI.expr`), or a list of them, building the inputs of
                               the recurrent layer out of the input features. Variables are not
                               normalized, wrap them in `px.Normalize` where needed.
@@ -742,7 +753,7 @@ class RNNModel(MultiStepModel):
         learning_rate: float = 0.001,
         batch_size: int = 32,
         early_stopping_epochs: int | None = 100,
-        random_seed: int = 42,
+        random_seed: int | None = None,
         feature_architecture: Expr | list[Expr] | dict | None = None,
         loss_on: str = "trajectory",
         first_step_weight: float | None = None,
@@ -761,7 +772,7 @@ class RNNModel(MultiStepModel):
         self.learning_rate: float = learning_rate
         self.batch_size: int = batch_size
         self.early_stopping_epochs: int | None = early_stopping_epochs
-        self.random_seed: int = random_seed
+        self.random_seed: int = resolve_seed(random_seed)
         if isinstance(feature_architecture, dict):
             feature_architecture = expr_from_config(feature_architecture)
         if isinstance(feature_architecture, Expr):
@@ -785,7 +796,7 @@ class RNNModel(MultiStepModel):
 
     def prepare(self):
         """Seeds keras before the model is generated, so weight initializations are reproducible."""
-        keras.utils.set_random_seed(self.random_seed)
+        keras.utils.set_random_seed(self.random_seed % 2**32)
 
     def _spec(self, td: TrainingDataMultiStep) -> SequenceSpec:
         spec = SequenceSpec.from_training_data(td)
@@ -873,6 +884,7 @@ class RNNModel(MultiStepModel):
                         plot: bool = True, save_model: bool = True, show_plot: bool = False):
         """Loads a saved step model, trains it further on `td`, evaluates, plots and saves it."""
         self._check_training_data(td)
+        self.prepare()
         model = self._training_model(self.load_model(load_path), td)
         self.compile_model(model)
         model = self.online_pipeline_internal(td, model)
@@ -919,13 +931,6 @@ class RNNModel(MultiStepModel):
             'step_weights': self.step_weights,
         })
         return config
-
-    @classmethod
-    def from_config(cls, config: dict) -> 'RNNModel':
-        config = dict(config)
-        config.pop('physXAI_version', None)
-        config.pop('__class_name__', None)
-        return cls(**config)
 
 @register_model
 class PCNNModel(RNNModel):

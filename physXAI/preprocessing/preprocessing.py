@@ -9,7 +9,8 @@ Both preprocessings share one pipeline:
 3. Create derived columns from the naming conventions used by AgentLib-MPC:
    `X_lagN` is `X` shifted by N steps, `Change(X)` is `X(t) - X(t-1)`. Lags can also be given as
    `lags={'X': 2}`, which adds `X_lag1` and `X_lag2` directly after `X` to the inputs.
-4. Shift the outputs by `shift` steps, so row t holds the target predicted from the inputs at t.
+4. Shift the outputs by `shift` steps (1: the next time step, 0: the time of the inputs), so row t holds
+   the target predicted from the inputs at t.
 5. Mark rows with missing values as invalid (with `ignore_nan=False`, missing values between
    valid rows raise an error).
 6. Split the rows leakage free into training, validation and test data
@@ -45,6 +46,7 @@ PREPROCESSING_CLASS_REGISTRY: dict[str, type[PreprocessingData]] = dict()
 
 
 def register_preprocessing(cls):
+    """Registers a preprocessing class by name, so `PreprocessingData.from_config` can create it."""
     PREPROCESSING_CLASS_REGISTRY[cls.__name__] = cls
     return cls
 
@@ -153,7 +155,10 @@ class PreprocessingData(ABC):
         columns: Optional derived data columns {name: expression}, e.g. {'Q': v.mDot * (v.T_in - v.T)}.
                  Prefer expressions inside the model, then the MPC does not need to compute them.
         lags: Optional number of lags per feature, e.g. {'T': 2}.
-        shift: Number of steps between the inputs and the predicted output (1: next time step).
+        shift: Steps between the inputs and the predicted output. 1 (default): the next time step, for states
+               (e.g. 'Change(T)') and for outputs over the interval [t, t+1) (as AgentLib-MPC uses them). 0: the
+               time of the inputs, for algebraic outputs of point sampled data, e.g. P_el(t) = f(u(t), T(t)); the
+               output feature must then not be an input (only its lags), and there is no recursive evaluation.
         time_step: Sampling time in seconds. The data is sub-sampled to it. Defaults to the
                    sampling time of the data.
         test_size: Fraction of the data used for testing.
@@ -201,8 +206,11 @@ class PreprocessingData(ABC):
         transform: Callable[[pd.DataFrame], pd.DataFrame] | None = None,
         loss_columns: list[str] | None = None,
     ):
-        if shift < 1:
-            raise ValueError("shift has to be at least 1.")
+        if shift not in (0, 1) or isinstance(shift, bool):
+            raise ValueError(
+                f"shift has to be 1 (next time step) or 0 (time of the inputs), got {shift}. A delay is modelled "
+                "with lagged inputs (e.g. lags={'u': 3}), a prediction over several steps recursively (eval_horizon)."
+            )
         if output is None:
             raise ValueError("An output is required.")
         self.inputs: list[str] | None = expand_lags(list(inputs), lags) if inputs is not None else None
@@ -372,6 +380,7 @@ class PreprocessingData(ABC):
             targets=[TARGET_PREFIX + name for name in self.output],
             derived=self.columns,
             loss_columns=self.loss_columns,
+            shift=self.shift,
         )
         logger.info("Split of the data: %s", {k: round(v, 3) for k, v in split_summary(labels[valid]).items()})
         return td
@@ -398,6 +407,26 @@ class PreprocessingData(ABC):
                     f"The model needs the inputs {missing}, which are not part of the inputs {self.inputs}."
                 )
         return self.inputs
+
+    def _check_shift(self) -> None:
+        """With shift = 0 the target is taken at the time of the inputs: it must not be one of them."""
+        if self.shift != 0:
+            return
+        changes = [o for o in self.output if CHANGE_PATTERN.match(o)]
+        if changes:
+            raise ValueError(f"Outputs {changes} are changes to the next step and need shift=1.")
+        features = {output_feature(o) for o in self.output}
+        leaks = [name for name in self.inputs if name in features or output_feature(name) in features]
+        leaks += [
+            name
+            for name in self.inputs
+            if name in self.columns and features & set(self.columns[name].free_vars())
+        ]
+        if leaks:
+            raise ValueError(
+                f"With shift=0 the outputs {sorted(features)} are predicted at the time of the inputs, so the inputs "
+                f"{leaks} contain the target. Use lagged values (e.g. 'X_lag1') or shift=1."
+            )
 
     @abstractmethod
     def pipeline(self, file_path: str | Path, model=None) -> TrainingDataGeneric:
@@ -436,6 +465,7 @@ class PreprocessingData(ABC):
         class_name = config.pop("__class_name__", cls.__name__)
         target = cls if cls is not PreprocessingData else PREPROCESSING_CLASS_REGISTRY[class_name]
         config.pop("physXAI_version", None)
+        config.pop("environment", None)
         transform = config.pop("transform", None)
         if isinstance(transform, str):
             logger.warning("The transform '%s' is not serialized and has to be set again.", transform)
@@ -490,6 +520,8 @@ class PreprocessingSingleStep(PreprocessingData):
         **kwargs,
     ):
         super().__init__(inputs, output, **kwargs)
+        if eval_horizon is not None and self.shift != 1:
+            raise ValueError("The recursive evaluation (eval_horizon) predicts the next step and needs shift=1.")
         self.eval_horizon = eval_horizon
         self.eval_stride = eval_stride
 
@@ -516,6 +548,7 @@ class PreprocessingSingleStep(PreprocessingData):
             model: Optional model; without explicit inputs, its required inputs are used.
         """
         self.resolve_inputs(model)
+        self._check_shift()
         df = self.load_data(file_path)
         horizon, stride = self._horizon_steps()
         td = self.build_training_data(df, eval_horizon=horizon, eval_stride=stride)
@@ -568,6 +601,8 @@ class PreprocessingMultiStep(PreprocessingData):
         **kwargs,
     ):
         super().__init__(inputs, output, **kwargs)
+        if self.shift != 1:
+            raise ValueError("Multi step models predict the next step of their states and need shift=1.")
         self.label_width = label_width
         self.warmup_width = warmup_width
         self.overlapping_sequences = overlapping_sequences

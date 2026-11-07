@@ -53,11 +53,14 @@ Every other branch gets its own preview after a push: `https://rwth-ebc.github.i
 ## 5. Tag and release
 
 1. Create the tag `v1.0.0` on the merge commit on `main` (e.g. *Releases → Draft a new release → Choose a tag:
-   v1.0.0 → Target: main*, release notes from `CHANGELOG.md`).
+   v1.0.0 → Target: main*, release notes from `CHANGELOG.md`). Keep the **known limitation** at the top of the release
+   notes: the export of `RNNModel` / `PCNNModel` needs AgentLib-MPC branch `143-feature-multistep-model-support`.
 2. The workflow **Version Check** runs on the tag: it compares the tag with `version = "1.0.0"` in `pyproject.toml`
    and requires the entry `## [1.0.0]` in `CHANGELOG.md`. If the release date differs from the date in the
    CHANGELOG, update it in a commit before tagging.
 3. PyPI is not used yet (`PYPI_RELEASE: false` in `ci.yml`).
+4. Later releases: update `constraints.txt` to the versions the release was tested with (the job `tested-versions`
+   of `windows.yml` installs them on Linux and Windows).
 
 ## 6. Clean up
 
@@ -68,7 +71,8 @@ Every other branch gets its own preview after a push: `https://rwth-ebc.github.i
 3. **`.github/workflows`:** remove the branch `refactoring_v1.0.0` from the `pull_request` triggers of
    `verify_examples.yml` (marked with a comment).
 4. **Optional, required status checks for `main`** (*Settings → Branches*; currently none are required): useful are
-   `ci / tests / test (3.11)` … `(3.13)`, `tests (3.11)` … `(3.13)` (Windows), `lint`, `docs`,
+   `ci / tests / test (3.11)` … `(3.13)`, `tests (3.11)` … `(3.13)` (Windows, with the required AgentLib-MPC contract
+   tests), `tested-versions (ubuntu-latest)`, `tested-versions (windows-latest)`, `lint`, `docs`,
    `verify-installation (ubuntu-latest)` and `verify-installation (windows-latest)`. Not `examples (...)` (only runs
    when the package, the examples or the data change) and not the report jobs of the template (coverage, pylint, ruff), which never fail.
 

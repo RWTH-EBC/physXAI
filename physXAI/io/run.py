@@ -219,8 +219,25 @@ class Run:
 
     @staticmethod
     def version_info() -> dict:
-        """Meta information stored with every saved config."""
-        return {"physXAI_version": __version__}
+        """
+        Meta information stored with every saved config: the version of physXAI and the versions of Python and of
+        the packages the results depend on (`environment`), so a run can be reproduced in the same environment.
+        """
+        return {"physXAI_version": __version__, "environment": environment_info()}
+
+
+def environment_info() -> dict[str, str | None]:
+    """Versions of Python and of the packages a trained model depends on (None if a package is not installed)."""
+    import platform
+    from importlib.metadata import PackageNotFoundError, version
+
+    info: dict[str, str | None] = {"python": platform.python_version(), "platform": platform.platform(terse=True)}
+    for package in ("numpy", "pandas", "scikit-learn", "keras", "tensorflow", "casadi"):
+        try:
+            info[package] = version(package)
+        except PackageNotFoundError:
+            info[package] = None
+    return info
 
 
 def _json_default(obj):
