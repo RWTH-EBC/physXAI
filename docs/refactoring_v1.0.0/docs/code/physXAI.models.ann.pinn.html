@@ -304,15 +304,40 @@ Defaults to the variance of the training targets, i.e. a residual in output unit
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.calibrate_least_squares">
+<span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.pinn.physics.</span></span><span class="sig-name descname"><span class="pre">calibrate_least_squares</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">physics</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#calibrate_least_squares"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.calibrate_least_squares" title="Permalink to this definition"></a></dt>
+<dd><p>Grey-box identification of the parameters theta of a residual: <code class="code docutils literal notranslate"><span class="pre">min_theta</span> <span class="pre">sum</span> <span class="pre">r(x,</span> <span class="pre">y;</span> <span class="pre">theta)^2</span></code> on the training
+data with the measured target y, solved deterministically (no seed, no learning rate) with a trust region
+method (<code class="code docutils literal notranslate"><span class="pre">scipy.optimize.least_squares</span></code>) and the exact Jacobian of the residual from CasADi.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>physics</strong> (<a class="reference internal" href="#physXAI.models.ann.pinn.physics.PhysicsResidual" title="physXAI.models.ann.pinn.physics.PhysicsResidual"><em>PhysicsResidual</em></a>) – The residual.</p></li>
+<li><p><strong>td</strong> – Single step training data holding the loss columns of the residual.</p></li>
+<li><p><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Characteristic squared magnitude of the residual (only for the reported cost).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>value} and the ‘record’ of the solver, or None if the residual cannot be
+translated to CasADi (then the parameters are calibrated with gradient descent).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict with the ‘parameters’ {name</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="physXAI.models.ann.pinn.physics.fit_with_physics">
 <span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.pinn.physics.</span></span><span class="sig-name descname"><span class="pre">fit_with_physics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">physics</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'calibrate'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">physics_learning_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/pinn/physics.html#fit_with_physics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.pinn.physics.fit_with_physics" title="Permalink to this definition"></a></dt>
 <dd><p>Trains a single output keras model on the data and a physics residual.</p>
 <p>The residual is evaluated twice with shared parameters theta: with the prediction (r_hat, the physics
 term of the network) and with the measured target (r_y, the fit of the physics model to the data).</p>
 <ul class="simple">
-<li><p>‘calibrate’ (default): 1. theta is fitted to the data on mean(r_y^2) (grey-box identification, the network
-is frozen), 2. theta is frozen and the network is trained on the data and w * mean(r_hat^2). The
-parameters cannot drift to follow the network.</p></li>
+<li><p>‘calibrate’ (default): 1. theta is fitted to the data on mean(r_y^2) (grey-box identification, deterministic
+by least squares, see <code class="code docutils literal notranslate"><span class="pre">calibrate_least_squares</span></code>; gradient descent if the residual has no CasADi form),
+2. theta is frozen and the network is trained on the data and w * mean(r_hat^2). The parameters cannot drift
+to follow the network.</p></li>
 <li><p>‘joint’: network and theta together on data + w * r_hat + r_y.</p></li>
 <li><p>‘fixed’: theta stays at its initial values, the network is trained on data + w * r_hat.</p></li>
 </ul>
@@ -324,12 +349,13 @@ parameters cannot drift to follow the network.</p></li>
 <li><p><strong>settings</strong> – The physXAI model (epochs, batch_size, learning_rate, early_stopping_epochs, random_seed).</p></li>
 <li><p><strong>physics</strong> (<a class="reference internal" href="#physXAI.models.ann.pinn.physics.PhysicsResidual" title="physXAI.models.ann.pinn.physics.PhysicsResidual"><em>PhysicsResidual</em></a>) – The residual.</p></li>
 <li><p><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – ‘calibrate’, ‘joint’ or ‘fixed’.</p></li>
-<li><p><strong>physics_learning_rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – Learning rate of the calibration. Defaults to 10 x the learning rate.</p></li>
+<li><p><strong>physics_learning_rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – Learning rate of a calibration by gradient descent. Defaults to 10 x the learning rate.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><dl class="simple">
-<dt>‘parameters’ (trained values by name), ‘fit’ (RMSE of the physics term and of the physics model</dt><dd><p>per split), ‘calibration_record’ (history of the calibration or None) and ‘record’ (keras
+<dt>‘parameters’ (trained values by name), ‘fit’ (RMSE of the physics term and of the physics model</dt><dd><p>per split), ‘calibration_record’ (result of the least squares solver or the history of the gradient
+descent, None without calibration) and ‘record’ (keras
 history of the training of the network).</p>
 </dd>
 </dl>

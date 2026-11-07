@@ -926,12 +926,24 @@ column names that are no python identifiers.</p>
 <span class="sig-name descname"><span class="pre">to_keras</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/expr/core.html#Param.to_keras"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.expr.core.Param.to_keras" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.expr.core.Param.to_casadi">
+<span class="sig-name descname"><span class="pre">to_casadi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">syms</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/expr/core.html#Param.to_casadi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.expr.core.Param.to_casadi" title="Permalink to this definition"></a></dt>
+<dd><p>The symbol <code class="code docutils literal notranslate"><span class="pre">syms[name]</span></code> of the parameter (e.g. for its calibration), else its initial value.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py data">
 <dt class="sig sig-object py" id="physXAI.expr.core.TARGET_PREFIX">
 <span class="sig-prename descclassname"><span class="pre">physXAI.expr.core.</span></span><span class="sig-name descname"><span class="pre">TARGET_PREFIX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'y:'</span></em><a class="headerlink" href="#physXAI.expr.core.TARGET_PREFIX" title="Permalink to this definition"></a></dt>
 <dd><p>Prefix of the columns holding values at the predicted time (see <code class="code docutils literal notranslate"><span class="pre">Target</span></code>), as in the preprocessing</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="physXAI.expr.core.PREDICTION">
+<span class="sig-prename descclassname"><span class="pre">physXAI.expr.core.</span></span><span class="sig-name descname"><span class="pre">PREDICTION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'__prediction__'</span></em><a class="headerlink" href="#physXAI.expr.core.PREDICTION" title="Permalink to this definition"></a></dt>
+<dd><p>Key of the symbol of <code class="code docutils literal notranslate"><span class="pre">Prediction</span></code> in <code class="code docutils literal notranslate"><span class="pre">to_casadi(syms)</span></code></p>
 </dd></dl>
 
 <dl class="py class">
@@ -965,6 +977,12 @@ column names that are no python identifiers.</p>
 <dt class="sig sig-object py" id="physXAI.expr.core.Prediction.to_keras">
 <span class="sig-name descname"><span class="pre">to_keras</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/expr/core.html#Prediction.to_keras"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.expr.core.Prediction.to_keras" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.expr.core.Prediction.to_casadi">
+<span class="sig-name descname"><span class="pre">to_casadi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">syms</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/expr/core.html#Prediction.to_casadi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.expr.core.Prediction.to_casadi" title="Permalink to this definition"></a></dt>
+<dd><p>The symbol <code class="code docutils literal notranslate"><span class="pre">syms[PREDICTION]</span></code> (e.g. the measured target in the calibration of a physics residual).</p>
+</dd></dl>
 
 </dd></dl>
 

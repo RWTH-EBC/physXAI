@@ -179,6 +179,11 @@ the other settings are given as keywords.</p>
 <span class="n">model</span> <span class="o">=</span> <span class="n">ModularANN</span><span class="p">(</span><span class="n">architecture</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>Warm start (<code class="docutils literal notranslate"><span class="pre">warm_start=True</span></code>, default): when the architecture is a normalized <code class="docutils literal notranslate"><span class="pre">Linear</span></code> block, the training starts
+at the least squares solution of its data only terms (with the sign bounds of <code class="docutils literal notranslate"><span class="pre">monotonicities</span></code>), the trainable terms
+(here the <code class="docutils literal notranslate"><span class="pre">px.MLP</span></code>) start with weight 0. The model starts as the linear model and the network learns its residual.
+A bad initialization can no longer spoil the training: without warm start, single seeds of this architecture
+diverge.</p>
 <p>Physical parameters: <code class="docutils literal notranslate"><span class="pre">px.Param(init)</span></code> is a trainable scalar, <code class="docutils literal notranslate"><span class="pre">px.positive(value,</span> <span class="pre">name)</span></code> a positive one
 (<code class="docutils literal notranslate"><span class="pre">value</span> <span class="pre">·</span> <span class="pre">exp(p)</span></code>), <code class="docutils literal notranslate"><span class="pre">px.freeze(expr,</span> <span class="pre">values)</span></code> replaces the parameters by numbers. <code class="docutils literal notranslate"><span class="pre">px.Prediction()</span></code> (the model
 output) and <code class="docutils literal notranslate"><span class="pre">px.Target(name)</span></code> (a column at the predicted time) are used in physics residuals, see

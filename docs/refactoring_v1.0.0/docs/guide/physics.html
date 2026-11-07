@@ -172,6 +172,13 @@ measured target (<code class="docutils literal notranslate"><span class="pre">r(
 then fixed while the network is trained. When parameters are trained together with the network only through
 the physics term, they follow the network and lose their physical meaning. <code class="docutils literal notranslate"><span class="pre">'joint'</span></code> trains both together
 (including the fit term), <code class="docutils literal notranslate"><span class="pre">'fixed'</span></code> keeps the initial values.</p></li>
+<li><p>The calibration is a nonlinear least squares problem in the few parameters, <code class="docutils literal notranslate"><span class="pre">min</span> <span class="pre">Σ</span> <span class="pre">r(x,</span> <span class="pre">y;</span> <span class="pre">θ)²</span></code> on the training
+data. It is solved deterministically with a trust region method (<code class="docutils literal notranslate"><span class="pre">scipy.optimize.least_squares</span></code>) and the exact
+Jacobian of the residual (CasADi), independent of the seed, the batch order and a learning rate, and converged to
+the minimum (gradient descent with early stopping stops somewhere in the flat valley of correlated parameters, so
+its estimates depend on the seed). <code class="docutils literal notranslate"><span class="pre">td.physics['calibration_record']</span></code> holds the result of the solver. Residuals
+without CasADi form (e.g. a <code class="docutils literal notranslate"><span class="pre">px.Param</span></code> without initial value) are calibrated by gradient descent
+(<code class="docutils literal notranslate"><span class="pre">physics_learning_rate</span></code>).</p></li>
 <li><p>History: <code class="docutils literal notranslate"><span class="pre">data_loss</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;_loss</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;_fit_loss</span></code>; results in <code class="docutils literal notranslate"><span class="pre">td.physics</span></code> (parameters, fit per split,
 history of the calibration). Only parameters are trainable in residuals, no blocks.</p></li>
 <li><p>The variables of the residual are data columns at the time of the inputs; <code class="docutils literal notranslate"><span class="pre">px.Target(name)</span></code> is a column at the
@@ -219,8 +226,13 @@ starting at 1), <code class="docutils literal notranslate"><span class="pre">1</
 </pre></div>
 </div>
 <ul class="simple">
-<li><p>The initial rates are rules of thumb per hour (heating, cooling: K/h per unit of the input; losses: 1/h), they
-are scaled to the time step.</p></li>
+<li><p>The initial rates are given per hour (heating, cooling: K/h per unit of the input; losses: 1/h) and scaled to the
+time step: rules of thumb, or <code class="docutils literal notranslate"><span class="pre">None</span></code> to estimate them from the training data by nonnegative least squares of the
+single step energy balance <code class="docutils literal notranslate"><span class="pre">T(k+1)</span> <span class="pre">−</span> <span class="pre">T(k)</span> <span class="pre">=</span> <span class="pre">Σ</span> <span class="pre">a·u_heating</span> <span class="pre">−</span> <span class="pre">Σ</span> <span class="pre">d·u_cooling</span> <span class="pre">+</span> <span class="pre">Σ</span> <span class="pre">b·(T_x</span> <span class="pre">−</span> <span class="pre">T)</span> <span class="pre">+</span> <span class="pre">c</span></code> (the offset c
+belongs to D). <code class="docutils literal notranslate"><span class="pre">td.physics['initial_rates']</span></code> reports them. In a seed study on the BOPTEST data, the estimated start
+values reduced the RMSE over 12 h in 8 of 10 paired runs (−0.05 K on average) and the bias at the end of the
+horizon. A rate of 0 would switch a term off for good, so a term without positive effect in the data starts at a
+weak rate (warning).</p></li>
 <li><p>T is an input and fed back (closed loop); the model warms up on the measured past, as in AgentLib-MPC, and is
 trained on the trajectory over <code class="docutils literal notranslate"><span class="pre">label_width</span></code>.</p></li>
 <li><p>The saved step model <code class="docutils literal notranslate"><span class="pre">[sequence,</span> <span class="pre">E,</span> <span class="pre">*states</span> <span class="pre">of</span> <span class="pre">f]</span> <span class="pre">→</span> <span class="pre">[ΔT,</span> <span class="pre">E,</span> <span class="pre">*states</span> <span class="pre">of</span> <span class="pre">f]</span></code> consists of layers AgentLib-MPC

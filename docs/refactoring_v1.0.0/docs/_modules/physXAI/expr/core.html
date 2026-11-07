@@ -453,11 +453,21 @@
         <span class="k">if</span> <span class="n">layer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">layer</span> <span class="o">=</span> <span class="n">ConstantLayer</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">init</span><span class="p">,</span> <span class="n">trainable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">is_trainable</span><span class="p">,</span> <span class="n">weight_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span>
             <span class="n">ctx</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)]</span> <span class="o">=</span> <span class="n">layer</span>
-        <span class="k">return</span> <span class="n">layer</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">input</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">layer</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">input</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Param.to_casadi"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.core.Param.to_casadi">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_casadi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">syms</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""The symbol `syms[name]` of the parameter (e.g. for its calibration), else its initial value."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">syms</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">syms</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The parameter '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">' has no symbol and no initial value."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span></div></div>
 
 
 <span class="c1">#: Prefix of the columns holding values at the predicted time (see `Target`), as in the preprocessing</span>
 <span class="n">TARGET_PREFIX</span> <span class="o">=</span> <span class="s2">"y:"</span>
+<span class="c1">#: Key of the symbol of `Prediction` in `to_casadi(syms)`</span>
+<span class="n">PREDICTION</span> <span class="o">=</span> <span class="s2">"__prediction__"</span>
 
 
 <div class="viewcode-block" id="Prediction"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.core.Prediction">[docs]</a><span class="nd">@register_expression</span>
@@ -475,7 +485,13 @@
 <div class="viewcode-block" id="Prediction.to_keras"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.core.Prediction.to_keras">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_keras</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">prediction</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"px.Prediction() is only available in physics residuals."</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">ctx</span><span class="o">.</span><span class="n">prediction</span></div></div>
+        <span class="k">return</span> <span class="n">ctx</span><span class="o">.</span><span class="n">prediction</span></div>
+
+<div class="viewcode-block" id="Prediction.to_casadi"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.core.Prediction.to_casadi">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_casadi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">syms</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""The symbol `syms[PREDICTION]` (e.g. the measured target in the calibration of a physics residual)."""</span>
+        <span class="k">if</span> <span class="n">PREDICTION</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">syms</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"px.Prediction() needs the symbol syms[px.core.PREDICTION] in CasADi."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">syms</span><span class="p">[</span><span class="n">PREDICTION</span><span class="p">]</span></div></div>
 
 
 <div class="viewcode-block" id="Target"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.core.Target">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">Target</span><span class="p">(</span><span class="n">column</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Var</span><span class="p">:</span>  <span class="c1"># noqa: N802 - reads like an expression class</span>

@@ -55,6 +55,13 @@ m.physics_parameters                # {'tau': ..., 'K_u': ..., 'K_0': ..., 'log_
   then fixed while the network is trained. When parameters are trained together with the network only through
   the physics term, they follow the network and lose their physical meaning. `'joint'` trains both together
   (including the fit term), `'fixed'` keeps the initial values.
+- The calibration is a nonlinear least squares problem in the few parameters, `min Σ r(x, y; θ)²` on the training
+  data. It is solved deterministically with a trust region method (`scipy.optimize.least_squares`) and the exact
+  Jacobian of the residual (CasADi), independent of the seed, the batch order and a learning rate, and converged to
+  the minimum (gradient descent with early stopping stops somewhere in the flat valley of correlated parameters, so
+  its estimates depend on the seed). `td.physics['calibration_record']` holds the result of the solver. Residuals
+  without CasADi form (e.g. a `px.Param` without initial value) are calibrated by gradient descent
+  (`physics_learning_rate`).
 - History: `data_loss`, `<name>_loss`, `<name>_fit_loss`; results in `td.physics` (parameters, fit per split,
   history of the calibration). Only parameters are trainable in residuals, no blocks.
 - The variables of the residual are data columns at the time of the inputs; `px.Target(name)` is a column at the
@@ -107,8 +114,13 @@ m.pipeline(td)
 td.physics['parameters']        # trained rates per hour and the consistency margin
 ```
 
-- The initial rates are rules of thumb per hour (heating, cooling: K/h per unit of the input; losses: 1/h), they
-  are scaled to the time step.
+- The initial rates are given per hour (heating, cooling: K/h per unit of the input; losses: 1/h) and scaled to the
+  time step: rules of thumb, or `None` to estimate them from the training data by nonnegative least squares of the
+  single step energy balance `T(k+1) − T(k) = Σ a·u_heating − Σ d·u_cooling + Σ b·(T_x − T) + c` (the offset c
+  belongs to D). `td.physics['initial_rates']` reports them. In a seed study on the BOPTEST data, the estimated start
+  values reduced the RMSE over 12 h in 8 of 10 paired runs (−0.05 K on average) and the bias at the end of the
+  horizon. A rate of 0 would switch a term off for good, so a term without positive effect in the data starts at a
+  weak rate (warning).
 - T is an input and fed back (closed loop); the model warms up on the measured past, as in AgentLib-MPC, and is
   trained on the trajectory over `label_width`.
 - The saved step model `[sequence, E, *states of f] → [ΔT, E, *states of f]` consists of layers AgentLib-MPC
