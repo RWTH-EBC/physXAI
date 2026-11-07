@@ -14,6 +14,11 @@ import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 
+def _split_units(units: int, activation_split: list[float], part: int) -> int:
+    """Neurons of one part (convex, concave, saturated) of a CMNN layer: its share, at least one if the share is > 0."""
+    return max(int(units * activation_split[part] / sum(activation_split)), 1)
+
+
 def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
     """
     Constructs a classical Artificial Neural Network (ANN) model using Keras.
@@ -119,6 +124,10 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
     if mono is None:
         monotonicities = [0] * n_features
     else:
+        unknown = sorted(set(mono) - set(td.inputs))
+        if unknown:
+            # a misspelled name would silently drop the monotonicity guarantee
+            raise ValueError(f"Monotonicities of {unknown}, which are no inputs of the model {td.inputs}.")
         monotonicities = [0 if name not in mono.keys() else mono[name] for name in td.inputs]
 
     # Add input layer
@@ -146,18 +155,18 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
         x_split = list()
         # Convex activation
         if activation_split[0] > 0:
-            x1 = keras.layers.Dense(int(n_neurons[i] * activation_split[0] / sum(activation_split)),
+            x1 = keras.layers.Dense(_split_units(n_neurons[i], activation_split, 0),
                                     activation=activation_function[i], kernel_constraint=kernel_contraint)(x)
             x_split.append(x1)
         # Concave activation
         if activation_split[1] > 0:
-            x2 = keras.layers.Dense(int(n_neurons[i] * activation_split[1] / sum(activation_split)),
+            x2 = keras.layers.Dense(_split_units(n_neurons[i], activation_split, 1),
                                     activation=ConcaveActivation(activation_function[i]),
                                     kernel_constraint=kernel_contraint)(x)
             x_split.append(x2)
         # Saturated activation
         if activation_split[2] > 0:
-            x3 = keras.layers.Dense(int(n_neurons[i] * activation_split[2] / sum(activation_split)),
+            x3 = keras.layers.Dense(_split_units(n_neurons[i], activation_split, 2),
                                     activation=SaturatedActivation(activation_function[i]),
                                     kernel_constraint=kernel_contraint)(x)
             x_split.append(x3)

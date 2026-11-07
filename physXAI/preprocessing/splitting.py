@@ -10,16 +10,22 @@ to the splits (blocked holdout, see Bergmeir et al. 2018 and Cerqueira et al. 20
   every split covers the whole period (e.g. all seasons), which a purely random draw does not
   guarantee.
 - **Embargo:** `gap_steps` rows at every boundary between two splits are not used at all
-  (purging, López de Prado 2018), removing the autocorrelation across the boundary.
+  (purging, López de Prado 2018). The default (the reach of a sample into the past, i.e. lags, changes and derived
+  columns, plus `shift`) guarantees that no value of the data is part of a training and a test sample.
 - Windows are later only taken from within one split (see `physXAI.preprocessing.windows`),
   so no window ever crosses a boundary.
 
-Alternative strategies are `'holdout_end'` (chronological: train, val, test), which is more
-robust for non-stationary data, and `'random_rows'` (random rows, only to compare with, single step only).
+The embargo removes shared samples, not the autocorrelation of the process: a test block lies between training
+blocks of the same period (weather, season, operation), so the test error measures the interpolation within the
+period of the data. It is optimistic for a new period (e.g. another season or year). For that question use
+`'holdout_end'` (chronological: train, val, test), a longer `gap_steps` or a separate data set.
+`'random_rows'` (random rows, only to compare with, single step only) shows how much a random split overestimates
+the performance.
 """
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from typing import Literal
 
@@ -223,6 +229,18 @@ def apply_embargo(labels: np.ndarray, gap: int) -> np.ndarray:
                 stop += 1
             labels[b:stop] = UNUSED
     return labels
+
+
+def split_fingerprint(labels: np.ndarray) -> dict[str, str]:
+    """
+    Short hash of the rows of every split. Two runs with the same fingerprint of a split were evaluated on the same rows
+    (e.g. for a paired comparison of models); the same seed alone does not guarantee it, since the block length depends
+    on the window length (horizon, warmup) and the size of the data.
+    """
+    return {
+        name: hashlib.sha1(np.flatnonzero(labels == value).astype(np.int64).tobytes()).hexdigest()[:16]
+        for name, value in SPLITS.items()
+    }
 
 
 def split_summary(labels: np.ndarray) -> dict[str, float]:

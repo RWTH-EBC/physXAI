@@ -135,6 +135,60 @@ def order_inputs(names: list[str], outputs: list[str]) -> list[str]:
     return result
 
 
+def input_lag(name: str, columns: dict | None = None, _seen: frozenset = frozenset()) -> int:
+    """
+    Number of steps a column reaches into the past: 'X_lag2' -> 2, 'Change(X)' -> 1 (X(t) - X(t-1)),
+    'Change(X_lag2)' -> 3, a derived column {name: expression} -> the largest reach of its variables plus its own lag.
+
+    Example:
+        >>> input_lag("Change(T_lag2)")
+        3
+    """
+    columns = columns or {}
+    base, lag = _split_lag(name)
+    change = CHANGE_PATTERN.match(base)
+    if change:
+        return lag + 1 + input_lag(change.group(1).strip(), columns, _seen)
+    if base in columns and base not in _seen:
+        return lag + max((input_lag(v, columns, _seen | {base}) for v in columns[base].free_vars()), default=0)
+    return lag
+
+
+def depends_on(name: str, features: set[str], columns: dict | None = None, _seen: frozenset = frozenset()) -> bool:
+    """
+    Whether a column holds values of one of `features`: the feature itself, its lags, its changes ('Change(T)') or a
+    derived column {name: expression} of any of them.
+    """
+    columns = columns or {}
+    base, _ = _split_lag(name)
+    change = CHANGE_PATTERN.match(base)
+    if change:
+        return depends_on(change.group(1).strip(), features, columns, _seen)
+    if base in columns and base not in _seen:
+        return any(depends_on(v, features, columns, _seen | {base}) for v in columns[base].free_vars())
+    return base in features
+
+
+def check_multi_step_inputs(inputs: list[str], outputs: list[str], columns: dict | None = None) -> None:
+    """
+    Inputs of a multi step (recurrent) model must not hold measured values of a predicted feature over the horizon:
+    a predicted feature itself is fed back (closed loop), but its lags, changes or derived columns of it would be
+    taken from the data during the prediction, i.e. the model would see the measured truth (leakage).
+
+    Raises:
+        ValueError: Listing the inputs depending on a predicted feature.
+    """
+    features = {output_feature(o) for o in outputs}
+    leaks = [name for name in inputs if name not in features and depends_on(name, features, columns)]
+    if leaks:
+        raise ValueError(
+            f"The inputs {leaks} depend on the predicted features {sorted(features)}: during the prediction they "
+            "would hold measured values (leakage). Use the feature itself as input (it is fed back during the "
+            "prediction) and let the recurrent state carry its past, or build expressions of it in the model "
+            "(feature_architecture)."
+        )
+
+
 def _try_ensure_column(df: pd.DataFrame, name: str) -> bool:
     try:
         ensure_column(df, name)
@@ -159,7 +213,9 @@ class PreprocessingData(ABC):
                (e.g. 'Change(T)') and for outputs over the interval [t, t+1) (as AgentLib-MPC uses them). 0: the
                time of the inputs, for algebraic outputs of point sampled data, e.g. P_el(t) = f(u(t), T(t)); the
                output feature must then not be an input (only its lags), and there is no recursive evaluation.
-        time_step: Sampling time in seconds. The data is sub-sampled to it. Defaults to the
+        time_step: Sampling time in seconds. The data is sub-sampled to it by taking the values at the time steps
+                   (point sampling, logged as a warning). Quantities over an interval (power, energy) have to
+                   be resampled before (e.g. averaged with `pandas.DataFrame.resample`). Defaults to the
                    sampling time of the data.
         test_size: Fraction of the data used for testing.
         val_size: Fraction of the data used for validation.
@@ -271,6 +327,10 @@ class PreprocessingData(ABC):
             header=self.csv_header,
             skiprows=self.csv_skiprows,
         )
+        duplicates = int(df.index.duplicated().sum())
+        if duplicates:
+            logger.warning("%d duplicate time stamps in '%s' are dropped (the first value is kept).", duplicates,
+                           file_path)
         df = df[~df.index.duplicated(keep="first")].sort_index()
 
         index = df.index
@@ -284,6 +344,20 @@ class PreprocessingData(ABC):
             self.time_step = data_step
         elif not _is_multiple(self.time_step, data_step):
             raise ValueError(f"Given time step {self.time_step} is not a multiple of data time step {data_step}.")
+        off_grid = int((~np.isclose(seconds / data_step, np.round(seconds / data_step), atol=1e-6)).sum())
+        if off_grid:
+            logger.warning("%d time stamps in '%s' are not on the grid of the data (%g s) and are dropped.", off_grid,
+                           file_path, data_step)
+
+        ratio = int(round(self.time_step / data_step))
+        if ratio > 1:
+            logger.warning(
+                "The data (time step %g s) is sub-sampled to %g s by keeping one of every %d values (point "
+                "sampling). This suits states (e.g. temperatures). Quantities over an interval (power, energy, "
+                "averaged controls) have to be resampled before (e.g. averaged with pandas resample), else they are "
+                "aliased.",
+                data_step, self.time_step, ratio,
+            )
 
         positions = seconds / self.time_step
         on_grid = np.isclose(positions, np.round(positions), atol=1e-6)
@@ -308,7 +382,19 @@ class PreprocessingData(ABC):
         return 1
 
     def _default_gap(self) -> int:
-        return max_lag(self.inputs) + self.shift
+        """
+        Embargo between two splits, so that no value of the data is part of a training and a test sample: a sample at
+        row t holds the values of the rows t - reach, ..., t + shift. The reach into the past includes lags, changes
+        ('Change(X)' needs X(t-1)) and the variables of derived columns.
+        """
+        plain = [c for c in self.loss_columns if not c.startswith(TARGET_PREFIX)]
+        shifted = [*self.output, *(c[len(TARGET_PREFIX):] for c in self.loss_columns if c.startswith(TARGET_PREFIX))]
+        reach = max(
+            [0]
+            + [input_lag(name, self.columns) for name in [*self.inputs, *plain]]
+            + [input_lag(name, self.columns) - self.shift for name in shifted]
+        )
+        return reach + self.shift
 
     def build_training_data(
         self,
@@ -575,7 +661,8 @@ class PreprocessingMultiStep(PreprocessingData):
     start value plus the accumulated changes, and the model is trained on that trajectory.
 
     Args:
-        inputs: Input features of the model (no lags: the memory of a recurrent model is its state).
+        inputs: Input features of the model (no lags, changes or derived columns of a predicted feature: the memory
+                of a recurrent model is its state, and the predicted feature itself is fed back).
         output: Output feature(s), e.g. `px.Change('T')`.
         label_width: Number of predicted steps (training horizon), in steps or as time delta string
                      ('12h'). Choose it longer than the MPC horizon, so the model stays stable over
@@ -647,6 +734,7 @@ class PreprocessingMultiStep(PreprocessingData):
             model: Optional model; without explicit inputs, its required inputs are used.
         """
         self.resolve_inputs(model)
+        check_multi_step_inputs(self.inputs, self.output, self.columns)
         df = self.load_data(file_path)
         series = self.build_training_data(df)
         steps = self._steps()

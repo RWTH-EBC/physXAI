@@ -22,7 +22,7 @@ from physXAI.expr import Expr, Linear, from_config, to_config
 from physXAI.expr.blocks import _nominal
 from physXAI.expr.core import BuildContext
 from physXAI.models.ann.ann_design import ANNModel
-from physXAI.models.models import register_model
+from physXAI.models.models import register_model, train_data_float64
 from physXAI.models.modular.shape_constraints import (
     ShapeConstraints,
     ShapeFitResult,
@@ -128,7 +128,8 @@ class ModularANN(ANNModel):
     def generate_model(self, **kwargs):
         td: TrainingDataGeneric = kwargs["td"]
         inputs = list(td.inputs)
-        X = td.X_train_single
+        # float64: the values adapt the normalizations and are the data of the closed form solvers
+        X, _ = train_data_float64(td)
         missing = [v for v in self.required_inputs if v not in inputs]
         if missing:
             raise ValueError(f"The architecture needs the inputs {missing}, which are not part of the data {inputs}.")
@@ -156,7 +157,7 @@ class ModularANN(ANNModel):
         dense = self._ctx.layers[id(arch)]
         # the inputs of the dense layer: the (normalized) terms, as the model computes them
         features = keras.Model(model.inputs, dense.input).predict(td.X_train_single, verbose=0, batch_size=4096)
-        y = td.y_train_single[:, 0].astype(np.float64)
+        y = train_data_float64(td)[1][:, 0]
         if self._rescaling is not None:
             y = (y - self._rescaling[0]) / self._rescaling[1]
         nominal = _nominal(arch.nominal_range)
@@ -181,7 +182,7 @@ class ModularANN(ANNModel):
 
         start = time.perf_counter()
         arch: Linear = self.architecture
-        y = td.y_train_single[:, 0].astype(np.float64)
+        y = train_data_float64(td)[1][:, 0]
         if self._rescaling is not None:
             y = (y - self._rescaling[0]) / self._rescaling[1]
         if self.solver == "ols":

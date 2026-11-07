@@ -18,7 +18,7 @@ from types import SimpleNamespace
 import numpy as np
 
 from physXAI.expr.serialization import from_config, to_config
-from physXAI.preprocessing.splitting import SPLITS, split_summary
+from physXAI.preprocessing.splitting import SPLITS, split_fingerprint, split_summary
 from physXAI.preprocessing.windows import gather_windows, window_starts
 
 
@@ -217,18 +217,21 @@ class TrainingData(TrainingDataGeneric):
             self._cache[key] = np.flatnonzero((self.labels == SPLITS[split]) & self.valid)
         return self._cache[key]
 
-    def X(self, split: str) -> np.ndarray:
-        """Single step inputs of a split, shape (samples, inputs)."""
-        return self.data[np.ix_(self.rows(split), self._input_index)].astype(np.float32)
+    def X(self, split: str, dtype=np.float32) -> np.ndarray:
+        """
+        Single step inputs of a split, shape (samples, inputs). float32 for keras; closed form solvers (least squares)
+        use `dtype=np.float64`, the precision of the data.
+        """
+        return self.data[np.ix_(self.rows(split), self._input_index)].astype(dtype)
 
-    def y(self, split: str) -> np.ndarray:
-        """Single step targets of a split, shape (samples, outputs)."""
-        return self.data[np.ix_(self.rows(split), self._output_index)].astype(np.float32)
+    def y(self, split: str, dtype=np.float32) -> np.ndarray:
+        """Single step targets of a split, shape (samples, outputs), see `X` for the dtype."""
+        return self.data[np.ix_(self.rows(split), self._output_index)].astype(dtype)
 
-    def values(self, split: str, columns: list[str]) -> np.ndarray:
+    def values(self, split: str, columns: list[str], dtype=np.float32) -> np.ndarray:
         """Values of any columns (e.g. `loss_columns`) on the samples of a split, shape (samples, columns)."""
         index = [self.all_columns.index(c) for c in columns]
-        return self.data[np.ix_(self.rows(split), index)].astype(np.float32)
+        return self.data[np.ix_(self.rows(split), index)].astype(dtype)
 
     def window_starts(self, split: str, length: int, stride: int = 1) -> np.ndarray:
         """Start rows of all windows of `length` rows within a split."""
@@ -244,7 +247,12 @@ class TrainingData(TrainingDataGeneric):
         return len(self.rows(split)) > 0
 
     def summary(self) -> dict:
-        return {"rows": len(self.data), "valid_rows": int(self.valid.sum()), **split_summary(self.labels)}
+        return {
+            "rows": len(self.data),
+            "valid_rows": int(self.valid.sum()),
+            **split_summary(self.labels),
+            "fingerprint": split_fingerprint(self.labels),
+        }
 
     # --- views of the splits (None for a split without data) -----------------------------------
     def _split_or_none(self, split: str, getter):

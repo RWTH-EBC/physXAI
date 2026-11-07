@@ -21,12 +21,12 @@ from __future__ import annotations
 
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
 from physXAI.expr.core import BuildContext
-from physXAI.preprocessing.preprocessing import CHANGE_PATTERN, LAG_PATTERN, output_feature
+from physXAI.preprocessing.preprocessing import CHANGE_PATTERN, LAG_PATTERN, depends_on, output_feature
 from physXAI.preprocessing.splitting import SPLITS
 from physXAI.preprocessing.training_data import TrainingData
 
@@ -53,6 +53,8 @@ class RecursionSpec:
         columns: Columns of one step of the rollout: the inputs of the model plus the variables of
                  derived inputs which depend on the feature.
         derived: Inputs that are derived columns depending on the feature (recomputed every step).
+        expressions: Expression of every recomputed input in terms of `columns` (derived columns, changes of the
+                     feature 'Change(T)' = T - T_lag1 and their lags).
     """
 
     feature: str
@@ -60,6 +62,7 @@ class RecursionSpec:
     max_lag: int
     columns: list[str]
     derived: list[str]
+    expressions: dict = field(default_factory=dict)
 
     @property
     def history(self) -> list[str]:
@@ -81,24 +84,61 @@ def recursion_spec(td: TrainingData) -> RecursionSpec | None:
     feature = output_feature(td.outputs[0])
     difference = CHANGE_PATTERN.match(td.outputs[0]) is not None
 
-    def depends(expression) -> bool:
-        return any(_base_and_lag(v)[0] == feature for v in expression.free_vars())
-
-    derived = [c for c in td.inputs if c in td.derived and depends(td.derived[c])]
+    # inputs holding values of the feature, other than the feature and its lags, are recomputed in every step from
+    # the predicted history: derived columns of it and its changes ('Change(T)' = T - T_lag1), else the rollout would
+    # take them from the data (leakage of the measured trajectory)
+    expressions = dict()
+    for name in td.inputs:
+        if name in td.derived and depends_on(name, {feature}, td.derived):
+            expressions[name] = _in_history(td.derived[name], feature, td.derived)
+        elif _change_of(name, feature) is not None:
+            expressions[name] = _change_of(name, feature)
     columns = list(td.inputs)
-    for name in derived:
-        columns.extend(v for v in td.derived[name].free_vars() if v not in columns)
+    for expression in expressions.values():
+        columns.extend(v for v in expression.free_vars() if v not in columns)
     lags = [_base_and_lag(c)[1] for c in columns if _base_and_lag(c)[0] == feature]
     if not lags:
         return None
     if feature not in td.all_columns:
         logger.info("Recursive evaluation skipped: the data holds no column '%s'.", feature)
         return None
-    missing = [c for c in columns if c not in td.all_columns]
+    # lags of the feature come from the predicted history, they do not have to be columns of the data
+    missing = [c for c in columns if c not in td.all_columns and _base_and_lag(c)[0] != feature]
     if missing:
         logger.info("Recursive evaluation skipped: the data holds no columns %s.", missing)
         return None
-    return RecursionSpec(feature, difference, max(lags), columns, derived)
+    derived = [c for c in td.inputs if c in td.derived and c in expressions]
+    return RecursionSpec(feature, difference, max(lags), columns, derived, expressions)
+
+
+def _lagged(feature: str, lag: int) -> str:
+    return feature if lag == 0 else f"{feature}_lag{lag}"
+
+
+def _change_of(name: str, feature: str):
+    """'Change(T)' -> T - T_lag1, 'Change(T_lag2)' and 'Change(T)_lag2' -> T_lag2 - T_lag3; None for other columns."""
+    from physXAI.expr import Var
+
+    outer, outer_lag = _base_and_lag(name)
+    change = CHANGE_PATTERN.match(outer)
+    if change is None:
+        return None
+    base, lag = _base_and_lag(change.group(1).strip())
+    if base != feature:
+        return None
+    lag += outer_lag
+    return Var(_lagged(feature, lag)) - Var(_lagged(feature, lag + 1))
+
+
+def _in_history(expression, feature: str, derived: dict):
+    """A derived expression with its changes of the feature and nested derived columns written in the history."""
+    mapping = dict()
+    for v in expression.free_vars():
+        if _change_of(v, feature) is not None:
+            mapping[v] = _change_of(v, feature)
+        elif v in derived and depends_on(v, {feature}, derived):
+            mapping[v] = _in_history(derived[v], feature, derived)
+    return expression.substitute(mapping) if mapping else expression
 
 
 def as_keras_step_model(model, n_inputs: int) -> keras.Model:
@@ -127,7 +167,7 @@ def build_step_function(step_model: keras.Model, td: TrainingData, spec: Recursi
     """
     row = keras.Input(shape=(len(spec.columns),))
     ctx = BuildContext(row, spec.columns)
-    parts = [ctx.tensor(td.derived[c]) if c in spec.derived else ctx.tensor(_var(c)) for c in td.inputs]
+    parts = [ctx.tensor(spec.expressions[c]) if c in spec.expressions else ctx.tensor(_var(c)) for c in td.inputs]
     x = parts[0] if len(parts) == 1 else keras.layers.Concatenate()(parts)
     return keras.Model(row, step_model(x), name="step_function")
 
@@ -202,9 +242,12 @@ def rollout_data(td: TrainingData, spec: RecursionSpec, split: str, horizon: int
     starts, history = starts[keep], history[keep]
     if len(starts) == 0:
         return None
-    index = [td.all_columns.index(c) for c in spec.columns]
     window = starts[:, None] + np.arange(horizon)[None, :]
-    rows = td.data[:, index][window]
+    # columns of the feature (and its lags) are replaced by the predicted history in the rollout
+    rows = np.zeros((len(starts), horizon, len(spec.columns)))
+    for j, column in enumerate(spec.columns):
+        if column in td.all_columns:
+            rows[:, :, j] = td.column(column)[window]
     target = td.column(td.targets[0])[window]
     truth = history[:, :1] + np.cumsum(target, axis=1) if spec.difference else target
     return rows.astype("float32"), history.astype("float32"), truth[..., None].astype("float32")

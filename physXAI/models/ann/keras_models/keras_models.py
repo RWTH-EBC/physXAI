@@ -497,6 +497,8 @@ class ConstantLayer(keras.Layer):
         config.update({
             "value": self.value,
             "shape": self.target_shape,
+            # name of the weight (e.g. of a px.Param), kept after loading; configs without it load as before
+            "weight_name": self.weight_name,
         })
         return config
 

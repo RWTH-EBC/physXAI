@@ -202,3 +202,30 @@ def test_derived_inputs_are_reported_for_agentlib(caplog):
     with caplog.at_level(logging.WARNING, logger="physXAI"):
         check_agentlib_compatibility(prep)
     assert "['q']" in caplog.text
+
+
+def test_cmnn_rejects_unknown_monotonicities(td):
+    """Regression: a misspelled input name must not silently drop the monotonicity."""
+    with pytest.raises(ValueError, match="no inputs"):
+        CMNNModel(monotonies={"mdot": 1}, **FAST).pipeline(td, plot=False, save_model=False)
+
+
+def test_cmnn_keeps_one_neuron_per_activation_part(td):
+    model = CMNNModel(monotonies={"mDot": 1}, n_neurons=2, **FAST).pipeline(td, plot=False, save_model=False)
+    units = [layer.units for layer in model.layers if hasattr(layer, "units")]
+    assert units == [1, 1, 1, 1]  # convex, concave, saturated part and the output
+
+
+def test_parameter_names_survive_saving(td, tmp_path):
+    import keras
+
+    v = px.Vars()
+    m = ModularANN(px.Linear([v.mDot, v.T]) * px.Param(1.0, name="gain"), **FAST)
+    model = m.pipeline(td, plot=False, save_model=False)
+    model.save(tmp_path / "m.keras")
+    assert "gain" in [w.name for w in keras.saving.load_model(tmp_path / "m.keras").weights]
+
+
+def test_linear_regression_is_fitted_in_float64(td):
+    model = LinearRegressionModel().pipeline(td, plot=False, save_model=False)
+    assert model.coef_.dtype == np.float64

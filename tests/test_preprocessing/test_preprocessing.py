@@ -239,3 +239,34 @@ def test_unknown_arguments_are_rejected():
         PreprocessingSingleStep(inputs=["mDot"], output="T", batch_size=4)
     prep = PreprocessingMultiStep(inputs=["mDot"], output="T", label_width=3)
     assert PreprocessingData.from_config(prep.get_config()).label_width == 3
+
+
+def test_sub_sampling_takes_the_values_at_the_time_steps_and_warns(frame, tmp_path, caplog):
+    path = _csv(frame, tmp_path)
+    with caplog.at_level("WARNING", logger="physXAI"):
+        data = PreprocessingSingleStep(inputs=["load", "T"], output="Change(T)", time_step=900).load_data(path)
+    assert "sub-sampled" in caplog.text and "one of every 3 values" in caplog.text
+    np.testing.assert_allclose(data["load"].to_numpy(), frame["load"].to_numpy()[::3][: len(data)])
+    caplog.clear()
+    with caplog.at_level("WARNING", logger="physXAI"):
+        PreprocessingSingleStep(inputs=["load", "T"], output="Change(T)").load_data(path)
+    assert "sub-sampled" not in caplog.text
+
+
+def test_dropped_time_stamps_are_logged(frame, tmp_path, caplog):
+    frame = pd.concat([frame.iloc[:10], frame.iloc[[5]], frame.iloc[10:]])  # a duplicate
+    shifted = frame.iloc[[20]].copy()
+    shifted.index = shifted.index + 17.0  # a time stamp off the grid of 300 s
+    frame = pd.concat([frame, shifted])
+    with caplog.at_level("WARNING", logger="physXAI"):
+        PreprocessingSingleStep(inputs=["T"], output="Change(T)").load_data(_csv(frame, tmp_path))
+    assert "1 duplicate time stamps" in caplog.text
+    assert "1 time stamps" in caplog.text and "not on the grid" in caplog.text
+
+
+def test_closed_form_data_in_float64(frame, tmp_path):
+    td = PreprocessingSingleStep(inputs=["mDot", "T"], output="T", random_state=0).pipeline(_csv(frame, tmp_path))
+    assert td.X("train").dtype == np.float32
+    X = td.X("train", np.float64)
+    assert X.dtype == np.float64
+    np.testing.assert_array_equal(X[:, 1], frame["T"].to_numpy()[td.rows("train")])
