@@ -221,6 +221,60 @@
     <span class="k">return</span> <span class="n">result</span></div>
 
 
+<div class="viewcode-block" id="input_lag"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.input_lag">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">input_lag</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">_seen</span><span class="p">:</span> <span class="nb">frozenset</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">())</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Number of steps a column reaches into the past: 'X_lag2' -&gt; 2, 'Change(X)' -&gt; 1 (X(t) - X(t-1)),</span>
+<span class="sd">    'Change(X_lag2)' -&gt; 3, a derived column {name: expression} -&gt; the largest reach of its variables plus its own lag.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; input_lag("Change(T_lag2)")</span>
+<span class="sd">        3</span>
+<span class="sd">    """</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="n">columns</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">base</span><span class="p">,</span> <span class="n">lag</span> <span class="o">=</span> <span class="n">_split_lag</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">change</span> <span class="o">=</span> <span class="n">CHANGE_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">change</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">lag</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">input_lag</span><span class="p">(</span><span class="n">change</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="n">columns</span><span class="p">,</span> <span class="n">_seen</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">columns</span> <span class="ow">and</span> <span class="n">base</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_seen</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">lag</span> <span class="o">+</span> <span class="nb">max</span><span class="p">((</span><span class="n">input_lag</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">_seen</span> <span class="o">|</span> <span class="p">{</span><span class="n">base</span><span class="p">})</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">[</span><span class="n">base</span><span class="p">]</span><span class="o">.</span><span class="n">free_vars</span><span class="p">()),</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">lag</span></div>
+
+
+<div class="viewcode-block" id="depends_on"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.depends_on">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">depends_on</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">features</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">columns</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">_seen</span><span class="p">:</span> <span class="nb">frozenset</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">())</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Whether a column holds values of one of `features`: the feature itself, its lags, its changes ('Change(T)') or a</span>
+<span class="sd">    derived column {name: expression} of any of them.</span>
+<span class="sd">    """</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="n">columns</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">base</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_split_lag</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">change</span> <span class="o">=</span> <span class="n">CHANGE_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">change</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">depends_on</span><span class="p">(</span><span class="n">change</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="n">features</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">_seen</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">columns</span> <span class="ow">and</span> <span class="n">base</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_seen</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">depends_on</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">_seen</span> <span class="o">|</span> <span class="p">{</span><span class="n">base</span><span class="p">})</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">[</span><span class="n">base</span><span class="p">]</span><span class="o">.</span><span class="n">free_vars</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">features</span></div>
+
+
+<div class="viewcode-block" id="check_multi_step_inputs"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.check_multi_step_inputs">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">check_multi_step_inputs</span><span class="p">(</span><span class="n">inputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">outputs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">columns</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Inputs of a multi step (recurrent) model must not hold measured values of a predicted feature over the horizon:</span>
+<span class="sd">    a predicted feature itself is fed back (closed loop), but its lags, changes or derived columns of it would be</span>
+<span class="sd">    taken from the data during the prediction, i.e. the model would see the measured truth (leakage).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Listing the inputs depending on a predicted feature.</span>
+<span class="sd">    """</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="p">{</span><span class="n">output_feature</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">}</span>
+    <span class="n">leaks</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">inputs</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">features</span> <span class="ow">and</span> <span class="n">depends_on</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">columns</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">leaks</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"The inputs </span><span class="si">{</span><span class="n">leaks</span><span class="si">}</span><span class="s2"> depend on the predicted features </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">features</span><span class="p">)</span><span class="si">}</span><span class="s2">: during the prediction they "</span>
+            <span class="s2">"would hold measured values (leakage). Use the feature itself as input (it is fed back during the "</span>
+            <span class="s2">"prediction) and let the recurrent state carry its past, or build expressions of it in the model "</span>
+            <span class="s2">"(feature_architecture)."</span>
+        <span class="p">)</span></div>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_try_ensure_column</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">ensure_column</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
@@ -245,7 +299,9 @@
 <span class="sd">               (e.g. 'Change(T)') and for outputs over the interval [t, t+1) (as AgentLib-MPC uses them). 0: the</span>
 <span class="sd">               time of the inputs, for algebraic outputs of point sampled data, e.g. P_el(t) = f(u(t), T(t)); the</span>
 <span class="sd">               output feature must then not be an input (only its lags), and there is no recursive evaluation.</span>
-<span class="sd">        time_step: Sampling time in seconds. The data is sub-sampled to it. Defaults to the</span>
+<span class="sd">        time_step: Sampling time in seconds. The data is sub-sampled to it by taking the values at the time steps</span>
+<span class="sd">                   (point sampling, logged as a warning). Quantities over an interval (power, energy) have to</span>
+<span class="sd">                   be resampled before (e.g. averaged with `pandas.DataFrame.resample`). Defaults to the</span>
 <span class="sd">                   sampling time of the data.</span>
 <span class="sd">        test_size: Fraction of the data used for testing.</span>
 <span class="sd">        val_size: Fraction of the data used for validation.</span>
@@ -357,6 +413,10 @@
             <span class="n">header</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">csv_header</span><span class="p">,</span>
             <span class="n">skiprows</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">csv_skiprows</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="n">duplicates</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">duplicated</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">duplicates</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"</span><span class="si">%d</span><span class="s2"> duplicate time stamps in '</span><span class="si">%s</span><span class="s2">' are dropped (the first value is kept)."</span><span class="p">,</span> <span class="n">duplicates</span><span class="p">,</span>
+                           <span class="n">file_path</span><span class="p">)</span>
         <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="o">~</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">duplicated</span><span class="p">(</span><span class="n">keep</span><span class="o">=</span><span class="s2">"first"</span><span class="p">)]</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
 
         <span class="n">index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
@@ -370,6 +430,20 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span> <span class="o">=</span> <span class="n">data_step</span>
         <span class="k">elif</span> <span class="ow">not</span> <span class="n">_is_multiple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">,</span> <span class="n">data_step</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Given time step </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="si">}</span><span class="s2"> is not a multiple of data time step </span><span class="si">{</span><span class="n">data_step</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="n">off_grid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">seconds</span> <span class="o">/</span> <span class="n">data_step</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">seconds</span> <span class="o">/</span> <span class="n">data_step</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">off_grid</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"</span><span class="si">%d</span><span class="s2"> time stamps in '</span><span class="si">%s</span><span class="s2">' are not on the grid of the data (</span><span class="si">%g</span><span class="s2"> s) and are dropped."</span><span class="p">,</span> <span class="n">off_grid</span><span class="p">,</span>
+                           <span class="n">file_path</span><span class="p">,</span> <span class="n">data_step</span><span class="p">)</span>
+
+        <span class="n">ratio</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_step</span> <span class="o">/</span> <span class="n">data_step</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">ratio</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">"The data (time step </span><span class="si">%g</span><span class="s2"> s) is sub-sampled to </span><span class="si">%g</span><span class="s2"> s by keeping one of every </span><span class="si">%d</span><span class="s2"> values (point "</span>
+                <span class="s2">"sampling). This suits states (e.g. temperatures). Quantities over an interval (power, energy, "</span>
+                <span class="s2">"averaged controls) have to be resampled before (e.g. averaged with pandas resample), else they are "</span>
+                <span class="s2">"aliased."</span><span class="p">,</span>
+                <span class="n">data_step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="n">positions</span> <span class="o">=</span> <span class="n">seconds</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_step</span>
         <span class="n">on_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">positions</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">)</span>
@@ -394,7 +468,19 @@
         <span class="k">return</span> <span class="mi">1</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_default_gap</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">max_lag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Embargo between two splits, so that no value of the data is part of a training and a test sample: a sample at</span>
+<span class="sd">        row t holds the values of the rows t - reach, ..., t + shift. The reach into the past includes lags, changes</span>
+<span class="sd">        ('Change(X)' needs X(t-1)) and the variables of derived columns.</span>
+<span class="sd">        """</span>
+        <span class="n">plain</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_columns</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">TARGET_PREFIX</span><span class="p">)]</span>
+        <span class="n">shifted</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">TARGET_PREFIX</span><span class="p">):]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_columns</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">TARGET_PREFIX</span><span class="p">))]</span>
+        <span class="n">reach</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="o">+</span> <span class="p">[</span><span class="n">input_lag</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span> <span class="o">*</span><span class="n">plain</span><span class="p">]]</span>
+            <span class="o">+</span> <span class="p">[</span><span class="n">input_lag</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">shifted</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">reach</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span>
 
 <div class="viewcode-block" id="PreprocessingData.build_training_data"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.build_training_data">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">build_training_data</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -661,7 +747,8 @@
 <span class="sd">    start value plus the accumulated changes, and the model is trained on that trajectory.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        inputs: Input features of the model (no lags: the memory of a recurrent model is its state).</span>
+<span class="sd">        inputs: Input features of the model (no lags, changes or derived columns of a predicted feature: the memory</span>
+<span class="sd">                of a recurrent model is its state, and the predicted feature itself is fed back).</span>
 <span class="sd">        output: Output feature(s), e.g. `px.Change('T')`.</span>
 <span class="sd">        label_width: Number of predicted steps (training horizon), in steps or as time delta string</span>
 <span class="sd">                     ('12h'). Choose it longer than the MPC horizon, so the model stays stable over</span>
@@ -733,6 +820,7 @@
 <span class="sd">            model: Optional model; without explicit inputs, its required inputs are used.</span>
 <span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">resolve_inputs</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="n">check_multi_step_inputs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
         <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
         <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_training_data</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
         <span class="n">steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_steps</span><span class="p">()</span>

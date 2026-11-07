@@ -87,7 +87,9 @@
              
   <section id="recurrent-models">
 <h1>Recurrent models<a class="headerlink" href="#recurrent-models" title="Permalink to this heading"></a></h1>
-<p>A recurrent model carries its memory in hidden states instead of lagged inputs.</p>
+<p>A recurrent model carries its memory in hidden states instead of lagged inputs. A predicted feature (e.g. <code class="docutils literal notranslate"><span class="pre">T</span></code>) can
+be an input, it is fed back during the prediction; its lags, changes (<code class="docutils literal notranslate"><span class="pre">Change(T)</span></code>) or derived columns of it are
+rejected, since they would hold measured values over the horizon (leakage).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI</span><span class="w"> </span><span class="kn">import</span> <span class="n">expr</span> <span class="k">as</span> <span class="n">px</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.ann_design</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreprocessingMultiStep</span>

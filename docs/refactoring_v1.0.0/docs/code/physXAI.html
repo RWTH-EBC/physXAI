@@ -148,6 +148,7 @@
 <li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.common_horizon"><code class="docutils literal notranslate"><span class="pre">ModelComparison.common_horizon()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.scores"><code class="docutils literal notranslate"><span class="pre">ModelComparison.scores()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.summary"><code class="docutils literal notranslate"><span class="pre">ModelComparison.summary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.paired"><code class="docutils literal notranslate"><span class="pre">ModelComparison.paired()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.plot"><code class="docutils literal notranslate"><span class="pre">ModelComparison.plot()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.save"><code class="docutils literal notranslate"><span class="pre">ModelComparison.save()</span></code></a></li>
 </ul>
@@ -177,6 +178,7 @@
 <li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec.max_lag"><code class="docutils literal notranslate"><span class="pre">RecursionSpec.max_lag</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec.columns"><code class="docutils literal notranslate"><span class="pre">RecursionSpec.columns</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec.derived"><code class="docutils literal notranslate"><span class="pre">RecursionSpec.derived</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec.expressions"><code class="docutils literal notranslate"><span class="pre">RecursionSpec.expressions</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec.history"><code class="docutils literal notranslate"><span class="pre">RecursionSpec.history</span></code></a></li>
 </ul>
 </li>
@@ -477,6 +479,7 @@
 <li class="toctree-l2"><a class="reference internal" href="physXAI.models.html#submodules">Submodules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="physXAI.models.html#module-physXAI.models.models">physXAI.models.models module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.CONFIG_META_KEYS"><code class="docutils literal notranslate"><span class="pre">CONFIG_META_KEYS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.train_data_float64"><code class="docutils literal notranslate"><span class="pre">train_data_float64()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel"><code class="docutils literal notranslate"><span class="pre">AbstractModel</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.generate_model"><code class="docutils literal notranslate"><span class="pre">AbstractModel.generate_model()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.compile_model"><code class="docutils literal notranslate"><span class="pre">AbstractModel.compile_model()</span></code></a></li>
@@ -547,6 +550,9 @@
 <li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.ensure_column"><code class="docutils literal notranslate"><span class="pre">ensure_column()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.output_feature"><code class="docutils literal notranslate"><span class="pre">output_feature()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.order_inputs"><code class="docutils literal notranslate"><span class="pre">order_inputs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.input_lag"><code class="docutils literal notranslate"><span class="pre">input_lag()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.depends_on"><code class="docutils literal notranslate"><span class="pre">depends_on()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.check_multi_step_inputs"><code class="docutils literal notranslate"><span class="pre">check_multi_step_inputs()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData"><code class="docutils literal notranslate"><span class="pre">PreprocessingData</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.test_size"><code class="docutils literal notranslate"><span class="pre">PreprocessingData.test_size</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.val_size"><code class="docutils literal notranslate"><span class="pre">PreprocessingData.val_size</span></code></a></li>
@@ -579,6 +585,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.apply_embargo"><code class="docutils literal notranslate"><span class="pre">apply_embargo()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.split_fingerprint"><code class="docutils literal notranslate"><span class="pre">split_fingerprint()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.split_summary"><code class="docutils literal notranslate"><span class="pre">split_summary()</span></code></a></li>
 </ul>
 </li>

@@ -583,6 +583,8 @@
         <span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
             <span class="s2">"value"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
             <span class="s2">"shape"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_shape</span><span class="p">,</span>
+            <span class="c1"># name of the weight (e.g. of a px.Param), kept after loading; configs without it load as before</span>
+            <span class="s2">"weight_name"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_name</span><span class="p">,</span>
         <span class="p">})</span>
         <span class="k">return</span> <span class="n">config</span></div>
 

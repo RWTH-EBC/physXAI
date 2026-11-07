@@ -106,7 +106,8 @@ large deviation of <code class="docutils literal notranslate"><span class="pre">
 data, as in an MPC:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">Change(T)</span></code> or <code class="docutils literal notranslate"><span class="pre">T</span></code> updates <code class="docutils literal notranslate"><span class="pre">T</span></code>, and <code class="docutils literal notranslate"><span class="pre">T_lag1</span></code>, <code class="docutils literal notranslate"><span class="pre">T_lag2</span></code>, … are shifted,</p></li>
-<li><p>derived data columns depending on <code class="docutils literal notranslate"><span class="pre">T</span></code> are recomputed in every step,</p></li>
+<li><p>inputs <code class="docutils literal notranslate"><span class="pre">Change(T)</span></code> (= <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">-</span> <span class="pre">T_lag1</span></code>, also lagged) and derived data columns depending on <code class="docutils literal notranslate"><span class="pre">T</span></code> are recomputed in
+every step,</p></li>
 <li><p>all other inputs are taken from the data.</p></li>
 </ul>
 <p><code class="docutils literal notranslate"><span class="pre">td.horizon_metrics</span></code> holds RMSE, MAE, bias and the standard deviation of the error of the absolute value

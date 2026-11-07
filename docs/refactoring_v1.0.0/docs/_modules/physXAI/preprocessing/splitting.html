@@ -96,16 +96,22 @@
 <span class="sd">  every split covers the whole period (e.g. all seasons), which a purely random draw does not</span>
 <span class="sd">  guarantee.</span>
 <span class="sd">- **Embargo:** `gap_steps` rows at every boundary between two splits are not used at all</span>
-<span class="sd">  (purging, López de Prado 2018), removing the autocorrelation across the boundary.</span>
+<span class="sd">  (purging, López de Prado 2018). The default (the reach of a sample into the past, i.e. lags, changes and derived</span>
+<span class="sd">  columns, plus `shift`) guarantees that no value of the data is part of a training and a test sample.</span>
 <span class="sd">- Windows are later only taken from within one split (see `physXAI.preprocessing.windows`),</span>
 <span class="sd">  so no window ever crosses a boundary.</span>
 
-<span class="sd">Alternative strategies are `'holdout_end'` (chronological: train, val, test), which is more</span>
-<span class="sd">robust for non-stationary data, and `'random_rows'` (random rows, only to compare with, single step only).</span>
+<span class="sd">The embargo removes shared samples, not the autocorrelation of the process: a test block lies between training</span>
+<span class="sd">blocks of the same period (weather, season, operation), so the test error measures the interpolation within the</span>
+<span class="sd">period of the data. It is optimistic for a new period (e.g. another season or year). For that question use</span>
+<span class="sd">`'holdout_end'` (chronological: train, val, test), a longer `gap_steps` or a separate data set.</span>
+<span class="sd">`'random_rows'` (random rows, only to compare with, single step only) shows how much a random split overestimates</span>
+<span class="sd">the performance.</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
 
@@ -309,6 +315,18 @@
                 <span class="n">stop</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="n">labels</span><span class="p">[</span><span class="n">b</span><span class="p">:</span><span class="n">stop</span><span class="p">]</span> <span class="o">=</span> <span class="n">UNUSED</span>
     <span class="k">return</span> <span class="n">labels</span></div>
+
+
+<div class="viewcode-block" id="split_fingerprint"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.splitting.split_fingerprint">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">split_fingerprint</span><span class="p">(</span><span class="n">labels</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Short hash of the rows of every split. Two runs with the same fingerprint of a split were evaluated on the same rows</span>
+<span class="sd">    (e.g. for a paired comparison of models); the same seed alone does not guarantee it, since the block length depends</span>
+<span class="sd">    on the window length (horizon, warmup) and the size of the data.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha1</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span><span class="o">.</span><span class="n">tobytes</span><span class="p">())</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">16</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">SPLITS</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="p">}</span></div>
 
 
 <div class="viewcode-block" id="split_summary"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.splitting.split_summary">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">split_summary</span><span class="p">(</span><span class="n">labels</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>

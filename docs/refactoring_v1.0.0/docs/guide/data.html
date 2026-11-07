@@ -115,7 +115,7 @@
 <td><p>columns used only in the training loss (e.g. physics targets), <code class="docutils literal notranslate"><span class="pre">'y:name'</span></code> at the predicted time; added by models via <code class="docutils literal notranslate"><span class="pre">prep.pipeline(path,</span> <span class="pre">model=model)</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">time_index_col</span></code>, <code class="docutils literal notranslate"><span class="pre">time_step</span></code></p></td>
-<td><p>time column (seconds or date time); the data is put onto a regular grid of <code class="docutils literal notranslate"><span class="pre">time_step</span></code></p></td>
+<td><p>time column (seconds or date time); the data is put onto a regular grid of <code class="docutils literal notranslate"><span class="pre">time_step</span></code>. A longer <code class="docutils literal notranslate"><span class="pre">time_step</span></code> takes the values at the time steps (point sampling, with a warning): resample quantities over an interval (power, energy) before, e.g. with <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame.resample</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">csv_delimiter</span></code>, <code class="docutils literal notranslate"><span class="pre">csv_encoding</span></code>, <code class="docutils literal notranslate"><span class="pre">csv_header</span></code>, <code class="docutils literal notranslate"><span class="pre">csv_skiprows</span></code></p></td>
 <td><p>csv options</p></td>
@@ -145,13 +145,17 @@ training and test data and overestimates the test performance. physXAI splits bl
 <li><p>the time axis is cut into blocks (default: the longer of four windows and one day),</p></li>
 <li><p>validation and test blocks are drawn in every stratum of neighbouring blocks, so all seasons are part of
 every split,</p></li>
-<li><p>an embargo of <code class="docutils literal notranslate"><span class="pre">gap_steps</span></code> (default: the largest lag plus <code class="docutils literal notranslate"><span class="pre">shift</span></code>, plus the warmup of multi step data) separates
-blocks of different splits; the rows are taken from the training side, so validation and test blocks stay
-complete,</p></li>
+<li><p>an embargo of <code class="docutils literal notranslate"><span class="pre">gap_steps</span></code> separates blocks of different splits, so no value of the data is part of a training
+and a test sample. The default is the reach of a sample into the past (lags, <code class="docutils literal notranslate"><span class="pre">Change(X)</span></code> = X(t) - X(t-1) and the
+variables of derived <code class="docutils literal notranslate"><span class="pre">columns</span></code>) plus <code class="docutils literal notranslate"><span class="pre">shift</span></code>, plus the warmup of multi step data. The rows are taken from the
+training side, so validation and test blocks stay complete,</p></li>
 <li><p>windows of multi step data never cross a split boundary.</p></li>
 </ul>
-<p><code class="docutils literal notranslate"><span class="pre">split='holdout_end'</span></code> uses the end of the data for validation and test (non-stationary data),
-<code class="docutils literal notranslate"><span class="pre">split='random_rows'</span></code> the old random split (for comparisons only).</p>
+<p>The embargo removes shared samples, not the autocorrelation of the building: test blocks lie between training
+blocks of the same weeks and season, so the test error measures how well the model interpolates within the period
+of the data. For a new period (another season or year) it is optimistic. To estimate that, use
+<code class="docutils literal notranslate"><span class="pre">split='holdout_end'</span></code> (the end of the data for validation and test), a longer <code class="docutils literal notranslate"><span class="pre">gap_steps</span></code> or a separate data set.
+<code class="docutils literal notranslate"><span class="pre">split='random_rows'</span></code> is the old random split (for comparisons only).</p>
 <p>The split depends on <code class="docutils literal notranslate"><span class="pre">random_state</span></code>. Training a model with several seeds shows how much the errors depend
 on the split, see <a class="reference internal" href="evaluation.html#comparing-models"><span class="std std-ref">Comparing models</span></a>.</p>
 </section>

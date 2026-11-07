@@ -57,6 +57,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#metrics">Metrics</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#report">Report</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#comparing-models">Comparing models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#paired-comparison">Paired comparison</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#existing-runs">Existing runs</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#tables-and-plot">Tables and plot</a></li>
 </ul>
@@ -129,16 +130,59 @@ seeds, <code class="docutils literal notranslate"><span class="pre">ModelCompari
 
 <span class="n">comparison</span> <span class="o">=</span> <span class="n">ModelComparison</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>     <span class="c1"># one model per sub directory</span>
 <span class="n">comparison</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>                            <span class="c1"># per model: runs, mean, std, min, median, max</span>
-<span class="n">comparison</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>                            <span class="c1"># comparison.html and csv files</span>
+<span class="n">comparison</span><span class="o">.</span><span class="n">paired</span><span class="p">(</span><span class="s2">"linreg"</span><span class="p">)</span>                     <span class="c1"># run by run on the same splits, see below</span>
+<span class="n">comparison</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="s2">"linreg"</span><span class="p">)</span>         <span class="c1"># comparison.html and csv files</span>
 </pre></div>
 </div>
 <ul class="simple">
-<li><p>Every run is saved with <code class="docutils literal notranslate"><span class="pre">Run.save</span></code> into <code class="docutils literal notranslate"><span class="pre">&lt;run&gt;/&lt;name&gt;/seed_&lt;seed&gt;/</span></code>. With the same seeds, all models are
-trained and tested on the same splits (<code class="docutils literal notranslate"><span class="pre">vary=('split',</span> <span class="pre">'init')</span></code> by default; <code class="docutils literal notranslate"><span class="pre">vary=('init',)</span></code> keeps the
-split fixed and only varies the weights).</p></li>
+<li><p>Every run is saved with <code class="docutils literal notranslate"><span class="pre">Run.save</span></code> into <code class="docutils literal notranslate"><span class="pre">&lt;run&gt;/&lt;name&gt;/seed_&lt;seed&gt;/</span></code>. With the same seeds and the same split
+settings, all models are trained and tested on the same splits (<code class="docutils literal notranslate"><span class="pre">vary=('split',</span> <span class="pre">'init')</span></code> by default;
+<code class="docutils literal notranslate"><span class="pre">vary=('init',)</span></code> keeps the split fixed and only varies the weights). The block length depends on the window
+length (<code class="docutils literal notranslate"><span class="pre">eval_horizon</span></code>, <code class="docutils literal notranslate"><span class="pre">label_width</span></code>, <code class="docutils literal notranslate"><span class="pre">warmup_width</span></code>) and on the size of the data, so single step models and
+RNNs get other blocks with the default settings: pass the same <code class="docutils literal notranslate"><span class="pre">split=BlockSplit(...,</span> <span class="pre">block_length=...)</span></code> to all
+preprocessings (see <code class="docutils literal notranslate"><span class="pre">examples/11_compare_models.py</span></code>).</p></li>
 <li><p>Without saving: <code class="docutils literal notranslate"><span class="pre">comparison</span> <span class="pre">=</span> <span class="pre">repeat_training(...)</span> <span class="pre">+</span> <span class="pre">repeat_training(...)</span></code>, or
 <code class="docutils literal notranslate"><span class="pre">ModelComparison().add(&quot;label&quot;,</span> <span class="pre">td)</span></code> for evaluated training data.</p></li>
 </ul>
+<section id="paired-comparison">
+<h3>Paired comparison<a class="headerlink" href="#paired-comparison" title="Permalink to this heading"></a></h3>
+<p>The split changes the errors often more than the model. In <code class="docutils literal notranslate"><span class="pre">summary</span></code> the distributions of two models then
+overlap, even if one of them is better on every single split. <code class="docutils literal notranslate"><span class="pre">paired(baseline)</span></code> compares every model with
+the baseline run by run on the same split, so the spread caused by the split cancels out:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pairs</span></code></p></td>
+<td><p>number of runs on the same split (paired by the split seed, else by the run name, <code class="docutils literal notranslate"><span class="pre">by=</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">baseline</span></code>, <code class="docutils literal notranslate"><span class="pre">model_median</span></code></p></td>
+<td><p>medians of the score</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mean_difference</span></code>, <code class="docutils literal notranslate"><span class="pre">ci_low</span></code>, <code class="docutils literal notranslate"><span class="pre">ci_high</span></code></p></td>
+<td><p>mean of model - baseline and its confidence interval (Student t, <code class="docutils literal notranslate"><span class="pre">confidence=0.95</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">median_difference</span></code></p></td>
+<td><p>median of model - baseline</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">better</span></code></p></td>
+<td><p>share of the splits on which the model is better (lower RMSE and absolute bias, higher R2)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">p_value</span></code></p></td>
+<td><p>two-sided Wilcoxon signed rank test; it needs at least 6 pairs to reach 0.05</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">same_data</span></code></p></td>
+<td><p>share of the pairs evaluated on the same rows (fingerprint of the split, physXAI &gt;= 1.0)</p></td>
+</tr>
+</tbody>
+</table>
+<p>A <code class="docutils literal notranslate"><span class="pre">same_data</span></code> below 1 (also logged as a warning) means that the splits differ despite the same seed, e.g.
+because of another block length. Single step models and RNNs on the same split can still be evaluated on
+different windows (the warmup of the RNN has to lie inside the split).</p>
+</section>
 <section id="existing-runs">
 <h3>Existing runs<a class="headerlink" href="#existing-runs" title="Permalink to this heading"></a></h3>
 <p>Runs saved earlier, also by physXAI &lt; 1.0 or by AgentLib-MPC training scripts, are compared the same way.
@@ -171,13 +215,14 @@ horizon (the bias was not stored then).</p></li>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>physXAI.evaluation.comparison<span class="w"> </span>results
 python<span class="w"> </span>-m<span class="w"> </span>physXAI.evaluation.comparison<span class="w"> </span>results/cmnn<span class="w"> </span>results/ann<span class="w"> </span>--split<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--horizon<span class="w"> </span><span class="m">12</span>
 python<span class="w"> </span>-m<span class="w"> </span>physXAI.evaluation.comparison<span class="w"> </span>results/cmnn<span class="w"> </span>--models<span class="w"> </span>--band<span class="w"> </span>range
+python<span class="w"> </span>-m<span class="w"> </span>physXAI.evaluation.comparison<span class="w"> </span>results<span class="w"> </span>--baseline<span class="w"> </span>cmnn<span class="w">     </span><span class="c1"># adds the paired comparison</span>
 </pre></div>
 </div>
 </section>
 <section id="tables-and-plot">
 <h3>Tables and plot<a class="headerlink" href="#tables-and-plot" title="Permalink to this heading"></a></h3>
 <p>Tables: <code class="docutils literal notranslate"><span class="pre">runs()</span></code> (seeds, model class, training time), <code class="docutils literal notranslate"><span class="pre">metrics()</span></code> (single step metrics),
-<code class="docutils literal notranslate"><span class="pre">horizon()</span></code> (errors per step), <code class="docutils literal notranslate"><span class="pre">scores(split)</span></code> (one row per run) and <code class="docutils literal notranslate"><span class="pre">summary(split)</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">horizon()</span></code> (errors per step), <code class="docutils literal notranslate"><span class="pre">scores(split)</span></code> (one row per run), <code class="docutils literal notranslate"><span class="pre">summary(split)</span></code> and <code class="docutils literal notranslate"><span class="pre">paired(baseline,</span> <span class="pre">split)</span></code>.</p>
 <p>Models with different outputs (e.g. <code class="docutils literal notranslate"><span class="pre">Change(T)</span></code> of a single step model and the trajectory <code class="docutils literal notranslate"><span class="pre">T</span></code> of an RNN)
 are compared on the error of <code class="docutils literal notranslate"><span class="pre">T</span></code> over the horizon. <code class="docutils literal notranslate"><span class="pre">scores</span></code> and <code class="docutils literal notranslate"><span class="pre">plot</span></code> use the horizon all runs reach,
 or <code class="docutils literal notranslate"><span class="pre">horizon=</span></code> in hours.</p>
