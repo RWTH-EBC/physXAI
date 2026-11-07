@@ -84,7 +84,9 @@
            <div itemprop="articleBody">
              
   <h1>Source code for physXAI.models.ann.model_construction.rbf_models</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span></span><span class="sd">"""Construction of radial basis function networks (`RBFModel`): k-means centers and the width of the gaussians."""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">keras</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -132,7 +134,7 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        config (dict): A dictionary containing the configuration parameters for the RBF network.</span>
-<span class="sd">                       This is validated against `ClassicalANNConstruction_config`.</span>
+<span class="sd">                       This is validated against `RBFConstruction_config`.</span>
 <span class="sd">        td (TrainingDataGeneric): An object containing the training data,</span>
 <span class="sd">                           used for adapting normalization, K-Means clustering, and</span>
 <span class="sd">                           determining input/output shapes.</span>
@@ -164,7 +166,7 @@
         <span class="n">training_data</span> <span class="o">=</span> <span class="n">normalization</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">input_layer</span>
-        <span class="n">training_data</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+        <span class="n">training_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="p">)</span>
 
     <span class="n">kmeans</span> <span class="o">=</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">n_neurons</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">'random_state'</span><span class="p">],</span> <span class="n">n_init</span><span class="o">=</span><span class="s1">'auto'</span><span class="p">)</span>
     <span class="n">kmeans</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">training_data</span><span class="p">)</span>

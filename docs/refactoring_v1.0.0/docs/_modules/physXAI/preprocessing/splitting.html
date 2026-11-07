@@ -286,19 +286,28 @@
 
 <span class="sd">    The rows are taken from the training side of a boundary, so validation and test data stay</span>
 <span class="sd">    complete. At a boundary between validation and test data, the validation side is used.</span>
+<span class="sd">    Only rows of the block at the boundary are purged: a block shorter than `gap` is purged completely,</span>
+<span class="sd">    but the rows of the neighbouring block are kept.</span>
 <span class="sd">    """</span>
     <span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">boundaries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">!=</span> <span class="n">labels</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span>
     <span class="n">original</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">boundaries</span><span class="p">:</span>
         <span class="n">before</span><span class="p">,</span> <span class="n">after</span> <span class="o">=</span> <span class="n">original</span><span class="p">[</span><span class="n">b</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="n">original</span><span class="p">[</span><span class="n">b</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">UNUSED</span> <span class="ow">in</span> <span class="p">(</span><span class="n">before</span><span class="p">,</span> <span class="n">after</span><span class="p">):</span>
             <span class="k">continue</span>
         <span class="n">purge_before</span> <span class="o">=</span> <span class="n">before</span> <span class="o">==</span> <span class="n">TRAIN</span> <span class="ow">or</span> <span class="p">(</span><span class="n">before</span> <span class="o">==</span> <span class="n">VAL</span> <span class="ow">and</span> <span class="n">after</span> <span class="o">==</span> <span class="n">TEST</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">purge_before</span><span class="p">:</span>
-            <span class="n">labels</span><span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="n">b</span> <span class="o">-</span> <span class="n">gap</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="p">:</span> <span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">UNUSED</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">b</span>
+            <span class="k">while</span> <span class="n">start</span> <span class="o">&gt;</span> <span class="nb">max</span><span class="p">(</span><span class="n">b</span> <span class="o">-</span> <span class="n">gap</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="n">original</span><span class="p">[</span><span class="n">start</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">before</span><span class="p">:</span>
+                <span class="n">start</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="n">labels</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">UNUSED</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">labels</span><span class="p">[</span><span class="n">b</span> <span class="p">:</span> <span class="n">b</span> <span class="o">+</span> <span class="n">gap</span><span class="p">]</span> <span class="o">=</span> <span class="n">UNUSED</span>
+            <span class="n">stop</span> <span class="o">=</span> <span class="n">b</span>
+            <span class="k">while</span> <span class="n">stop</span> <span class="o">&lt;</span> <span class="nb">min</span><span class="p">(</span><span class="n">b</span> <span class="o">+</span> <span class="n">gap</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="ow">and</span> <span class="n">original</span><span class="p">[</span><span class="n">stop</span><span class="p">]</span> <span class="o">==</span> <span class="n">after</span><span class="p">:</span>
+                <span class="n">stop</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">labels</span><span class="p">[</span><span class="n">b</span><span class="p">:</span><span class="n">stop</span><span class="p">]</span> <span class="o">=</span> <span class="n">UNUSED</span>
     <span class="k">return</span> <span class="n">labels</span></div>
 
 

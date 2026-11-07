@@ -166,7 +166,8 @@ horizon (the bias was not stored then).</p></li>
 <li><p>A run directory with several models (<code class="docutils literal notranslate"><span class="pre">T_…</span></code> and <code class="docutils literal notranslate"><span class="pre">P_…</span></code> of AgentLib-MPC) gives separate models <code class="docutils literal notranslate"><span class="pre">cmnn/T</span></code> and
 <code class="docutils literal notranslate"><span class="pre">cmnn/P</span></code>. Unreadable files are skipped with a warning.</p></li>
 </ul>
-<p>From the command line (prints the summary, saves plot and csv files into <code class="docutils literal notranslate"><span class="pre">results/comparison</span></code>):</p>
+<p>From the command line (prints the summary, saves plot and csv files into <code class="docutils literal notranslate"><span class="pre">--out</span></code>, by default
+<code class="docutils literal notranslate"><span class="pre">&lt;first</span> <span class="pre">path&gt;/comparison</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">results/comparison</span></code> for the first command):</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>physXAI.evaluation.comparison<span class="w"> </span>results
 python<span class="w"> </span>-m<span class="w"> </span>physXAI.evaluation.comparison<span class="w"> </span>results/cmnn<span class="w"> </span>results/ann<span class="w"> </span>--split<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--horizon<span class="w"> </span><span class="m">12</span>
 python<span class="w"> </span>-m<span class="w"> </span>physXAI.evaluation.comparison<span class="w"> </span>results/cmnn<span class="w"> </span>--models<span class="w"> </span>--band<span class="w"> </span>range
@@ -205,7 +206,7 @@ See <code class="docutils literal notranslate"><span class="pre">examples/11_com
 <code class="docutils literal notranslate"><span class="pre">bias_weight</span></code> · |bias| at <code class="docutils literal notranslate"><span class="pre">mpc_horizon</span></code>), or <code class="docutils literal notranslate"><span class="pre">criterion='single_step'</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">n_repeats</span></code> evaluates every candidate on several splits. Differences smaller than the spread are noise.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">controls={'u':</span> <span class="pre">1}</span></code>: the prediction has to increase with <code class="docutils literal notranslate"><span class="pre">u</span></code> on (almost) all validation samples,
-otherwise a candidate is implausible and not selected. Controls and the recursive feature are never removed.</p></li>
+otherwise a candidate is implausible and not selected. Controls (and with <code class="docutils literal notranslate"><span class="pre">criterion='horizon'</span></code> the recursive feature) are never removed.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">tolerance</span></code> selects the smallest set within (1 + tolerance) × the best criterion.</p></li>
 </ul>
 </section>

@@ -93,7 +93,13 @@
 <h1>Export for AgentLib-MPC<a class="headerlink" href="#export-for-agentlib-mpc" title="Permalink to this heading"></a></h1>
 <p>AgentLib-MPC (<code class="docutils literal notranslate"><span class="pre">agentlib_mpc.machine_learning_plugins.physXAI</span></code>) calls a training script of physXAI and
 loads the trained model into the MPC. The script provides</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">train_model</span><span class="p">(</span><span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">folder_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">training_data_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">time_step</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI</span><span class="w"> </span><span class="kn">import</span> <span class="n">expr</span> <span class="k">as</span> <span class="n">px</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">Run</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModularANN</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreprocessingSingleStep</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">train_model</span><span class="p">(</span><span class="n">base_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">folder_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">training_data_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">time_step</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                 <span class="n">output_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"T"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="n">run</span> <span class="o">=</span> <span class="n">Run</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="n">folder_name</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">log_level</span><span class="o">=</span><span class="s2">"warning"</span><span class="p">)</span>
     <span class="n">v</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Vars</span><span class="p">()</span>
@@ -115,7 +121,11 @@ loads the trained model into the MPC. The script provides</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">X_lagN</span></code> is the value of <code class="docutils literal notranslate"><span class="pre">X</span></code> N steps in the past,</p></li>
 <li><p>lags of a feature are consecutive and ascending, the recursive feature and its lags are the last inputs
 (inputs taken from the model are ordered like that automatically),</p></li>
-<li><p>single step models have exactly one output and <code class="docutils literal notranslate"><span class="pre">shift=1</span></code>,</p></li>
+<li><p>single step models have exactly one output and <code class="docutils literal notranslate"><span class="pre">shift=1</span></code> (AgentLib-MPC evaluates an output over the interval
+<code class="docutils literal notranslate"><span class="pre">[t,</span> <span class="pre">t+1)</span></code> of the inputs),</p></li>
+<li><p>inputs are variables of the MPC: inputs computed by the preprocessing (<code class="docutils literal notranslate"><span class="pre">columns</span></code>, <code class="docutils literal notranslate"><span class="pre">transform</span></code>) have to be
+computed by the MPC as well, <code class="docutils literal notranslate"><span class="pre">check_agentlib_compatibility</span></code> warns about them. Expressions inside the model need
+only the raw inputs,</p></li>
 <li><p>recurrent models have no lagged inputs (their memory is the state).</p></li>
 </ul>
 <p><code class="docutils literal notranslate"><span class="pre">check_agentlib_compatibility(prep)</span></code> raises an <code class="docutils literal notranslate"><span class="pre">AgentLibCompatibilityError</span></code> listing all violations before
@@ -126,7 +136,9 @@ the model is trained.</p>
 <ul class="simple">
 <li><p>Linear regression (<code class="docutils literal notranslate"><span class="pre">.joblib</span></code>), all keras models and <code class="docutils literal notranslate"><span class="pre">ModularANN</span></code> (translated to CasADi layer by layer;
 expressions inside the model are part of it, the MPC only needs raw inputs).</p></li>
-<li><p>Recurrent models (<code class="docutils literal notranslate"><span class="pre">RNNModel</span></code>): the step model, with AgentLib-MPC versions supporting recurrent models.</p></li>
+<li><p>Recurrent models (<code class="docutils literal notranslate"><span class="pre">RNNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">PCNNModel</span></code>): the step model, with AgentLib-MPC versions supporting recurrent
+models (branch <code class="docutils literal notranslate"><span class="pre">143-feature-multistep-model-support</span></code>; the released AgentLib-MPC 1.1.1 does not support them yet,
+<code class="docutils literal notranslate"><span class="pre">check_agentlib_compatibility</span></code> warns if the installed AgentLib-MPC cannot load them).</p></li>
 </ul>
 </section>
 </section>

@@ -46,7 +46,10 @@
               <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Getting started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#gpu">GPU</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#a-first-model">A first model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#run-directories-and-logging">Run directories and logging</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#reproducibility">Reproducibility</a></li>
@@ -107,10 +110,27 @@ compared, and AgentLib-MPC can load the model.</p></li>
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h2>
 <p>physXAI needs Python &gt;= 3.11 and runs on Linux and Windows.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>.<span class="w">                    </span><span class="c1"># user</span>
+pip<span class="w"> </span>install<span class="w"> </span>.<span class="w"> </span>-c<span class="w"> </span>constraints.txt<span class="w"> </span><span class="c1"># user, with the versions physXAI was tested with (reproducible environment)</span>
+pip<span class="w"> </span>install<span class="w"> </span>.<span class="o">[</span>gpu<span class="o">]</span><span class="w">               </span><span class="c1"># user, training on a GPU (Linux or WSL2, see below)</span>
 pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>dev,agentlib<span class="o">]</span><span class="w">   </span><span class="c1"># developer: tests, linting, AgentLib-MPC contract tests</span>
 pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>docs<span class="o">]</span><span class="w">           </span><span class="c1"># documentation: sphinx-apidoc -M -o docs/source/code physXAI &amp;&amp; sphinx-build -b html docs/source docs_output</span>
 </pre></div>
 </div>
+<p>The dependencies have upper bounds on their next major versions. <code class="docutils literal notranslate"><span class="pre">constraints.txt</span></code> pins all (also transitive)
+packages to the combination tested for the release.</p>
+<section id="gpu">
+<h3>GPU<a class="headerlink" href="#gpu" title="Permalink to this heading"></a></h3>
+<p>physXAI needs no changes to train on a GPU: TensorFlow places the operations on a GPU if it finds one. Only the
+installation differs:</p>
+<ul class="simple">
+<li><p><strong>Linux:</strong> <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.[gpu]</span></code> installs TensorFlow with CUDA (<code class="docutils literal notranslate"><span class="pre">tensorflow[and-cuda]</span></code>), an NVIDIA driver is needed.
+<code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-c</span> <span class="pre">&quot;import</span> <span class="pre">tensorflow</span> <span class="pre">as</span> <span class="pre">tf;</span> <span class="pre">print(tf.config.list_physical_devices('GPU'))&quot;</span></code> shows the GPUs found.</p></li>
+<li><p><strong>Windows:</strong> TensorFlow &gt;= 2.11 has no GPU support on native Windows (it prints a warning and uses the CPU). Use
+WSL2 with the Linux installation.</p></li>
+</ul>
+<p>The small networks of building models often train about as fast on a CPU; a GPU pays off for large data sets,
+recurrent models and many repeated trainings (<code class="docutils literal notranslate"><span class="pre">repeat_training</span></code>).</p>
+</section>
 </section>
 <section id="a-first-model">
 <h2>A first model<a class="headerlink" href="#a-first-model" title="Permalink to this heading"></a></h2>
@@ -183,9 +203,14 @@ on to it instead of being printed.</p>
 </section>
 <section id="reproducibility">
 <h2>Reproducibility<a class="headerlink" href="#reproducibility" title="Permalink to this heading"></a></h2>
-<p>Every random choice (split, weights, batches) is seeded. <code class="docutils literal notranslate"><span class="pre">random_state=None</span></code> in the preprocessing draws a
-seed and stores it in the config, so every run can be reproduced from its saved config.
-<code class="docutils literal notranslate"><span class="pre">physXAI.set_seed(42)</span></code> sets one global seed for Python, NumPy and Keras.</p>
+<p>Every random choice (split, weights, batches, k-means centers) is seeded. <code class="docutils literal notranslate"><span class="pre">physXAI.set_seed(42)</span></code> sets one global
+seed for Python, NumPy and Keras, which is the default of <code class="docutils literal notranslate"><span class="pre">random_state</span></code> (preprocessing) and <code class="docutils literal notranslate"><span class="pre">random_seed</span></code> (models).
+Without a seed, every object draws one and stores it in its config, so every run can be reproduced from its saved
+configs. The saved configs also record the versions of Python and of the main packages (<code class="docutils literal notranslate"><span class="pre">environment</span></code>).</p>
+<p>On a CPU, a seeded run is reproduced exactly. On a GPU, some TensorFlow kernels are not deterministic, so two runs
+with the same seed differ slightly. <code class="docutils literal notranslate"><span class="pre">physXAI.set_seed(42,</span> <span class="pre">deterministic=True)</span></code> enables the deterministic kernels of
+TensorFlow: runs on a GPU are reproduced exactly, the training is slower, and it stays enabled for the rest of the
+process.</p>
 </section>
 </section>
 

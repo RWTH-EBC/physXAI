@@ -675,7 +675,8 @@ derived inputs which depend on the feature.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>RecursionSpec, or None if the model does not predict one of its own inputs (then there is
-nothing to feed back and the single step error already is the multi step error).</p>
+nothing to feed back and the single step error already is the multi step error) or the targets
+are not the next step (shift != 1).</p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData" title="physXAI.preprocessing.training_data.TrainingData"><em>TrainingData</em></a>) – </p>

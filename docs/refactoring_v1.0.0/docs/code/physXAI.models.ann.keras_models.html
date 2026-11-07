@@ -114,6 +114,9 @@
 </section>
 <section id="module-physXAI.models.ann.keras_models.keras_models">
 <span id="physxai-models-ann-keras-models-keras-models-module"></span><h2>physXAI.models.ann.keras_models.keras_models module<a class="headerlink" href="#module-physXAI.models.ann.keras_models.keras_models" title="Permalink to this heading"></a></h2>
+<p>Custom keras layers, activations and constraints of physXAI.</p>
+<p>They are registered under fixed names (<code class="code docutils literal notranslate"><span class="pre">custom_layer&gt;...</span></code>, <code class="code docutils literal notranslate"><span class="pre">custom_activation&gt;...</span></code>, <code class="code docutils literal notranslate"><span class="pre">custom_constraint&gt;...</span></code>), which
+saved models and the CasADi converter of AgentLib-MPC rely on: the names and attributes must not change.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="physXAI.models.ann.keras_models.keras_models.NonNegPartial">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.keras_models.keras_models.</span></span><span class="sig-name descname"><span class="pre">NonNegPartial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monotonicities</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/keras_models/keras_models.html#NonNegPartial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.keras_models.keras_models.NonNegPartial" title="Permalink to this definition"></a></dt>

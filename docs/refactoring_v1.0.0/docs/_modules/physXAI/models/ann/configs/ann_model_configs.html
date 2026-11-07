@@ -84,12 +84,15 @@
            <div itemprop="articleBody">
              
   <h1>Source code for physXAI.models.ann.configs.ann_model_configs</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
+<span></span><span class="sd">"""Validation of the settings of the keras model constructions (pydantic)."""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">field_validator</span>
 
 
 <div class="viewcode-block" id="ClassicalANNConstruction_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ClassicalANNConstruction_config</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Settings of a feed forward network: layers, neurons, activations, normalization and output rescaling."""</span>
 
     <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">n_neurons</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">32</span>
@@ -121,6 +124,7 @@
 
 
 <div class="viewcode-block" id="RBFConstruction_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.RBFConstruction_config">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RBFConstruction_config</span><span class="p">(</span><span class="n">ClassicalANNConstruction_config</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Settings of an RBF network (one layer), the k-means seed and an optional fixed output rescaling."""</span>
 
     <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span>
@@ -133,6 +137,7 @@
 
 
 <div class="viewcode-block" id="CMNNModelConstruction_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">CMNNModelConstruction_config</span><span class="p">(</span><span class="n">ClassicalANNConstruction_config</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Settings of a CMNN: monotonicities per input and the shares of convex, concave and saturated neurons."""</span>
 
     <span class="n">monotonicities</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">activation_split</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
@@ -160,6 +165,7 @@
 
 
 <div class="viewcode-block" id="RNNModelConstruction_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.RNNModelConstruction_config">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RNNModelConstruction_config</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Settings of the recurrent layer of an RNN or PCNN."""</span>
     <span class="n">rnn_units</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="n">gt</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">rnn_layer</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"RNN"</span><span class="p">,</span> <span class="s2">"GRU"</span><span class="p">,</span> <span class="s2">"LSTM"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"RNN"</span></div>
 </pre></div>

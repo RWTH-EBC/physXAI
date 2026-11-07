@@ -126,6 +126,12 @@ script and reads the following files from the run directory:</p>
 <code class="code docutils literal notranslate"><span class="pre">Change(X)</span></code> denotes an output predicting the difference of <code class="code docutils literal notranslate"><span class="pre">X</span></code>, and <code class="code docutils literal notranslate"><span class="pre">X_lagN</span></code> the value of
 <code class="code docutils literal notranslate"><span class="pre">X</span></code> N time steps in the past. <code class="code docutils literal notranslate"><span class="pre">check_agentlib_compatibility</span></code> validates the same rules as
 AgentLib-MPC before a model is trained, so a run fails early instead of after training.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="physXAI.io.agentlib.AGENTLIB_RNN_BRANCH">
+<span class="sig-prename descclassname"><span class="pre">physXAI.io.agentlib.</span></span><span class="sig-name descname"><span class="pre">AGENTLIB_RNN_BRANCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'143-feature-multistep-model-support'</span></em><a class="headerlink" href="#physXAI.io.agentlib.AGENTLIB_RNN_BRANCH" title="Permalink to this definition"></a></dt>
+<dd><p>Branch of AgentLib-MPC supporting recurrent models (not released yet, AgentLib-MPC 1.1.1 has no support)</p>
+</dd></dl>
+
 <dl class="py exception">
 <dt class="sig sig-object py" id="physXAI.io.agentlib.AgentLibCompatibilityError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.io.agentlib.</span></span><span class="sig-name descname"><span class="pre">AgentLibCompatibilityError</span></span><a class="reference internal" href="../_modules/physXAI/io/agentlib.html#AgentLibCompatibilityError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.agentlib.AgentLibCompatibilityError" title="Permalink to this definition"></a></dt>
@@ -157,6 +163,17 @@ AgentLib-MPC before a model is trained, so a run fails early instead of after tr
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.io.agentlib.agentlib_supports_recurrent_models">
+<span class="sig-prename descclassname"><span class="pre">physXAI.io.agentlib.</span></span><span class="sig-name descname"><span class="pre">agentlib_supports_recurrent_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/agentlib.html#agentlib_supports_recurrent_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.agentlib.agentlib_supports_recurrent_models" title="Permalink to this definition"></a></dt>
+<dd><p>Whether the installed AgentLib-MPC loads recurrent models (<code class="code docutils literal notranslate"><span class="pre">RNNModel</span></code>, <code class="code docutils literal notranslate"><span class="pre">PCNNModel</span></code>), None if not installed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)">bool</a> | None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -394,7 +411,8 @@ Existing files are never deleted, so several models can share one run directory.
 <dl class="py method">
 <dt class="sig sig-object py" id="physXAI.io.run.Run.version_info">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">version_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/run.html#Run.version_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.run.Run.version_info" title="Permalink to this definition"></a></dt>
-<dd><p>Meta information stored with every saved config.</p>
+<dd><p>Meta information stored with every saved config: the version of physXAI and the versions of Python and of
+the packages the results depend on (<code class="code docutils literal notranslate"><span class="pre">environment</span></code>), so a run can be reproduced in the same environment.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
@@ -402,6 +420,17 @@ Existing files are never deleted, so several models can share one run directory.
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.io.run.environment_info">
+<span class="sig-prename descclassname"><span class="pre">physXAI.io.run.</span></span><span class="sig-name descname"><span class="pre">environment_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/io/run.html#environment_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.io.run.environment_info" title="Permalink to this definition"></a></dt>
+<dd><p>Versions of Python and of the packages a trained model depends on (None if a package is not installed).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a> | None]</p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>

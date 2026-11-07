@@ -98,7 +98,8 @@
 <code class="docutils literal notranslate"><span class="pre">model.trained_model</span></code>, <code class="docutils literal notranslate"><span class="pre">Run.save</span></code> stores it with its configs.</p>
 <section id="single-step-models">
 <h2>Single step models<a class="headerlink" href="#single-step-models" title="Permalink to this heading"></a></h2>
-<p>Predict the next time step. Applied recursively in the MPC when they predict one of their inputs.</p>
+<p>Predict the next time step (<code class="docutils literal notranslate"><span class="pre">shift=1</span></code>), or an output at the time of the inputs (<code class="docutils literal notranslate"><span class="pre">shift=0</span></code>). Applied recursively
+in the MPC when they predict one of their inputs. The keras networks have one output; train one model per output.</p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Model</p></th>
@@ -133,7 +134,9 @@
 </tbody>
 </table>
 <p>Keras models share the training options <code class="docutils literal notranslate"><span class="pre">epochs</span></code>, <code class="docutils literal notranslate"><span class="pre">learning_rate</span></code>, <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>,
-<code class="docutils literal notranslate"><span class="pre">early_stopping_epochs</span></code> and <code class="docutils literal notranslate"><span class="pre">random_seed</span></code>. Early stopping needs validation data.</p>
+<code class="docutils literal notranslate"><span class="pre">early_stopping_epochs</span></code> and <code class="docutils literal notranslate"><span class="pre">random_seed</span></code>. Early stopping needs validation data. <code class="docutils literal notranslate"><span class="pre">random_seed</span></code> seeds the weight
+initialization and the batch order; it defaults to the global seed (<code class="docutils literal notranslate"><span class="pre">physXAI.set_seed</span></code>), else a new seed is drawn and
+stored in the config. Unknown arguments raise a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>.</p>
 </section>
 <section id="physics-informed-neural-networks">
 <h2>Physics-informed neural networks<a class="headerlink" href="#physics-informed-neural-networks" title="Permalink to this heading"></a></h2>
