@@ -369,9 +369,19 @@ class Param(Expr):
             ctx.layers[id(self)] = layer
         return layer(ctx.input)
 
+    def to_casadi(self, syms):
+        """The symbol `syms[name]` of the parameter (e.g. for its calibration), else its initial value."""
+        if self.name in syms:
+            return syms[self.name]
+        if self.init is None:
+            raise ValueError(f"The parameter '{self.name}' has no symbol and no initial value.")
+        return self.init
+
 
 #: Prefix of the columns holding values at the predicted time (see `Target`), as in the preprocessing
 TARGET_PREFIX = "y:"
+#: Key of the symbol of `Prediction` in `to_casadi(syms)`
+PREDICTION = "__prediction__"
 
 
 @register_expression
@@ -390,6 +400,12 @@ class Prediction(Expr):
         if ctx.prediction is None:
             raise ValueError("px.Prediction() is only available in physics residuals.")
         return ctx.prediction
+
+    def to_casadi(self, syms):
+        """The symbol `syms[PREDICTION]` (e.g. the measured target in the calibration of a physics residual)."""
+        if PREDICTION not in syms:
+            raise ValueError("px.Prediction() needs the symbol syms[px.core.PREDICTION] in CasADi.")
+        return syms[PREDICTION]
 
 
 def Target(column: str) -> Var:  # noqa: N802 - reads like an expression class

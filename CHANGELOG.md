@@ -39,6 +39,15 @@ loads single step models only. The export is verified against that branch, but n
   constraint (`exact`, `verified`, `data`, `violated`), the cost of the constraints and a report table. Solved as QP
   (HiGHS) in QR coordinates, about 1 s for 1e5 samples. `px.Linear(monotonicities=...)` bounds the sign of weights
   with `solver='qp'`.
+- Warm start of `ModularANN` (`warm_start=True`): with a normalized `Linear` block as architecture, the gradient
+  based training starts at the least squares solution of its data only terms, trainable terms (e.g. `px.MLP`) start
+  with weight 0. Without it, single seeds of the hybrid architectures diverged.
+- Physics residuals: the calibration (`physics_fit='calibrate'`) is a deterministic least squares fit
+  (`scipy.optimize.least_squares` with the CasADi Jacobian) instead of gradient descent; the parameters no longer
+  depend on the seed and reach the minimum of the calibration problem. `px.Param` and `px.Prediction` have a
+  CasADi form.
+- `PCNNModel`: initial rates given as `None` are estimated from the training data by nonnegative least squares of
+  the single step energy balance (reported in `td.physics['initial_rates']`); example 10 uses them.
 - Inputs of the preprocessing can be derived from the model: `prep.pipeline(path, model=model)`, ordered as
   AgentLib-MPC expects them (recursive feature and its lags last, missing intermediate lags added).
 - `columns={'name': expression}` in the preprocessing for derived data columns (e.g. PINN targets).
