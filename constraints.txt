@@ -1,0 +1,51 @@
+# Versions physXAI 1.0.0 was tested with (Python 3.12, Windows and Linux): all runtime dependencies, also the
+# transitive ones. Install a reproducible environment with
+#     pip install . -c constraints.txt
+# The bounds in pyproject.toml are wider; this file pins one known good combination. Update it for every release
+# (tests/smoke_examples.py and the test suite with these versions) and record the change in CHANGELOG.md.
+
+absl-py==2.5.1
+annotated-types==0.8.0
+astunparse==1.6.3
+casadi==3.8.2
+certifi==2026.10.23
+charset-normalizer==3.5.2
+cloudpickle==3.1.2
+flatbuffers==25.12.19
+gast==0.7.0
+google-pasta==0.2.0
+grpcio==1.85.1
+h5py==3.14.0
+idna==3.20
+joblib==1.6.0
+keras==3.15.1
+libclang==18.1.1
+markdown-it-py==3.0.0
+mdurl==0.1.2
+ml-dtypes==0.6.0
+namex==0.1.0
+narwhals==2.28.0
+numpy==2.5.4
+opt-einsum==3.4.0
+optree==0.20.0
+packaging==26.3
+pandas==3.1.1
+plotly==7.1.0
+protobuf==7.36.2
+pydantic==2.14.3
+pydantic-core==2.50.4
+pygments==2.21.0
+python-dateutil==4.0.0
+requests==2.34.2
+rich==15.0.0
+scikit-learn==1.9.1
+scipy==1.18.1
+six==1.17.0
+tensorflow==2.21.0
+termcolor==3.3.0
+threadpoolctl==3.8.0
+typing-extensions==4.16.0
+typing-inspection==0.4.5
+tzdata==2026.6
+urllib3==2.8.0
+wrapt==2.5.2

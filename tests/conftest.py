@@ -1,5 +1,6 @@
 """Shared pytest fixtures for the physXAI test-suite."""
 
+import importlib
 import os
 from unittest.mock import patch
 
@@ -8,6 +9,19 @@ os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
 import numpy as np
 import pandas as pd
 import pytest
+
+#: With PHYSXAI_REQUIRE_AGENTLIB=1 (CI), missing AgentLib-MPC modules fail the contract tests instead of skipping them
+REQUIRE_AGENTLIB = os.environ.get("PHYSXAI_REQUIRE_AGENTLIB") == "1"
+
+
+def import_agentlib(module: str = "agentlib_mpc"):
+    """
+    Imports a module of AgentLib-MPC for the contract tests: skips the tests if it is not installed, unless
+    PHYSXAI_REQUIRE_AGENTLIB=1 is set, then the import error fails them (so the CI cannot pass silently).
+    """
+    if REQUIRE_AGENTLIB:
+        return importlib.import_module(module)
+    return pytest.importorskip(module)
 
 
 @pytest.fixture(autouse=True)

@@ -10,6 +10,10 @@ and has to match the git tag of a release.
 Major release, not backwards compatible except for the AgentLib-MPC integration
 (`agentlib_mpc.machine_learning_plugins.physXAI`). A migration guide is part of the documentation.
 
+**Known limitation:** the export of recurrent models (`RNNModel`, `PCNNModel`) needs AgentLib-MPC with support for
+recurrent models (branch `143-feature-multistep-model-support`), which is not released yet: AgentLib-MPC 1.1.1
+loads single step models only. The export is verified against that branch, but not in the CI of physXAI.
+
 ### Added
 - `physXAI.__version__` (read from the installed package metadata).
 - `physXAI.io.Run`: explicit output directory for a training run, replaces the global `Logger`. The default
@@ -109,7 +113,14 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
 - Saved configs record the environment (`environment`: versions of Python, NumPy, pandas, scikit-learn, Keras,
   TensorFlow and CasADi) next to `physXAI_version`.
 - `check_agentlib_compatibility` warns about inputs computed by the preprocessing (`columns`, `Change(X)`,
-  `transform`), which the MPC has to provide as variables.
+  `transform`), which the MPC has to provide as variables, and about recurrent models if the installed AgentLib-MPC
+  cannot load them.
+- `constraints.txt`: the versions of all (also transitive) dependencies physXAI 1.0.0 was tested with
+  (`pip install . -c constraints.txt`), checked on Linux and Windows in the CI.
+- Optional extra `physXAI[gpu]` (TensorFlow with CUDA on Linux / WSL2) and `set_seed(seed, deterministic=True)`
+  for exactly reproducible runs on a GPU.
+- `PHYSXAI_REQUIRE_AGENTLIB=1` makes the AgentLib-MPC contract tests fail instead of being skipped if AgentLib-MPC
+  is missing (set in the CI); the model saved with physXAI 0.x is part of the tests.
 
 ### Changed
 - `PINNModel(physics_targets={'pinn': w})`: physics targets are loss columns, no model outputs, so a PINN has one
@@ -132,6 +143,10 @@ Major release, not backwards compatible except for the AgentLib-MPC integration
   checks. Badges and reports are published on GitHub Pages instead of being committed.
 - Static versioning in `pyproject.toml` instead of `setuptools-scm`.
 - `casadi` is now a declared dependency (it was imported, but missing).
+- Upper bounds on the next major versions of all dependencies (e.g. `keras<4`, `tensorflow<3`): the CasADi converter
+  of AgentLib-MPC recognizes keras layers by their names and attributes.
+- `keras>=3.15.0`: older versions have known vulnerabilities in loading models (unsafe deserialization, file
+  disclosure via HDF5), see the GitHub security advisories.
 - Default run folder names no longer contain `:` (invalid on Windows).
 - Single step data is split in blocks instead of random rows by default (random rows overestimate
   the test performance because of autocorrelation).

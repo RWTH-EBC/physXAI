@@ -23,16 +23,19 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
+# Upper bounds: the next major versions are untested. In particular the CasADi converter of AgentLib-MPC recognizes
+# keras layers by their names and attributes, which a new keras major version may change. The tested combination of
+# all (also transitive) versions is pinned in constraints.txt.
 dependencies = [
-    "numpy>=2.0",
-    "pandas>=2.2.3",
-    "scikit-learn>=1.6.1",
-    "scipy>=1.11",  # QP sampling (qmc) and local search of the shape constraints, least squares calibration
-    "keras>=3.9.2",
-    "tensorflow>=2.19.0",
-    "casadi>=3.6.7",
-    "pydantic>=2.11.4",
-    "plotly>=6.0.1",
+    "numpy>=2.0,<3",
+    "pandas>=2.2.3,<4",
+    "scikit-learn>=1.6.1,<2",
+    "scipy>=1.11,<2",  # sampling and local search of the shape constraints, least squares calibration
+    "keras>=3.15.0,<4",  # older versions have known vulnerabilities in loading models (GitHub security advisories)
+    "tensorflow>=2.19.0,<3",
+    "casadi>=3.6.7,<4",
+    "pydantic>=2.11.4,<3",
+    "plotly>=6.0.1,<8",
 ]
 
 [project.optional-dependencies]
@@ -42,9 +45,14 @@ dev = [
     "ruff>=0.12",
     "pre-commit>=4.2",
 ]
-# Required for the AgentLib-MPC contract tests (tests/contract). Tests are skipped if not installed.
+# Required for the AgentLib-MPC contract tests (tests/contract). Tests are skipped if not installed, unless the
+# environment variable PHYSXAI_REQUIRE_AGENTLIB=1 is set (as in the CI).
 agentlib = [
-    "agentlib_mpc[ml]",
+    "agentlib_mpc[ml]>=1.1.1,<2",
+]
+# TensorFlow with CUDA (GPU training). Only on Linux (also WSL2): TensorFlow >= 2.11 has no GPU support on native Windows.
+gpu = [
+    "tensorflow[and-cuda]>=2.19.0,<3; sys_platform == 'linux'",
 ]
 # Sphinx documentation, as built by the EBC CI template (sphinx-apidoc + sphinx-build, see docs/source/conf.py)
 docs = [

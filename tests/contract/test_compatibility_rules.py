@@ -1,8 +1,9 @@
 """`check_agentlib_compatibility` has to accept and reject exactly what AgentLib-MPC accepts and rejects."""
 
 import pytest
+from conftest import import_agentlib
 
-pytest.importorskip("agentlib_mpc")
+import_agentlib("agentlib_mpc")
 from agentlib_mpc.machine_learning_plugins.physXAI.model_config_creation import physXAI_2_agentlib_json  # noqa: E402
 
 from physXAI.io import AgentLibCompatibilityError, check_agentlib_compatibility  # noqa: E402
