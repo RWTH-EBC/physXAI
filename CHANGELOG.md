@@ -121,6 +121,10 @@ loads single step models only. The export is verified against that branch, but n
   for exactly reproducible runs on a GPU.
 - `PHYSXAI_REQUIRE_AGENTLIB=1` makes the AgentLib-MPC contract tests fail instead of being skipped if AgentLib-MPC
   is missing (set in the CI); the model saved with physXAI 0.x is part of the tests.
+- `ModelComparison.paired(baseline)`: paired comparison of the runs of every model with a baseline on the same
+  splits (mean difference with confidence interval, share of better splits, Wilcoxon p-value), also in
+  `save(run, baseline=...)` and `--baseline` of the command line. The training data config stores a fingerprint
+  of the splits (`summary.fingerprint`), which checks that paired runs used the same rows.
 - Sub-sampling to a longer `time_step` (point sampling) logs a warning: quantities over an interval (power, energy)
   have to be resampled before. Dropped duplicate and off-grid time stamps are logged.
 

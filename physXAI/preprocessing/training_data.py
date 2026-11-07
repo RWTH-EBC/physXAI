@@ -18,7 +18,7 @@ from types import SimpleNamespace
 import numpy as np
 
 from physXAI.expr.serialization import from_config, to_config
-from physXAI.preprocessing.splitting import SPLITS, split_summary
+from physXAI.preprocessing.splitting import SPLITS, split_fingerprint, split_summary
 from physXAI.preprocessing.windows import gather_windows, window_starts
 
 
@@ -247,7 +247,12 @@ class TrainingData(TrainingDataGeneric):
         return len(self.rows(split)) > 0
 
     def summary(self) -> dict:
-        return {"rows": len(self.data), "valid_rows": int(self.valid.sum()), **split_summary(self.labels)}
+        return {
+            "rows": len(self.data),
+            "valid_rows": int(self.valid.sum()),
+            **split_summary(self.labels),
+            "fingerprint": split_fingerprint(self.labels),
+        }
 
     # --- views of the splits (None for a split without data) -----------------------------------
     def _split_or_none(self, split: str, getter):

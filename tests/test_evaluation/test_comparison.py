@@ -3,6 +3,7 @@
 import json
 
 import numpy as np
+import pandas as pd
 import pytest
 from conftest import simulate_one_room
 
@@ -246,3 +247,74 @@ def test_runs_share_no_state_and_vary_block_seeds(csv):
     assert model.random_seed == 11 and model.architecture.inputs[0].random_state == 11
     unchanged = _model_with_seed(model, None)
     assert unchanged.random_seed == 11 and unchanged.architecture.inputs[0].random_state == 11
+
+
+def _record(model, run, rmse, seed, r2=0.9, bias=0.0, fingerprint="a"):
+    from physXAI.evaluation.comparison import RunRecord
+
+    kpis = {"test": {"rmse": rmse, "r2": r2, "bias": bias}}
+    training_data = {"metrics": {"by_output": {"T": kpis}}, "summary": {"fingerprint": {"test": fingerprint}}}
+    return RunRecord(model=model, run=run, training_data=training_data, preprocessing={"random_state": seed})
+
+
+BASE = [0.30, 0.50, 0.40, 0.60, 0.35, 0.45]  # the split dominates the spread
+
+
+def test_paired_comparison_removes_the_spread_of_the_split():
+    """B is better by 0.02 on every split: the distributions overlap, the paired differences do not."""
+    records = [_record("A", f"a{i}", r, seed=i) for i, r in enumerate(BASE)]
+    records += [_record("B", f"b{i}", r - 0.02 + 0.001 * (i % 2), seed=i) for i, r in enumerate(BASE)]
+    paired = ModelComparison(records).paired("A")
+    row = paired.loc[("RMSE T", "B")]
+    assert row["pairs"] == 6 and row["better"] == 1.0 and row["same_data"] == 1.0
+    assert row["mean_difference"] == pytest.approx(-0.0195)
+    assert row["ci_high"] < 0
+    assert row["p_value"] == pytest.approx(2 / 2**6)  # exact Wilcoxon: all six differences negative
+    assert ("|Bias T|", "B") in paired.index and ("R2 T", "B") in paired.index
+
+
+def test_paired_directions_of_r2_and_bias():
+    records = [_record("A", f"r{i}", 0.3, seed=i, r2=0.8, bias=0.1) for i in range(3)]
+    records += [_record("B", f"r{i}", 0.3, seed=i, r2=0.9, bias=-0.05) for i in range(3)]
+    paired = ModelComparison(records).paired("A")
+    assert paired.loc[("R2 T", "B"), "better"] == 1.0
+    assert paired.loc[("|Bias T|", "B"), "mean_difference"] == pytest.approx(-0.05)
+    assert paired.loc[("|Bias T|", "B"), "better"] == 1.0
+    assert np.isnan(paired.loc[("RMSE T", "B"), "p_value"])  # no differences
+
+
+def test_paired_by_run_name_and_different_data(caplog):
+    """The same split seed for all runs (vary=('init',)): pairs by run name. Other split settings are reported."""
+    records = [_record("A", f"seed_{i}", 0.3 + 0.01 * i, seed=7) for i in range(3)]
+    records += [_record("B", f"seed_{i}", 0.29 + 0.01 * i, seed=7, fingerprint="a" if i else "b") for i in range(3)]
+    with caplog.at_level("WARNING", logger="physXAI"):
+        paired = ModelComparison(records).paired("A", "B")
+    assert paired.loc[("RMSE T", "B"), "pairs"] == 3
+    assert paired.loc[("RMSE T", "B"), "same_data"] == pytest.approx(2 / 3)
+    assert "different test data" in caplog.text
+    with pytest.raises(ValueError, match="cannot be paired"):
+        ModelComparison(records).paired("A", "B", by="split_seed")
+    with pytest.raises(ValueError, match="Unknown baseline"):
+        ModelComparison(records).paired("C")
+
+
+def test_paired_saved_runs(saved, tmp_path):
+    run, comparison = saved
+    paired = comparison.paired("linreg")
+    assert set(paired.index.get_level_values("model")) == {"ann"}
+    assert (paired["pairs"] == 2).all() and (paired["same_data"] == 1.0).all()
+    loaded = ModelComparison.load(run.path).paired("linreg")
+    pd.testing.assert_frame_equal(loaded, paired)
+    files = ModelComparison.load(run.path).save(Run(tmp_path, "cmp"), baseline="linreg")
+    assert files["paired"].exists()
+
+
+def test_fingerprint_shows_other_splits(csv):
+    """The same seed gives other test blocks for another window length (horizon)."""
+    a = PreprocessingSingleStep(inputs=["mDot", "T"], output="Change(T)", eval_horizon=6, random_state=3).pipeline(csv)
+    b = PreprocessingSingleStep(inputs=["mDot", "load", "T"], output="Change(T)", eval_horizon=6,
+                                random_state=3).pipeline(csv)
+    c = PreprocessingSingleStep(inputs=["mDot", "T"], output="Change(T)", eval_horizon=100, random_state=3).pipeline(csv)
+    fa, fb, fc = (td.summary()["fingerprint"] for td in (a, b, c))
+    assert fa["test"] == fb["test"] and fa["val"] == fb["val"]
+    assert fa["test"] != fc["test"]

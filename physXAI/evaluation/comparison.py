@@ -16,10 +16,11 @@ Example:
     >>> repeat_training(file_path, prep, ClassicalANNModel(epochs=50), seeds=5, run=run, name="ann")
     >>> comparison = ModelComparison.load(run.path)  # one model per sub directory
     >>> comparison.summary()
-    >>> comparison.save(run)  # comparison.html and csv files
+    >>> comparison.paired("linreg")  # run by run on the same splits: differences, confidence interval, p-value
+    >>> comparison.save(run, baseline="linreg")  # comparison.html and csv files
 
-With the same seeds, all models use the same splits of the data, so their runs can be compared in pairs
-(column `split_seed`).
+With the same seeds and the same split settings, all models use the same splits of the data, so their runs can be
+compared in pairs (`paired`), which removes the spread caused by the split.
 """
 
 from __future__ import annotations
@@ -400,6 +401,128 @@ class ModelComparison:
         summary = long.groupby(["score", "model"], sort=False)["value"].agg(["count", "mean", "std", "min", "median", "max"])
         return summary.rename(columns={"count": "runs"})
 
+    def paired(
+        self,
+        baseline: str,
+        models: str | Iterable[str] | None = None,
+        split: str = "test",
+        horizon: float | None = None,
+        by: str = "auto",
+        confidence: float = 0.95,
+    ) -> pd.DataFrame:
+        """
+        Paired comparison of models with a baseline: the scores (see `scores`) are compared run by run on the same
+        split of the data, so the spread caused by the split cancels out. Two models whose distributions overlap in
+        `summary` can still differ clearly, if one of them is better on (almost) every split.
+
+        Runs are paired by the seed of their split (`by='split_seed'`, the `random_state` of the preprocessing) or by
+        their name (`by='run'`, e.g. 'seed_0' of `repeat_training`). 'auto' takes the split seed if it identifies the
+        runs of both models, else the name. The same seed gives the same split only with the same split settings:
+        the block length depends on the window length (horizon, warmup) and on the size of the data. Every pair is
+        therefore checked with the fingerprint of the split (`same_data`, saved with physXAI >= 1.0). Single step
+        and recurrent models on the same split can still be evaluated on different windows (warmup inside the split).
+
+        Differences are model - baseline. RMSE and the absolute bias are better when lower, R2 when higher.
+
+        Args:
+            baseline: Label of the reference model.
+            models: Models to compare with the baseline. Defaults to all others.
+            split: 'train', 'val' or 'test'.
+            horizon: End of the compared horizon (see `scores`).
+            by: 'auto', 'split_seed' or 'run'.
+            confidence: Level of the confidence interval of the mean difference.
+
+        Returns:
+            pd.DataFrame: One row per (score, model) with the number of `pairs`, the medians of the `baseline` and the
+            `model`, the `mean_difference` with its confidence interval (`ci_low`, `ci_high`, Student t), the
+            `median_difference`, the share of pairs in which the model is `better`, the `p_value` of the two-sided
+            Wilcoxon signed rank test (needs at least 6 pairs to reach 0.05) and the share of pairs on the `same_data`
+            (NaN if unknown).
+        """
+        from scipy import stats
+
+        if by not in ("auto", "split_seed", "run"):
+            raise ValueError("by has to be 'auto', 'split_seed' or 'run'.")
+        if baseline not in self.models:
+            raise ValueError(f"Unknown baseline '{baseline}', the models are {self.models}.")
+        others = [m for m in self.models if m != baseline] if models is None else (
+            [models] if isinstance(models, str) else list(models))
+        unknown = [m for m in others if m not in self.models]
+        if unknown:
+            raise ValueError(f"Unknown models {unknown}, the models are {self.models}.")
+
+        scores = self.scores(split, horizon).set_index(["model", "run"])
+        records = {(r.model, r.run): r for r in self.records}
+        rows = list()
+        for model in others:
+            pairs = self._pairs(baseline, model, by)
+            same = [_same_split(records[(baseline, a)], records[(model, b)], split) for a, b in pairs]
+            known = [s for s in same if s is not None]
+            same_data = float(np.mean(known)) if known else np.nan
+            if known and not all(known):
+                logger.warning(
+                    "Paired comparison of '%s' with '%s': %d of %d pairs were evaluated on different %s data (other "
+                    "split settings, e.g. block length or horizon). Use the same split settings for paired comparisons.",
+                    model, baseline, len(known) - sum(known), len(known), split,
+                )
+            for column in scores.columns:
+                if not column.startswith(("RMSE ", "Bias ", "R2 ", "Horizon RMSE ")):
+                    continue
+                a = np.array([scores.at[(baseline, p), column] for p, _ in pairs], dtype=float)
+                b = np.array([scores.at[(model, q), column] for _, q in pairs], dtype=float)
+                finite = np.isfinite(a) & np.isfinite(b)
+                if not finite.any():
+                    continue
+                a, b = a[finite], b[finite]
+                name = column
+                if column.startswith("Bias "):
+                    a, b, name = np.abs(a), np.abs(b), f"|{column}|"
+                difference = b - a
+                better = difference > 0 if column.startswith("R2 ") else difference < 0
+                n = len(difference)
+                mean = float(np.mean(difference))
+                if n > 1:
+                    half = stats.t.ppf((1 + confidence) / 2, n - 1) * np.std(difference, ddof=1) / np.sqrt(n)
+                    ci = (mean - half, mean + half)
+                else:
+                    ci = (np.nan, np.nan)
+                p_value = np.nan
+                if n > 1 and np.any(difference != 0):
+                    p_value = float(stats.wilcoxon(difference, zero_method="wilcox").pvalue)
+                rows.append({
+                    "score": name, "model": model, "pairs": n, "baseline": float(np.median(a)),
+                    "model_median": float(np.median(b)), "mean_difference": mean, "ci_low": ci[0], "ci_high": ci[1],
+                    "median_difference": float(np.median(difference)), "better": float(np.mean(better)),
+                    "p_value": p_value, "same_data": same_data,
+                })
+        columns = ["score", "model", "pairs", "baseline", "model_median", "mean_difference", "ci_low", "ci_high",
+                   "median_difference", "better", "p_value", "same_data"]
+        return pd.DataFrame(rows, columns=columns).set_index(["score", "model"])
+
+    def _pairs(self, baseline: str, model: str, by: str) -> list[tuple[str, str]]:
+        """Pairs of run names (baseline, model) on the same split, see `paired`."""
+        keys = dict()
+        for mode in (["split_seed", "run"] if by == "auto" else [by]):
+            for label in (baseline, model):
+                runs = [r for r in self.records if r.model == label]
+                values = [_split_seed(r) if mode == "split_seed" else r.run for r in runs]
+                if any(v is None for v in values) or len(set(values)) != len(values):
+                    break  # the runs of this model are not identified by this key
+                keys[label] = dict(zip(values, (r.run for r in runs), strict=True))
+            else:
+                common = [k for k in keys[baseline] if k in keys[model]]
+                if common:
+                    unpaired = len(keys[baseline]) + len(keys[model]) - 2 * len(common)
+                    if unpaired:
+                        logger.info("Paired comparison of '%s' with '%s' by %s: %d run(s) without a partner are left out.",
+                                    model, baseline, mode, unpaired)
+                    return [(keys[baseline][k], keys[model][k]) for k in common]
+            keys = dict()
+        raise ValueError(
+            f"The runs of '{baseline}' and '{model}' cannot be paired (by='{by}'): they need the same split seeds "
+            "(random_state of the preprocessing) or the same run names, e.g. repeat_training with the same seeds."
+        )
+
     # --- plots ---------------------------------------------------------------------------------
     def plot(self, split: str = "test", horizon: float | None = None, band: str | None = "iqr", show: bool = False):
         """
@@ -550,10 +673,11 @@ class ModelComparison:
 
     # --- saving --------------------------------------------------------------------------------
     def save(self, run, name: str = "comparison", split: str = "test", horizon: float | None = None,
-             band: str | None = "iqr") -> dict:
+             band: str | None = "iqr", baseline: str | None = None) -> dict:
         """
         Saves the comparison into a run directory: `{name}.html` (plot), `{name}_summary.csv`,
-        `{name}_scores.csv` (one row per run), `{name}_metrics.csv` and `{name}_horizon.csv`.
+        `{name}_scores.csv` (one row per run), `{name}_metrics.csv`, `{name}_horizon.csv` and, with a `baseline`,
+        `{name}_paired.csv` (see `paired`).
 
         Returns:
             dict: The paths of the written files.
@@ -567,9 +691,11 @@ class ModelComparison:
             "metrics": self.metrics(),
             "horizon": self.horizon(),
         }
+        if baseline is not None:
+            tables["paired"] = self.paired(baseline, split=split, horizon=horizon)
         for kind, table in tables.items():
             path = run.file(f"{name}_{kind}.csv")
-            table.to_csv(path, index=kind == "summary")
+            table.to_csv(path, index=kind in ("summary", "paired"))
             files[kind] = path
         logger.info("Saved the comparison of %s in %s", ", ".join(self.models), run.path)
         return files
@@ -659,6 +785,16 @@ def _normalize(config: dict, preprocessing: dict | None = None) -> dict:
     return config
 
 
+def _split_seed(record: RunRecord):
+    return (record.preprocessing or {}).get("random_state")
+
+
+def _same_split(a: RunRecord, b: RunRecord, split: str) -> bool | None:
+    """Whether two runs were evaluated on the same rows of a split (fingerprint of the split), None if unknown."""
+    prints = [((r.training_data.get("summary") or {}).get("fingerprint") or {}).get(split) for r in (a, b)]
+    return None if None in prints else prints[0] == prints[1]
+
+
 def _at(kpis: dict, key: str, i: int) -> float:
     values = kpis.get(key)
     return values[i] if values is not None and i < len(values) else np.nan
@@ -720,6 +856,7 @@ def main(argv: list[str] | None = None) -> ModelComparison:
         python -m physXAI.evaluation.comparison results                       # sub directories are models
         python -m physXAI.evaluation.comparison results/cmnn results/ann      # every directory is a model
         python -m physXAI.evaluation.comparison results/cmnn --models         # one directory as one model
+        python -m physXAI.evaluation.comparison results --baseline linreg     # paired with the runs of linreg
 
     The summary is printed, plot and tables are saved into `--out` (default: `<first path>/comparison`).
     """
@@ -735,6 +872,7 @@ def main(argv: list[str] | None = None) -> ModelComparison:
     parser.add_argument("--split", default="test", choices=SPLITS)
     parser.add_argument("--horizon", type=float, help="end of the compared horizon in hours")
     parser.add_argument("--band", default="iqr", choices=["iqr", "range", "none"])
+    parser.add_argument("--baseline", help="model for a paired comparison with all other models")
     parser.add_argument("--out", help="output directory")
     parser.add_argument("--show", action="store_true", help="open the plot")
     args = parser.parse_args(argv)
@@ -744,9 +882,13 @@ def main(argv: list[str] | None = None) -> ModelComparison:
     band = None if args.band == "none" else args.band
     with pd.option_context("display.width", 200, "display.max_rows", 500):
         print(comparison.summary(args.split, args.horizon).to_string(float_format="{:.4g}".format))
+        if args.baseline:
+            print(f"\nPaired with '{args.baseline}' (difference = model - baseline):")
+            print(comparison.paired(args.baseline, split=args.split, horizon=args.horizon)
+                  .to_string(float_format="{:.4g}".format))
     out = Path(args.out) if args.out else Path(args.paths[0]) / "comparison"
     run = Run(out.parent, out.name, overwrite=True)
-    comparison.save(run, split=args.split, horizon=args.horizon, band=band)
+    comparison.save(run, split=args.split, horizon=args.horizon, band=band, baseline=args.baseline)
     if args.show:
         comparison.plot(args.split, args.horizon, band=band, show=True)
     print(f"Saved to {run.path}")

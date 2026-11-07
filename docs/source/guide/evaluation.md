@@ -34,14 +34,38 @@ repeat_training(path, rnn_prep, RNNModel(rnn_layer="LSTM"), seeds=5, run=run, na
 
 comparison = ModelComparison.load(run.path)     # one model per sub directory
 comparison.summary()                            # per model: runs, mean, std, min, median, max
-comparison.save(run)                            # comparison.html and csv files
+comparison.paired("linreg")                     # run by run on the same splits, see below
+comparison.save(run, baseline="linreg")         # comparison.html and csv files
 ```
 
-- Every run is saved with `Run.save` into `<run>/<name>/seed_<seed>/`. With the same seeds, all models are
-  trained and tested on the same splits (`vary=('split', 'init')` by default; `vary=('init',)` keeps the
-  split fixed and only varies the weights).
+- Every run is saved with `Run.save` into `<run>/<name>/seed_<seed>/`. With the same seeds and the same split
+  settings, all models are trained and tested on the same splits (`vary=('split', 'init')` by default;
+  `vary=('init',)` keeps the split fixed and only varies the weights). The block length depends on the window
+  length (`eval_horizon`, `label_width`, `warmup_width`) and on the size of the data, so single step models and
+  RNNs get other blocks with the default settings: pass the same `split=BlockSplit(..., block_length=...)` to all
+  preprocessings (see `examples/11_compare_models.py`).
 - Without saving: `comparison = repeat_training(...) + repeat_training(...)`, or
   `ModelComparison().add("label", td)` for evaluated training data.
+
+### Paired comparison
+
+The split changes the errors often more than the model. In `summary` the distributions of two models then
+overlap, even if one of them is better on every single split. `paired(baseline)` compares every model with
+the baseline run by run on the same split, so the spread caused by the split cancels out:
+
+| Column | Meaning |
+|---|---|
+| `pairs` | number of runs on the same split (paired by the split seed, else by the run name, `by=`) |
+| `baseline`, `model_median` | medians of the score |
+| `mean_difference`, `ci_low`, `ci_high` | mean of model - baseline and its confidence interval (Student t, `confidence=0.95`) |
+| `median_difference` | median of model - baseline |
+| `better` | share of the splits on which the model is better (lower RMSE and absolute bias, higher R2) |
+| `p_value` | two-sided Wilcoxon signed rank test; it needs at least 6 pairs to reach 0.05 |
+| `same_data` | share of the pairs evaluated on the same rows (fingerprint of the split, physXAI >= 1.0) |
+
+A `same_data` below 1 (also logged as a warning) means that the splits differ despite the same seed, e.g.
+because of another block length. Single step models and RNNs on the same split can still be evaluated on
+different windows (the warmup of the RNN has to lie inside the split).
 
 ### Existing runs
 
@@ -79,12 +103,13 @@ From the command line (prints the summary, saves plot and csv files into `--out`
 python -m physXAI.evaluation.comparison results
 python -m physXAI.evaluation.comparison results/cmnn results/ann --split test --horizon 12
 python -m physXAI.evaluation.comparison results/cmnn --models --band range
+python -m physXAI.evaluation.comparison results --baseline cmnn     # adds the paired comparison
 ```
 
 ### Tables and plot
 
 Tables: `runs()` (seeds, model class, training time), `metrics()` (single step metrics),
-`horizon()` (errors per step), `scores(split)` (one row per run) and `summary(split)`.
+`horizon()` (errors per step), `scores(split)` (one row per run), `summary(split)` and `paired(baseline, split)`.
 
 Models with different outputs (e.g. `Change(T)` of a single step model and the trajectory `T` of an RNN)
 are compared on the error of `T` over the horizon. `scores` and `plot` use the horizon all runs reach,

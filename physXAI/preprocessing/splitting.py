@@ -25,6 +25,7 @@ the performance.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from typing import Literal
 
@@ -228,6 +229,18 @@ def apply_embargo(labels: np.ndarray, gap: int) -> np.ndarray:
                 stop += 1
             labels[b:stop] = UNUSED
     return labels
+
+
+def split_fingerprint(labels: np.ndarray) -> dict[str, str]:
+    """
+    Short hash of the rows of every split. Two runs with the same fingerprint of a split were evaluated on the same rows
+    (e.g. for a paired comparison of models); the same seed alone does not guarantee it, since the block length depends
+    on the window length (horizon, warmup) and the size of the data.
+    """
+    return {
+        name: hashlib.sha1(np.flatnonzero(labels == value).astype(np.int64).tobytes()).hexdigest()[:16]
+        for name, value in SPLITS.items()
+    }
 
 
 def split_summary(labels: np.ndarray) -> dict[str, float]:
