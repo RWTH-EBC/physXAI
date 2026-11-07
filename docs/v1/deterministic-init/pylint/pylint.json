@@ -41,7 +41,7 @@
             "column": 0,
             "path": "physXAI/training/recursive.py",
             "symbol": "astroid-error",
-            "message": "physXAI/training/recursive.py: Fatal error while checking 'physXAI/training/recursive.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-23-50-14.txt'.",
+            "message": "physXAI/training/recursive.py: Fatal error while checking 'physXAI/training/recursive.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-07-08-20-43.txt'.",
             "message-id": "F0002"
         },
         {
@@ -217,14 +217,14 @@
             "column": 0,
             "path": "physXAI/io/run.py",
             "symbol": "astroid-error",
-            "message": "physXAI/io/run.py: Fatal error while checking 'physXAI/io/run.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-23-50-15.txt'.",
+            "message": "physXAI/io/run.py: Fatal error while checking 'physXAI/io/run.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-07-08-20-43.txt'.",
             "message-id": "F0002"
         },
         {
             "type": "convention",
             "module": "physXAI.io.agentlib",
             "obj": "",
-            "line": 100,
+            "line": 127,
             "column": 0,
             "path": "physXAI/io/agentlib.py",
             "symbol": "line-too-long",
@@ -239,7 +239,7 @@
             "column": 0,
             "path": "physXAI/io/agentlib.py",
             "symbol": "astroid-error",
-            "message": "physXAI/io/agentlib.py: Fatal error while checking 'physXAI/io/agentlib.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-23-50-15.txt'.",
+            "message": "physXAI/io/agentlib.py: Fatal error while checking 'physXAI/io/agentlib.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-07-08-20-43.txt'.",
             "message-id": "F0002"
         },
         {
@@ -877,7 +877,7 @@
             "column": 0,
             "path": "physXAI/expr/core.py",
             "symbol": "astroid-error",
-            "message": "physXAI/expr/core.py: Fatal error while checking 'physXAI/expr/core.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-23-50-16.txt'.",
+            "message": "physXAI/expr/core.py: Fatal error while checking 'physXAI/expr/core.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-07-08-20-45.txt'.",
             "message-id": "F0002"
         },
         {
@@ -1658,7 +1658,7 @@
             "column": 0,
             "path": "physXAI/models/ann/ann_design.py",
             "symbol": "astroid-error",
-            "message": "physXAI/models/ann/ann_design.py: Fatal error while checking 'physXAI/models/ann/ann_design.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-23-50-18.txt'.",
+            "message": "physXAI/models/ann/ann_design.py: Fatal error while checking 'physXAI/models/ann/ann_design.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-07-08-20-46.txt'.",
             "message-id": "F0002"
         },
         {
@@ -1669,7 +1669,7 @@
             "column": 0,
             "path": "physXAI/models/ann/configs/ann_model_configs.py",
             "symbol": "astroid-error",
-            "message": "physXAI/models/ann/configs/ann_model_configs.py: Fatal error while checking 'physXAI/models/ann/configs/ann_model_configs.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-23-50-18.txt'.",
+            "message": "physXAI/models/ann/configs/ann_model_configs.py: Fatal error while checking 'physXAI/models/ann/configs/ann_model_configs.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-07-08-20-46.txt'.",
             "message-id": "F0002"
         },
         {
@@ -2644,7 +2644,7 @@
             "type": "error",
             "module": "physXAI.utils.seed",
             "obj": "",
-            "line": 14,
+            "line": 19,
             "column": 0,
             "path": "physXAI/utils/seed.py",
             "symbol": "import-error",
@@ -2655,7 +2655,7 @@
             "type": "warning",
             "module": "physXAI.utils.seed",
             "obj": "set_seed",
-            "line": 26,
+            "line": 38,
             "column": 4,
             "path": "physXAI/utils/seed.py",
             "symbol": "global-statement",
@@ -2666,7 +2666,18 @@
             "type": "error",
             "module": "physXAI.utils.seed",
             "obj": "set_seed",
-            "line": 33,
+            "line": 40,
+            "column": 8,
+            "path": "physXAI/utils/seed.py",
+            "symbol": "import-error",
+            "message": "Unable to import 'tensorflow'",
+            "message-id": "E0401"
+        },
+        {
+            "type": "error",
+            "module": "physXAI.utils.seed",
+            "obj": "set_seed",
+            "line": 50,
             "column": 4,
             "path": "physXAI/utils/seed.py",
             "symbol": "import-error",
@@ -3209,7 +3220,7 @@
             "column": 0,
             "path": "physXAI/preprocessing/splitting.py",
             "symbol": "astroid-error",
-            "message": "physXAI/preprocessing/splitting.py: Fatal error while checking 'physXAI/preprocessing/splitting.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-06-23-50-20.txt'.",
+            "message": "physXAI/preprocessing/splitting.py: Fatal error while checking 'physXAI/preprocessing/splitting.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-07-08-20-47.txt'.",
             "message-id": "F0002"
         },
         {
@@ -3231,7 +3242,7 @@
             "column": 0,
             "path": "physXAI/preprocessing/__init__.py",
             "symbol": "duplicate-code",
-            "message": "Similar lines in 2 files\n==physXAI.evaluation.comparison:[498:505]\n==physXAI.plotting.plotting:[163:170]\n                    )\n                )\n            fig.add_trace(\n                go.Scatter(\n                    x=x,\n                    y=median,\n                    mode=\"lines\",",
+            "message": "Similar lines in 2 files\n==physXAI.evaluation.comparison:[498:505]\n==physXAI.plotting.plotting:[163:170]\n                )\n            )\n        fig.add_trace(\n            go.Scatter(\n                x=x,\n                y=median,\n                mode=\"lines\",",
             "message-id": "R0801"
         },
         {
@@ -3649,11 +3660,11 @@
             },
             "physXAI.utils.seed": {
                 "convention": 0,
-                "error": 2,
+                "error": 3,
                 "fatal": 0,
                 "info": 0,
                 "refactor": 0,
-                "statement": 22,
+                "statement": 28,
                 "warning": 1
             },
             "physXAI.utils.__init__": {
@@ -3714,7 +3725,7 @@
         "by_msg": {
             "line-too-long": 19,
             "astroid-error": 7,
-            "import-error": 53,
+            "import-error": 54,
             "use-list-literal": 24,
             "use-dict-literal": 44,
             "missing-function-docstring": 85,
@@ -3746,43 +3757,43 @@
         },
         "dependencies": {
             "physXAI.utils.seed": [
-                "physXAI",
                 "physXAI.preprocessing.preprocessing",
-                "physXAI.expr.blocks"
+                "physXAI.expr.blocks",
+                "physXAI"
             ],
             "physXAI.io.run": [
-                "physXAI.models.ann.pinn.physics",
-                "physXAI",
                 "physXAI.io",
+                "physXAI.models.ann.pinn.physics",
+                "physXAI.evaluation.comparison",
                 "physXAI.models.models",
-                "physXAI.evaluation.comparison"
+                "physXAI"
             ],
             "physXAI.expr": [
-                "physXAI.models.modular.modular_ann",
-                "physXAI.models.ann.pinn.physics",
+                "physXAI.evaluation.rollout",
                 "physXAI.agentlib_mpc_plugin.example",
-                "physXAI.agentlib_mpc_plugin.example_ci",
+                "physXAI.models.ann.pinn.physics",
+                "physXAI.models.modular.modular_ann",
                 "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.preprocessing.preprocessing",
-                "physXAI.evaluation.rollout"
+                "physXAI.agentlib_mpc_plugin.example_ci"
             ],
             "physXAI.io": [
                 "physXAI.agentlib_mpc_plugin.example_ci",
                 "physXAI.agentlib_mpc_plugin.example"
             ],
             "physXAI.models.ann.ann_design": [
-                "physXAI.agentlib_mpc_plugin.example_ci",
                 "physXAI.models.modular.modular_ann",
-                "physXAI.agentlib_mpc_plugin.example",
-                "physXAI.models"
+                "physXAI.agentlib_mpc_plugin.example_ci",
+                "physXAI.models",
+                "physXAI.agentlib_mpc_plugin.example"
             ],
             "physXAI.preprocessing.preprocessing": [
-                "physXAI.agentlib_mpc_plugin.example",
-                "physXAI.agentlib_mpc_plugin.example_ci",
+                "physXAI.evaluation.rollout",
                 "physXAI.feature_selection.selection",
-                "physXAI.preprocessing.training_data",
+                "physXAI.agentlib_mpc_plugin.example",
                 "physXAI.evaluation.comparison",
-                "physXAI.evaluation.rollout"
+                "physXAI.preprocessing.training_data",
+                "physXAI.agentlib_mpc_plugin.example_ci"
             ],
             "physXAI.training.recursive": [
                 "physXAI.feature_selection.selection",
@@ -3797,41 +3808,41 @@
                 "physXAI.io"
             ],
             "physXAI.expr.core": [
-                "physXAI.models.modular.modular_ann",
+                "physXAI.evaluation.rollout",
                 "physXAI.models.ann.pinn.physics",
-                "physXAI.expr",
-                "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.expr.blocks",
-                "physXAI.expr.serialization",
-                "physXAI.evaluation.rollout"
+                "physXAI.expr",
+                "physXAI.models.modular.modular_ann",
+                "physXAI.models.ann.model_construction.rnn_models",
+                "physXAI.expr.serialization"
             ],
             "physXAI.preprocessing.splitting": [
-                "physXAI.preprocessing.training_data",
-                "physXAI.preprocessing.preprocessing",
+                "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.evaluation.rollout",
-                "physXAI.models.ann.model_construction.rnn_models"
+                "physXAI.preprocessing.preprocessing",
+                "physXAI.preprocessing.training_data"
             ],
             "physXAI.preprocessing.training_data": [
-                "physXAI.models.modular.modular_ann",
-                "physXAI.models.ann.model_construction.ann_models",
-                "physXAI.models.models",
-                "physXAI.models.ann.model_construction.residual_models",
-                "physXAI.evaluation.metrics",
-                "physXAI.preprocessing.preprocessing",
-                "physXAI.models.ann.model_construction.rbf_models",
+                "physXAI.evaluation.rollout",
                 "physXAI.plotting.plotting",
-                "physXAI.evaluation.rollout"
+                "physXAI.models.ann.model_construction.rbf_models",
+                "physXAI.models.ann.model_construction.ann_models",
+                "physXAI.models.modular.modular_ann",
+                "physXAI.models.models",
+                "physXAI.preprocessing.preprocessing",
+                "physXAI.evaluation.metrics",
+                "physXAI.models.ann.model_construction.residual_models"
             ],
             "physXAI.models.ann.keras_models.keras_models": [
-                "physXAI.models.ann.model_construction.ann_models",
-                "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.expr.blocks",
                 "physXAI.models.ann.model_construction.rbf_models",
+                "physXAI.models.ann.model_construction.ann_models",
+                "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.models"
             ],
             "physXAI.models.ann.model_construction.rbf_models": [
-                "physXAI.models.ann.model_construction.residual_models",
-                "physXAI.expr.blocks"
+                "physXAI.expr.blocks",
+                "physXAI.models.ann.model_construction.residual_models"
             ],
             "physXAI.expr.blocks": [
                 "physXAI.models.modular.modular_ann",
@@ -3843,8 +3854,8 @@
                 "physXAI.preprocessing.training_data"
             ],
             "physXAI.evaluation.metrics": [
-                "physXAI.models.models",
                 "physXAI.plotting.plotting",
+                "physXAI.models.models",
                 "physXAI.models.ann.model_construction.rnn_models"
             ],
             "physXAI.evaluation.rollout": [
@@ -3866,9 +3877,9 @@
                 "physXAI.models"
             ],
             "physXAI.models.ann.configs.ann_model_configs": [
+                "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.models.ann.model_construction.rbf_models",
-                "physXAI.models.ann.model_construction.ann_models",
-                "physXAI.models.ann.model_construction.rnn_models"
+                "physXAI.models.ann.model_construction.ann_models"
             ],
             "physXAI.preprocessing.windows": [
                 "physXAI.preprocessing.training_data"
@@ -3891,15 +3902,15 @@
             "module": 1
         },
         "convention": 123,
-        "error": 53,
+        "error": 54,
         "fatal": 7,
         "info": 0,
         "refactor": 81,
-        "statement": 3189,
+        "statement": 3195,
         "warning": 33,
         "global_note": 0,
         "nb_duplicated_lines": 17,
-        "percent_duplicated_lines": 0.1762388554841385
+        "percent_duplicated_lines": 0.17543859649122806
     },
     "previous": {
         "bad_names": {
@@ -4271,11 +4282,11 @@
             },
             "physXAI.utils.seed": {
                 "convention": 0,
-                "error": 2,
+                "error": 3,
                 "fatal": 0,
                 "info": 0,
                 "refactor": 0,
-                "statement": 22,
+                "statement": 28,
                 "warning": 1
             },
             "physXAI.utils.__init__": {
@@ -4336,7 +4347,7 @@
         "by_msg": {
             "line-too-long": 19,
             "astroid-error": 7,
-            "import-error": 53,
+            "import-error": 54,
             "use-list-literal": 24,
             "use-dict-literal": 44,
             "missing-function-docstring": 85,
@@ -4368,43 +4379,43 @@
         },
         "dependencies": {
             "physXAI.utils.seed": [
-                "physXAI",
                 "physXAI.preprocessing.preprocessing",
-                "physXAI.expr.blocks"
+                "physXAI.expr.blocks",
+                "physXAI"
             ],
             "physXAI.io.run": [
-                "physXAI.models.ann.pinn.physics",
-                "physXAI",
                 "physXAI.io",
+                "physXAI.models.ann.pinn.physics",
+                "physXAI.evaluation.comparison",
                 "physXAI.models.models",
-                "physXAI.evaluation.comparison"
+                "physXAI"
             ],
             "physXAI.expr": [
-                "physXAI.models.modular.modular_ann",
-                "physXAI.models.ann.pinn.physics",
+                "physXAI.evaluation.rollout",
                 "physXAI.agentlib_mpc_plugin.example",
-                "physXAI.agentlib_mpc_plugin.example_ci",
+                "physXAI.models.ann.pinn.physics",
+                "physXAI.models.modular.modular_ann",
                 "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.preprocessing.preprocessing",
-                "physXAI.evaluation.rollout"
+                "physXAI.agentlib_mpc_plugin.example_ci"
             ],
             "physXAI.io": [
                 "physXAI.agentlib_mpc_plugin.example_ci",
                 "physXAI.agentlib_mpc_plugin.example"
             ],
             "physXAI.models.ann.ann_design": [
-                "physXAI.agentlib_mpc_plugin.example_ci",
                 "physXAI.models.modular.modular_ann",
-                "physXAI.agentlib_mpc_plugin.example",
-                "physXAI.models"
+                "physXAI.agentlib_mpc_plugin.example_ci",
+                "physXAI.models",
+                "physXAI.agentlib_mpc_plugin.example"
             ],
             "physXAI.preprocessing.preprocessing": [
+                "physXAI.evaluation.rollout",
                 "physXAI.agentlib_mpc_plugin.example",
                 "physXAI.agentlib_mpc_plugin.example_ci",
-                "physXAI.feature_selection.selection",
                 "physXAI.preprocessing.training_data",
                 "physXAI.evaluation.comparison",
-                "physXAI.evaluation.rollout"
+                "physXAI.feature_selection.selection"
             ],
             "physXAI.training.recursive": [
                 "physXAI.feature_selection.selection",
@@ -4419,41 +4430,41 @@
                 "physXAI.io"
             ],
             "physXAI.expr.core": [
-                "physXAI.models.modular.modular_ann",
+                "physXAI.evaluation.rollout",
                 "physXAI.models.ann.pinn.physics",
-                "physXAI.expr",
-                "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.expr.blocks",
-                "physXAI.expr.serialization",
-                "physXAI.evaluation.rollout"
+                "physXAI.expr",
+                "physXAI.models.modular.modular_ann",
+                "physXAI.models.ann.model_construction.rnn_models",
+                "physXAI.expr.serialization"
             ],
             "physXAI.preprocessing.splitting": [
-                "physXAI.preprocessing.training_data",
-                "physXAI.preprocessing.preprocessing",
+                "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.evaluation.rollout",
-                "physXAI.models.ann.model_construction.rnn_models"
+                "physXAI.preprocessing.preprocessing",
+                "physXAI.preprocessing.training_data"
             ],
             "physXAI.preprocessing.training_data": [
-                "physXAI.models.modular.modular_ann",
-                "physXAI.models.ann.model_construction.ann_models",
-                "physXAI.models.models",
-                "physXAI.models.ann.model_construction.residual_models",
-                "physXAI.evaluation.metrics",
-                "physXAI.preprocessing.preprocessing",
-                "physXAI.models.ann.model_construction.rbf_models",
+                "physXAI.evaluation.rollout",
                 "physXAI.plotting.plotting",
-                "physXAI.evaluation.rollout"
+                "physXAI.models.ann.model_construction.rbf_models",
+                "physXAI.models.ann.model_construction.ann_models",
+                "physXAI.models.modular.modular_ann",
+                "physXAI.models.models",
+                "physXAI.preprocessing.preprocessing",
+                "physXAI.evaluation.metrics",
+                "physXAI.models.ann.model_construction.residual_models"
             ],
             "physXAI.models.ann.keras_models.keras_models": [
-                "physXAI.models.ann.model_construction.ann_models",
-                "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.expr.blocks",
                 "physXAI.models.ann.model_construction.rbf_models",
+                "physXAI.models.ann.model_construction.ann_models",
+                "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.models"
             ],
             "physXAI.models.ann.model_construction.rbf_models": [
-                "physXAI.models.ann.model_construction.residual_models",
-                "physXAI.expr.blocks"
+                "physXAI.expr.blocks",
+                "physXAI.models.ann.model_construction.residual_models"
             ],
             "physXAI.expr.blocks": [
                 "physXAI.models.modular.modular_ann",
@@ -4465,8 +4476,8 @@
                 "physXAI.preprocessing.training_data"
             ],
             "physXAI.evaluation.metrics": [
-                "physXAI.models.models",
                 "physXAI.plotting.plotting",
+                "physXAI.models.models",
                 "physXAI.models.ann.model_construction.rnn_models"
             ],
             "physXAI.evaluation.rollout": [
@@ -4488,9 +4499,9 @@
                 "physXAI.models"
             ],
             "physXAI.models.ann.configs.ann_model_configs": [
+                "physXAI.models.ann.model_construction.rnn_models",
                 "physXAI.models.ann.model_construction.rbf_models",
-                "physXAI.models.ann.model_construction.ann_models",
-                "physXAI.models.ann.model_construction.rnn_models"
+                "physXAI.models.ann.model_construction.ann_models"
             ],
             "physXAI.preprocessing.windows": [
                 "physXAI.preprocessing.training_data"
@@ -4513,14 +4524,14 @@
             "module": 1
         },
         "convention": 123,
-        "error": 53,
+        "error": 54,
         "fatal": 7,
         "info": 0,
         "refactor": 81,
-        "statement": 3189,
+        "statement": 3195,
         "warning": 33,
         "global_note": 0,
         "nb_duplicated_lines": 17,
-        "percent_duplicated_lines": 0.1762388554841385
+        "percent_duplicated_lines": 0.17543859649122806
     }
 }
