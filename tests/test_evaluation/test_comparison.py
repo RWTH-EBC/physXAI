@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from conftest import simulate_one_room
+from scipy import stats
 
 from physXAI import expr as px
 from physXAI.evaluation.comparison import ModelComparison, repeat_training
@@ -269,8 +270,30 @@ def test_paired_comparison_removes_the_spread_of_the_split():
     assert row["pairs"] == 6 and row["better"] == 1.0 and row["same_data"] == 1.0
     assert row["mean_difference"] == pytest.approx(-0.0195)
     assert row["ci_high"] < 0
-    assert row["p_value"] == pytest.approx(2 / 2**6)  # exact Wilcoxon: all six differences negative
+    # all runs of A on the same split (one fingerprint): no correction, the plain paired t-test
+    a = np.array(BASE)
+    b = a - 0.02 + 0.001 * (np.arange(6) % 2)
+    assert row["resampling"] == 0.0
+    assert row["p_value"] == pytest.approx(stats.ttest_rel(b, a).pvalue)
     assert ("|Bias T|", "B") in paired.index and ("R2 T", "B") in paired.index
+
+
+def test_paired_t_test_is_corrected_for_overlapping_splits():
+    """Different splits of the same data: the variance is var(d) * (1/n + n_test/n_train) (Nadeau & Bengio 2003)."""
+    records = list()
+    for i, r in enumerate(BASE):
+        for model, value in (("A", r), ("B", r - 0.02 + 0.004 * (i % 2))):
+            record = _record(model, f"{model}{i}", value, seed=i, fingerprint=f"split{i}")
+            record.training_data["summary"].update({"train": 0.8, "test": 0.1})
+            records.append(record)
+    corrected = ModelComparison(records).paired("A").loc[("RMSE T", "B")]
+    plain = ModelComparison(records).paired("A", corrected=False).loc[("RMSE T", "B")]
+    assert corrected["resampling"] == pytest.approx(0.125) and plain["resampling"] == 0.0
+    width = corrected["ci_high"] - corrected["ci_low"]
+    assert width == pytest.approx((plain["ci_high"] - plain["ci_low"]) * np.sqrt((1 / 6 + 0.125) / (1 / 6)))
+    assert corrected["p_value"] > plain["p_value"]
+    b = [r.training_data["metrics"]["by_output"]["T"]["test"]["rmse"] for r in records if r.model == "B"]
+    assert plain["p_value"] == pytest.approx(stats.ttest_rel(b, BASE).pvalue)
 
 
 def test_paired_directions_of_r2_and_bias():

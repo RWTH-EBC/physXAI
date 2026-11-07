@@ -5,6 +5,7 @@ import os
 import numpy as np
 from sklearn.linear_model import LinearRegression
 
+from physXAI.models.ann.model_construction.ann_models import output_scale
 from physXAI.models.ann.model_construction.rbf_models import RBFModelConstruction
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 
@@ -40,7 +41,7 @@ def LinResidualANNConstruction(config: dict, td: TrainingDataGeneric, lin_model:
 
     # Determine predictions of linear regression for rescaling
     y_train_pred = lin_model.predict(td.X_train_single)
-    config['rescale_sigma'] = float(np.std(td.y_train_single - y_train_pred, ddof=1))
+    config['rescale_sigma'] = output_scale(td.y_train_single - y_train_pred)
     config['rescale_mean'] = 0
 
     # Add linear regression as dense keras layer

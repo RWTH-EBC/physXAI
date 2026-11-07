@@ -16,7 +16,7 @@ Example:
     >>> repeat_training(file_path, prep, ClassicalANNModel(epochs=50), seeds=5, run=run, name="ann")
     >>> comparison = ModelComparison.load(run.path)  # one model per sub directory
     >>> comparison.summary()
-    >>> comparison.paired("linreg")  # run by run on the same splits: differences, confidence interval, p-value
+    >>> comparison.paired("linreg")  # run by run on the same splits: differences, corrected confidence interval, p-value
     >>> comparison.save(run, baseline="linreg")  # comparison.html and csv files
 
 With the same seeds and the same split settings, all models use the same splits of the data, so their runs can be
@@ -409,6 +409,7 @@ class ModelComparison:
         horizon: float | None = None,
         by: str = "auto",
         confidence: float = 0.95,
+        corrected: bool = True,
     ) -> pd.DataFrame:
         """
         Paired comparison of models with a baseline: the scores (see `scores`) are compared run by run on the same
@@ -424,6 +425,15 @@ class ModelComparison:
 
         Differences are model - baseline. RMSE and the absolute bias are better when lower, R2 when higher.
 
+        The runs are no independent samples: repeated splits of the same data share most of their training data, so a
+        plain paired t-test (or a Wilcoxon test) is too optimistic. Confidence interval and p-value are therefore
+        those of the corrected resampled t-test (Nadeau & Bengio 2003, Machine Learning 52, 239-281): the variance of
+        the mean difference is `var(d) * (1/n + n_test/n_train)` instead of `var(d) / n`. The ratio `n_test/n_train`
+        (`resampling`) is taken from the split summary of the runs (else from the split sizes of the preprocessing);
+        it is 0 if all runs of the baseline used the same split (`vary=('init',)`), then only the initialization
+        varies. Several scores and models are tested at once: correct the p-values for multiple testing (e.g. Holm)
+        before drawing conclusions from several of them.
+
         Args:
             baseline: Label of the reference model.
             models: Models to compare with the baseline. Defaults to all others.
@@ -431,13 +441,15 @@ class ModelComparison:
             horizon: End of the compared horizon (see `scores`).
             by: 'auto', 'split_seed' or 'run'.
             confidence: Level of the confidence interval of the mean difference.
+            corrected: Corrected resampled t-test (default). False gives the plain paired t-test, which assumes
+                       independent runs.
 
         Returns:
             pd.DataFrame: One row per (score, model) with the number of `pairs`, the medians of the `baseline` and the
-            `model`, the `mean_difference` with its confidence interval (`ci_low`, `ci_high`, Student t), the
-            `median_difference`, the share of pairs in which the model is `better`, the `p_value` of the two-sided
-            Wilcoxon signed rank test (needs at least 6 pairs to reach 0.05) and the share of pairs on the `same_data`
-            (NaN if unknown).
+            `model`, the `mean_difference` with its confidence interval (`ci_low`, `ci_high`), the
+            `median_difference`, the share of pairs in which the model is `better`, the two-sided `p_value` of the
+            (corrected) t-test, the `resampling` ratio n_test/n_train of the correction and the share of pairs on the
+            `same_data` (NaN if unknown).
         """
         from scipy import stats
 
@@ -456,6 +468,7 @@ class ModelComparison:
         rows = list()
         for model in others:
             pairs = self._pairs(baseline, model, by)
+            resampling = _resampling_ratio([records[(baseline, a)] for a, _ in pairs], split) if corrected else 0.0
             same = [_same_split(records[(baseline, a)], records[(model, b)], split) for a, b in pairs]
             known = [s for s in same if s is not None]
             same_data = float(np.mean(known)) if known else np.nan
@@ -481,22 +494,23 @@ class ModelComparison:
                 better = difference > 0 if column.startswith("R2 ") else difference < 0
                 n = len(difference)
                 mean = float(np.mean(difference))
+                ci, p_value = (np.nan, np.nan), np.nan
                 if n > 1:
-                    half = stats.t.ppf((1 + confidence) / 2, n - 1) * np.std(difference, ddof=1) / np.sqrt(n)
+                    se = float(np.std(difference, ddof=1)) * np.sqrt(1.0 / n + resampling)
+                    half = stats.t.ppf((1 + confidence) / 2, n - 1) * se
                     ci = (mean - half, mean + half)
-                else:
-                    ci = (np.nan, np.nan)
-                p_value = np.nan
-                if n > 1 and np.any(difference != 0):
-                    p_value = float(stats.wilcoxon(difference, zero_method="wilcox").pvalue)
+                    if se > 0:
+                        p_value = float(2 * stats.t.sf(abs(mean) / se, n - 1))
+                    elif mean != 0:
+                        p_value = 0.0  # the same difference on every split
                 rows.append({
                     "score": name, "model": model, "pairs": n, "baseline": float(np.median(a)),
                     "model_median": float(np.median(b)), "mean_difference": mean, "ci_low": ci[0], "ci_high": ci[1],
                     "median_difference": float(np.median(difference)), "better": float(np.mean(better)),
-                    "p_value": p_value, "same_data": same_data,
+                    "p_value": p_value, "resampling": resampling, "same_data": same_data,
                 })
         columns = ["score", "model", "pairs", "baseline", "model_median", "mean_difference", "ci_low", "ci_high",
-                   "median_difference", "better", "p_value", "same_data"]
+                   "median_difference", "better", "p_value", "resampling", "same_data"]
         return pd.DataFrame(rows, columns=columns).set_index(["score", "model"])
 
     def _pairs(self, baseline: str, model: str, by: str) -> list[tuple[str, str]]:
@@ -787,6 +801,31 @@ def _normalize(config: dict, preprocessing: dict | None = None) -> dict:
 
 def _split_seed(record: RunRecord):
     return (record.preprocessing or {}).get("random_state")
+
+
+def _resampling_ratio(records: list[RunRecord], split: str) -> float:
+    """
+    Ratio n_test / n_train of the corrected resampled t-test (`paired`): 0 if all runs used the same split, else from
+    the split summary of the runs or the split sizes of their preprocessing.
+    """
+    prints = [((r.training_data.get("summary") or {}).get("fingerprint") or {}).get(split) for r in records]
+    if None not in prints and len(set(prints)) == 1:
+        return 0.0
+    ratios = list()
+    for r in records:
+        summary, prep = r.training_data.get("summary") or {}, r.preprocessing or {}
+        if summary.get("train") and summary.get(split) is not None:
+            ratios.append(summary[split] / summary["train"])
+        elif prep.get("test_size") is not None and prep.get("val_size") is not None:
+            size = prep["val_size"] if split == "val" else prep["test_size"] if split == "test" else None
+            train = 1.0 - prep["test_size"] - prep["val_size"]
+            if size is not None and train > 0:
+                ratios.append(size / train)
+    if not ratios:
+        logger.warning("Paired comparison: the split sizes of the runs are unknown, the t-test is not corrected for "
+                       "the overlap of the splits (too optimistic).")
+        return 0.0
+    return float(np.mean(ratios))
 
 
 def _same_split(a: RunRecord, b: RunRecord, split: str) -> bool | None:

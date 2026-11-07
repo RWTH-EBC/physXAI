@@ -30,7 +30,8 @@ training and test data and overestimates the test performance. physXAI splits bl
   every split,
 - an embargo of `gap_steps` separates blocks of different splits, so no value of the data is part of a training
   and a test sample. The default is the reach of a sample into the past (lags, `Change(X)` = X(t) - X(t-1) and the
-  variables of derived `columns`) plus `shift`, plus the warmup of multi step data. The rows are taken from the
+  variables of derived `columns`) plus `shift`. The warmup of multi step sequences needs no embargo, it lies inside
+  the split of its sequence. The rows are taken from the
   training side, so validation and test blocks stay complete,
 - windows of multi step data never cross a split boundary.
 

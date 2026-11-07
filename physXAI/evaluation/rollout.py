@@ -7,8 +7,9 @@ of step t+1. This module performs exactly this rollout on windows of the measure
 
 - The recursive feature (e.g. 'T' for an output 'Change(T)') and its lags ('T_lag1', ...) are
   taken from the predicted trajectory, all other inputs from the data (they are known to the MPC).
-- Derived data columns depending on the recursive feature (e.g. a heat flow computed from 'T') are
-  recomputed in every step from their expressions. Expressions inside the model are recomputed
+- Inputs holding values of the recursive feature are recomputed in every step from the predicted
+  trajectory: its changes ('Change(T)'), derived data columns depending on it (e.g. a heat flow computed
+  from 'T'), their lags ('Q_lag1') and changes ('Change(Q)'). Expressions inside the model are recomputed
   anyway, since they are part of the keras model.
 - The rollout is a keras RNN around the (trained) step model. It is differentiable, so it can also
   be used to train a single step model on the multi step error (`physXAI.training.recursive`).
@@ -53,8 +54,8 @@ class RecursionSpec:
         columns: Columns of one step of the rollout: the inputs of the model plus the variables of
                  derived inputs which depend on the feature.
         derived: Inputs that are derived columns depending on the feature (recomputed every step).
-        expressions: Expression of every recomputed input in terms of `columns` (derived columns, changes of the
-                     feature 'Change(T)' = T - T_lag1 and their lags).
+        expressions: Expression of every recomputed input in terms of `columns` (changes of the feature
+                     'Change(T)' = T - T_lag1, derived columns, their lags and changes).
     """
 
     feature: str
@@ -85,14 +86,12 @@ def recursion_spec(td: TrainingData) -> RecursionSpec | None:
     difference = CHANGE_PATTERN.match(td.outputs[0]) is not None
 
     # inputs holding values of the feature, other than the feature and its lags, are recomputed in every step from
-    # the predicted history: derived columns of it and its changes ('Change(T)' = T - T_lag1), else the rollout would
-    # take them from the data (leakage of the measured trajectory)
+    # the predicted history: its changes ('Change(T)' = T - T_lag1), derived columns of it, their lags ('Q_lag1') and
+    # changes ('Change(Q)'), else the rollout would take them from the data (leakage of the measured trajectory)
     expressions = dict()
     for name in td.inputs:
-        if name in td.derived and depends_on(name, {feature}, td.derived):
-            expressions[name] = _in_history(td.derived[name], feature, td.derived)
-        elif _change_of(name, feature) is not None:
-            expressions[name] = _change_of(name, feature)
+        if _base_and_lag(name)[0] != feature and depends_on(name, {feature}, td.derived):
+            expressions[name] = _in_history(name, feature, td.derived)
     columns = list(td.inputs)
     for expression in expressions.values():
         columns.extend(v for v in expression.free_vars() if v not in columns)
@@ -102,8 +101,10 @@ def recursion_spec(td: TrainingData) -> RecursionSpec | None:
     if feature not in td.all_columns:
         logger.info("Recursive evaluation skipped: the data holds no column '%s'.", feature)
         return None
-    # lags of the feature come from the predicted history, they do not have to be columns of the data
-    missing = [c for c in columns if c not in td.all_columns and _base_and_lag(c)[0] != feature]
+    # lags of the feature come from the predicted history, lags of other columns from the data shifted by the lag
+    # (e.g. 'mDot_lag1' in the history of 'Q_lag1'), they do not have to be columns of the data
+    missing = [c for c in columns if c not in td.all_columns and _base_and_lag(c)[0] != feature
+               and _base_and_lag(c)[0] not in td.all_columns]
     if missing:
         logger.info("Recursive evaluation skipped: the data holds no columns %s.", missing)
         return None
@@ -111,34 +112,25 @@ def recursion_spec(td: TrainingData) -> RecursionSpec | None:
     return RecursionSpec(feature, difference, max(lags), columns, derived, expressions)
 
 
-def _lagged(feature: str, lag: int) -> str:
-    return feature if lag == 0 else f"{feature}_lag{lag}"
-
-
-def _change_of(name: str, feature: str):
-    """'Change(T)' -> T - T_lag1, 'Change(T_lag2)' and 'Change(T)_lag2' -> T_lag2 - T_lag3; None for other columns."""
+def _in_history(name: str, feature: str, derived: dict):
+    """
+    A column written in the history of the rollout: the feature and its lags are history slots, changes become
+    differences ('Change(T)_lag2' -> T_lag2 - T_lag3), derived columns their expressions ('Q_lag1' -> the expression
+    of Q one step in the past), recursively. Columns independent of the feature stay data columns.
+    """
     from physXAI.expr import Var
 
-    outer, outer_lag = _base_and_lag(name)
-    change = CHANGE_PATTERN.match(outer)
-    if change is None:
-        return None
-    base, lag = _base_and_lag(change.group(1).strip())
-    if base != feature:
-        return None
-    lag += outer_lag
-    return Var(_lagged(feature, lag)) - Var(_lagged(feature, lag + 1))
-
-
-def _in_history(expression, feature: str, derived: dict):
-    """A derived expression with its changes of the feature and nested derived columns written in the history."""
-    mapping = dict()
-    for v in expression.free_vars():
-        if _change_of(v, feature) is not None:
-            mapping[v] = _change_of(v, feature)
-        elif v in derived and depends_on(v, {feature}, derived):
-            mapping[v] = _in_history(derived[v], feature, derived)
-    return expression.substitute(mapping) if mapping else expression
+    base, lag = _base_and_lag(name)
+    if base == feature or not depends_on(name, {feature}, derived):
+        return Var(name)
+    change = CHANGE_PATTERN.match(base)
+    if change is not None:
+        inner = _in_history(change.group(1).strip(), feature, derived)
+        expression = inner - inner.lag(1)
+    else:
+        mapping = {v: _in_history(v, feature, derived) for v in derived[base].free_vars()}
+        expression = derived[base].substitute(mapping)
+    return expression.lag(lag)
 
 
 def as_keras_step_model(model, n_inputs: int) -> keras.Model:
@@ -235,7 +227,10 @@ def rollout_data(td: TrainingData, spec: RecursionSpec, split: str, horizon: int
                None if the split holds no window.
     """
     starts = td.window_starts(split, horizon, stride)
-    starts = starts[starts >= spec.max_lag]
+    # lagged data columns which are no columns of the data are the data shifted by their lag
+    shifted = {c: _base_and_lag(c) for c in spec.columns
+               if c not in td.all_columns and _base_and_lag(c)[0] != spec.feature}
+    starts = starts[starts >= max([spec.max_lag, *(lag for _, lag in shifted.values())])]
     feature = td.column(spec.feature)
     history = np.stack([feature[starts - k] for k in range(spec.max_lag + 1)], axis=1)
     keep = np.all(np.isfinite(history), axis=1)
@@ -248,6 +243,9 @@ def rollout_data(td: TrainingData, spec: RecursionSpec, split: str, horizon: int
     for j, column in enumerate(spec.columns):
         if column in td.all_columns:
             rows[:, :, j] = td.column(column)[window]
+        elif column in shifted:
+            base, lag = shifted[column]
+            rows[:, :, j] = td.column(base)[window - lag]
     target = td.column(td.targets[0])[window]
     truth = history[:, :1] + np.cumsum(target, axis=1) if spec.difference else target
     return rows.astype("float32"), history.astype("float32"), truth[..., None].astype("float32")

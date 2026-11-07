@@ -229,3 +229,29 @@ def test_parameter_names_survive_saving(td, tmp_path):
 def test_linear_regression_is_fitted_in_float64(td):
     model = LinearRegressionModel().pipeline(td, plot=False, save_model=False)
     assert model.coef_.dtype == np.float64
+
+
+def test_cmnn_without_monotonicities_is_not_convex(one_room_csv):
+    """
+    Regression: without monotonicities the CMNN (and the PINN built on it) had convex neurons only, which with the
+    non negative weights of the following layers made the prediction convex in all inputs.
+    """
+
+    from physXAI.models import CMNNModel
+    from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
+
+    td = PreprocessingSingleStep(inputs=["mDot", "load", "T"], output="Change(T)", random_state=0,
+                                 csv_delimiter=",").pipeline(one_room_csv)
+    model = CMNNModel(n_neurons=12, epochs=1, random_seed=0).generate_model(td=td)
+    activations = {type(layer.activation).__name__ for layer in model.layers if hasattr(layer, "activation")}
+    assert {"ConcaveActivation", "SaturatedActivation"} <= activations
+
+
+def test_constant_target_keeps_a_unit_output_scale():
+    """A constant target has no spread: the output rescaling keeps the scale 1 instead of 0 (constant model)."""
+    import numpy as np
+
+    from physXAI.models.ann.model_construction.ann_models import output_scale
+
+    assert output_scale(np.full((10, 1), 3.0)) == 1.0
+    assert output_scale(np.array([[1.0], [3.0]])) == pytest.approx(np.sqrt(2.0))

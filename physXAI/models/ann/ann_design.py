@@ -501,7 +501,9 @@ class CMNNModel(ANNModel):
             monotonies (dict[str, int]): Dictionary mapping feature names to monotonicity type
                                          (-1 for decreasing, 0 for no constraint, 1 for increasing).
             activation_split (list[float]): Proportions for splitting neurons into convex,
-                                            concave, and saturated activation paths. E.g., [0.5, 0.25, 0.25].
+                                            concave, and saturated activation paths, e.g. [0.5, 0.25, 0.25].
+                                            Defaults to equal shares [1, 1, 1]: with convex neurons only, the
+                                            prediction would be convex in all inputs.
             batch_size (int): Number of samples per gradient update.
             epochs (int): Number of times to iterate over the entire training dataset.
             learning_rate (float): Learning rate for the Adam optimizer.
@@ -592,7 +594,9 @@ class PINNModel(ANNModel):
             monotonies (dict[str, int]): Dictionary mapping feature names to monotonicity type
                                          (-1 for decreasing, 0 for no constraint, 1 for increasing).
             activation_split (list[float]): Proportions for splitting neurons into convex,
-                                            concave, and saturated activation paths. E.g., [0.5, 0.25, 0.25].
+                                            concave, and saturated activation paths, e.g. [0.5, 0.25, 0.25].
+                                            Defaults to equal shares [1, 1, 1]: with convex neurons only, the
+                                            prediction would be convex in all inputs.
             normalize_terms (bool): Divide all terms of the loss by the variance of the training targets.
             early_stopping_on (str): 'data' (validation data loss, default) or 'total' (validation loss
                                      including the weighted physics terms).

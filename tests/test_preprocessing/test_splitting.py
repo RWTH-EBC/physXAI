@@ -163,3 +163,32 @@ def test_embargo_covers_changes_and_derived_columns(one_room_csv, kwargs, gap):
         values_a = set((rows_a[:, None] + np.arange(-reach, 2)[None, :]).ravel())
         values_b = set((rows_b[:, None] + np.arange(-reach, 2)[None, :]).ravel())
         assert not values_a & values_b
+
+
+def test_split_settings_next_to_a_block_split_are_rejected():
+    """Regression: test_size, val_size, block_length and gap_steps next to a BlockSplit were ignored silently."""
+    from physXAI.preprocessing.preprocessing import PreprocessingData, PreprocessingSingleStep
+
+    split = BlockSplit(test_size=0.2, val_size=0.1, block_length=24)
+    with pytest.raises(ValueError, match="test_size"):
+        PreprocessingSingleStep(inputs=["mDot", "T"], output="Change(T)", split=split, test_size=0.3)
+    with pytest.raises(ValueError, match="gap_steps"):
+        PreprocessingSingleStep(inputs=["mDot", "T"], output="Change(T)", split=split, gap_steps=5)
+    # the same values and the config round trip are fine
+    prep = PreprocessingSingleStep(inputs=["mDot", "T"], output="Change(T)", split=split, test_size=0.2)
+    copy = PreprocessingData.from_config(prep.get_config())
+    assert copy.split.get_config() == split.get_config() and copy.test_size == 0.2
+
+
+def test_multi_step_embargo_without_warmup(one_room_csv):
+    """The warmup lies inside the split of its sequence: the embargo is the reach of a sample plus the shift."""
+    from physXAI.preprocessing.preprocessing import PreprocessingMultiStep
+
+    prep = PreprocessingMultiStep(inputs=["mDot", "load", "T"], output="Change(T)", label_width=6, warmup_width=8,
+                                  random_state=0, csv_delimiter=",")
+    td = prep.pipeline(one_room_csv)
+    assert prep._default_gap() == 1
+    # no row is part of a training and a test sequence
+    length = td.warmup_width + td.label_width
+    rows = {s: set((td.series.window_starts(s, length)[:, None] + np.arange(length + 1)).ravel()) for s in ("train", "test")}
+    assert not rows["train"] & rows["test"]

@@ -169,6 +169,24 @@ def depends_on(name: str, features: set[str], columns: dict | None = None, _seen
     return base in features
 
 
+def holds_current_value(name: str, features: set[str], columns: dict | None = None, _seen: frozenset = frozenset()) -> bool:
+    """
+    Whether a column holds the value of one of `features` at its own time step (lag 0): the feature itself, its change
+    ('Change(T)' = T - T_lag1) and derived columns of them, also nested ('Change(Q)' with Q of T). Lagged columns
+    ('T_lag1', 'Q_lag1') only hold past values.
+    """
+    columns = columns or {}
+    base, lag = _split_lag(name)
+    if lag > 0:
+        return False
+    change = CHANGE_PATTERN.match(base)
+    if change:
+        return holds_current_value(change.group(1).strip(), features, columns, _seen)
+    if base in columns and base not in _seen:
+        return any(holds_current_value(v, features, columns, _seen | {base}) for v in columns[base].free_vars())
+    return base in features
+
+
 def check_multi_step_inputs(inputs: list[str], outputs: list[str], columns: dict | None = None) -> None:
     """
     Inputs of a multi step (recurrent) model must not hold measured values of a predicted feature over the horizon:
@@ -217,13 +235,15 @@ class PreprocessingData(ABC):
                    (point sampling, logged as a warning). Quantities over an interval (power, energy) have to
                    be resampled before (e.g. averaged with `pandas.DataFrame.resample`). Defaults to the
                    sampling time of the data.
-        test_size: Fraction of the data used for testing.
-        val_size: Fraction of the data used for validation.
+        test_size: Fraction of the data used for testing (default 0.1).
+        val_size: Fraction of the data used for validation (default 0.1).
         random_state: Seed of the split. Defaults to the global seed (`physXAI.set_seed`), else a
                       new seed is drawn. The used seed is stored in the config.
-        split: Split strategy ('blocks', 'holdout_end', 'random_rows') or a `BlockSplit`.
+        split: Split strategy ('blocks', 'holdout_end', 'random_rows') or a `BlockSplit`, which then holds the sizes,
+               the block length and the embargo (different `test_size`, `val_size`, `block_length` or `gap_steps`
+               next to it raise a `ValueError`).
         block_length: Block length of the split in steps or as time delta string ('7D').
-        gap_steps: Embargo between splits in steps. Defaults to the maximum lag + shift.
+        gap_steps: Embargo between splits in steps. Defaults to the reach of a sample into the past + shift.
         time_index_col: Name or index of the time column of the csv file.
         csv_delimiter: Delimiter of the csv file (`pandas.read_csv`).
         csv_encoding: Encoding of the csv file.
@@ -247,8 +267,8 @@ class PreprocessingData(ABC):
         columns: dict | None = None,
         shift: int = 1,
         time_step: float | None = None,
-        test_size: float = 0.1,
-        val_size: float = 0.1,
+        test_size: float | None = None,
+        val_size: float | None = None,
         random_state: int | None = None,
         split: str | BlockSplit | dict = "blocks",
         block_length: int | str | None = None,
@@ -283,8 +303,16 @@ class PreprocessingData(ABC):
 
         if isinstance(split, dict):
             split = BlockSplit.from_config(split)
-        elif isinstance(split, str):
-            split = BlockSplit(test_size, val_size, strategy=split, block_length=block_length, gap_steps=gap_steps)
+        if isinstance(split, str):
+            split = BlockSplit(0.1 if test_size is None else test_size, 0.1 if val_size is None else val_size,
+                               strategy=split, block_length=block_length, gap_steps=gap_steps)
+        else:
+            # settings of the split given next to a BlockSplit would be ignored: they belong into the BlockSplit
+            given = {"test_size": test_size, "val_size": val_size, "block_length": block_length, "gap_steps": gap_steps}
+            conflicts = {k: v for k, v in given.items() if v is not None and v != getattr(split, k)}
+            if conflicts:
+                raise ValueError(f"{sorted(conflicts)} differ from the given BlockSplit {split.get_config()}; set them "
+                                 "in the BlockSplit.")
         self.split: BlockSplit = split
 
         self.time_index_col = time_index_col
@@ -502,12 +530,7 @@ class PreprocessingData(ABC):
         if changes:
             raise ValueError(f"Outputs {changes} are changes to the next step and need shift=1.")
         features = {output_feature(o) for o in self.output}
-        leaks = [name for name in self.inputs if name in features or output_feature(name) in features]
-        leaks += [
-            name
-            for name in self.inputs
-            if name in self.columns and features & set(self.columns[name].free_vars())
-        ]
+        leaks = [name for name in self.inputs if holds_current_value(name, features, self.columns)]
         if leaks:
             raise ValueError(
                 f"With shift=0 the outputs {sorted(features)} are predicted at the time of the inputs, so the inputs "
@@ -718,9 +741,6 @@ class PreprocessingMultiStep(PreprocessingData):
     def _window_length(self) -> int:
         steps = self._steps()
         return steps["warmup"] + max(steps["label"], steps["horizon"]) + self.shift
-
-    def _default_gap(self) -> int:
-        return super()._default_gap() + self._steps()["warmup"]
 
     def pipeline(self, file_path: str | Path, model=None) -> TrainingDataMultiStep:
         """
