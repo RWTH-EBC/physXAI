@@ -77,7 +77,7 @@ Every other branch gets its own preview after a push: `https://rwth-ebc.github.i
    `verify_examples.yml` (marked with a comment).
 4. **Optional, required status checks for `main`** (*Settings → Branches*; currently none are required): useful are
    `ci / tests / test (3.11)` … `(3.13)`, `tests (3.11)` … `(3.13)` (Windows, with the required AgentLib-MPC contract
-   tests), `tested-versions (ubuntu-latest)`, `tested-versions (windows-latest)`, `lint`, `docs`,
+   tests), `tested-versions (ubuntu-latest, 3.11)` … `(windows-latest, 3.13)`, `lint`, `docs`,
    `verify-installation (ubuntu-latest)` and `verify-installation (windows-latest)`. Not `examples (...)` (only runs
    when the package, the examples or the data change) and not the report jobs of the template (coverage, pylint, ruff), which never fail.
 
