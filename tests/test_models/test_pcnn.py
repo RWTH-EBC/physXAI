@@ -150,3 +150,19 @@ def test_initial_rates_from_the_data(data, caplog):
     m = PCNNModel(heating={"mDot": None}, losses={"T_in": 0.5}, rnn_units=4, epochs=1, early_stopping_epochs=None)
     assert m.initial_rates(td)["mDot"] > 0
     assert "no positive effect of 'mDot'" in caplog.text
+
+
+def test_estimated_rates_are_not_taken_from_another_series(csv):
+    """Regression: the cache of the estimated initial rates belongs to one series object (not to a reused id)."""
+    import pickle
+
+    m = PCNNModel(heating={"load": None}, losses={"T_in": None})
+    first = PreprocessingMultiStep(inputs=INPUTS, output=px.Change("T"), label_width=LABEL, warmup_width=WARMUP,
+                                   random_state=0).pipeline(csv)
+    rates = m.initial_rates(first)
+    m._estimated = (m._estimated[0], {k: 123.0 for k in rates})  # mark the cache
+    assert m.initial_rates(first)["load"] == 123.0
+    second = PreprocessingMultiStep(inputs=INPUTS, output=px.Change("T"), label_width=LABEL, warmup_width=WARMUP,
+                                    random_state=5).pipeline(csv)
+    assert m.initial_rates(second)["load"] != 123.0
+    assert pickle.loads(pickle.dumps(m))._estimated is None

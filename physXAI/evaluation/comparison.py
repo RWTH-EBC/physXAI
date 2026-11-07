@@ -74,13 +74,13 @@ def repeat_training(
     Args:
         file_path: Path to the data.
         preprocessing: The preprocessing. It is not changed, every run uses a copy from its config.
-        model: The physXAI model. It is not changed, every run uses a copy.
+        model: The physXAI model. It is not changed, every run uses a new model created from its config.
         seeds: Number of runs (seeds 0, 1, ...) or the seeds. Use the same seeds for all compared models,
                then they are trained and tested on the same splits.
         run: Optional `Run`. Every run is saved into `<run>/<name>/seed_<seed>/` with `Run.save`.
         name: Name of the model (label in the comparison and name of the saved files).
         vary: What the seed changes: 'split' (the random split of the data) and / or 'init'
-              (initialization of the weights and order of the batches).
+              (initialization of the weights, order of the batches and seeds of blocks such as `px.RBF`).
         plot: Whether to save the report of every run (with `run`).
 
     Returns:
@@ -95,9 +95,7 @@ def repeat_training(
     comparison = ModelComparison()
     for seed in seeds:
         prep = _preprocessing_with_seed(preprocessing, seed if "split" in vary else None)
-        m = copy.copy(model)
-        if "init" in vary and hasattr(m, "random_seed"):
-            m.random_seed = seed
+        m = _model_with_seed(model, seed if "init" in vary else None)
         logger.info("Training '%s' with seed %s", name, seed)
         td = prep.pipeline(file_path, model=m)  # inputs from the model, if the preprocessing has none
         m.pipeline(td, plot=False, save_model=False)
@@ -109,6 +107,42 @@ def repeat_training(
             sub.save(name, prep, m, td, plot=plot)
         comparison.add(name, td, run=run_name, model=m, preprocessing=prep)
     return comparison
+
+
+def _model_with_seed(model, seed: int | None):
+    """
+    A new, untrained model from the config of `model`, so runs share no state (e.g. the weights of a trainable
+    `px.Pretrained` block). With a seed, it replaces the seed of the weights and the batch order and the seeds of the
+    blocks of expressions (k-means of `px.RBF`).
+    """
+    from physXAI.models.models import AbstractModel
+
+    try:
+        config = copy.deepcopy(model.get_config())
+    except ValueError as e:  # e.g. a Pretrained block holding a model object instead of a path
+        logger.warning("The model is copied instead of created from its config (%s): runs may share state.", e)
+        m = copy.copy(model)
+        if seed is not None and hasattr(m, "random_seed"):
+            m.random_seed = seed
+        return m
+    if seed is not None:
+        if "random_seed" in config:
+            config["random_seed"] = seed
+        _seed_expressions(config, seed)
+    return AbstractModel.model_from_config(config)
+
+
+def _seed_expressions(config, seed: int) -> None:
+    """Sets `random_state` of all nodes of serialized expressions (`physXAI.expr.to_config`) inside a config."""
+    if isinstance(config, dict):
+        for node in config.get("nodes", []) if isinstance(config.get("nodes"), list) else []:
+            if isinstance(node, dict) and "random_state" in node.get("params", {}):
+                node["params"]["random_state"] = seed
+        for value in config.values():
+            _seed_expressions(value, seed)
+    elif isinstance(config, list):
+        for value in config:
+            _seed_expressions(value, seed)
 
 
 def _preprocessing_with_seed(preprocessing, seed: int | None):

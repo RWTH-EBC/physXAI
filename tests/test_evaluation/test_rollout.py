@@ -163,3 +163,45 @@ def test_multi_step_training_needs_feedback(csv):
     td = PreprocessingSingleStep(inputs=["mDot", "load"], output="T_in").pipeline(csv)
     with pytest.raises(ValueError, match="predicts one of its own inputs"):
         m.pipeline(td, plot=False, save_model=False)
+
+
+def _hand_rollout(model, rows, history, columns, change_columns, n_inputs):
+    """Recursion by hand: T and the changes of T (T - T_lag1) are taken from the predicted trajectory."""
+    T, T_prev, expected = history[0], history[1], []
+    for k in range(rows.shape[0]):
+        x = rows[k].astype(np.float64).copy()
+        x[columns.index("T")] = T
+        for c in change_columns:
+            x[columns.index(c)] = T - T_prev
+        T_prev, T = T, T + model.predict(x[None, :n_inputs]).item()
+        expected.append(T)
+    return np.array(expected)
+
+
+def test_changes_of_the_feature_are_recomputed(csv):
+    """Regression: an input Change(T) = T - T_lag1 is computed from the predicted trajectory, not taken from the data."""
+    inputs = ["mDot", "load", "T_in", "Change(T)", "T"]
+    td = PreprocessingSingleStep(inputs=inputs, output="Change(T)", eval_horizon=HORIZON, random_state=0).pipeline(csv)
+    model = LinearRegressionModel().pipeline(td, plot=False, save_model=False)
+    spec = recursion_spec(td)
+    assert spec.max_lag == 1 and "Change(T)" in spec.expressions
+    model.intercept_ = model.intercept_ + 0.02  # a drift the measured Change(T) would hide
+    model.coef_[0, inputs.index("Change(T)")] = 0.5
+    evaluate_horizon(model, td)
+    prediction, _ = td.horizon_predictions["test"]
+    rows, history, _ = rollout_data(td, spec, "test", HORIZON)
+    expected = _hand_rollout(model, rows[0], history[0], spec.columns, ["Change(T)"], len(inputs))
+    np.testing.assert_allclose(prediction[0, :, 0], expected, rtol=1e-5)
+
+
+def test_change_inside_derived_column_and_without_the_feature(csv):
+    """A derived column of Change(T), and a model with Change(T) but without T as input, are rolled out as well."""
+    v = px.Vars()
+    prep = PreprocessingSingleStep(inputs=["mDot", "load", "dTx"], output="Change(T)", eval_horizon=HORIZON,
+                                   columns={"dTx": v.mDot * v["Change(T)"]}, random_state=0)
+    td = prep.pipeline(csv)
+    LinearRegressionModel().pipeline(td, plot=False, save_model=False)
+    spec = recursion_spec(td)
+    assert spec is not None and spec.derived == ["dTx"] and spec.max_lag == 1
+    assert {"T", "T_lag1"} <= set(spec.expressions["dTx"].free_vars())
+    assert td.horizon_metrics is not None

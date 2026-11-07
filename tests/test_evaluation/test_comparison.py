@@ -229,3 +229,20 @@ def test_command_line(tmp_path, saved, capsys):
     assert (tmp_path / "out" / "comparison.html").exists()
     assert "RMSE Change(T)" in capsys.readouterr().out
     assert main([str(run.path), "--out", str(tmp_path / "out2")]).models == ["ann", "linreg"]
+
+
+def test_runs_share_no_state_and_vary_block_seeds(csv):
+    """Every run gets a new model from the config; the init seed also seeds the k-means of RBF blocks."""
+    from physXAI.evaluation.comparison import _model_with_seed
+    from physXAI.models import ModularANN
+
+    v = px.Vars()
+    model = ModularANN(px.Linear([px.RBF([v.mDot, v.T], units=3, random_state=11), v.T], normalize=True),
+                       epochs=1, random_seed=11)
+    copies = [_model_with_seed(model, seed) for seed in (0, 1)]
+    assert all(c is not model and c.architecture is not model.architecture for c in copies)
+    rbf = [c.architecture.inputs[0] for c in copies]
+    assert [r.random_state for r in rbf] == [0, 1] and [c.random_seed for c in copies] == [0, 1]
+    assert model.random_seed == 11 and model.architecture.inputs[0].random_state == 11
+    unchanged = _model_with_seed(model, None)
+    assert unchanged.random_seed == 11 and unchanged.architecture.inputs[0].random_state == 11

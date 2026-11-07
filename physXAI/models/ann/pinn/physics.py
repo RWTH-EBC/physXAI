@@ -129,6 +129,12 @@ class PhysicsResidual:
         blocks = [node.name for node in nodes if node.has_weights and not isinstance(node, Param)]
         if blocks:
             raise ValueError(f"Physics residuals can only train parameters (px.Param), not blocks: {blocks}.")
+        names = [node.name for node in nodes if isinstance(node, Param)]
+        duplicates = sorted({n for n in names if names.count(n) > 1})
+        if duplicates:
+            # parameters are calibrated, reported and frozen by name
+            raise ValueError(f"The parameters of a physics residual need unique names, {duplicates} are used several "
+                             "times: px.Param(..., name='...') or px.positive(value, name).")
         if weight < 0:
             raise ValueError("The weight of a physics residual must not be negative.")
         self.residual = residual
@@ -235,8 +241,8 @@ def calibrate_least_squares(physics: PhysicsResidual, td, scale: float = 1.0) ->
         return None
     step = ca.Function("r", [x, y, theta], [r, ca.jacobian(r, theta)])
 
-    X = np.asarray(td.values("train", columns), dtype=np.float64)
-    Y = np.asarray(td.y_train_single[:, 0], dtype=np.float64)
+    X = td.values("train", columns, dtype=np.float64)
+    Y = td.y("train", dtype=np.float64)[:, 0]
     finite = np.all(np.isfinite(X), axis=1) & np.isfinite(Y)
     X, Y = X[finite], Y[finite]
     mapped = step.map(len(Y))
@@ -329,7 +335,8 @@ def fit_with_physics(model, td, settings, physics: PhysicsResidual, mode: str = 
     def dataset(d, shuffle):
         ds = tf.data.Dataset.from_tensor_slices(d)
         if shuffle:
-            ds = ds.shuffle(min(10000, len(d[1])), seed=settings.random_seed, reshuffle_each_iteration=True)
+            # all samples in the buffer: they are ordered in time
+            ds = ds.shuffle(len(d[1]), seed=settings.random_seed, reshuffle_each_iteration=True)
         return ds.batch(settings.batch_size).prefetch(tf.data.AUTOTUNE)
 
     def fit(loss, learning_rate, monitor):

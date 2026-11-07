@@ -9,6 +9,7 @@ can additionally be trained on the multi step error (`recursive_training`) and w
 import logging
 import os
 import time
+import weakref
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Union
 
@@ -34,8 +35,14 @@ from physXAI.models.ann.model_construction.rnn_models import (
     sequence_inputs,
 )
 from physXAI.models.ann.pinn.physics import PhysicsLoss, PhysicsResidual, fit_with_physics, physics_metrics
-from physXAI.models.models import LinearRegressionModel, MultiStepModel, SingleStepModel, register_model
-from physXAI.preprocessing.preprocessing import TARGET_PREFIX
+from physXAI.models.models import (
+    LinearRegressionModel,
+    MultiStepModel,
+    SingleStepModel,
+    register_model,
+    train_data_float64,
+)
+from physXAI.preprocessing.preprocessing import TARGET_PREFIX, check_multi_step_inputs
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneric, TrainingDataMultiStep
 from physXAI.training.recursive import step_weights, weighted_step_loss
 from physXAI.utils.seed import resolve_seed
@@ -218,7 +225,9 @@ class ANNModel(SingleStepModel, ABC):
         train_ds = (
             train_ds
             .cache()                                                                     # 1. Cache first so data is not reloaded, may need to be removed for large datasets
-            .shuffle(buffer_size=min(10000, train[0].shape[0]), reshuffle_each_iteration=True)  # 2. Shuffle randomly every epoch
+            # 2. Shuffle randomly every epoch. The buffer holds all samples: the samples are ordered in time, a smaller
+            #    buffer would fill every batch with neighbouring time steps only.
+            .shuffle(buffer_size=train[0].shape[0], reshuffle_each_iteration=True)
             .batch(self.batch_size)                                                      # 3. Group into batches
             .prefetch(buffer_size=tf.data.AUTOTUNE)                                      # 4. Prepare next batch in background
         )
@@ -398,7 +407,7 @@ class LinANNModel(ANNModel):
 
         # Fit the linear regression (only fitted: its evaluation would overwrite the results in td)
         lr_model = LinearRegressionModel().generate_model()
-        lr_model.fit(td.X_train_single, td.y_train_single)
+        lr_model.fit(*train_data_float64(td))
 
         # Construct residual model (the k-means seed is the seed of the model, also if it changed after __init__)
         config = {**self.model_config, "random_state": self.random_seed % 2**32}
@@ -799,6 +808,7 @@ class RNNModel(MultiStepModel):
         keras.utils.set_random_seed(self.random_seed % 2**32)
 
     def _spec(self, td: TrainingDataMultiStep) -> SequenceSpec:
+        check_multi_step_inputs(td.inputs, td.outputs, td.series.derived)
         spec = SequenceSpec.from_training_data(td)
         if spec.feedback and not spec.absolute:
             missing = [f for f in td.features if f not in td.series.all_columns]
@@ -997,7 +1007,9 @@ class PCNNModel(RNNModel):
             raise ValueError("PCNNModel needs at least one term: heating, cooling or losses.")
         if any(rate is not None and rate <= 0 for rate in rates.values()):
             raise ValueError(f"The initial rates have to be positive (or None: from the data), got {rates}.")
-        self._estimated: tuple[int, dict[str, float]] | None = None  # (id of the series, rates per hour)
+        # (weak reference to the series, rates per hour): ids of objects are reused after their deletion, a weak
+        # reference cannot point to another series
+        self._estimated: tuple[weakref.ref, dict[str, float]] | None = None
         names = [*self.heating, *self.cooling, *self.losses]
         if len(set(names)) != len(names):
             raise ValueError(f"Every input can only be part of one term, got {names}.")
@@ -1031,7 +1043,7 @@ class PCNNModel(RNNModel):
         fixed = {k: v for k, v in given.items() if v is not None}
         if len(fixed) == len(given):
             return fixed
-        if self._estimated is not None and self._estimated[0] == id(td.series):
+        if self._estimated is not None and self._estimated[0]() is td.series:
             return {**self._estimated[1], **fixed}
         from physXAI.models.modular.shape_constraints import constrained_least_squares
         from physXAI.preprocessing.windows import gather_windows
@@ -1064,10 +1076,14 @@ class PCNNModel(RNNModel):
                 logger.warning("PCNN: the training data show no positive effect of '%s' (estimated %.3g per step), "
                                "it starts at the weak rate %.3g per step.", name, weights[k], floor)
             estimated[name] = max(float(weights[k]), floor) / hours
-        self._estimated = (id(td.series), estimated)
+        self._estimated = (weakref.ref(td.series), estimated)
         logger.info("PCNN initial rates estimated from the training data (per hour): %s",
                     {k: v for k, v in estimated.items() if given[k] is None})
         return {**estimated, **fixed}
+
+    def __getstate__(self):
+        # weak references cannot be pickled, the estimate is a cache only
+        return {**self.__dict__, "_estimated": None}
 
     def _check_training_data(self, td: TrainingDataGeneric):
         super()._check_training_data(td)

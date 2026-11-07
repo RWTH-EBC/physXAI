@@ -138,3 +138,11 @@ def test_calibration_by_gradient_descent_without_casadi_form(csv):
     residual = PhysicsResidual(px.Prediction() - px.Param(None, name="k") * v.load, name="room")
     _, _, td, _ = _fit(csv, physics=residual, epochs=2)
     assert "val_room_fit_loss" in td.physics["calibration_record"]
+
+
+def test_parameters_need_unique_names():
+    v = px.Vars()
+    with pytest.raises(ValueError, match="unique names"):
+        # two unnamed parameters with the same initial value are both called 'param(1)'
+        PhysicsResidual(px.Prediction() - px.Param(1.0) * v.mDot - px.Param(1.0) * v.T)
+    PhysicsResidual(px.Prediction() - px.Param(1.0, name="a") * v.mDot - px.Param(1.0, name="b") * v.T)

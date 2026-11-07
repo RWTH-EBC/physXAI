@@ -1,6 +1,8 @@
 # Recurrent models
 
-A recurrent model carries its memory in hidden states instead of lagged inputs.
+A recurrent model carries its memory in hidden states instead of lagged inputs. A predicted feature (e.g. `T`) can
+be an input, it is fed back during the prediction; its lags, changes (`Change(T)`) or derived columns of it are
+rejected, since they would hold measured values over the horizon (leakage).
 
 ```python
 from physXAI import expr as px

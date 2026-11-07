@@ -13,6 +13,7 @@ import time
 from abc import ABC, abstractmethod
 
 import joblib
+import numpy as np
 from joblib import dump
 from sklearn.linear_model import LinearRegression
 
@@ -39,6 +40,13 @@ def _reject_unknown_arguments(model, kwargs: dict) -> None:
     """Unknown arguments are errors, so a misspelled setting does not silently fall back to its default."""
     if kwargs:
         raise TypeError(f"{model.__class__.__name__} got unknown arguments {sorted(kwargs)}.")
+
+
+def train_data_float64(td: TrainingDataGeneric):
+    """Training inputs and targets in float64 for closed form solvers (keras models train on float32)."""
+    if isinstance(td, TrainingData):
+        return td.X("train", np.float64), td.y("train", np.float64)
+    return np.asarray(td.X_train_single, dtype=np.float64), np.asarray(td.y_train_single, dtype=np.float64)
 
 
 class AbstractModel(ABC):
@@ -343,7 +351,7 @@ class LinearRegressionModel(SingleStepModel):
         """
 
         start_time = time.perf_counter()
-        model.fit(td.X_train_single, td.y_train_single)
+        model.fit(*train_data_float64(td))
         stop_time = time.perf_counter()
         td.add_training_time(stop_time - start_time)
 

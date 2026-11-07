@@ -120,3 +120,46 @@ def test_window_stride_and_gather():
     windows = gather_windows(data, starts[:2], 3)
     assert windows.shape == (2, 3, 2)
     assert windows[1, 0, 0] == 4.0
+
+
+def test_reach_of_inputs_into_the_past():
+    from physXAI import expr as px
+    from physXAI.preprocessing.preprocessing import input_lag
+
+    v = px.Vars()
+    columns = {"d3": v.T - v.T.lag(3), "nested": v.d3 * v.u}
+    assert input_lag("T") == 0
+    assert input_lag("T_lag2") == 2
+    assert input_lag("Change(T)") == 1
+    assert input_lag("Change(T_lag2)") == 3
+    assert input_lag("Change(T)_lag2") == 3
+    assert input_lag("d3", columns) == 3
+    assert input_lag("d3_lag1", columns) == 4
+    assert input_lag("nested", columns) == 3
+
+
+@pytest.mark.parametrize("kwargs, gap", [
+    ({"inputs": ["mDot", "T"]}, 1),
+    ({"inputs": ["mDot", "T", "Change(T)"]}, 2),
+    ({"inputs": ["mDot", "T", "d3"], "columns": "d3"}, 4),
+    ({"inputs": ["mDot", "T"], "lags": {"T": 2}}, 3),
+])
+def test_embargo_covers_changes_and_derived_columns(one_room_csv, kwargs, gap):
+    """Regression: no value of the data is part of a training and a test sample (changes and derived columns)."""
+    from physXAI import expr as px
+    from physXAI.preprocessing.preprocessing import PreprocessingSingleStep, input_lag
+
+    if kwargs.get("columns"):
+        v = px.Vars()
+        kwargs = {**kwargs, "columns": {"d3": v.T - v.T.lag(3)}}
+    prep = PreprocessingSingleStep(output="Change(T)", random_state=1, block_length=24, csv_delimiter=",", **kwargs)
+    td = prep.pipeline(one_room_csv)
+    assert prep._default_gap() == gap
+    reach = max(input_lag(name, prep.columns) for name in prep.inputs)
+    for a, b in ((TRAIN, TEST), (TRAIN, VAL)):
+        rows_a = np.flatnonzero((td.labels == a) & td.valid)
+        rows_b = np.flatnonzero((td.labels == b) & td.valid)
+        # sample t holds the rows t - reach, ..., t + 1: the rows of two samples must not overlap
+        values_a = set((rows_a[:, None] + np.arange(-reach, 2)[None, :]).ravel())
+        values_b = set((rows_b[:, None] + np.arange(-reach, 2)[None, :]).ravel())
+        assert not values_a & values_b

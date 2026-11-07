@@ -11,6 +11,7 @@
 | `columns` | derived data columns as expressions, see [Expressions](expressions.md) |
 | `loss_columns` | columns used only in the training loss (e.g. physics targets), `'y:name'` at the predicted time; added by models via `prep.pipeline(path, model=model)` |
 | `time_index_col`, `time_step` | time column (seconds or date time); the data is put onto a regular grid of `time_step` |
+| `aggregation` | sub-sampling to a longer `time_step`: `'sample'` (value at the time step) or `'mean'` (mean over `[t, t + time_step)`, for power, energy and controls; not for states such as temperatures), for all numeric columns or per column (`{'P_el': 'mean'}`); without it, sub-sampling takes the values at the time steps and logs a warning |
 | `csv_delimiter`, `csv_encoding`, `csv_header`, `csv_skiprows` | csv options |
 | `ignore_nan` | drop rows with missing values (targets are never taken across gaps) |
 | `transform` | function `DataFrame -> DataFrame` applied after loading (not serialized) |
@@ -28,13 +29,17 @@ training and test data and overestimates the test performance. physXAI splits bl
 - the time axis is cut into blocks (default: the longer of four windows and one day),
 - validation and test blocks are drawn in every stratum of neighbouring blocks, so all seasons are part of
   every split,
-- an embargo of `gap_steps` (default: the largest lag plus `shift`, plus the warmup of multi step data) separates
-  blocks of different splits; the rows are taken from the training side, so validation and test blocks stay
-  complete,
+- an embargo of `gap_steps` separates blocks of different splits, so no value of the data is part of a training
+  and a test sample. The default is the reach of a sample into the past (lags, `Change(X)` = X(t) - X(t-1) and the
+  variables of derived `columns`) plus `shift`, plus the warmup of multi step data. The rows are taken from the
+  training side, so validation and test blocks stay complete,
 - windows of multi step data never cross a split boundary.
 
-`split='holdout_end'` uses the end of the data for validation and test (non-stationary data),
-`split='random_rows'` the old random split (for comparisons only).
+The embargo removes shared samples, not the autocorrelation of the building: test blocks lie between training
+blocks of the same weeks and season, so the test error measures how well the model interpolates within the period
+of the data. For a new period (another season or year) it is optimistic. To estimate that, use
+`split='holdout_end'` (the end of the data for validation and test), a longer `gap_steps` or a separate data set.
+`split='random_rows'` is the old random split (for comparisons only).
 
 The split depends on `random_state`. Training a model with several seeds shows how much the errors depend
 on the split, see [Comparing models](evaluation.md#comparing-models).

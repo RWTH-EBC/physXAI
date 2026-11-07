@@ -121,6 +121,9 @@ loads single step models only. The export is verified against that branch, but n
   for exactly reproducible runs on a GPU.
 - `PHYSXAI_REQUIRE_AGENTLIB=1` makes the AgentLib-MPC contract tests fail instead of being skipped if AgentLib-MPC
   is missing (set in the CI); the model saved with physXAI 0.x is part of the tests.
+- `PreprocessingData(aggregation='mean' | {'column': 'mean'})`: sub-sampling to a longer `time_step` by the mean
+  over `[t, t + time_step)` (power, energy, controls) instead of the value at the time step; sub-sampling without
+  `aggregation` logs a warning. Dropped duplicate and off-grid time stamps are logged.
 
 ### Changed
 - `PINNModel(physics_targets={'pinn': w})`: physics targets are loss columns, no model outputs, so a PINN has one
@@ -208,6 +211,25 @@ loads single step models only. The export is verified against that branch, but n
 - `LinANNModel` wrote the evaluation of its linear regression into the training data; `RBFModel` and
   `LinANNModel` did not use the seed of `repeat_training` for their k-means; the RBF construction failed without
   normalization.
+- Recurrent models (`RNNModel`, `PCNNModel`) accepted lags, changes and derived columns of a predicted feature as
+  inputs, which held its measured values over the horizon (data leakage); they are rejected now.
+- The recursive evaluation and training of single step models took inputs `Change(T)` (also lagged or inside a
+  derived column) of the recursive feature from the data; they are recomputed from the predicted trajectory.
+- The default embargo of the split ignored the reach of `Change(X)` inputs (X(t-1)) and of lags inside derived
+  columns, so a value of the data could be part of a training and a test sample. The documentation no longer claims
+  that the embargo removes the autocorrelation (test blocks lie in the period of the training data).
+- Single step networks and physics residuals shuffled with a buffer of 10000 samples: with more samples, ordered in
+  time, a batch held neighbouring time steps only. The buffer holds all samples now.
+- `CMNNModel` / `PINNModel` silently ignored monotonicities of names which are no inputs (now a `ValueError`) and
+  built layers without neurons for small `n_neurons`.
+- `repeat_training` shallow copied the model, so runs could share state (e.g. a trainable `px.Pretrained`); every
+  run now gets a new model from the config, and the init seed also seeds the blocks of expressions (`px.RBF`).
+- `PCNNModel` cached the estimated initial rates by `id()` of the data, which Python reuses.
+- `px.Param` names were lost when a saved model was loaded (`ConstantLayer` config).
+- Closed form solvers (linear regression, `ModularANN(solver='ols' | 'qp')`, least squares calibration of physics
+  residuals) were fitted on float32 data; they use float64 now (`TrainingData.X(split, dtype)`).
+- Physics residuals with several parameters of the same name (e.g. unnamed `px.Param`) raise a `ValueError`, since
+  parameters are calibrated and reported by name.
 
 ### Removed
 - Compatibility code of 0.x: `recursive_feature_elimination_pipeline` and `save_result`, the flat metrics
