@@ -1,0 +1,18 @@
+physXAI/evaluation/comparison.py:248:12: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/evaluation/rollout.py:201:32: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/expr/blocks.py:58:12: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/expr/blocks.py:433:35: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/expr/blocks.py:455:29: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/models/ann/ann_design.py:51:1: E402 Module level import not at top of file
+physXAI/models/ann/keras_models/keras_models.py:13:1: E402 Module level import not at top of file
+physXAI/models/ann/keras_models/keras_models.py:306:12: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/models/ann/keras_models/keras_models.py:437:14: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/models/ann/model_construction/ann_models.py:12:1: E402 Module level import not at top of file
+physXAI/models/ann/model_construction/residual_models.py:12:1: E402 Module level import not at top of file
+physXAI/models/ann/pinn/physics.py:166:67: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/models/models.py:26:1: E402 Module level import not at top of file
+physXAI/preprocessing/preprocessing.py:582:25: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/preprocessing/preprocessing.py:703:16: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/preprocessing/preprocessing.py:705:16: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+Found 16 errors.
+No fixes available (11 hidden fixes can be enabled with the `--unsafe-fixes` option).
