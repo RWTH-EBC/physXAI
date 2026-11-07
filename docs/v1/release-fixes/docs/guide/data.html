@@ -1,0 +1,207 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data pipeline and split &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../_static/jquery.js"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+      <script src="../_static/doctools.js"></script>
+      <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Models" href="models.html" />
+    <link rel="prev" title="Expressions: physics inside the model" href="expressions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Data pipeline and split</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#loading">Loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#split-without-leakage">Split without leakage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#training-data">Training data</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Physics-informed models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Data pipeline and split</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="data-pipeline-and-split">
+<h1>Data pipeline and split<a class="headerlink" href="#data-pipeline-and-split" title="Permalink to this heading"></a></h1>
+<section id="loading">
+<h2>Loading<a class="headerlink" href="#loading" title="Permalink to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">PreprocessingSingleStep</span></code> and <code class="docutils literal notranslate"><span class="pre">PreprocessingMultiStep</span></code> share the options of <code class="docutils literal notranslate"><span class="pre">PreprocessingData</span></code>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">inputs</span></code>, <code class="docutils literal notranslate"><span class="pre">output</span></code></p></td>
+<td><p>column names; <code class="docutils literal notranslate"><span class="pre">X_lagN</span></code> and <code class="docutils literal notranslate"><span class="pre">Change(X)</span></code> are derived, <code class="docutils literal notranslate"><span class="pre">lags={'X':</span> <span class="pre">2}</span></code> adds <code class="docutils literal notranslate"><span class="pre">X_lag1</span></code>, <code class="docutils literal notranslate"><span class="pre">X_lag2</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">shift</span></code></p></td>
+<td><p>1 (default): the output at the next time step, for states (<code class="docutils literal notranslate"><span class="pre">Change(T)</span></code>) and as AgentLib-MPC uses it; 0: the output at the time of the inputs, for algebraic outputs of point sampled data (the output feature must not be an input, no recursive evaluation, not exportable)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">columns</span></code></p></td>
+<td><p>derived data columns as expressions, see <a class="reference internal" href="expressions.html"><span class="std std-doc">Expressions</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">loss_columns</span></code></p></td>
+<td><p>columns used only in the training loss (e.g. physics targets), <code class="docutils literal notranslate"><span class="pre">'y:name'</span></code> at the predicted time; added by models via <code class="docutils literal notranslate"><span class="pre">prep.pipeline(path,</span> <span class="pre">model=model)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">time_index_col</span></code>, <code class="docutils literal notranslate"><span class="pre">time_step</span></code></p></td>
+<td><p>time column (seconds or date time); the data is put onto a regular grid of <code class="docutils literal notranslate"><span class="pre">time_step</span></code>. A longer <code class="docutils literal notranslate"><span class="pre">time_step</span></code> takes the values at the time steps (point sampling, with a warning): resample quantities over an interval (power, energy) before, e.g. with <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame.resample</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">csv_delimiter</span></code>, <code class="docutils literal notranslate"><span class="pre">csv_encoding</span></code>, <code class="docutils literal notranslate"><span class="pre">csv_header</span></code>, <code class="docutils literal notranslate"><span class="pre">csv_skiprows</span></code></p></td>
+<td><p>csv options</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ignore_nan</span></code></p></td>
+<td><p>drop rows with missing values (targets are never taken across gaps)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">transform</span></code></p></td>
+<td><p>function <code class="docutils literal notranslate"><span class="pre">DataFrame</span> <span class="pre">-&gt;</span> <span class="pre">DataFrame</span></code> applied after loading (not serialized)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">test_size</span></code>, <code class="docutils literal notranslate"><span class="pre">val_size</span></code>, <code class="docutils literal notranslate"><span class="pre">random_state</span></code></p></td>
+<td><p>size of the splits and their seed</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">split</span></code>, <code class="docutils literal notranslate"><span class="pre">block_length</span></code>, <code class="docutils literal notranslate"><span class="pre">gap_steps</span></code></p></td>
+<td><p>split strategy, see below</p></td>
+</tr>
+</tbody>
+</table>
+<p>Time spans can be given in steps or as strings: <code class="docutils literal notranslate"><span class="pre">eval_horizon='24h'</span></code>, <code class="docutils literal notranslate"><span class="pre">block_length='7D'</span></code>.</p>
+</section>
+<section id="split-without-leakage">
+<h2>Split without leakage<a class="headerlink" href="#split-without-leakage" title="Permalink to this heading"></a></h2>
+<p>Neighbouring time steps are strongly correlated. A random split of rows puts almost identical samples into
+training and test data and overestimates the test performance. physXAI splits blocks of time instead
+(<code class="docutils literal notranslate"><span class="pre">split='blocks'</span></code>, default):</p>
+<ul class="simple">
+<li><p>the time axis is cut into blocks (default: the longer of four windows and one day),</p></li>
+<li><p>validation and test blocks are drawn in every stratum of neighbouring blocks, so all seasons are part of
+every split,</p></li>
+<li><p>an embargo of <code class="docutils literal notranslate"><span class="pre">gap_steps</span></code> separates blocks of different splits, so no value of the data is part of a training
+and a test sample. The default is the reach of a sample into the past (lags, <code class="docutils literal notranslate"><span class="pre">Change(X)</span></code> = X(t) - X(t-1) and the
+variables of derived <code class="docutils literal notranslate"><span class="pre">columns</span></code>) plus <code class="docutils literal notranslate"><span class="pre">shift</span></code>. The warmup of multi step sequences needs no embargo, it lies inside
+the split of its sequence. The rows are taken from the
+training side, so validation and test blocks stay complete,</p></li>
+<li><p>windows of multi step data never cross a split boundary.</p></li>
+</ul>
+<p>The embargo removes shared samples, not the autocorrelation of the building: test blocks lie between training
+blocks of the same weeks and season, so the test error measures how well the model interpolates within the period
+of the data. For a new period (another season or year) it is optimistic. To estimate that, use
+<code class="docutils literal notranslate"><span class="pre">split='holdout_end'</span></code> (the end of the data for validation and test), a longer <code class="docutils literal notranslate"><span class="pre">gap_steps</span></code> or a separate data set.
+<code class="docutils literal notranslate"><span class="pre">split='random_rows'</span></code> is the old random split (for comparisons only).</p>
+<p>The split depends on <code class="docutils literal notranslate"><span class="pre">random_state</span></code>. Training a model with several seeds shows how much the errors depend
+on the split, see <a class="reference internal" href="evaluation.html#comparing-models"><span class="std std-ref">Comparing models</span></a>.</p>
+</section>
+<section id="training-data">
+<h2>Training data<a class="headerlink" href="#training-data" title="Permalink to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">prep.pipeline(path)</span></code> returns a <code class="docutils literal notranslate"><span class="pre">TrainingData</span></code> (single step) or <code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep</span></code> object:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">td.X_train</span></code>, <code class="docutils literal notranslate"><span class="pre">td.y_train</span></code>, … the samples of a split, <code class="docutils literal notranslate"><span class="pre">td.inputs</span></code>, <code class="docutils literal notranslate"><span class="pre">td.outputs</span></code>,</p></li>
+<li><p>after training: predictions, <code class="docutils literal notranslate"><span class="pre">td.metrics</span></code> and <code class="docutils literal notranslate"><span class="pre">td.horizon_metrics</span></code>,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">td.save(path)</span></code> / <code class="docutils literal notranslate"><span class="pre">TrainingData.load(path)</span></code> for single step data (npz and json, no pickle; multi step data is
+created from the same csv file and preprocessing config),</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">td.get_config()</span></code> holds metrics and history, as written by <code class="docutils literal notranslate"><span class="pre">Run.save</span></code>.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="expressions.html" class="btn btn-neutral float-left" title="Expressions: physics inside the model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="models.html" class="btn btn-neutral float-right" title="Models" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

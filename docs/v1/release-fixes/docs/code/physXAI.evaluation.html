@@ -1,0 +1,956 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>physXAI.evaluation package &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../_static/jquery.js"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+      <script src="../_static/doctools.js"></script>
+      <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="physXAI.expr package" href="physXAI.expr.html" />
+    <link rel="prev" title="physXAI.agentlib_mpc_plugin package" href="physXAI.agentlib_mpc_plugin.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/physics.html">Physics-informed models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">physXAI</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="physXAI.html">physXAI package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="physXAI.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="physXAI.agentlib_mpc_plugin.html">physXAI.agentlib_mpc_plugin package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">physXAI.evaluation package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html">physXAI.expr package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html">physXAI.feature_selection package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.io.html">physXAI.io package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html">physXAI.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.plotting.html">physXAI.plotting package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html">physXAI.preprocessing package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html">physXAI.training package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.utils.html">physXAI.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">physXAI</a></li>
+          <li class="breadcrumb-item"><a href="physXAI.html">physXAI package</a></li>
+      <li class="breadcrumb-item active">physXAI.evaluation package</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-physXAI.evaluation">
+<span id="physxai-evaluation-package"></span><h1>physXAI.evaluation package<a class="headerlink" href="#module-physXAI.evaluation" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-physXAI.evaluation.comparison">
+<span id="physxai-evaluation-comparison-module"></span><h2>physXAI.evaluation.comparison module<a class="headerlink" href="#module-physXAI.evaluation.comparison" title="Permalink to this heading"></a></h2>
+<p>Comparison of several models, each trained several times.</p>
+<p>A single training run says little about a model: the split of the data and the initialization of the
+weights change the errors, often more than the difference between two models. <code class="code docutils literal notranslate"><span class="pre">repeat_training</span></code> trains
+a model with several seeds and saves every run with <code class="code docutils literal notranslate"><span class="pre">Run.save</span></code>. <code class="code docutils literal notranslate"><span class="pre">ModelComparison</span></code> loads the saved runs
+(or takes training data in memory) and compares the distributions of the errors:</p>
+<ul class="simple">
+<li><p>the single step metrics per output (RMSE, MAE, R2, bias),</p></li>
+<li><p>the errors over the prediction horizon (recursive single step models and RNNs), on a common horizon,</p></li>
+<li><p>plots of the distributions (box plots over the runs, median and band over the horizon).</p></li>
+</ul>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">run</span> <span class="o">=</span> <span class="n">Run</span><span class="p">(</span><span class="s2">"results"</span><span class="p">,</span> <span class="s2">"TAir_compare"</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">repeat_training</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">prep</span><span class="p">,</span> <span class="n">LinearRegressionModel</span><span class="p">(),</span> <span class="n">seeds</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"linreg"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">repeat_training</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">prep</span><span class="p">,</span> <span class="n">ClassicalANNModel</span><span class="p">(</span><span class="n">epochs</span><span class="o">=</span><span class="mi">50</span><span class="p">),</span> <span class="n">seeds</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"ann"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span> <span class="o">=</span> <span class="n">ModelComparison</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># one model per sub directory</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">paired</span><span class="p">(</span><span class="s2">"linreg"</span><span class="p">)</span>  <span class="c1"># run by run on the same splits: differences, corrected confidence interval, p-value</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="s2">"linreg"</span><span class="p">)</span>  <span class="c1"># comparison.html and csv files</span>
+</pre></div>
+</div>
+<p>With the same seeds and the same split settings, all models use the same splits of the data, so their runs can be
+compared in pairs (<code class="code docutils literal notranslate"><span class="pre">paired</span></code>), which removes the spread caused by the split.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.MODEL_COLORS">
+<span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.comparison.</span></span><span class="sig-name descname"><span class="pre">MODEL_COLORS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['#2a78d6',</span> <span class="pre">'#eb6834',</span> <span class="pre">'#1baf7a',</span> <span class="pre">'#eda100',</span> <span class="pre">'#e87ba4',</span> <span class="pre">'#008300',</span> <span class="pre">'#6250d6',</span> <span class="pre">'#e34948']</span></em><a class="headerlink" href="#physXAI.evaluation.comparison.MODEL_COLORS" title="Permalink to this definition"></a></dt>
+<dd><p>Colors of the models, in a fixed order (colorblind-safe categorical palette)</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.RunRecord">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.comparison.</span></span><span class="sig-name descname"><span class="pre">RunRecord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_config=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocessing=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra=&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#RunRecord"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.RunRecord" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>One trained model: its training data config (metrics) and, if available, the model and preprocessing configs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+<li><p><strong>run</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+<li><p><strong>training_data</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – </p></li>
+<li><p><strong>model_config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> | </em><em>None</em>) – </p></li>
+<li><p><strong>preprocessing</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> | </em><em>None</em>) – </p></li>
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – </p></li>
+<li><p><strong>extra</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.RunRecord.model">
+<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></em><a class="headerlink" href="#physXAI.evaluation.comparison.RunRecord.model" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.RunRecord.run">
+<span class="sig-name descname"><span class="pre">run</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></em><a class="headerlink" href="#physXAI.evaluation.comparison.RunRecord.run" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.RunRecord.training_data">
+<span class="sig-name descname"><span class="pre">training_data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a></em><a class="headerlink" href="#physXAI.evaluation.comparison.RunRecord.training_data" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.RunRecord.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#physXAI.evaluation.comparison.RunRecord.model_config" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.RunRecord.preprocessing">
+<span class="sig-name descname"><span class="pre">preprocessing</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#physXAI.evaluation.comparison.RunRecord.preprocessing" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.RunRecord.path">
+<span class="sig-name descname"><span class="pre">path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#physXAI.evaluation.comparison.RunRecord.path" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.RunRecord.extra">
+<span class="sig-name descname"><span class="pre">extra</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a></em><a class="headerlink" href="#physXAI.evaluation.comparison.RunRecord.extra" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.repeat_training">
+<span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.comparison.</span></span><span class="sig-name descname"><span class="pre">repeat_training</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocessing</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seeds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'model'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('split',</span> <span class="pre">'init')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#repeat_training"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.repeat_training" title="Permalink to this definition"></a></dt>
+<dd><p>Trains a model several times with different seeds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Path to the data.</p></li>
+<li><p><strong>preprocessing</strong> – The preprocessing. It is not changed, every run uses a copy from its config.</p></li>
+<li><p><strong>model</strong> – The physXAI model. It is not changed, every run uses a new model created from its config.</p></li>
+<li><p><strong>seeds</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.15)"><em>Iterable</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em>) – Number of runs (seeds 0, 1, …) or the seeds. Use the same seeds for all compared models,
+then they are trained and tested on the same splits.</p></li>
+<li><p><strong>run</strong> – Optional <code class="code docutils literal notranslate"><span class="pre">Run</span></code>. Every run is saved into <code class="code docutils literal notranslate"><span class="pre">&lt;run&gt;/&lt;name&gt;/seed_&lt;seed&gt;/</span></code> with <code class="code docutils literal notranslate"><span class="pre">Run.save</span></code>.</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Name of the model (label in the comparison and name of the saved files).</p></li>
+<li><p><strong>vary</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.15)"><em>Iterable</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – What the seed changes: ‘split’ (the random split of the data) and / or ‘init’
+(initialization of the weights, order of the batches and seeds of blocks such as <code class="code docutils literal notranslate"><span class="pre">px.RBF</span></code>).</p></li>
+<li><p><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether to save the report of every run (with <code class="code docutils literal notranslate"><span class="pre">run</span></code>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The runs of this model. Comparisons can be added: <code class="code docutils literal notranslate"><span class="pre">cmp_a</span> <span class="pre">+</span> <span class="pre">cmp_b</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#physXAI.evaluation.comparison.ModelComparison" title="physXAI.evaluation.comparison.ModelComparison">ModelComparison</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.ModelComparison">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.comparison.</span></span><span class="sig-name descname"><span class="pre">ModelComparison</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">records</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#ModelComparison"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.ModelComparison" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Compares the metrics of several models with several runs each.</p>
+<p>Create it with <code class="code docutils literal notranslate"><span class="pre">ModelComparison.load(...)</span></code> from saved runs, with <code class="code docutils literal notranslate"><span class="pre">repeat_training</span></code>, or add evaluated
+training data with <code class="code docutils literal notranslate"><span class="pre">add</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>records</strong> (<em>Iterable</em><em>[</em><a class="reference internal" href="#physXAI.evaluation.comparison.RunRecord" title="physXAI.evaluation.comparison.RunRecord"><em>RunRecord</em></a><em>]</em>) – </p>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.ModelComparison.models">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">models</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.evaluation.comparison.ModelComparison.models" title="Permalink to this definition"></a></dt>
+<dd><p>Labels of the models, in the order they were added.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.ModelComparison.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocessing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#ModelComparison.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.ModelComparison.add" title="Permalink to this definition"></a></dt>
+<dd><p>Adds an evaluated training data object (after <code class="code docutils literal notranslate"><span class="pre">model.pipeline(td)</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Name of the model.</p></li>
+<li><p><strong>training_data</strong> – The evaluated training data, or its config dict.</p></li>
+<li><p><strong>run</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – Name of the run. Defaults to its number.</p></li>
+<li><p><strong>model</strong> – Optional model object (its config is shown in <code class="code docutils literal notranslate"><span class="pre">runs()</span></code>).</p></li>
+<li><p><strong>preprocessing</strong> – Optional preprocessing object.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#physXAI.evaluation.comparison.ModelComparison" title="physXAI.evaluation.comparison.ModelComparison"><em>ModelComparison</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.ModelComparison.load">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#ModelComparison.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.ModelComparison.load" title="Permalink to this definition"></a></dt>
+<dd><p>Loads saved runs: every file <code class="code docutils literal notranslate"><span class="pre">*training_data.json</span></code> is one run, with the configs next to it.</p>
+<p>Supported are runs written by <code class="code docutils literal notranslate"><span class="pre">Run.save</span></code> / <code class="code docutils literal notranslate"><span class="pre">save_for_agentlib</span></code> (<code class="code docutils literal notranslate"><span class="pre">{name}_training_data.json</span></code>) and
+by the Logger of physXAI &lt; 1.0 (<code class="code docutils literal notranslate"><span class="pre">training_data.json</span></code>, <code class="code docutils literal notranslate"><span class="pre">model_config.json</span></code>, <code class="code docutils literal notranslate"><span class="pre">preprocessing_config.json</span></code>).</p>
+<p>A model is a directory holding its runs, e.g. <code class="code docutils literal notranslate"><span class="pre">results/cmnn/&lt;run&gt;/...</span></code> with any number of run
+directories named arbitrarily (<code class="code docutils literal notranslate"><span class="pre">results/cmnn/a1b2c3/</span></code>, <code class="code docutils literal notranslate"><span class="pre">results/cmnn/x9y8z7/</span></code>, …):</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">load('results')</span></code>: every sub directory of <code class="code docutils literal notranslate"><span class="pre">results</span></code> is a model (<code class="code docutils literal notranslate"><span class="pre">cmnn</span></code>, <code class="code docutils literal notranslate"><span class="pre">ann</span></code>, …),</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">load(['results/cmnn',</span> <span class="pre">'other/ann'])</span></code>: every given directory is a model, named after it,</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">load({'CMNN':</span> <span class="pre">'results/cmnn'})</span></code>: every given directory is a model with the given label.</p></li>
+</ul>
+<p>Runs are named after their directory below the model directory. If a run directory holds several
+models (e.g. <code class="code docutils literal notranslate"><span class="pre">T_training_data.json</span></code> and <code class="code docutils literal notranslate"><span class="pre">P_training_data.json</span></code> of AgentLib-MPC), they become separate
+models (<code class="code docutils literal notranslate"><span class="pre">cmnn/T</span></code>, <code class="code docutils literal notranslate"><span class="pre">cmnn/P</span></code>), unless <code class="code docutils literal notranslate"><span class="pre">name</span></code> selects one of them. Files that cannot be read are
+skipped with a warning.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>paths</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.15)"><em>Iterable</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a><em>] </em><em>| </em><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping" title="(in Python v3.15)"><em>Mapping</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a><em>]</em>) – The model directories, see above.</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – Only load the files <code class="code docutils literal notranslate"><span class="pre">{name}_training_data.json</span></code> of every run directory.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError" title="(in Python v3.15)"><strong>FileNotFoundError</strong></a> – If a model directory holds no runs.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#physXAI.evaluation.comparison.ModelComparison" title="physXAI.evaluation.comparison.ModelComparison"><em>ModelComparison</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.ModelComparison.runs">
+<span class="sig-name descname"><span class="pre">runs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#ModelComparison.runs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.ModelComparison.runs" title="Permalink to this definition"></a></dt>
+<dd><p>One row per run: model class, seeds, number of inputs, training time and file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.1)"><em>DataFrame</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.ModelComparison.metrics">
+<span class="sig-name descname"><span class="pre">metrics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#ModelComparison.metrics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.ModelComparison.metrics" title="Permalink to this definition"></a></dt>
+<dd><p>Single step metrics: one row per model, run, output and split.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.1)"><em>DataFrame</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.ModelComparison.horizon">
+<span class="sig-name descname"><span class="pre">horizon</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#ModelComparison.horizon"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.ModelComparison.horizon" title="Permalink to this definition"></a></dt>
+<dd><p>Errors over the prediction horizon: one row per model, run, feature, split and step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.1)"><em>DataFrame</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.ModelComparison.common_horizon">
+<span class="sig-name descname"><span class="pre">common_horizon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'test'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#ModelComparison.common_horizon"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.ModelComparison.common_horizon" title="Permalink to this definition"></a></dt>
+<dd><p>The horizon all runs with horizon metrics reach: (‘hours’, value) if all time steps are known,
+else (‘step’, value). None without horizon metrics.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a>] | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.ModelComparison.scores">
+<span class="sig-name descname"><span class="pre">scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'test'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#ModelComparison.scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.ModelComparison.scores" title="Permalink to this definition"></a></dt>
+<dd><p>One row per run with scalar scores, the basis of <code class="code docutils literal notranslate"><span class="pre">summary</span></code> and of the box plots:</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">RMSE</span> <span class="pre">&lt;output&gt;</span></code>, <code class="code docutils literal notranslate"><span class="pre">Bias</span> <span class="pre">&lt;output&gt;</span></code>, <code class="code docutils literal notranslate"><span class="pre">R2</span> <span class="pre">&lt;output&gt;</span></code>: single step metrics of the split,</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">Horizon</span> <span class="pre">RMSE</span> <span class="pre">&lt;feature&gt;</span></code>: mean RMSE over the horizon (up to <code class="code docutils literal notranslate"><span class="pre">horizon</span></code>),</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">RMSE</span> <span class="pre">&lt;feature&gt;</span> <span class="pre">&#64;</span> <span class="pre">&lt;horizon&gt;</span></code> and <code class="code docutils literal notranslate"><span class="pre">Bias</span> <span class="pre">&lt;feature&gt;</span> <span class="pre">&#64;</span> <span class="pre">&lt;horizon&gt;</span></code>: at the end of the horizon.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – ‘train’, ‘val’ or ‘test’.</p></li>
+<li><p><strong>horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – End of the horizon, in hours (or steps if the time step is unknown). Defaults to the
+horizon all runs reach, so models with different evaluation horizons are comparable.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.1)"><em>DataFrame</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.ModelComparison.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'test'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#ModelComparison.summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.ModelComparison.summary" title="Permalink to this definition"></a></dt>
+<dd><p>Distribution of the scores (see <code class="code docutils literal notranslate"><span class="pre">scores</span></code>) per model: number of runs, mean, standard deviation,
+minimum, median and maximum. Rows: (score, model).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+<li><p><strong>horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.1)"><em>DataFrame</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.ModelComparison.paired">
+<span class="sig-name descname"><span class="pre">paired</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">baseline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'test'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">by</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">corrected</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#ModelComparison.paired"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.ModelComparison.paired" title="Permalink to this definition"></a></dt>
+<dd><p>Paired comparison of models with a baseline: the scores (see <code class="code docutils literal notranslate"><span class="pre">scores</span></code>) are compared run by run on the same
+split of the data, so the spread caused by the split cancels out. Two models whose distributions overlap in
+<code class="code docutils literal notranslate"><span class="pre">summary</span></code> can still differ clearly, if one of them is better on (almost) every split.</p>
+<p>Runs are paired by the seed of their split (<code class="code docutils literal notranslate"><span class="pre">by='split_seed'</span></code>, the <code class="code docutils literal notranslate"><span class="pre">random_state</span></code> of the preprocessing) or by
+their name (<code class="code docutils literal notranslate"><span class="pre">by='run'</span></code>, e.g. ‘seed_0’ of <code class="code docutils literal notranslate"><span class="pre">repeat_training</span></code>). ‘auto’ takes the split seed if it identifies the
+runs of both models, else the name. The same seed gives the same split only with the same split settings:
+the block length depends on the window length (horizon, warmup) and on the size of the data. Every pair is
+therefore checked with the fingerprint of the split (<code class="code docutils literal notranslate"><span class="pre">same_data</span></code>, saved with physXAI &gt;= 1.0). Single step
+and recurrent models on the same split can still be evaluated on different windows (warmup inside the split).</p>
+<p>Differences are model - baseline. RMSE and the absolute bias are better when lower, R2 when higher.</p>
+<p>The runs are no independent samples: repeated splits of the same data share most of their training data, so a
+plain paired t-test (or a Wilcoxon test) is too optimistic. Confidence interval and p-value are therefore
+those of the corrected resampled t-test (Nadeau &amp; Bengio 2003, Machine Learning 52, 239-281): the variance of
+the mean difference is <code class="code docutils literal notranslate"><span class="pre">var(d)</span> <span class="pre">*</span> <span class="pre">(1/n</span> <span class="pre">+</span> <span class="pre">n_test/n_train)</span></code> instead of <code class="code docutils literal notranslate"><span class="pre">var(d)</span> <span class="pre">/</span> <span class="pre">n</span></code>. The ratio <code class="code docutils literal notranslate"><span class="pre">n_test/n_train</span></code>
+(<code class="code docutils literal notranslate"><span class="pre">resampling</span></code>) is taken from the split summary of the runs (else from the split sizes of the preprocessing);
+it is 0 if all runs of the baseline used the same split (<code class="code docutils literal notranslate"><span class="pre">vary=('init',)</span></code>), then only the initialization
+varies. Several scores and models are tested at once: correct the p-values for multiple testing (e.g. Holm)
+before drawing conclusions from several of them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>baseline</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Label of the reference model.</p></li>
+<li><p><strong>models</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.15)"><em>Iterable</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – Models to compare with the baseline. Defaults to all others.</p></li>
+<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – ‘train’, ‘val’ or ‘test’.</p></li>
+<li><p><strong>horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – End of the compared horizon (see <code class="code docutils literal notranslate"><span class="pre">scores</span></code>).</p></li>
+<li><p><strong>by</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – ‘auto’, ‘split_seed’ or ‘run’.</p></li>
+<li><p><strong>confidence</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Level of the confidence interval of the mean difference.</p></li>
+<li><p><strong>corrected</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Corrected resampled t-test (default). False gives the plain paired t-test, which assumes
+independent runs.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>One row per (score, model) with the number of <code class="code docutils literal notranslate"><span class="pre">pairs</span></code>, the medians of the <code class="code docutils literal notranslate"><span class="pre">baseline</span></code> and the
+<code class="code docutils literal notranslate"><span class="pre">model</span></code>, the <code class="code docutils literal notranslate"><span class="pre">mean_difference</span></code> with its confidence interval (<code class="code docutils literal notranslate"><span class="pre">ci_low</span></code>, <code class="code docutils literal notranslate"><span class="pre">ci_high</span></code>), the
+<code class="code docutils literal notranslate"><span class="pre">median_difference</span></code>, the share of pairs in which the model is <code class="code docutils literal notranslate"><span class="pre">better</span></code>, the two-sided <code class="code docutils literal notranslate"><span class="pre">p_value</span></code> of the
+(corrected) t-test, the <code class="code docutils literal notranslate"><span class="pre">resampling</span></code> ratio n_test/n_train of the correction and the share of pairs on the
+<code class="code docutils literal notranslate"><span class="pre">same_data</span></code> (NaN if unknown).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.ModelComparison.plot">
+<span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'test'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">band</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'iqr'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#ModelComparison.plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.ModelComparison.plot" title="Permalink to this definition"></a></dt>
+<dd><p>Plots the distributions of the errors of all models:</p>
+<ul class="simple">
+<li><p>box plots of the single step RMSE per output (every point is a run),</p></li>
+<li><p>RMSE and bias over the horizon: median over the runs and a band (‘iqr’: 25 % - 75 % (default),
+‘range’: min - max, None: no band),</p></li>
+<li><p>box plots of the mean RMSE over the horizon and of the RMSE at its end,</p></li>
+<li><p>a table with the summary.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – ‘train’, ‘val’ or ‘test’.</p></li>
+<li><p><strong>horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – End of the compared horizon (see <code class="code docutils literal notranslate"><span class="pre">scores</span></code>).</p></li>
+<li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – ‘iqr’, ‘range’ or None.</p></li>
+<li><p><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether to open the figure.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>plotly.graph_objects.Figure</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.ModelComparison.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'comparison'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'test'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">band</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'iqr'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#ModelComparison.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.ModelComparison.save" title="Permalink to this definition"></a></dt>
+<dd><p>Saves the comparison into a run directory: <code class="code docutils literal notranslate"><span class="pre">{name}.html</span></code> (plot), <code class="code docutils literal notranslate"><span class="pre">{name}_summary.csv</span></code>,
+<code class="code docutils literal notranslate"><span class="pre">{name}_scores.csv</span></code> (one row per run), <code class="code docutils literal notranslate"><span class="pre">{name}_metrics.csv</span></code>, <code class="code docutils literal notranslate"><span class="pre">{name}_horizon.csv</span></code> and, with a <code class="code docutils literal notranslate"><span class="pre">baseline</span></code>,
+<code class="code docutils literal notranslate"><span class="pre">{name}_paired.csv</span></code> (see <code class="code docutils literal notranslate"><span class="pre">paired</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The paths of the written files.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+<li><p><strong>horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – </p></li>
+<li><p><strong>band</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – </p></li>
+<li><p><strong>baseline</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.evaluation.comparison.main">
+<span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.comparison.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.main" title="Permalink to this definition"></a></dt>
+<dd><p>Compares saved runs from the command line:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">physXAI</span><span class="o">.</span><span class="n">evaluation</span><span class="o">.</span><span class="n">comparison</span> <span class="n">results</span>                       <span class="c1"># sub directories are models</span>
+<span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">physXAI</span><span class="o">.</span><span class="n">evaluation</span><span class="o">.</span><span class="n">comparison</span> <span class="n">results</span><span class="o">/</span><span class="n">cmnn</span> <span class="n">results</span><span class="o">/</span><span class="n">ann</span>      <span class="c1"># every directory is a model</span>
+<span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">physXAI</span><span class="o">.</span><span class="n">evaluation</span><span class="o">.</span><span class="n">comparison</span> <span class="n">results</span><span class="o">/</span><span class="n">cmnn</span> <span class="o">--</span><span class="n">models</span>         <span class="c1"># one directory as one model</span>
+<span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">physXAI</span><span class="o">.</span><span class="n">evaluation</span><span class="o">.</span><span class="n">comparison</span> <span class="n">results</span> <span class="o">--</span><span class="n">baseline</span> <span class="n">linreg</span>     <span class="c1"># paired with the runs of linreg</span>
+</pre></div>
+</div>
+<p>The summary is printed, plot and tables are saved into <code class="code docutils literal notranslate"><span class="pre">--out</span></code> (default: <code class="code docutils literal notranslate"><span class="pre">&lt;first</span> <span class="pre">path&gt;/comparison</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>argv</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#physXAI.evaluation.comparison.ModelComparison" title="physXAI.evaluation.comparison.ModelComparison"><em>ModelComparison</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-physXAI.evaluation.metrics">
+<span id="physxai-evaluation-metrics-module"></span><h2>physXAI.evaluation.metrics module<a class="headerlink" href="#module-physXAI.evaluation.metrics" title="Permalink to this heading"></a></h2>
+<p>Metrics of the predictions of a model, per output and split.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">Metrics.by_output</span></code> holds MSE, RMSE, MAE, R2 and bias (mean of prediction - truth) for every output and
+split. <code class="code docutils literal notranslate"><span class="pre">MetricsPINN</span></code> additionally holds the disagreement of the prediction with every physics target.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.evaluation.metrics.regression_kpis">
+<span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.metrics.</span></span><span class="sig-name descname"><span class="pre">regression_kpis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#regression_kpis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.regression_kpis" title="Permalink to this definition"></a></dt>
+<dd><p>MSE, RMSE, MAE, R2 and bias (mean of prediction - truth) of one output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y_true</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – </p></li>
+<li><p><strong>y_pred</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.evaluation.metrics.output_names">
+<span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.metrics.</span></span><span class="sig-name descname"><span class="pre">output_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">td</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#output_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.output_names" title="Permalink to this definition"></a></dt>
+<dd><p>Names of the predicted quantities: the outputs, for multi step data the predicted features.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.evaluation.metrics.Metrics">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.metrics.</span></span><span class="sig-name descname"><span class="pre">Metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#Metrics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.Metrics" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Regression metrics of the training, validation and test predictions, per output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – Training data holding the true values and the predictions.</p></li>
+<li><p><strong>names</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – Names of the outputs. Defaults to <code class="code docutils literal notranslate"><span class="pre">output_names(td)</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Variables<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>by_output</strong> – {output: {split: {‘mse’, ‘rmse’, ‘mae’, ‘r2’, ‘bias’, ‘n’}}}. Splits without data are missing.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.metrics.Metrics.kpi">
+<span class="sig-name descname"><span class="pre">kpi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rmse'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#Metrics.kpi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.Metrics.kpi" title="Permalink to this definition"></a></dt>
+<dd><p>One metric of one output (default: the first) on a split, None if the split has no data.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">td</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">kpi</span><span class="p">(</span><span class="s1">'test'</span><span class="p">,</span> <span class="s1">'rmse'</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+<li><p><strong>metric</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+<li><p><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.metrics.Metrics.get_config">
+<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#Metrics.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.Metrics.get_config" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.evaluation.metrics.MetricsPINN">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.metrics.</span></span><span class="sig-name descname"><span class="pre">MetricsPINN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">physics</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#MetricsPINN"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.MetricsPINN" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#physXAI.evaluation.metrics.Metrics" title="physXAI.evaluation.metrics.Metrics"><code class="xref py py-class docutils literal notranslate"><span class="pre">Metrics</span></code></a></p>
+<p>Metrics of a physics-informed model: the metrics of its output (<code class="code docutils literal notranslate"><span class="pre">by_output</span></code>) and, per physics target,
+the disagreement of the prediction with it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – Training data holding the true values and the predictions.</p></li>
+<li><p><strong>physics</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>numpy.ndarray</em></a><em>]</em><em>]</em>) – {term: {split: physics target values}}, aligned with the predictions of the split.</p></li>
+<li><p><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Characteristic scale of the loss terms (variance of the training targets, 1 if not normalized).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Variables<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>physics</strong> – {term: {split: {‘mse’, ‘rmse’, ‘normalized’}}}, <code class="code docutils literal notranslate"><span class="pre">normalized</span></code> = mse / scale is the term of the loss.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.metrics.MetricsPINN.get_config">
+<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#MetricsPINN.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.MetricsPINN.get_config" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.evaluation.metrics.MetricsMultiStep">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.metrics.</span></span><span class="sig-name descname"><span class="pre">MetricsMultiStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/metrics.html#MetricsMultiStep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.metrics.MetricsMultiStep" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#physXAI.evaluation.metrics.Metrics" title="physXAI.evaluation.metrics.Metrics"><code class="xref py py-class docutils literal notranslate"><span class="pre">Metrics</span></code></a></p>
+<p>Metrics of multi step predictions over all predicted steps, per output (the predicted trajectories
+of the features if their start values are known). The error per step is in <code class="code docutils literal notranslate"><span class="pre">td.horizon_metrics</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – </p></li>
+<li><p><strong>names</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-physXAI.evaluation.rollout">
+<span id="physxai-evaluation-rollout-module"></span><h2>physXAI.evaluation.rollout module<a class="headerlink" href="#module-physXAI.evaluation.rollout" title="Permalink to this heading"></a></h2>
+<p>Recursive (multi step) prediction with single step models.</p>
+<p>A single step model predicts the next value (or the change) of a feature it also gets as input.
+In an MPC it is applied recursively over the horizon: the prediction of step t becomes the input
+of step t+1. This module performs exactly this rollout on windows of the measured data:</p>
+<ul class="simple">
+<li><p>The recursive feature (e.g. ‘T’ for an output ‘Change(T)’) and its lags (‘T_lag1’, …) are
+taken from the predicted trajectory, all other inputs from the data (they are known to the MPC).</p></li>
+<li><p>Inputs holding values of the recursive feature are recomputed in every step from the predicted
+trajectory: its changes (‘Change(T)’), derived data columns depending on it (e.g. a heat flow computed
+from ‘T’), their lags (‘Q_lag1’) and changes (‘Change(Q)’). Expressions inside the model are recomputed
+anyway, since they are part of the keras model.</p></li>
+<li><p>The rollout is a keras RNN around the (trained) step model. It is differentiable, so it can also
+be used to train a single step model on the multi step error (<code class="code docutils literal notranslate"><span class="pre">physXAI.training.recursive</span></code>).</p></li>
+</ul>
+<p>The resulting errors over the horizon (RMSE, MAE and bias per step) show how the error of the
+model grows in an MPC, which the single step error does not.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.RecursionSpec">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.rollout.</span></span><span class="sig-name descname"><span class="pre">RecursionSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feature</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">difference</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derived</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expressions=&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/rollout.html#RecursionSpec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.rollout.RecursionSpec" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Describes how a single step model is applied recursively.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feature</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The recursive feature, e.g. ‘T’.</p></li>
+<li><p><strong>difference</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether the model predicts the change of the feature (‘Change(T)’).</p></li>
+<li><p><strong>max_lag</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Largest lag of the feature the model needs (inputs and derived columns).</p></li>
+<li><p><strong>columns</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – Columns of one step of the rollout: the inputs of the model plus the variables of
+derived inputs which depend on the feature.</p></li>
+<li><p><strong>derived</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – Inputs that are derived columns depending on the feature (recomputed every step).</p></li>
+<li><p><strong>expressions</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Expression of every recomputed input in terms of <code class="code docutils literal notranslate"><span class="pre">columns</span></code> (changes of the feature
+‘Change(T)’ = T - T_lag1, derived columns, their lags and changes).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>feature</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+<li><p><strong>difference</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – </p></li>
+<li><p><strong>max_lag</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
+<li><p><strong>columns</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – </p></li>
+<li><p><strong>derived</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – </p></li>
+<li><p><strong>expressions</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.RecursionSpec.feature">
+<span class="sig-name descname"><span class="pre">feature</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></em><a class="headerlink" href="#physXAI.evaluation.rollout.RecursionSpec.feature" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.RecursionSpec.difference">
+<span class="sig-name descname"><span class="pre">difference</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></em><a class="headerlink" href="#physXAI.evaluation.rollout.RecursionSpec.difference" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.RecursionSpec.max_lag">
+<span class="sig-name descname"><span class="pre">max_lag</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></em><a class="headerlink" href="#physXAI.evaluation.rollout.RecursionSpec.max_lag" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.RecursionSpec.columns">
+<span class="sig-name descname"><span class="pre">columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.evaluation.rollout.RecursionSpec.columns" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.RecursionSpec.derived">
+<span class="sig-name descname"><span class="pre">derived</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.evaluation.rollout.RecursionSpec.derived" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.RecursionSpec.expressions">
+<span class="sig-name descname"><span class="pre">expressions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a></em><a class="headerlink" href="#physXAI.evaluation.rollout.RecursionSpec.expressions" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.RecursionSpec.history">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">history</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.evaluation.rollout.RecursionSpec.history" title="Permalink to this definition"></a></dt>
+<dd><p>[feature, feature_lag1, …, feature_lag&lt;max_lag&gt;].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Names of the state of the rollout</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.recursion_spec">
+<span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.rollout.</span></span><span class="sig-name descname"><span class="pre">recursion_spec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">td</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/rollout.html#recursion_spec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.rollout.recursion_spec" title="Permalink to this definition"></a></dt>
+<dd><p>Derives the recursion of a single step model from the names of its inputs and outputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>RecursionSpec, or None if the model does not predict one of its own inputs (then there is
+nothing to feed back and the single step error already is the multi step error) or the targets
+are not the next step (shift != 1).</p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData" title="physXAI.preprocessing.training_data.TrainingData"><em>TrainingData</em></a>) – </p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#physXAI.evaluation.rollout.RecursionSpec" title="physXAI.evaluation.rollout.RecursionSpec"><em>RecursionSpec</em></a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.as_keras_step_model">
+<span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.rollout.</span></span><span class="sig-name descname"><span class="pre">as_keras_step_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_inputs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/rollout.html#as_keras_step_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.rollout.as_keras_step_model" title="Permalink to this definition"></a></dt>
+<dd><p>The model as keras model; scikit-learn linear regressions become a frozen dense layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>n_inputs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Model</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.build_step_function">
+<span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.rollout.</span></span><span class="sig-name descname"><span class="pre">build_step_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/rollout.html#build_step_function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.rollout.build_step_function" title="Permalink to this definition"></a></dt>
+<dd><p>Maps one row of <code class="code docutils literal notranslate"><span class="pre">spec.columns</span></code> to the output of the model, recomputing derived inputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>step_model</strong> (<em>Model</em>) – </p></li>
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData" title="physXAI.preprocessing.training_data.TrainingData"><em>TrainingData</em></a>) – </p></li>
+<li><p><strong>spec</strong> (<a class="reference internal" href="#physXAI.evaluation.rollout.RecursionSpec" title="physXAI.evaluation.rollout.RecursionSpec"><em>RecursionSpec</em></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Model</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.RecursiveCell">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.rollout.</span></span><span class="sig-name descname"><span class="pre">RecursiveCell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/rollout.html#RecursiveCell"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.rollout.RecursiveCell" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Layer</span></code></p>
+<p>RNN cell applying a step function recursively.</p>
+<p>State: history of the recursive feature [x_t, x_{t-1}, …, x_{t-max_lag}].
+Input:  one data row of <code class="code docutils literal notranslate"><span class="pre">spec.columns</span></code> at time t.
+Output: the predicted absolute value x_{t+1}.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>step_function</strong> (<em>keras.Model</em>) – </p></li>
+<li><p><strong>slots</strong> (<em>np.ndarray</em>) – </p></li>
+<li><p><strong>difference</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.RecursiveCell.call">
+<span class="sig-name descname"><span class="pre">call</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">states</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/rollout.html#RecursiveCell.call"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.rollout.RecursiveCell.call" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.build_rollout_model">
+<span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.rollout.</span></span><span class="sig-name descname"><span class="pre">build_rollout_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizon</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/rollout.html#build_rollout_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.rollout.build_rollout_model" title="Permalink to this definition"></a></dt>
+<dd><p>Keras model [rows (batch, horizon, columns), initial history (batch, max_lag + 1)] -&gt;
+predicted feature (batch, horizon, 1). It shares the weights of <code class="code docutils literal notranslate"><span class="pre">step_model</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData" title="physXAI.preprocessing.training_data.TrainingData"><em>TrainingData</em></a>) – </p></li>
+<li><p><strong>spec</strong> (<a class="reference internal" href="#physXAI.evaluation.rollout.RecursionSpec" title="physXAI.evaluation.rollout.RecursionSpec"><em>RecursionSpec</em></a>) – </p></li>
+<li><p><strong>horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Model</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.rollout_data">
+<span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.rollout.</span></span><span class="sig-name descname"><span class="pre">rollout_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/rollout.html#rollout_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.rollout.rollout_data" title="Permalink to this definition"></a></dt>
+<dd><p>Windows for a recursive prediction over <code class="code docutils literal notranslate"><span class="pre">horizon</span></code> steps.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>rows (n, horizon, columns), initial history (n, max_lag + 1) and the true trajectory of</dt><dd><p>the feature (n, horizon, 1), i.e. x_{s+1}, …, x_{s+horizon} for a window starting at s.
+None if the split holds no window.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a></p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData" title="physXAI.preprocessing.training_data.TrainingData"><em>TrainingData</em></a>) – </p></li>
+<li><p><strong>spec</strong> (<a class="reference internal" href="#physXAI.evaluation.rollout.RecursionSpec" title="physXAI.evaluation.rollout.RecursionSpec"><em>RecursionSpec</em></a>) – </p></li>
+<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+<li><p><strong>horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
+<li><p><strong>stride</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.HorizonMetrics">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.rollout.</span></span><span class="sig-name descname"><span class="pre">HorizonMetrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/rollout.html#HorizonMetrics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.rollout.HorizonMetrics" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Errors of a multi step prediction per step of the horizon: RMSE, MAE and bias (mean of
+prediction - truth) for every split.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>predictions</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a><em>[</em><em>np.ndarray</em><em>, </em><em>np.ndarray</em><em>]</em><em>]</em>) – {split: (prediction, truth)}, arrays of shape (windows, horizon, features).</p></li>
+<li><p><strong>time_step</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – Sampling time in seconds (for an axis in hours).</p></li>
+<li><p><strong>feature</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – Name of the predicted feature, or a list of names for several features.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Variables<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>kpis</strong> – {split: {‘rmse’: […], ‘mae’: […], ‘bias’: […], ‘std’: […], ‘n_windows’: n}} of the
+first feature (‘std’ is the standard deviation of the error per step).</p></li>
+<li><p><strong>by_feature</strong> – The same for every feature, {feature: kpis}.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.HorizonMetrics.steps">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">steps</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></em><a class="headerlink" href="#physXAI.evaluation.rollout.HorizonMetrics.steps" title="Permalink to this definition"></a></dt>
+<dd><p>Prediction steps 1, …, horizon.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.HorizonMetrics.hours">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">hours</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><a class="headerlink" href="#physXAI.evaluation.rollout.HorizonMetrics.hours" title="Permalink to this definition"></a></dt>
+<dd><p>Prediction horizon in hours, if the time step is known.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.HorizonMetrics.get_config">
+<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/rollout.html#HorizonMetrics.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.rollout.HorizonMetrics.get_config" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.evaluation.rollout.evaluate_horizon">
+<span class="sig-prename descclassname"><span class="pre">physXAI.evaluation.rollout.</span></span><span class="sig-name descname"><span class="pre">evaluate_horizon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('train',</span> <span class="pre">'val',</span> <span class="pre">'test')</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/rollout.html#evaluate_horizon"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.rollout.evaluate_horizon" title="Permalink to this definition"></a></dt>
+<dd><p>Predicts all windows of the data recursively and stores predictions and metrics in <code class="code docutils literal notranslate"><span class="pre">td</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – Trained single step model (keras or scikit-learn linear regression).</p></li>
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData" title="physXAI.preprocessing.training_data.TrainingData"><em>TrainingData</em></a>) – Training data. Defaults for <code class="code docutils literal notranslate"><span class="pre">horizon</span></code> and <code class="code docutils literal notranslate"><span class="pre">stride</span></code> are taken from it.</p></li>
+<li><p><strong>horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – Number of steps.</p></li>
+<li><p><strong>stride</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – Distance between two windows.</p></li>
+<li><p><strong>splits</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>...</em><em>]</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>HorizonMetrics, or None if the model has no recursion or no horizon is given.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#physXAI.evaluation.rollout.HorizonMetrics" title="physXAI.evaluation.rollout.HorizonMetrics"><em>HorizonMetrics</em></a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="physXAI.agentlib_mpc_plugin.html" class="btn btn-neutral float-left" title="physXAI.agentlib_mpc_plugin package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="physXAI.expr.html" class="btn btn-neutral float-right" title="physXAI.expr package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

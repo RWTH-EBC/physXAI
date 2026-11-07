@@ -1,0 +1,302 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evaluation, comparison and feature selection &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../_static/jquery.js"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+      <script src="../_static/doctools.js"></script>
+      <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Export for AgentLib-MPC" href="agentlib.html" />
+    <link rel="prev" title="Physics-informed models" href="physics.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Physics-informed models</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Evaluation, comparison and feature selection</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#metrics">Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#report">Report</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#comparing-models">Comparing models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#paired-comparison">Paired comparison</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#existing-runs">Existing runs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tables-and-plot">Tables and plot</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#feature-selection-experimental">Feature selection (experimental)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Evaluation, comparison and feature selection</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="evaluation-comparison-and-feature-selection">
+<h1>Evaluation, comparison and feature selection<a class="headerlink" href="#evaluation-comparison-and-feature-selection" title="Permalink to this heading"></a></h1>
+<section id="metrics">
+<h2>Metrics<a class="headerlink" href="#metrics" title="Permalink to this heading"></a></h2>
+<p>After <code class="docutils literal notranslate"><span class="pre">model.pipeline(td)</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">td.metrics.by_output[output][split]</span></code>: MSE, RMSE, MAE, R², bias (mean of prediction − truth) and the
+number of samples, for every output and split separately; <code class="docutils literal notranslate"><span class="pre">td.metrics.kpi('test',</span> <span class="pre">'rmse')</span></code> returns one
+value. Splits without data (<code class="docutils literal notranslate"><span class="pre">test_size=0</span></code>, <code class="docutils literal notranslate"><span class="pre">val_size=0</span></code>) are left out.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">td.horizon_metrics</span></code>: RMSE, MAE, bias and standard deviation per step of the horizon (see
+<a class="reference internal" href="multi_step.html"><span class="std std-doc">Multi step evaluation</span></a>), per predicted feature in <code class="docutils literal notranslate"><span class="pre">by_feature</span></code>.</p></li>
+</ul>
+<p>Both are written to <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;_training_data.json</span></code> by <code class="docutils literal notranslate"><span class="pre">Run.save</span></code>.</p>
+</section>
+<section id="report">
+<h2>Report<a class="headerlink" href="#report" title="Permalink to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">model.plot(td)</span></code> returns one figure per model: true vs. predicted values (small points, binned median per
+split with its interquartile band), the sorted predictions, RMSE and bias over the horizon, the training
+history and a metrics table. Plots are never opened unless requested (<code class="docutils literal notranslate"><span class="pre">show_plot=True</span></code>).</p>
+</section>
+<section id="comparing-models">
+<h2>Comparing models<a class="headerlink" href="#comparing-models" title="Permalink to this heading"></a></h2>
+<p>One training run says little about a model: the split of the data and the initial weights change the
+errors, often more than the difference between two models. <code class="docutils literal notranslate"><span class="pre">repeat_training</span></code> trains a model with several
+seeds, <code class="docutils literal notranslate"><span class="pre">ModelComparison</span></code> compares the distributions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.evaluation.comparison</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelComparison</span><span class="p">,</span> <span class="n">repeat_training</span>
+
+<span class="n">run</span> <span class="o">=</span> <span class="n">Run</span><span class="p">(</span><span class="s2">"results"</span><span class="p">,</span> <span class="s2">"TAir_compare"</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">repeat_training</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">prep</span><span class="p">,</span> <span class="n">LinearRegressionModel</span><span class="p">(),</span> <span class="n">seeds</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"linreg"</span><span class="p">)</span>
+<span class="n">repeat_training</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">prep</span><span class="p">,</span> <span class="n">ClassicalANNModel</span><span class="p">(</span><span class="n">epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">),</span> <span class="n">seeds</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"ann"</span><span class="p">)</span>
+<span class="n">repeat_training</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">rnn_prep</span><span class="p">,</span> <span class="n">RNNModel</span><span class="p">(</span><span class="n">rnn_layer</span><span class="o">=</span><span class="s2">"LSTM"</span><span class="p">),</span> <span class="n">seeds</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"rnn"</span><span class="p">)</span>
+
+<span class="n">comparison</span> <span class="o">=</span> <span class="n">ModelComparison</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>     <span class="c1"># one model per sub directory</span>
+<span class="n">comparison</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>                            <span class="c1"># per model: runs, mean, std, min, median, max</span>
+<span class="n">comparison</span><span class="o">.</span><span class="n">paired</span><span class="p">(</span><span class="s2">"linreg"</span><span class="p">)</span>                     <span class="c1"># run by run on the same splits, see below</span>
+<span class="n">comparison</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="s2">"linreg"</span><span class="p">)</span>         <span class="c1"># comparison.html and csv files</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Every run is saved with <code class="docutils literal notranslate"><span class="pre">Run.save</span></code> into <code class="docutils literal notranslate"><span class="pre">&lt;run&gt;/&lt;name&gt;/seed_&lt;seed&gt;/</span></code>. With the same seeds and the same split
+settings, all models are trained and tested on the same splits (<code class="docutils literal notranslate"><span class="pre">vary=('split',</span> <span class="pre">'init')</span></code> by default;
+<code class="docutils literal notranslate"><span class="pre">vary=('init',)</span></code> keeps the split fixed and only varies the weights). The block length depends on the window
+length (<code class="docutils literal notranslate"><span class="pre">eval_horizon</span></code>, <code class="docutils literal notranslate"><span class="pre">label_width</span></code>, <code class="docutils literal notranslate"><span class="pre">warmup_width</span></code>) and on the size of the data, so single step models and
+RNNs get other blocks with the default settings: pass the same <code class="docutils literal notranslate"><span class="pre">split=BlockSplit(...,</span> <span class="pre">block_length=...)</span></code> to all
+preprocessings (see <code class="docutils literal notranslate"><span class="pre">examples/11_compare_models.py</span></code>).</p></li>
+<li><p>Without saving: <code class="docutils literal notranslate"><span class="pre">comparison</span> <span class="pre">=</span> <span class="pre">repeat_training(...)</span> <span class="pre">+</span> <span class="pre">repeat_training(...)</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">ModelComparison().add(&quot;label&quot;,</span> <span class="pre">td)</span></code> for evaluated training data.</p></li>
+</ul>
+<section id="paired-comparison">
+<h3>Paired comparison<a class="headerlink" href="#paired-comparison" title="Permalink to this heading"></a></h3>
+<p>The split changes the errors often more than the model. In <code class="docutils literal notranslate"><span class="pre">summary</span></code> the distributions of two models then
+overlap, even if one of them is better on every single split. <code class="docutils literal notranslate"><span class="pre">paired(baseline)</span></code> compares every model with
+the baseline run by run on the same split, so the spread caused by the split cancels out:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pairs</span></code></p></td>
+<td><p>number of runs on the same split (paired by the split seed, else by the run name, <code class="docutils literal notranslate"><span class="pre">by=</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">baseline</span></code>, <code class="docutils literal notranslate"><span class="pre">model_median</span></code></p></td>
+<td><p>medians of the score</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mean_difference</span></code>, <code class="docutils literal notranslate"><span class="pre">ci_low</span></code>, <code class="docutils literal notranslate"><span class="pre">ci_high</span></code></p></td>
+<td><p>mean of model - baseline and its confidence interval (corrected resampled t-test, <code class="docutils literal notranslate"><span class="pre">confidence=0.95</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">median_difference</span></code></p></td>
+<td><p>median of model - baseline</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">better</span></code></p></td>
+<td><p>share of the splits on which the model is better (lower RMSE and absolute bias, higher R2)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">p_value</span></code></p></td>
+<td><p>two-sided p-value of the corrected resampled t-test</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">resampling</span></code></p></td>
+<td><p>ratio n_test / n_train of the correction (0: all runs on the same split)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">same_data</span></code></p></td>
+<td><p>share of the pairs evaluated on the same rows (fingerprint of the split, physXAI &gt;= 1.0)</p></td>
+</tr>
+</tbody>
+</table>
+<p>The runs are no independent samples: splits of the same data share most of their training data, and a plain
+paired t-test (or Wilcoxon test) is too optimistic. Confidence interval and p-value follow the corrected resampled
+t-test of Nadeau &amp; Bengio (2003): the variance of the mean difference is <code class="docutils literal notranslate"><span class="pre">var(d)</span> <span class="pre">·</span> <span class="pre">(1/n</span> <span class="pre">+</span> <span class="pre">n_test/n_train)</span></code> instead
+of <code class="docutils literal notranslate"><span class="pre">var(d)/n</span></code>. With <code class="docutils literal notranslate"><span class="pre">vary=('init',)</span></code> all runs share one split and nothing is corrected; <code class="docutils literal notranslate"><span class="pre">corrected=False</span></code> gives the
+plain paired t-test. <code class="docutils literal notranslate"><span class="pre">paired</span></code> tests several scores and models at once: correct the p-values for multiple testing
+(e.g. Holm) before drawing conclusions from several of them.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">same_data</span></code> below 1 (also logged as a warning) means that the splits differ despite the same seed, e.g.
+because of another block length. Single step models and RNNs on the same split can still be evaluated on
+different windows (the warmup of the RNN has to lie inside the split).</p>
+</section>
+<section id="existing-runs">
+<h3>Existing runs<a class="headerlink" href="#existing-runs" title="Permalink to this heading"></a></h3>
+<p>Runs saved earlier, also by physXAI &lt; 1.0 or by AgentLib-MPC training scripts, are compared the same way.
+A model is a directory, every directory below it holding a <code class="docutils literal notranslate"><span class="pre">*training_data.json</span></code> is one run, named
+arbitrarily:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">results</span><span class="o">/</span>
+  <span class="n">cmnn</span><span class="o">/</span>
+    <span class="n">a1b2c3d4</span><span class="o">/</span>   <span class="n">training_data</span><span class="o">.</span><span class="n">json</span><span class="p">,</span> <span class="n">model_config</span><span class="o">.</span><span class="n">json</span><span class="p">,</span> <span class="n">preprocessing_config</span><span class="o">.</span><span class="n">json</span>   <span class="p">(</span><span class="n">physXAI</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">x9y8z7w6</span><span class="o">/</span>   <span class="o">...</span>
+    <span class="o">...</span>         <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">g</span><span class="o">.</span> <span class="mi">50</span> <span class="n">runs</span><span class="p">)</span>
+  <span class="n">ann</span><span class="o">/</span>
+    <span class="n">seed_0</span><span class="o">/</span>     <span class="n">ann_training_data</span><span class="o">.</span><span class="n">json</span><span class="p">,</span> <span class="n">ann_model</span><span class="o">.</span><span class="n">json</span><span class="p">,</span> <span class="n">ann_preprocessing</span><span class="o">.</span><span class="n">json</span><span class="p">,</span> <span class="n">ann</span><span class="o">.</span><span class="n">keras</span>   <span class="p">(</span><span class="n">Run</span><span class="o">.</span><span class="n">save</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ModelComparison</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"results"</span><span class="p">)</span>                          <span class="c1"># every sub directory is a model: cmnn, ann</span>
+<span class="n">ModelComparison</span><span class="o">.</span><span class="n">load</span><span class="p">([</span><span class="s2">"results/cmnn"</span><span class="p">,</span> <span class="s2">"old/ann"</span><span class="p">])</span>        <span class="c1"># every given directory is a model</span>
+<span class="n">ModelComparison</span><span class="o">.</span><span class="n">load</span><span class="p">({</span><span class="s2">"CMNN"</span><span class="p">:</span> <span class="s2">"results/cmnn"</span><span class="p">})</span>           <span class="c1"># with labels</span>
+<span class="n">ModelComparison</span><span class="o">.</span><span class="n">load</span><span class="p">([</span><span class="s2">"results/cmnn"</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">"T"</span><span class="p">)</span>         <span class="c1"># only T_training_data.json (AgentLib-MPC runs)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Outputs are named after the <code class="docutils literal notranslate"><span class="pre">output</span></code> of the saved preprocessing, so old and new runs of <code class="docutils literal notranslate"><span class="pre">Change(T)</span></code> share
+their scores. The RMSE per step of multi step models of physXAI &lt; 1.0 is used as their error over the
+horizon (the bias was not stored then).</p></li>
+<li><p>A run directory with several models (<code class="docutils literal notranslate"><span class="pre">T_…</span></code> and <code class="docutils literal notranslate"><span class="pre">P_…</span></code> of AgentLib-MPC) gives separate models <code class="docutils literal notranslate"><span class="pre">cmnn/T</span></code> and
+<code class="docutils literal notranslate"><span class="pre">cmnn/P</span></code>. Unreadable files are skipped with a warning.</p></li>
+</ul>
+<p>From the command line (prints the summary, saves plot and csv files into <code class="docutils literal notranslate"><span class="pre">--out</span></code>, by default
+<code class="docutils literal notranslate"><span class="pre">&lt;first</span> <span class="pre">path&gt;/comparison</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">results/comparison</span></code> for the first command):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>physXAI.evaluation.comparison<span class="w"> </span>results
+python<span class="w"> </span>-m<span class="w"> </span>physXAI.evaluation.comparison<span class="w"> </span>results/cmnn<span class="w"> </span>results/ann<span class="w"> </span>--split<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--horizon<span class="w"> </span><span class="m">12</span>
+python<span class="w"> </span>-m<span class="w"> </span>physXAI.evaluation.comparison<span class="w"> </span>results/cmnn<span class="w"> </span>--models<span class="w"> </span>--band<span class="w"> </span>range
+python<span class="w"> </span>-m<span class="w"> </span>physXAI.evaluation.comparison<span class="w"> </span>results<span class="w"> </span>--baseline<span class="w"> </span>cmnn<span class="w">     </span><span class="c1"># adds the paired comparison</span>
+</pre></div>
+</div>
+</section>
+<section id="tables-and-plot">
+<h3>Tables and plot<a class="headerlink" href="#tables-and-plot" title="Permalink to this heading"></a></h3>
+<p>Tables: <code class="docutils literal notranslate"><span class="pre">runs()</span></code> (seeds, model class, training time), <code class="docutils literal notranslate"><span class="pre">metrics()</span></code> (single step metrics),
+<code class="docutils literal notranslate"><span class="pre">horizon()</span></code> (errors per step), <code class="docutils literal notranslate"><span class="pre">scores(split)</span></code> (one row per run), <code class="docutils literal notranslate"><span class="pre">summary(split)</span></code> and <code class="docutils literal notranslate"><span class="pre">paired(baseline,</span> <span class="pre">split)</span></code>.</p>
+<p>Models with different outputs (e.g. <code class="docutils literal notranslate"><span class="pre">Change(T)</span></code> of a single step model and the trajectory <code class="docutils literal notranslate"><span class="pre">T</span></code> of an RNN)
+are compared on the error of <code class="docutils literal notranslate"><span class="pre">T</span></code> over the horizon. <code class="docutils literal notranslate"><span class="pre">scores</span></code> and <code class="docutils literal notranslate"><span class="pre">plot</span></code> use the horizon all runs reach,
+or <code class="docutils literal notranslate"><span class="pre">horizon=</span></code> in hours.</p>
+<p>The plot shows box plots of the single step RMSE (every point is a run), RMSE and bias over the horizon
+(median over the runs and the interquartile range, or <code class="docutils literal notranslate"><span class="pre">band='range'</span></code> for min - max), box plots of the mean RMSE over the horizon and
+the RMSE at its end, and the summary table.
+See <code class="docutils literal notranslate"><span class="pre">examples/11_compare_models.py</span></code>.</p>
+</section>
+</section>
+<section id="feature-selection-experimental">
+<h2>Feature selection (experimental)<a class="headerlink" href="#feature-selection-experimental" title="Permalink to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">FeatureSelection</span></code> removes inputs one by one (backward elimination) and keeps the best set:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.feature_selection.selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureSelection</span>
+
+<span class="n">prep</span> <span class="o">=</span> <span class="n">PreprocessingSingleStep</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="n">candidates</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">"Change(reaTZon_y)"</span><span class="p">,</span> <span class="n">eval_horizon</span><span class="o">=</span><span class="mi">48</span><span class="p">)</span>
+<span class="n">selection</span> <span class="o">=</span> <span class="n">FeatureSelection</span><span class="p">(</span><span class="n">prep</span><span class="p">,</span> <span class="n">LinearRegressionModel</span><span class="p">(),</span> <span class="n">first_step_weight</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">n_repeats</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                             <span class="n">controls</span><span class="o">=</span><span class="p">{</span><span class="s2">"oveHeaPumY_u"</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="n">tolerance</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">selection</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<span class="n">result</span><span class="o">.</span><span class="n">selected</span><span class="o">.</span><span class="n">inputs</span>
+<span class="n">result</span><span class="o">.</span><span class="n">table</span><span class="p">()</span>
+<span class="n">result</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>              <span class="c1"># feature_selection.json and .html</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>The criterion is the step weighted RMSE of the recursive prediction over <code class="docutils literal notranslate"><span class="pre">eval_horizon</span></code> (optionally plus
+<code class="docutils literal notranslate"><span class="pre">bias_weight</span></code> · |bias| at <code class="docutils literal notranslate"><span class="pre">mpc_horizon</span></code>), or <code class="docutils literal notranslate"><span class="pre">criterion='single_step'</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_repeats</span></code> evaluates every candidate on several splits. Differences smaller than the spread are noise.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">controls={'u':</span> <span class="pre">1}</span></code>: the prediction has to increase with <code class="docutils literal notranslate"><span class="pre">u</span></code> on (almost) all validation samples,
+otherwise a candidate is implausible and not selected. Controls (and with <code class="docutils literal notranslate"><span class="pre">criterion='horizon'</span></code> the recursive feature) are never removed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tolerance</span></code> selects the smallest set within (1 + tolerance) × the best criterion.</p></li>
+<li><p>The criterion is computed on the validation data, which also stops the training early, so the score of the
+selected set is optimistic. Judge the final model on the test data.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="physics.html" class="btn btn-neutral float-left" title="Physics-informed models" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="agentlib.html" class="btn btn-neutral float-right" title="Export for AgentLib-MPC" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

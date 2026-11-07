@@ -1,0 +1,18 @@
+physXAI.feature\_selection package
+==================================
+
+.. automodule:: physXAI.feature_selection
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+physXAI.feature\_selection.selection module
+-------------------------------------------
+
+.. automodule:: physXAI.feature_selection.selection
+   :members:
+   :undoc-members:
+   :show-inheritance:

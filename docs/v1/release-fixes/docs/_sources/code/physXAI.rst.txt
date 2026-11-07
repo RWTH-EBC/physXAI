@@ -1,0 +1,24 @@
+physXAI package
+===============
+
+.. automodule:: physXAI
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   physXAI.agentlib_mpc_plugin
+   physXAI.evaluation
+   physXAI.expr
+   physXAI.feature_selection
+   physXAI.io
+   physXAI.models
+   physXAI.plotting
+   physXAI.preprocessing
+   physXAI.training
+   physXAI.utils
