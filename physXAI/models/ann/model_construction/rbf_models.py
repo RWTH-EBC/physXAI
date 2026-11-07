@@ -9,6 +9,7 @@ from sklearn.neighbors import NearestNeighbors
 
 from physXAI.models.ann.configs.ann_model_configs import RBFConstruction_config
 from physXAI.models.ann.keras_models.keras_models import RBFLayer
+from physXAI.models.ann.model_construction.ann_models import output_scale
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 
 logger = logging.getLogger("physXAI")
@@ -105,7 +106,7 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
             rescale_sigma = config['rescale_sigma']
         else:
             # Auto-calculate from data
-            rescale_sigma = float(np.std(td.y_train_single, ddof=1))
+            rescale_sigma = output_scale(td.y_train_single)
         # --- Mean (Offset) ---
         # CASE A: Residual Mode -> Config must provide 0.0
         # CASE B: Direct Prediction -> Config is None, calculate from data

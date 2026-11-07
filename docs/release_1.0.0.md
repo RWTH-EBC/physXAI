@@ -7,7 +7,12 @@ by a workflow, which needs a change of the repository settings.
 ## 1. Merge
 
 1. Merge all open PRs into `refactoring_v1.0.0`.
-2. Merge the PR `refactoring_v1.0.0` → `main`.
+2. If `main` got new commits since (e.g. security fixes of 0.x), merge `main` into `refactoring_v1.0.0` first, so
+   the PR to `main` has no conflicts. Files changed on `main` but removed in 1.0 (old workflows, `requirements.txt`,
+   `.github/copilot-instructions.md`) stay removed, `pyproject.toml` keeps the 1.0 version (static version, bounded
+   dependencies); check that the dependency floors of `main` are kept in `pyproject.toml` and `constraints.txt`.
+   `main` up to 0.3.0 is merged already.
+3. Merge the PR `refactoring_v1.0.0` → `main`.
    AgentLib-MPC installs `physXAI @ git+https://github.com/RWTH-EBC/physXAI.git` (`main`) in every CI run, so its
    tests run against 1.0.0 from now on (`tests/test_physXAI_plugin` passes with 1.0.0).
 
@@ -56,8 +61,8 @@ Every other branch gets its own preview after a push: `https://rwth-ebc.github.i
    v1.0.0 → Target: main*, release notes from `CHANGELOG.md`). Keep the **known limitation** at the top of the release
    notes: the export of `RNNModel` / `PCNNModel` needs AgentLib-MPC branch `143-feature-multistep-model-support`.
 2. The workflow **Version Check** runs on the tag: it compares the tag with `version = "1.0.0"` in `pyproject.toml`
-   and requires the entry `## [1.0.0]` in `CHANGELOG.md`. If the release date differs from the date in the
-   CHANGELOG, update it in a commit before tagging.
+   and requires the entry `## [1.0.0]` in `CHANGELOG.md`. Before tagging, replace `unreleased` in that entry by the
+   release date in a commit on `main`.
 3. PyPI is not used yet (`PYPI_RELEASE: false` in `ci.yml`).
 4. Later releases: update `constraints.txt` to the versions the release was tested with (the job `tested-versions`
    of `windows.yml` installs them on Linux and Windows).

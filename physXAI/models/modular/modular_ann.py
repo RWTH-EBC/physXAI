@@ -22,6 +22,7 @@ from physXAI.expr import Expr, Linear, from_config, to_config
 from physXAI.expr.blocks import _nominal
 from physXAI.expr.core import BuildContext
 from physXAI.models.ann.ann_design import ANNModel
+from physXAI.models.ann.model_construction.ann_models import output_scale
 from physXAI.models.models import register_model, train_data_float64
 from physXAI.models.modular.shape_constraints import (
     ShapeConstraints,
@@ -138,7 +139,7 @@ class ModularANN(ANNModel):
         self._rescaling = None
         if self.rescale_output:
             y = td.y_train_single
-            self._rescaling = (float(np.mean(y)), float(np.std(y, ddof=1)))
+            self._rescaling = (float(np.mean(y)), output_scale(y))
             x = keras.layers.Rescaling(scale=self._rescaling[1], offset=self._rescaling[0])(x)
         self._ctx = ctx
         return keras.Model(ctx.input, x)

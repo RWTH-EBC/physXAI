@@ -70,7 +70,7 @@ repeat_training(DATA, multi_step, RNNModel(rnn_layer='LSTM', rnn_units=16, epoch
 comparison = ModelComparison.load(run.path)
 print(comparison.summary(split='test').to_string(float_format='{:.4f}'.format))
 # Run by run on the same splits: mean difference to the linear regression with its confidence interval, share of the
-# splits on which a model is better, p-value (Wilcoxon, needs at least 6 seeds for 0.05), same_data = 1: same splits
+# splits on which a model is better, p-value (t-test corrected for the overlap of the splits), same_data = 1: same splits
 paired = comparison.paired('linreg', split='test')
 print(paired[['pairs', 'mean_difference', 'ci_low', 'ci_high', 'better', 'same_data']]
       .to_string(float_format='{:.4f}'.format))

@@ -180,6 +180,8 @@ def test_shift_zero_predicts_the_output_at_the_time_of_the_inputs(frame, tmp_pat
         dict(inputs=["mDot", "Change(T)"], output="T"),  # the change holds the target as well
         dict(inputs=["mDot", "T_lag1"], output="Change(T)"),  # a change is defined to the next step
         dict(inputs=["mDot", "q"], output="T", columns="q"),  # a derived input depends on the target
+        dict(inputs=["mDot", "Change(q)"], output="T", columns="q"),  # its change holds q(t) as well
+        dict(inputs=["mDot", "q2"], output="T", columns="q"),  # a nested derived column
     ],
 )
 def test_shift_zero_rejects_inputs_holding_the_target(frame, tmp_path, settings):
@@ -188,9 +190,20 @@ def test_shift_zero_rejects_inputs_holding_the_target(frame, tmp_path, settings)
     settings = dict(settings)
     if settings.pop("columns", None):
         v = px.Vars()
-        settings["columns"] = {"q": v.mDot * v.T}
+        settings["columns"] = {"q": v.mDot * v.T, "q2": 2 * v.q}
     with pytest.raises(ValueError, match="shift"):
         PreprocessingSingleStep(shift=0, **settings).pipeline(_csv(frame, tmp_path))
+
+
+def test_shift_zero_accepts_lags_of_derived_columns(frame, tmp_path):
+    """Lags of the target, also inside derived columns, only hold past values."""
+    from physXAI import expr as px
+
+    v = px.Vars()
+    prep = PreprocessingSingleStep(inputs=["mDot", "q_lag1", "Change(T_lag1)"], output="T", shift=0,
+                                   columns={"q": v.mDot * v.T}, random_state=0)
+    td = prep.pipeline(_csv(frame, tmp_path))
+    assert td.inputs == ["mDot", "q_lag1", "Change(T_lag1)"]
 
 
 def test_multi_step_sequences_do_not_leak(frame, tmp_path):

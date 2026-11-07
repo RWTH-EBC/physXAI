@@ -9,6 +9,9 @@ Optionally, the sign of the sensitivity of the prediction to the control inputs 
 (`controls`): a model whose prediction reacts to a control with the wrong sign is of little use in
 an MPC, even if its error is small.
 
+The criterion is computed on the validation data, which also stops the training early. The score of the selected
+inputs is therefore optimistic: evaluate the final model on the test data (`td.metrics`, `td.horizon_metrics`).
+
     >>> fs = FeatureSelection(prep, LinearRegressionModel(), controls={'oveHeaPumY_u': 1}, n_repeats=3)
     >>> result = fs.run(file_path)
     >>> result.selected.inputs

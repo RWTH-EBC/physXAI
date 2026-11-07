@@ -51,7 +51,7 @@ class BlockSplit:
         block_length: Length of a block in time steps (int) or as a pandas time delta string,
                       e.g. '7D'. Defaults to max(4 * window length, 1 day).
         gap_steps: Number of rows left out at each boundary between two splits. Defaults to the
-                   value given by the preprocessing (maximum lag + warmup).
+                   value given by the preprocessing (reach of a sample into the past + shift).
         min_blocks: The block length is reduced if the data holds fewer blocks, so that small data
                     sets can still be split.
     """

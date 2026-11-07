@@ -205,3 +205,37 @@ def test_change_inside_derived_column_and_without_the_feature(csv):
     assert spec is not None and spec.derived == ["dTx"] and spec.max_lag == 1
     assert {"T", "T_lag1"} <= set(spec.expressions["dTx"].free_vars())
     assert td.horizon_metrics is not None
+
+
+def test_lags_and_changes_of_derived_columns_are_recomputed(csv):
+    """
+    Regression: lags ('Q_lag1') and changes ('Change(Q)') of a derived column depending on T are computed from the
+    predicted trajectory, not taken from the data (leakage of the measured T over the horizon).
+    """
+    v = px.Vars()
+    inputs = ["mDot", "load", "T_in", "Q_lag1", "Change(Q)", "T"]
+    prep = PreprocessingSingleStep(inputs=inputs, output="Change(T)", eval_horizon=HORIZON, random_state=0,
+                                   columns={"Q": v.mDot * (v.T_in - v.T)})
+    td = prep.pipeline(csv)
+    model = LinearRegressionModel().pipeline(td, plot=False, save_model=False)
+    spec = recursion_spec(td)
+    assert set(spec.expressions) == {"Q_lag1", "Change(Q)"}
+    assert spec.max_lag == 1 and {"mDot_lag1", "T_in_lag1"} <= set(spec.columns)
+
+    model.intercept_ = model.intercept_ + 0.02  # a drift the measured columns would hide
+    model.coef_[0, inputs.index("Q_lag1")] = 1e-3
+    model.coef_[0, inputs.index("Change(Q)")] = 2e-3
+    evaluate_horizon(model, td)
+    prediction, _ = td.horizon_predictions["test"]
+    rows, history, _ = rollout_data(td, spec, "test", HORIZON)
+    start = td.window_starts("test", HORIZON)
+    start = start[start >= spec.max_lag][0]
+    m_dot, t_in = td.column("mDot"), td.column("T_in")
+    T, T_prev, expected = float(history[0, 0]), float(history[0, 1]), []
+    for k in range(HORIZON):
+        t = start + k
+        q, q_prev = m_dot[t] * (t_in[t] - T), m_dot[t - 1] * (t_in[t - 1] - T_prev)
+        x = np.array([[m_dot[t], td.column("load")[t], t_in[t], q_prev, q - q_prev, T]])
+        T_prev, T = T, T + model.predict(x).item()
+        expected.append(T)
+    np.testing.assert_allclose(prediction[0, :, 0], expected, rtol=1e-5)

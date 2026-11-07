@@ -14,6 +14,12 @@ import keras
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 
+def output_scale(y) -> float:
+    """Standard deviation of the training targets for the output rescaling, 1 for a constant target (no zero scale)."""
+    sigma = float(np.std(y, ddof=1)) if np.size(y) > 1 else 0.0
+    return sigma if np.isfinite(sigma) and sigma > 1e-12 else 1.0
+
+
 def _split_units(units: int, activation_split: list[float], part: int) -> int:
     """Neurons of one part (convex, concave, saturated) of a CMNN layer: its share, at least one if the share is > 0."""
     return max(int(units * activation_split[part] / sum(activation_split)), 1)
@@ -76,7 +82,7 @@ def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
     if config['rescale_output']:
         # Rescaling for output layer
         rescale_mean = float(np.mean(td.y_train_single))
-        rescale_sigma = float(np.std(td.y_train_single, ddof=1))
+        rescale_sigma = output_scale(td.y_train_single)
         model.add(keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean))
 
     return model
@@ -143,12 +149,10 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
 
     # Add dense layer
     activation_split = config['activation_split']
-    # Determine activation split
+    # Convex, concave and saturated neurons. Only convex neurons with the non negative weights of the following layers
+    # would make the prediction convex in all inputs, also without monotonicities.
     if activation_split is None:
-        if mono is None:
-            activation_split = [1, 0, 0]
-        else:
-            activation_split = [1, 1, 1]
+        activation_split = [1, 1, 1]
     # First layer has partial constraints based on monotonicities
     kernel_contraint = NonNegPartial(monotonicities)
     for i in range(0, n_layers):
@@ -187,7 +191,7 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
     if config['rescale_output']:
         # Rescaling for output layer
         rescale_mean = float(np.mean(td.y_train_single))
-        rescale_sigma = float(np.std(td.y_train_single, ddof=1))
+        rescale_sigma = output_scale(td.y_train_single)
         x = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(x)
 
     # # Add min / max constraints

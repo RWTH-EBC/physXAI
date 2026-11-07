@@ -27,7 +27,7 @@ stored in the config. Unknown arguments raise a `TypeError`.
 ## Constrained regression
 
 A linear regression on physical terms whose prediction is monotonic or convex in raw data columns, guaranteed on a
-domain. The fit is a convex quadratic program: one global optimum, no seeds, about a second for 1e5 samples.
+domain. The fit is a convex quadratic program: one global optimum, no seeds.
 
 ```python
 from physXAI.models import ModularANN, ShapeConstraints

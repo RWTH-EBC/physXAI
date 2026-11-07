@@ -5,7 +5,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 [Semantic Versioning](https://semver.org/). The version is defined once in `pyproject.toml`
 and has to match the git tag of a release.
 
-## [1.0.0] – 2026-11-06
+## [1.0.0] – unreleased
 
 Major release, not backwards compatible except for the AgentLib-MPC integration
 (`agentlib_mpc.machine_learning_plugins.physXAI`). A migration guide is part of the documentation.
@@ -37,7 +37,7 @@ loads single step models only. The export is verified against that branch, but n
   regression on expressions whose prediction is monotonic or convex in raw data columns, guaranteed on a domain (the
   box of the data or `bounds`) by an exchange method for the semi-infinite program, with a certificate per
   constraint (`exact`, `verified`, `data`, `violated`), the cost of the constraints and a report table. Solved as QP
-  (HiGHS) in QR coordinates, about 1 s for 1e5 samples. `px.Linear(monotonicities=...)` bounds the sign of weights
+  (HiGHS) in QR coordinates. `px.Linear(monotonicities=...)` bounds the sign of weights
   with `solver='qp'`.
 - Warm start of `ModularANN` (`warm_start=True`): with a normalized `Linear` block as architecture, the gradient
   based training starts at the least squares solution of its data only terms, trainable terms (e.g. `px.MLP`) start
@@ -122,7 +122,8 @@ loads single step models only. The export is verified against that branch, but n
 - `PHYSXAI_REQUIRE_AGENTLIB=1` makes the AgentLib-MPC contract tests fail instead of being skipped if AgentLib-MPC
   is missing (set in the CI); the model saved with physXAI 0.x is part of the tests.
 - `ModelComparison.paired(baseline)`: paired comparison of the runs of every model with a baseline on the same
-  splits (mean difference with confidence interval, share of better splits, Wilcoxon p-value), also in
+  splits (mean difference with confidence interval and p-value of the corrected resampled t-test of Nadeau & Bengio
+  2003, which accounts for the overlap of repeated splits of the same data, and the share of better splits), also in
   `save(run, baseline=...)` and `--baseline` of the command line. The training data config stores a fingerprint
   of the splits (`summary.fingerprint`), which checks that paired runs used the same rows.
 - Sub-sampling to a longer `time_step` (point sampling) logs a warning: quantities over an interval (power, energy)
@@ -142,7 +143,7 @@ loads single step models only. The export is verified against that branch, but n
   modelled with lagged inputs, a prediction over several steps recursively (`eval_horizon`).
 - `random_seed` of the keras models defaults to the global seed (`physXAI.set_seed`), else a new seed is drawn and
   stored in the config (before: 42).
-- Python >= 3.11 is required (3.9 and 3.10 are end of life).
+- Python >= 3.11 is required (3.9 and 3.10 are end of life), as in 0.3.0.
 - CI uses the shared template of the institute (RWTH-EBC/ci_templates, like AgentLib and AgentLib-MPC): tests,
   coverage, package build, pylint/ruff reports, documentation and GitHub Pages; additionally the unit tests on
   Windows, a smoke run of the examples (one epoch, `tests/smoke_examples.py`) and strict ruff and Sphinx
@@ -154,6 +155,8 @@ loads single step models only. The export is verified against that branch, but n
 - `keras>=3.15.0`: older versions have known vulnerabilities in loading models (unsafe deserialization, file
   disclosure via HDF5), see the GitHub security advisories.
 - Default run folder names no longer contain `:` (invalid on Windows).
+- The embargo of multi step data no longer adds the warmup: the warmup lies inside the split of its sequence, so the
+  reach of a sample plus `shift` suffices (more training data at every boundary).
 - Single step data is split in blocks instead of random rows by default (random rows overestimate
   the test performance because of autocorrelation).
 - Data is loaded onto a regular time grid: missing time stamps are missing values instead of being
@@ -216,8 +219,17 @@ loads single step models only. The export is verified against that branch, but n
   normalization.
 - Recurrent models (`RNNModel`, `PCNNModel`) accepted lags, changes and derived columns of a predicted feature as
   inputs, which held its measured values over the horizon (data leakage); they are rejected now.
-- The recursive evaluation and training of single step models took inputs `Change(T)` (also lagged or inside a
-  derived column) of the recursive feature from the data; they are recomputed from the predicted trajectory.
+- The recursive evaluation and training of single step models (and the criterion of the feature selection) took
+  inputs `Change(T)` (also lagged or inside a derived column) of the recursive feature, and lags (`Q_lag1`) and
+  changes (`Change(Q)`) of derived columns depending on it, from the data; they are recomputed from the predicted
+  trajectory.
+- `shift=0` did not reject inputs holding the target through a change of a derived column (`Change(Q)` with Q of
+  the output) or nested derived columns.
+- `CMNNModel` and `PINNModel` without monotonicities had convex neurons only, which with the non negative weights of
+  the following layers made the prediction convex in all inputs. `activation_split` defaults to `[1, 1, 1]` now.
+- Settings of the split (`test_size`, `val_size`, `block_length`, `gap_steps`) next to a `split=BlockSplit(...)` were
+  ignored silently; different values raise a `ValueError`.
+- A constant training target gave an output rescaling with the scale 0 (a constant model); the scale is 1 then.
 - The default embargo of the split ignored the reach of `Change(X)` inputs (X(t-1)) and of lags inside derived
   columns, so a value of the data could be part of a training and a test sample. The documentation no longer claims
   that the embargo removes the autocorrelation (test blocks lie in the period of the training data).
@@ -254,4 +266,12 @@ loads single step models only. The export is verified against that branch, but n
 - `physXAI.utils.logging` (`Logger`, `get_full_path`, `create_full_path`): replaced by `physXAI.io.Run` and the
   `logging` module, see the migration guide. Training data is no longer pickled (`TrainingData.save`).
 - `GitPython` dependency; paths are no longer resolved relative to the git root.
-- `requirements.txt` with outdated pins (use `pip install -e .[dev]`).
+- `requirements.txt`: replaced by the bounds in `pyproject.toml` (`pip install -e .[dev]`) and the tested versions in
+  `constraints.txt`.
+
+## [0.3.0] – 2026-11-07
+
+### Changed
+- Python 3.11 - 3.13 (3.9 and 3.10 are end of life, 3.9 is no longer available on the GitHub runners).
+- `keras>=3.15.0` (older versions are vulnerable when loading models) and `GitPython>=3.2.1`.
+- `requirements.txt`: the first releases fixing the open security advisories (Dependabot).
