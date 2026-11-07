@@ -88,6 +88,22 @@ def test_models_use_the_global_seed(no_global_seed):
     assert len(seeds) > 1  # without a global seed, every model draws (and stores) a new seed
 
 
+def test_deterministic_operations():
+    """`set_seed(..., deterministic=True)` enables the deterministic kernels of TensorFlow (in a new process, since
+    TensorFlow cannot disable them again)."""
+    import os
+    import subprocess
+    import sys
+
+    code = (
+        "import physXAI; physXAI.set_seed(3, deterministic=True)\n"
+        "from tensorflow.python.framework import config\n"
+        "assert config.is_op_determinism_enabled() and physXAI.get_seed() == 3\n"
+    )
+    env = {**os.environ, "TF_CPP_MIN_LOG_LEVEL": "3"}
+    subprocess.run([sys.executable, "-c", code], check=True, env=env, capture_output=True, timeout=300)
+
+
 def test_global_seed_makes_the_training_reproducible(td, no_global_seed):
     def weights(seed):
         physXAI.set_seed(seed)
@@ -165,6 +181,17 @@ def test_rbf_without_normalization(td):
 
     model = RBFModelConstruction({"n_layers": 1, "n_neurons": 4, "normalize": False}, td)
     assert model.predict(td.X_test, verbose=0).shape == (len(td.X_test), 1)
+
+
+def test_recurrent_export_reports_missing_agentlib_support(caplog, monkeypatch):
+    from physXAI.io import agentlib
+    from physXAI.preprocessing.preprocessing import PreprocessingMultiStep
+
+    monkeypatch.setattr(agentlib, "agentlib_supports_recurrent_models", lambda: False)
+    prep = PreprocessingMultiStep(inputs=["mDot", "T"], output="Change(T)", label_width=3)
+    with caplog.at_level(logging.WARNING, logger="physXAI"):
+        agentlib.check_agentlib_compatibility(prep)
+    assert agentlib.AGENTLIB_RNN_BRANCH in caplog.text
 
 
 def test_derived_inputs_are_reported_for_agentlib(caplog):

@@ -10,12 +10,15 @@ import json
 
 import numpy as np
 import pytest
-from conftest import simulate_one_room
+from conftest import import_agentlib, simulate_one_room
 
-pytest.importorskip("agentlib_mpc")
-casadi_predictor = pytest.importorskip("agentlib_mpc.models.casadi_predictor")
-if not hasattr(casadi_predictor, "CasadiRNN"):
-    pytest.skip("The installed AgentLib-MPC does not support recurrent models.", allow_module_level=True)
+from physXAI.io.agentlib import AGENTLIB_RNN_BRANCH, agentlib_supports_recurrent_models
+
+casadi_predictor = import_agentlib("agentlib_mpc.models.casadi_predictor")
+if not agentlib_supports_recurrent_models():
+    # allowed also in the CI until AgentLib-MPC releases the support of recurrent models
+    pytest.skip(f"The installed AgentLib-MPC does not support recurrent models (branch {AGENTLIB_RNN_BRANCH}).",
+                allow_module_level=True)
 import casadi as ca  # noqa: E402
 import keras  # noqa: E402
 from agentlib_mpc.machine_learning_plugins.physXAI.model_config_creation import physXAI_2_agentlib_json  # noqa: E402
