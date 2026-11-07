@@ -100,6 +100,12 @@
 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'TF_CPP_MIN_LOG_LEVEL'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'0'</span>
 
 
+<div class="viewcode-block" id="output_scale"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.ann_models.output_scale">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">output_scale</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Standard deviation of the training targets for the output rescaling, 1 for a constant target (no zero scale)."""</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mf">0.0</span>
+    <span class="k">return</span> <span class="n">sigma</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span> <span class="ow">and</span> <span class="n">sigma</span> <span class="o">&gt;</span> <span class="mf">1e-12</span> <span class="k">else</span> <span class="mf">1.0</span></div>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_split_units</span><span class="p">(</span><span class="n">units</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">activation_split</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">part</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Neurons of one part (convex, concave, saturated) of a CMNN layer: its share, at least one if the share is &gt; 0."""</span>
     <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">units</span> <span class="o">*</span> <span class="n">activation_split</span><span class="p">[</span><span class="n">part</span><span class="p">]</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">activation_split</span><span class="p">)),</span> <span class="mi">1</span><span class="p">)</span>
@@ -162,7 +168,7 @@
     <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'rescale_output'</span><span class="p">]:</span>
         <span class="c1"># Rescaling for output layer</span>
         <span class="n">rescale_mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">))</span>
-        <span class="n">rescale_sigma</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">rescale_sigma</span> <span class="o">=</span> <span class="n">output_scale</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">)</span>
         <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Rescaling</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">rescale_sigma</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">rescale_mean</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="n">model</span></div>
@@ -229,12 +235,10 @@
 
     <span class="c1"># Add dense layer</span>
     <span class="n">activation_split</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'activation_split'</span><span class="p">]</span>
-    <span class="c1"># Determine activation split</span>
+    <span class="c1"># Convex, concave and saturated neurons. Only convex neurons with the non negative weights of the following layers</span>
+    <span class="c1"># would make the prediction convex in all inputs, also without monotonicities.</span>
     <span class="k">if</span> <span class="n">activation_split</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">mono</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">activation_split</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">activation_split</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">activation_split</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
     <span class="c1"># First layer has partial constraints based on monotonicities</span>
     <span class="n">kernel_contraint</span> <span class="o">=</span> <span class="n">NonNegPartial</span><span class="p">(</span><span class="n">monotonicities</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">):</span>
@@ -273,7 +277,7 @@
     <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'rescale_output'</span><span class="p">]:</span>
         <span class="c1"># Rescaling for output layer</span>
         <span class="n">rescale_mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">))</span>
-        <span class="n">rescale_sigma</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">rescale_sigma</span> <span class="o">=</span> <span class="n">output_scale</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">)</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Rescaling</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">rescale_sigma</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">rescale_mean</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
 
     <span class="c1"># # Add min / max constraints</span>

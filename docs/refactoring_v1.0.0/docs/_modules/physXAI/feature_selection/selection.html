@@ -95,6 +95,9 @@
 <span class="sd">(`controls`): a model whose prediction reacts to a control with the wrong sign is of little use in</span>
 <span class="sd">an MPC, even if its error is small.</span>
 
+<span class="sd">The criterion is computed on the validation data, which also stops the training early. The score of the selected</span>
+<span class="sd">inputs is therefore optimistic: evaluate the final model on the test data (`td.metrics`, `td.horizon_metrics`).</span>
+
 <span class="sd">    &gt;&gt;&gt; fs = FeatureSelection(prep, LinearRegressionModel(), controls={'oveHeaPumY_u': 1}, n_repeats=3)</span>
 <span class="sd">    &gt;&gt;&gt; result = fs.run(file_path)</span>
 <span class="sd">    &gt;&gt;&gt; result.selected.inputs</span>

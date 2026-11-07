@@ -91,6 +91,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegression</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.model_construction.ann_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">output_scale</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.model_construction.rbf_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RBFModelConstruction</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.training_data</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingDataGeneric</span>
 
@@ -126,7 +127,7 @@
 
     <span class="c1"># Determine predictions of linear regression for rescaling</span>
     <span class="n">y_train_pred</span> <span class="o">=</span> <span class="n">lin_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="p">)</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">'rescale_sigma'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span> <span class="o">-</span> <span class="n">y_train_pred</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">config</span><span class="p">[</span><span class="s1">'rescale_sigma'</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_scale</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span> <span class="o">-</span> <span class="n">y_train_pred</span><span class="p">)</span>
     <span class="n">config</span><span class="p">[</span><span class="s1">'rescale_mean'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="c1"># Add linear regression as dense keras layer</span>

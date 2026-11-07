@@ -587,7 +587,9 @@
 <span class="sd">            monotonies (dict[str, int]): Dictionary mapping feature names to monotonicity type</span>
 <span class="sd">                                         (-1 for decreasing, 0 for no constraint, 1 for increasing).</span>
 <span class="sd">            activation_split (list[float]): Proportions for splitting neurons into convex,</span>
-<span class="sd">                                            concave, and saturated activation paths. E.g., [0.5, 0.25, 0.25].</span>
+<span class="sd">                                            concave, and saturated activation paths, e.g. [0.5, 0.25, 0.25].</span>
+<span class="sd">                                            Defaults to equal shares [1, 1, 1]: with convex neurons only, the</span>
+<span class="sd">                                            prediction would be convex in all inputs.</span>
 <span class="sd">            batch_size (int): Number of samples per gradient update.</span>
 <span class="sd">            epochs (int): Number of times to iterate over the entire training dataset.</span>
 <span class="sd">            learning_rate (float): Learning rate for the Adam optimizer.</span>
@@ -678,7 +680,9 @@
 <span class="sd">            monotonies (dict[str, int]): Dictionary mapping feature names to monotonicity type</span>
 <span class="sd">                                         (-1 for decreasing, 0 for no constraint, 1 for increasing).</span>
 <span class="sd">            activation_split (list[float]): Proportions for splitting neurons into convex,</span>
-<span class="sd">                                            concave, and saturated activation paths. E.g., [0.5, 0.25, 0.25].</span>
+<span class="sd">                                            concave, and saturated activation paths, e.g. [0.5, 0.25, 0.25].</span>
+<span class="sd">                                            Defaults to equal shares [1, 1, 1]: with convex neurons only, the</span>
+<span class="sd">                                            prediction would be convex in all inputs.</span>
 <span class="sd">            normalize_terms (bool): Divide all terms of the loss by the variance of the training targets.</span>
 <span class="sd">            early_stopping_on (str): 'data' (validation data loss, default) or 'total' (validation loss</span>
 <span class="sd">                                     including the weighted physics terms).</span>

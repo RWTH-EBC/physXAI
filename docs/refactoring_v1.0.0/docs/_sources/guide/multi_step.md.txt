@@ -17,8 +17,8 @@ With `eval_horizon`, every model predicting one of its inputs is applied recursi
 data, as in an MPC:
 
 - `Change(T)` or `T` updates `T`, and `T_lag1`, `T_lag2`, ... are shifted,
-- inputs `Change(T)` (= `T - T_lag1`, also lagged) and derived data columns depending on `T` are recomputed in
-  every step,
+- inputs `Change(T)` (= `T - T_lag1`, also lagged), derived data columns depending on `T`, their lags (`Q_lag1`) and
+  changes (`Change(Q)`) are recomputed in every step,
 - all other inputs are taken from the data.
 
 `td.horizon_metrics` holds RMSE, MAE, bias and the standard deviation of the error of the absolute value

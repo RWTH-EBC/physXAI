@@ -116,6 +116,17 @@
 <span id="physxai-models-ann-model-construction-ann-models-module"></span><h2>physXAI.models.ann.model_construction.ann_models module<a class="headerlink" href="#module-physXAI.models.ann.model_construction.ann_models" title="Permalink to this heading"></a></h2>
 <p>Construction of the keras models of <code class="code docutils literal notranslate"><span class="pre">ClassicalANNModel</span></code> and <code class="code docutils literal notranslate"><span class="pre">CMNNModel</span></code> (and of <code class="code docutils literal notranslate"><span class="pre">PINNModel</span></code>).</p>
 <dl class="py function">
+<dt class="sig sig-object py" id="physXAI.models.ann.model_construction.ann_models.output_scale">
+<span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.ann_models.</span></span><span class="sig-name descname"><span class="pre">output_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/ann_models.html#output_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.ann_models.output_scale" title="Permalink to this definition"></a></dt>
+<dd><p>Standard deviation of the training targets for the output rescaling, 1 for a constant target (no zero scale).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.ann_models.ClassicalANNConstruction">
 <span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.ann_models.</span></span><span class="sig-name descname"><span class="pre">ClassicalANNConstruction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/ann_models.html#ClassicalANNConstruction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.ann_models.ClassicalANNConstruction" title="Permalink to this definition"></a></dt>
 <dd><p>Constructs a classical Artificial Neural Network (ANN) model using Keras.</p>

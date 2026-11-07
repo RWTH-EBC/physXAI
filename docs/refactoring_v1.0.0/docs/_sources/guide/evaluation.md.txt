@@ -57,11 +57,19 @@ the baseline run by run on the same split, so the spread caused by the split can
 |---|---|
 | `pairs` | number of runs on the same split (paired by the split seed, else by the run name, `by=`) |
 | `baseline`, `model_median` | medians of the score |
-| `mean_difference`, `ci_low`, `ci_high` | mean of model - baseline and its confidence interval (Student t, `confidence=0.95`) |
+| `mean_difference`, `ci_low`, `ci_high` | mean of model - baseline and its confidence interval (corrected resampled t-test, `confidence=0.95`) |
 | `median_difference` | median of model - baseline |
 | `better` | share of the splits on which the model is better (lower RMSE and absolute bias, higher R2) |
-| `p_value` | two-sided Wilcoxon signed rank test; it needs at least 6 pairs to reach 0.05 |
+| `p_value` | two-sided p-value of the corrected resampled t-test |
+| `resampling` | ratio n_test / n_train of the correction (0: all runs on the same split) |
 | `same_data` | share of the pairs evaluated on the same rows (fingerprint of the split, physXAI >= 1.0) |
+
+The runs are no independent samples: splits of the same data share most of their training data, and a plain
+paired t-test (or Wilcoxon test) is too optimistic. Confidence interval and p-value follow the corrected resampled
+t-test of Nadeau & Bengio (2003): the variance of the mean difference is `var(d) · (1/n + n_test/n_train)` instead
+of `var(d)/n`. With `vary=('init',)` all runs share one split and nothing is corrected; `corrected=False` gives the
+plain paired t-test. `paired` tests several scores and models at once: correct the p-values for multiple testing
+(e.g. Holm) before drawing conclusions from several of them.
 
 A `same_data` below 1 (also logged as a warning) means that the splits differ despite the same seed, e.g.
 because of another block length. Single step models and RNNs on the same split can still be evaluated on
@@ -142,3 +150,5 @@ result.save(run)              # feature_selection.json and .html
 - `controls={'u': 1}`: the prediction has to increase with `u` on (almost) all validation samples,
   otherwise a candidate is implausible and not selected. Controls (and with `criterion='horizon'` the recursive feature) are never removed.
 - `tolerance` selects the smallest set within (1 + tolerance) × the best criterion.
+- The criterion is computed on the validation data, which also stops the training early, so the score of the
+  selected set is optimistic. Judge the final model on the test data.

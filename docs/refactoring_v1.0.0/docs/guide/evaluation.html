@@ -163,7 +163,7 @@ the baseline run by run on the same split, so the spread caused by the split can
 <td><p>medians of the score</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mean_difference</span></code>, <code class="docutils literal notranslate"><span class="pre">ci_low</span></code>, <code class="docutils literal notranslate"><span class="pre">ci_high</span></code></p></td>
-<td><p>mean of model - baseline and its confidence interval (Student t, <code class="docutils literal notranslate"><span class="pre">confidence=0.95</span></code>)</p></td>
+<td><p>mean of model - baseline and its confidence interval (corrected resampled t-test, <code class="docutils literal notranslate"><span class="pre">confidence=0.95</span></code>)</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">median_difference</span></code></p></td>
 <td><p>median of model - baseline</p></td>
@@ -172,13 +172,22 @@ the baseline run by run on the same split, so the spread caused by the split can
 <td><p>share of the splits on which the model is better (lower RMSE and absolute bias, higher R2)</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">p_value</span></code></p></td>
-<td><p>two-sided Wilcoxon signed rank test; it needs at least 6 pairs to reach 0.05</p></td>
+<td><p>two-sided p-value of the corrected resampled t-test</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">same_data</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">resampling</span></code></p></td>
+<td><p>ratio n_test / n_train of the correction (0: all runs on the same split)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">same_data</span></code></p></td>
 <td><p>share of the pairs evaluated on the same rows (fingerprint of the split, physXAI &gt;= 1.0)</p></td>
 </tr>
 </tbody>
 </table>
+<p>The runs are no independent samples: splits of the same data share most of their training data, and a plain
+paired t-test (or Wilcoxon test) is too optimistic. Confidence interval and p-value follow the corrected resampled
+t-test of Nadeau &amp; Bengio (2003): the variance of the mean difference is <code class="docutils literal notranslate"><span class="pre">var(d)</span> <span class="pre">·</span> <span class="pre">(1/n</span> <span class="pre">+</span> <span class="pre">n_test/n_train)</span></code> instead
+of <code class="docutils literal notranslate"><span class="pre">var(d)/n</span></code>. With <code class="docutils literal notranslate"><span class="pre">vary=('init',)</span></code> all runs share one split and nothing is corrected; <code class="docutils literal notranslate"><span class="pre">corrected=False</span></code> gives the
+plain paired t-test. <code class="docutils literal notranslate"><span class="pre">paired</span></code> tests several scores and models at once: correct the p-values for multiple testing
+(e.g. Holm) before drawing conclusions from several of them.</p>
 <p>A <code class="docutils literal notranslate"><span class="pre">same_data</span></code> below 1 (also logged as a warning) means that the splits differ despite the same seed, e.g.
 because of another block length. Single step models and RNNs on the same split can still be evaluated on
 different windows (the warmup of the RNN has to lie inside the split).</p>
@@ -253,6 +262,8 @@ See <code class="docutils literal notranslate"><span class="pre">examples/11_com
 <li><p><code class="docutils literal notranslate"><span class="pre">controls={'u':</span> <span class="pre">1}</span></code>: the prediction has to increase with <code class="docutils literal notranslate"><span class="pre">u</span></code> on (almost) all validation samples,
 otherwise a candidate is implausible and not selected. Controls (and with <code class="docutils literal notranslate"><span class="pre">criterion='horizon'</span></code> the recursive feature) are never removed.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">tolerance</span></code> selects the smallest set within (1 + tolerance) × the best criterion.</p></li>
+<li><p>The criterion is computed on the validation data, which also stops the training early, so the score of the
+selected set is optimistic. Judge the final model on the test data.</p></li>
 </ul>
 </section>
 </section>

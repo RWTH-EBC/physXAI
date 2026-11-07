@@ -137,7 +137,7 @@
 <span class="sd">        block_length: Length of a block in time steps (int) or as a pandas time delta string,</span>
 <span class="sd">                      e.g. '7D'. Defaults to max(4 * window length, 1 day).</span>
 <span class="sd">        gap_steps: Number of rows left out at each boundary between two splits. Defaults to the</span>
-<span class="sd">                   value given by the preprocessing (maximum lag + warmup).</span>
+<span class="sd">                   value given by the preprocessing (reach of a sample into the past + shift).</span>
 <span class="sd">        min_blocks: The block length is reduced if the data holds fewer blocks, so that small data</span>
 <span class="sd">                    sets can still be split.</span>
 <span class="sd">    """</span>

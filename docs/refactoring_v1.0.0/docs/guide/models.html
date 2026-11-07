@@ -142,7 +142,7 @@ stored in the config. Unknown arguments raise a <code class="docutils literal no
 <section id="constrained-regression">
 <h2>Constrained regression<a class="headerlink" href="#constrained-regression" title="Permalink to this heading"></a></h2>
 <p>A linear regression on physical terms whose prediction is monotonic or convex in raw data columns, guaranteed on a
-domain. The fit is a convex quadratic program: one global optimum, no seeds, about a second for 1e5 samples.</p>
+domain. The fit is a convex quadratic program: one global optimum, no seeds.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModularANN</span><span class="p">,</span> <span class="n">ShapeConstraints</span>
 
 <span class="n">v</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Vars</span><span class="p">()</span>

@@ -128,7 +128,7 @@ a model with several seeds and saves every run with <code class="code docutils l
 <span class="gp">&gt;&gt;&gt; </span><span class="n">repeat_training</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">prep</span><span class="p">,</span> <span class="n">ClassicalANNModel</span><span class="p">(</span><span class="n">epochs</span><span class="o">=</span><span class="mi">50</span><span class="p">),</span> <span class="n">seeds</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"ann"</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span> <span class="o">=</span> <span class="n">ModelComparison</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># one model per sub directory</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">paired</span><span class="p">(</span><span class="s2">"linreg"</span><span class="p">)</span>  <span class="c1"># run by run on the same splits: differences, confidence interval, p-value</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">paired</span><span class="p">(</span><span class="s2">"linreg"</span><span class="p">)</span>  <span class="c1"># run by run on the same splits: differences, corrected confidence interval, p-value</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="s2">"linreg"</span><span class="p">)</span>  <span class="c1"># comparison.html and csv files</span>
 </pre></div>
 </div>
@@ -385,7 +385,7 @@ minimum, median and maximum. Rows: (score, model).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="physXAI.evaluation.comparison.ModelComparison.paired">
-<span class="sig-name descname"><span class="pre">paired</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">baseline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'test'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">by</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#ModelComparison.paired"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.ModelComparison.paired" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">paired</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">baseline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'test'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">by</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">corrected</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/evaluation/comparison.html#ModelComparison.paired"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.evaluation.comparison.ModelComparison.paired" title="Permalink to this definition"></a></dt>
 <dd><p>Paired comparison of models with a baseline: the scores (see <code class="code docutils literal notranslate"><span class="pre">scores</span></code>) are compared run by run on the same
 split of the data, so the spread caused by the split cancels out. Two models whose distributions overlap in
 <code class="code docutils literal notranslate"><span class="pre">summary</span></code> can still differ clearly, if one of them is better on (almost) every split.</p>
@@ -396,6 +396,14 @@ the block length depends on the window length (horizon, warmup) and on the size 
 therefore checked with the fingerprint of the split (<code class="code docutils literal notranslate"><span class="pre">same_data</span></code>, saved with physXAI &gt;= 1.0). Single step
 and recurrent models on the same split can still be evaluated on different windows (warmup inside the split).</p>
 <p>Differences are model - baseline. RMSE and the absolute bias are better when lower, R2 when higher.</p>
+<p>The runs are no independent samples: repeated splits of the same data share most of their training data, so a
+plain paired t-test (or a Wilcoxon test) is too optimistic. Confidence interval and p-value are therefore
+those of the corrected resampled t-test (Nadeau &amp; Bengio 2003, Machine Learning 52, 239-281): the variance of
+the mean difference is <code class="code docutils literal notranslate"><span class="pre">var(d)</span> <span class="pre">*</span> <span class="pre">(1/n</span> <span class="pre">+</span> <span class="pre">n_test/n_train)</span></code> instead of <code class="code docutils literal notranslate"><span class="pre">var(d)</span> <span class="pre">/</span> <span class="pre">n</span></code>. The ratio <code class="code docutils literal notranslate"><span class="pre">n_test/n_train</span></code>
+(<code class="code docutils literal notranslate"><span class="pre">resampling</span></code>) is taken from the split summary of the runs (else from the split sizes of the preprocessing);
+it is 0 if all runs of the baseline used the same split (<code class="code docutils literal notranslate"><span class="pre">vary=('init',)</span></code>), then only the initialization
+varies. Several scores and models are tested at once: correct the p-values for multiple testing (e.g. Holm)
+before drawing conclusions from several of them.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -405,14 +413,16 @@ and recurrent models on the same split can still be evaluated on different windo
 <li><p><strong>horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – End of the compared horizon (see <code class="code docutils literal notranslate"><span class="pre">scores</span></code>).</p></li>
 <li><p><strong>by</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – ‘auto’, ‘split_seed’ or ‘run’.</p></li>
 <li><p><strong>confidence</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Level of the confidence interval of the mean difference.</p></li>
+<li><p><strong>corrected</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Corrected resampled t-test (default). False gives the plain paired t-test, which assumes
+independent runs.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>One row per (score, model) with the number of <code class="code docutils literal notranslate"><span class="pre">pairs</span></code>, the medians of the <code class="code docutils literal notranslate"><span class="pre">baseline</span></code> and the
-<code class="code docutils literal notranslate"><span class="pre">model</span></code>, the <code class="code docutils literal notranslate"><span class="pre">mean_difference</span></code> with its confidence interval (<code class="code docutils literal notranslate"><span class="pre">ci_low</span></code>, <code class="code docutils literal notranslate"><span class="pre">ci_high</span></code>, Student t), the
-<code class="code docutils literal notranslate"><span class="pre">median_difference</span></code>, the share of pairs in which the model is <code class="code docutils literal notranslate"><span class="pre">better</span></code>, the <code class="code docutils literal notranslate"><span class="pre">p_value</span></code> of the two-sided
-Wilcoxon signed rank test (needs at least 6 pairs to reach 0.05) and the share of pairs on the <code class="code docutils literal notranslate"><span class="pre">same_data</span></code>
-(NaN if unknown).</p>
+<code class="code docutils literal notranslate"><span class="pre">model</span></code>, the <code class="code docutils literal notranslate"><span class="pre">mean_difference</span></code> with its confidence interval (<code class="code docutils literal notranslate"><span class="pre">ci_low</span></code>, <code class="code docutils literal notranslate"><span class="pre">ci_high</span></code>), the
+<code class="code docutils literal notranslate"><span class="pre">median_difference</span></code>, the share of pairs in which the model is <code class="code docutils literal notranslate"><span class="pre">better</span></code>, the two-sided <code class="code docutils literal notranslate"><span class="pre">p_value</span></code> of the
+(corrected) t-test, the <code class="code docutils literal notranslate"><span class="pre">resampling</span></code> ratio n_test/n_train of the correction and the share of pairs on the
+<code class="code docutils literal notranslate"><span class="pre">same_data</span></code> (NaN if unknown).</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>pd.DataFrame</p>
@@ -637,8 +647,9 @@ of step t+1. This module performs exactly this rollout on windows of the measure
 <ul class="simple">
 <li><p>The recursive feature (e.g. ‘T’ for an output ‘Change(T)’) and its lags (‘T_lag1’, …) are
 taken from the predicted trajectory, all other inputs from the data (they are known to the MPC).</p></li>
-<li><p>Derived data columns depending on the recursive feature (e.g. a heat flow computed from ‘T’) are
-recomputed in every step from their expressions. Expressions inside the model are recomputed
+<li><p>Inputs holding values of the recursive feature are recomputed in every step from the predicted
+trajectory: its changes (‘Change(T)’), derived data columns depending on it (e.g. a heat flow computed
+from ‘T’), their lags (‘Q_lag1’) and changes (‘Change(Q)’). Expressions inside the model are recomputed
 anyway, since they are part of the keras model.</p></li>
 <li><p>The rollout is a keras RNN around the (trained) step model. It is differentiable, so it can also
 be used to train a single step model on the multi step error (<code class="code docutils literal notranslate"><span class="pre">physXAI.training.recursive</span></code>).</p></li>
@@ -659,8 +670,8 @@ model grows in an MPC, which the single step error does not.</p>
 <li><p><strong>columns</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – Columns of one step of the rollout: the inputs of the model plus the variables of
 derived inputs which depend on the feature.</p></li>
 <li><p><strong>derived</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – Inputs that are derived columns depending on the feature (recomputed every step).</p></li>
-<li><p><strong>expressions</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Expression of every recomputed input in terms of <code class="code docutils literal notranslate"><span class="pre">columns</span></code> (derived columns, changes of the
-feature ‘Change(T)’ = T - T_lag1 and their lags).</p></li>
+<li><p><strong>expressions</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Expression of every recomputed input in terms of <code class="code docutils literal notranslate"><span class="pre">columns</span></code> (changes of the feature
+‘Change(T)’ = T - T_lag1, derived columns, their lags and changes).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
