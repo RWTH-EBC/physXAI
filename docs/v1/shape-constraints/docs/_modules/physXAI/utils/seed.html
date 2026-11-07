@@ -88,28 +88,45 @@
 <span class="sd">Global random seed of physXAI.</span>
 
 <span class="sd">`set_seed` seeds Python, NumPy and Keras (TensorFlow) once for a whole script and acts as the</span>
-<span class="sd">default `random_state` of all physXAI objects. A `random_state` passed to an object explicitly</span>
+<span class="sd">default `random_state` / `random_seed` of all physXAI objects. A seed passed to an object explicitly</span>
 <span class="sd">takes precedence. Without any seed, a fresh one is drawn and stored in the configs, so every run</span>
 <span class="sd">can be reproduced afterwards.</span>
+
+<span class="sd">On a CPU, a seeded run is reproduced exactly. On a GPU, some TensorFlow kernels are not deterministic</span>
+<span class="sd">(e.g. reductions with atomic additions), so two runs with the same seed differ slightly, unless</span>
+<span class="sd">`set_seed(seed, deterministic=True)` enables the deterministic kernels of TensorFlow.</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"physXAI"</span><span class="p">)</span>
+
 <span class="n">_global_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
 
-<div class="viewcode-block" id="set_seed"><a class="viewcode-back" href="../../../code/physXAI.utils.html#physXAI.utils.seed.set_seed">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">set_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="set_seed"><a class="viewcode-back" href="../../../code/physXAI.utils.html#physXAI.utils.seed.set_seed">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">set_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">deterministic</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Sets the global seed of physXAI.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        seed: The seed. None clears the global seed, so objects draw fresh seeds again.</span>
+<span class="sd">        deterministic: Also enables the deterministic operations of TensorFlow</span>
+<span class="sd">                       (`tf.config.experimental.enable_op_determinism`), so runs on a GPU are reproduced</span>
+<span class="sd">                       exactly as well. It slows down the training on a GPU, operations without a</span>
+<span class="sd">                       deterministic implementation raise an error, and it stays enabled for the rest of the</span>
+<span class="sd">                       process (TensorFlow cannot disable it again). On a CPU it is not needed.</span>
 <span class="sd">    """</span>
     <span class="k">global</span> <span class="n">_global_seed</span>
+    <span class="k">if</span> <span class="n">deterministic</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">tensorflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tf</span>
+
+        <span class="n">tf</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">experimental</span><span class="o">.</span><span class="n">enable_op_determinism</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Deterministic TensorFlow operations are enabled."</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">_global_seed</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">return</span>

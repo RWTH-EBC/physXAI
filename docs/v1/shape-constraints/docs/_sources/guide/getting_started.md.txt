@@ -16,9 +16,27 @@ physXAI needs Python >= 3.11 and runs on Linux and Windows.
 
 ```bash
 pip install .                    # user
+pip install . -c constraints.txt # user, with the versions physXAI was tested with (reproducible environment)
+pip install .[gpu]               # user, training on a GPU (Linux or WSL2, see below)
 pip install -e .[dev,agentlib]   # developer: tests, linting, AgentLib-MPC contract tests
 pip install -e .[docs]           # documentation: sphinx-apidoc -M -o docs/source/code physXAI && sphinx-build -b html docs/source docs_output
 ```
+
+The dependencies have upper bounds on their next major versions. `constraints.txt` pins all (also transitive)
+packages to the combination tested for the release.
+
+### GPU
+
+physXAI needs no changes to train on a GPU: TensorFlow places the operations on a GPU if it finds one. Only the
+installation differs:
+
+- **Linux:** `pip install .[gpu]` installs TensorFlow with CUDA (`tensorflow[and-cuda]`), an NVIDIA driver is needed.
+  `python -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"` shows the GPUs found.
+- **Windows:** TensorFlow >= 2.11 has no GPU support on native Windows (it prints a warning and uses the CPU). Use
+  WSL2 with the Linux installation.
+
+The small networks of building models often train about as fast on a CPU; a GPU pays off for large data sets,
+recurrent models and many repeated trainings (`repeat_training`).
 
 ## A first model
 
@@ -85,4 +103,8 @@ Every random choice (split, weights, batches, k-means centers) is seeded. `physX
 seed for Python, NumPy and Keras, which is the default of `random_state` (preprocessing) and `random_seed` (models).
 Without a seed, every object draws one and stores it in its config, so every run can be reproduced from its saved
 configs. The saved configs also record the versions of Python and of the main packages (`environment`).
-On a GPU, TensorFlow is not bitwise deterministic unless `tf.config.experimental.enable_op_determinism()` is set.
+
+On a CPU, a seeded run is reproduced exactly. On a GPU, some TensorFlow kernels are not deterministic, so two runs
+with the same seed differ slightly. `physXAI.set_seed(42, deterministic=True)` enables the deterministic kernels of
+TensorFlow: runs on a GPU are reproduced exactly, the training is slower, and it stays enabled for the rest of the
+process.
