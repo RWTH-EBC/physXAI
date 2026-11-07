@@ -30,6 +30,7 @@ dependencies = [
     "numpy>=2.0,<3",
     "pandas>=2.2.3,<4",
     "scikit-learn>=1.6.1,<2",
+    "scipy>=1.11,<2",  # sampling and local search of the shape constraints, least squares calibration
     "keras>=3.15.0,<4",  # older versions have known vulnerabilities in loading models (GitHub security advisories)
     "tensorflow>=2.19.0,<3",
     "casadi>=3.6.7,<4",

@@ -5,7 +5,7 @@ import pytest
 from conftest import simulate_one_room
 
 from physXAI import expr as px
-from physXAI.models import AbstractModel, ConstrainedRegression, ModularANN
+from physXAI.models import AbstractModel, ModularANN, ShapeConstraints
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 
 EPOCHS = 2  # keep trainings in tests short
@@ -99,14 +99,16 @@ def test_missing_inputs_are_reported(one_room):
 
 
 def test_constrained_regression(one_room):
+    """More cold supply air cools the room: only where T_in < T, so the constraint holds on the data, not the box."""
     v = px.Vars()
     heat = (v.mDot * (v.T_in - v.T)).named("heat")
-    m = ConstrainedRegression(
-        [v.load, heat, v.T], monotonies={"load": 1, "mDot": -1}
-    )  # more cold supply air cools the room
+    shape = ShapeConstraints(monotonicities={"load": 1, "mDot": -1}, domain="data")
+    m = ModularANN(px.Linear([v.load, heat, v.T]), solver="qp", shape=shape)
     _, td = _data(m, one_room)
-    model = m.pipeline(td, plot=False, save_model=False)
+    m.pipeline(td, plot=False, save_model=False)
     assert td.metrics.kpi("test", "r2") > 0.99
-    assert model.get_layer("dense_constrained_regression").get_weights()[0][0, 0] >= 0
+    assert [c["certificate"] for c in td.physics["shape_constraints"]["constraints"]] == ["data", "data"]
     config = json.loads(json.dumps(m.get_config()))
-    assert [e.name for e in AbstractModel.model_from_config(config).inputs] == ["load", "heat", "T"]
+    loaded = AbstractModel.model_from_config(config)
+    assert [e.name for e in loaded.architecture.inputs] == ["load", "heat", "T"]
+    assert loaded.solver == "qp" and loaded.shape.monotonicities == {"load": 1, "mDot": -1}

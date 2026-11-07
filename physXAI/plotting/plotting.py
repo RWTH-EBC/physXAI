@@ -360,4 +360,30 @@ def model_report(td: TrainingDataGeneric, title: str, show: bool = False) -> go.
     if td.training_record is not None:
         figures.append({"title": "Training History", "type": "scatter", "figure": plot_training_history(td)})
     figures.append({"title": "Performance Metrics", "type": "table", "figure": plot_metrics_table(td)})
+    shape = (td.physics or {}).get("shape_constraints")
+    if shape:
+        figures.append({"title": "Shape Constraints", "type": "table", "figure": plot_shape_constraints_table(shape)})
     return subplots(title, *figures, show=show)
+
+
+def plot_shape_constraints_table(shape: dict) -> go.Figure:
+    """
+    Table of the shape constraints of a constrained least squares fit (`ModularANN(solver='qp', shape=...)`):
+    certificate, maximum violation and the share of training samples where the constraint binds, followed by the
+    train RMSE with and without the constraints (the cost of the physics).
+    """
+    rows = [[], [], [], [], []]
+    for c in shape["constraints"]:
+        rows[0].append(f"{c['type']} {c['column']} ({'+' if c['sign'] > 0 else '-'})")
+        rows[1].append(c["certificate"])
+        rows[2].append(f"{c['max_violation']:.2g}")
+        rows[3].append("" if c["active_share_data"] is None else f"{c['active_share_data']:.1%}")
+        rows[4].append(str(c["constraint_points"]))
+    for label, value in (("Train RMSE (constrained)", shape["rmse_train"]),
+                         ("Train RMSE (unconstrained)", shape["rmse_train_unconstrained"])):
+        for k, cell in enumerate((label, f"{value:.4g}", "", "", "")):
+            rows[k].append(cell)
+    fig = go.Figure()
+    fig.add_trace(go.Table(header=dict(values=["Constraint", "Certificate", "Max violation", "Binding on data",
+                                               "Constraint points"]), cells=dict(values=rows)))
+    return fig

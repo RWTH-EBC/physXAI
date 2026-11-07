@@ -19,7 +19,7 @@ metrics, models and html reports) are written to `results/<script>/`.
 | `02_data_and_split.py` | Data pipeline | `lags`, derived `columns`, split strategies (blocks, holdout, random rows) and leakage, saving training data |
 | `03_neural_networks.py` | Keras models | `ClassicalANNModel`, `CMNNModel` (monotonicity), `RBFModel`, `LinANNModel`, online learning |
 | `04_expressions_modular.py` | Physics inside the model | `px` expressions, `ModularANN` (`solver='ols'` and neural blocks), inputs taken from the model, `px.Pretrained` and `px.Polynomial` |
-| `05_constrained_regression.py` | Constrained regression | `ConstrainedRegression` with monotonicity constraints on raw columns, compared with least squares |
+| `05_constrained_regression.py` | Constrained regression | `ModularANN(solver='qp')` with `ShapeConstraints`: monotonicity on raw columns guaranteed on the box, certificates, cost of the physics, check of the exported model |
 | `06_multi_step.py` | Prediction horizon | `eval_horizon` (recursive evaluation), `RecursiveTraining` |
 | `07_rnn.py` | Recurrent models | `PreprocessingMultiStep`, `RNNModel` with warmup, closed loop and trajectory loss |
 | `08_pinn.py` | Physics-informed loss | `PINNModel` with a physics target |

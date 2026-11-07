@@ -16,13 +16,63 @@ in the MPC when they predict one of their inputs. The keras networks have one ou
 | `RBFModel(n_neurons)` | radial basis function network |
 | `LinANNModel()` | linear regression plus an RBF network on its residuals |
 | `PINNModel(physics_targets)` | physics-informed loss on physics targets, see below |
-| `ModularANN(architecture, solver='adam' or 'ols')` | any expression graph, see [Expressions](expressions.md) |
-| `ConstrainedRegression(inputs, monotonies, convexities)` | constrained linear regression on expressions |
+| `ModularANN(architecture, solver='adam', 'ols' or 'qp')` | any expression graph, see [Expressions](expressions.md) |
+| `ModularANN(px.Linear(terms), solver='qp', shape=ShapeConstraints(...))` | constrained regression, see below |
 
 Keras models share the training options `epochs`, `learning_rate`, `batch_size`,
 `early_stopping_epochs` and `random_seed`. Early stopping needs validation data. `random_seed` seeds the weight
 initialization and the batch order; it defaults to the global seed (`physXAI.set_seed`), else a new seed is drawn and
 stored in the config. Unknown arguments raise a `TypeError`.
+
+## Constrained regression
+
+A linear regression on physical terms whose prediction is monotonic or convex in raw data columns, guaranteed on a
+domain. The fit is a convex quadratic program: one global optimum, no seeds, about a second for 1e5 samples.
+
+```python
+from physXAI.models import ModularANN, ShapeConstraints
+
+v = px.Vars()
+u, T, T_amb = v.oveHeaPumY_u, v.reaTZon_y, v.weaSta_reaWeaTDryBul_y
+model = ModularANN(
+    px.Linear([u, u * T_amb, u * T, T_amb]),
+    solver="qp",
+    shape=ShapeConstraints(monotonicities={"oveHeaPumY_u": 1, "weaSta_reaWeaTDryBul_y": -1},
+                           bounds={"weaSta_reaWeaTDryBul_y": (250.0, 310.0)}),
+)
+td = prep.pipeline(path, model=model)
+model.pipeline(td)
+td.physics["shape_constraints"]     # certificates, violations, binding share, cost of the physics
+```
+
+- **Constraints on raw columns:** `monotonicities={'x': 1 | -1}` constrains `dy/dx` of the whole model, e.g.
+  `d/dT_amb (w1 · u · T_amb + w2 · T_amb) = w1 · u + w2`, which depends on `u`. `convexities={'x': 1 | -1}`
+  constrains `d²y/dx²` (convex or concave along `x`, not the joint convexity in several columns). Every column is
+  constrained separately, also lags (`u` and `u_lag1`).
+- **Sign of single weights:** `px.Linear(terms, monotonicities={'term': 1})` bounds the weight of a term; this holds
+  globally and is also kept by `recursive_training`.
+- **Domain:** `domain='box'` (default) enforces the constraints on the box of the training data, or on `bounds`
+  (e.g. the bounds of the MPC). The derivative is linear in the weights, so this is a semi-infinite program, solved
+  with the exchange method: the least squares problem on a finite set of constraint points, the most violated points
+  of the box (Sobol sample, local minimization) are added until no violation is left. `domain='data'` only enforces
+  them on the training samples, e.g. when a physical relation only holds in the operating range of the data
+  (more cold supply air only cools while `T_in < T`).
+- **Certificates** per constraint: `exact` (the derivative is multilinear in its columns, e.g. linear, bilinear and
+  quadratic terms: its minimum over the box lies in a corner, and all corners are constraint points, so the
+  constraint holds on the whole box), `verified` (no violation found on the box), `data` (holds on the training
+  samples), `violated` (no convergence after `max_iter`, with warning).
+- **Diagnosis:** the train RMSE with and without the constraints (the cost of the physics) and the share of training
+  samples where a constraint binds: constraints binding on many samples show where the data contradicts the physics.
+  The report contains a table of it.
+- **Numerics:** terms and target are standardized, the least squares problem is solved in the coordinates of its QR
+  decomposition (no squared condition number), a tiny ridge (`ridge=1e-10`) makes the solution unique for collinear
+  terms. Terms that are not defined everywhere in the box (e.g. a division by zero) are left out at those points
+  with a warning; restrict the box with `bounds`.
+- `shape` cannot be combined with `recursive_training` (gradient descent would not keep it) or a physics residual.
+  Closed form solvers (`ols`, `qp`) have no `online_pipeline`: train a new model on the combined data.
+- The model is exported like any modular model: the keras model of the terms with one dense layer.
+
+See `examples/05_constrained_regression.py`.
 
 ## Physics-informed neural networks
 

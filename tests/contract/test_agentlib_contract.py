@@ -107,6 +107,25 @@ def test_derived_input_inside_the_model(tmp_path, monkeypatch, one_room_csv):
     np.testing.assert_allclose(prediction.reshape(-1), expected, rtol=1e-3, atol=1e-4)
 
 
+def test_constrained_least_squares(tmp_path, monkeypatch, one_room_csv):
+    """A constrained least squares fit (solver='qp') is exported like any modular model and keeps its constraints."""
+    monkeypatch.chdir(tmp_path)
+    files = _generate({"T": "modular_qp"}, SCRIPTS, one_room_csv)
+
+    config = json.loads(Path(files[0]).read_text())
+    assert config["model_type"] == "KerasANN"
+    assert list(config["input"]) == ["mDot", "load", "T_in"]
+
+    serialized = SerializedMLModel.load_serialized_model(Path(files[0]))
+    keras_model = serialized.deserialize()
+    x = np.array([[0.01, 100.0, 290.0, 293.0], [0.04, 0.0, 291.0, 291.5]], dtype=np.float32)
+    prediction = keras_model.predict(x, verbose=0)
+    _casadi_vs_physxai(serialized, x, prediction)
+    more_load = x.copy()
+    more_load[:, 1] += 50.0
+    assert np.all(keras_model.predict(more_load, verbose=0) >= prediction)
+
+
 def test_existing_models_are_copied(tmp_path, monkeypatch, one_room_csv):
     """A string as model spec reuses an existing run folder."""
     monkeypatch.chdir(tmp_path)
