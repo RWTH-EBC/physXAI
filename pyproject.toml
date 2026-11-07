@@ -9,7 +9,7 @@ authors = [
 ]
 description = "Framework for development and execution of physics-guided machine learning for application in Model Predictive Control (MPC) of Building Energy Systems (BES)"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 keywords = [
     "physics-guided", "physics-informed", "machine-learning", "mpc", "model-predictive-control", "building-energy-systems", 
 ]
@@ -18,18 +18,15 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
-    'Programming Language :: Python :: 3.9',
-    'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13',
 ]
 dependencies = [
     "numpy>=2.0",
     "pandas>=2.2.3",
     "scikit-learn>=1.6.1",
-    # keras < 3.15 has known vulnerabilities in loading models; the fixed versions need Python 3.11
-    "keras>=3.15.0; python_version >= '3.11'",
-    "keras>=3.9.2; python_version < '3.11'",
+    "keras>=3.15.0",  # older versions have known vulnerabilities in loading models
     "tensorflow>=2.19.0",
     "GitPython>=3.2.1",
     "pydantic>=2.11.4",
