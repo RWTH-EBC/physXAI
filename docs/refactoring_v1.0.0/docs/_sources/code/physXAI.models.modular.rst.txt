@@ -9,18 +9,18 @@ physXAI.models.modular package
 Submodules
 ----------
 
-physXAI.models.modular.constrained\_regression module
------------------------------------------------------
-
-.. automodule:: physXAI.models.modular.constrained_regression
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 physXAI.models.modular.modular\_ann module
 ------------------------------------------
 
 .. automodule:: physXAI.models.modular.modular_ann
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+physXAI.models.modular.shape\_constraints module
+------------------------------------------------
+
+.. automodule:: physXAI.models.modular.shape_constraints
    :members:
    :undoc-members:
    :show-inheritance:

@@ -51,6 +51,7 @@
 <li class="toctree-l1"><a class="reference internal" href="data.html">Data pipeline and split</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Models</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#single-step-models">Single step models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#constrained-regression">Constrained regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#physics-informed-neural-networks">Physics-informed neural networks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#multi-step-models">Multi step models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#saving-and-loading">Saving and loading</a></li>
@@ -125,11 +126,11 @@ in the MPC when they predict one of their inputs. The keras networks have one ou
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">PINNModel(physics_targets)</span></code></p></td>
 <td><p>physics-informed loss on physics targets, see below</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ModularANN(architecture,</span> <span class="pre">solver='adam'</span> <span class="pre">or</span> <span class="pre">'ols')</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ModularANN(architecture,</span> <span class="pre">solver='adam',</span> <span class="pre">'ols'</span> <span class="pre">or</span> <span class="pre">'qp')</span></code></p></td>
 <td><p>any expression graph, see <a class="reference internal" href="expressions.html"><span class="std std-doc">Expressions</span></a></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ConstrainedRegression(inputs,</span> <span class="pre">monotonies,</span> <span class="pre">convexities)</span></code></p></td>
-<td><p>constrained linear regression on expressions</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ModularANN(px.Linear(terms),</span> <span class="pre">solver='qp',</span> <span class="pre">shape=ShapeConstraints(...))</span></code></p></td>
+<td><p>constrained regression, see below</p></td>
 </tr>
 </tbody>
 </table>
@@ -137,6 +138,55 @@ in the MPC when they predict one of their inputs. The keras networks have one ou
 <code class="docutils literal notranslate"><span class="pre">early_stopping_epochs</span></code> and <code class="docutils literal notranslate"><span class="pre">random_seed</span></code>. Early stopping needs validation data. <code class="docutils literal notranslate"><span class="pre">random_seed</span></code> seeds the weight
 initialization and the batch order; it defaults to the global seed (<code class="docutils literal notranslate"><span class="pre">physXAI.set_seed</span></code>), else a new seed is drawn and
 stored in the config. Unknown arguments raise a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>.</p>
+</section>
+<section id="constrained-regression">
+<h2>Constrained regression<a class="headerlink" href="#constrained-regression" title="Permalink to this heading"></a></h2>
+<p>A linear regression on physical terms whose prediction is monotonic or convex in raw data columns, guaranteed on a
+domain. The fit is a convex quadratic program: one global optimum, no seeds, about a second for 1e5 samples.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModularANN</span><span class="p">,</span> <span class="n">ShapeConstraints</span>
+
+<span class="n">v</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Vars</span><span class="p">()</span>
+<span class="n">u</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">T_amb</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">oveHeaPumY_u</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">reaTZon_y</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">weaSta_reaWeaTDryBul_y</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">ModularANN</span><span class="p">(</span>
+    <span class="n">px</span><span class="o">.</span><span class="n">Linear</span><span class="p">([</span><span class="n">u</span><span class="p">,</span> <span class="n">u</span> <span class="o">*</span> <span class="n">T_amb</span><span class="p">,</span> <span class="n">u</span> <span class="o">*</span> <span class="n">T</span><span class="p">,</span> <span class="n">T_amb</span><span class="p">]),</span>
+    <span class="n">solver</span><span class="o">=</span><span class="s2">"qp"</span><span class="p">,</span>
+    <span class="n">shape</span><span class="o">=</span><span class="n">ShapeConstraints</span><span class="p">(</span><span class="n">monotonicities</span><span class="o">=</span><span class="p">{</span><span class="s2">"oveHeaPumY_u"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"weaSta_reaWeaTDryBul_y"</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">},</span>
+                           <span class="n">bounds</span><span class="o">=</span><span class="p">{</span><span class="s2">"weaSta_reaWeaTDryBul_y"</span><span class="p">:</span> <span class="p">(</span><span class="mf">250.0</span><span class="p">,</span> <span class="mf">310.0</span><span class="p">)}),</span>
+<span class="p">)</span>
+<span class="n">td</span> <span class="o">=</span> <span class="n">prep</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+<span class="n">td</span><span class="o">.</span><span class="n">physics</span><span class="p">[</span><span class="s2">"shape_constraints"</span><span class="p">]</span>     <span class="c1"># certificates, violations, binding share, cost of the physics</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>Constraints on raw columns:</strong> <code class="docutils literal notranslate"><span class="pre">monotonicities={'x':</span> <span class="pre">1</span> <span class="pre">|</span> <span class="pre">-1}</span></code> constrains <code class="docutils literal notranslate"><span class="pre">dy/dx</span></code> of the whole model, e.g.
+<code class="docutils literal notranslate"><span class="pre">d/dT_amb</span> <span class="pre">(w1</span> <span class="pre">·</span> <span class="pre">u</span> <span class="pre">·</span> <span class="pre">T_amb</span> <span class="pre">+</span> <span class="pre">w2</span> <span class="pre">·</span> <span class="pre">T_amb)</span> <span class="pre">=</span> <span class="pre">w1</span> <span class="pre">·</span> <span class="pre">u</span> <span class="pre">+</span> <span class="pre">w2</span></code>, which depends on <code class="docutils literal notranslate"><span class="pre">u</span></code>. <code class="docutils literal notranslate"><span class="pre">convexities={'x':</span> <span class="pre">1</span> <span class="pre">|</span> <span class="pre">-1}</span></code>
+constrains <code class="docutils literal notranslate"><span class="pre">d²y/dx²</span></code> (convex or concave along <code class="docutils literal notranslate"><span class="pre">x</span></code>, not the joint convexity in several columns). Every column is
+constrained separately, also lags (<code class="docutils literal notranslate"><span class="pre">u</span></code> and <code class="docutils literal notranslate"><span class="pre">u_lag1</span></code>).</p></li>
+<li><p><strong>Sign of single weights:</strong> <code class="docutils literal notranslate"><span class="pre">px.Linear(terms,</span> <span class="pre">monotonicities={'term':</span> <span class="pre">1})</span></code> bounds the weight of a term; this holds
+globally and is also kept by <code class="docutils literal notranslate"><span class="pre">recursive_training</span></code>.</p></li>
+<li><p><strong>Domain:</strong> <code class="docutils literal notranslate"><span class="pre">domain='box'</span></code> (default) enforces the constraints on the box of the training data, or on <code class="docutils literal notranslate"><span class="pre">bounds</span></code>
+(e.g. the bounds of the MPC). The derivative is linear in the weights, so this is a semi-infinite program, solved
+with the exchange method: the least squares problem on a finite set of constraint points, the most violated points
+of the box (Sobol sample, local minimization) are added until no violation is left. <code class="docutils literal notranslate"><span class="pre">domain='data'</span></code> only enforces
+them on the training samples, e.g. when a physical relation only holds in the operating range of the data
+(more cold supply air only cools while <code class="docutils literal notranslate"><span class="pre">T_in</span> <span class="pre">&lt;</span> <span class="pre">T</span></code>).</p></li>
+<li><p><strong>Certificates</strong> per constraint: <code class="docutils literal notranslate"><span class="pre">exact</span></code> (the derivative is multilinear in its columns, e.g. linear, bilinear and
+quadratic terms: its minimum over the box lies in a corner, and all corners are constraint points, so the
+constraint holds on the whole box), <code class="docutils literal notranslate"><span class="pre">verified</span></code> (no violation found on the box), <code class="docutils literal notranslate"><span class="pre">data</span></code> (holds on the training
+samples), <code class="docutils literal notranslate"><span class="pre">violated</span></code> (no convergence after <code class="docutils literal notranslate"><span class="pre">max_iter</span></code>, with warning).</p></li>
+<li><p><strong>Diagnosis:</strong> the train RMSE with and without the constraints (the cost of the physics) and the share of training
+samples where a constraint binds: constraints binding on many samples show where the data contradicts the physics.
+The report contains a table of it.</p></li>
+<li><p><strong>Numerics:</strong> terms and target are standardized, the least squares problem is solved in the coordinates of its QR
+decomposition (no squared condition number), a tiny ridge (<code class="docutils literal notranslate"><span class="pre">ridge=1e-10</span></code>) makes the solution unique for collinear
+terms. Terms that are not defined everywhere in the box (e.g. a division by zero) are left out at those points
+with a warning; restrict the box with <code class="docutils literal notranslate"><span class="pre">bounds</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">shape</span></code> cannot be combined with <code class="docutils literal notranslate"><span class="pre">recursive_training</span></code> (gradient descent would not keep it) or a physics residual.
+Closed form solvers (<code class="docutils literal notranslate"><span class="pre">ols</span></code>, <code class="docutils literal notranslate"><span class="pre">qp</span></code>) have no <code class="docutils literal notranslate"><span class="pre">online_pipeline</span></code>: train a new model on the combined data.</p></li>
+<li><p>The model is exported like any modular model: the keras model of the terms with one dense layer.</p></li>
+</ul>
+<p>See <code class="docutils literal notranslate"><span class="pre">examples/05_constrained_regression.py</span></code>.</p>
 </section>
 <section id="physics-informed-neural-networks">
 <h2>Physics-informed neural networks<a class="headerlink" href="#physics-informed-neural-networks" title="Permalink to this heading"></a></h2>

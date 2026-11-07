@@ -184,8 +184,9 @@ the other settings are given as keywords.</p>
 output) and <code class="docutils literal notranslate"><span class="pre">px.Target(name)</span></code> (a column at the predicted time) are used in physics residuals, see
 <a class="reference internal" href="physics.html"><span class="std std-doc">Physics-informed models</span></a>.</p>
 <p>The whole graph is stored in the model config (<code class="docutils literal notranslate"><span class="pre">model.get_config()</span></code>), shared nodes stay shared.
-<code class="docutils literal notranslate"><span class="pre">ConstrainedRegression(inputs,</span> <span class="pre">monotonies,</span> <span class="pre">convexities)</span></code> fits a linear regression on expressions with
-monotonicity and convexity constraints (CasADi / IPOPT).</p>
+<code class="docutils literal notranslate"><span class="pre">ModularANN(px.Linear(terms),</span> <span class="pre">solver='qp',</span> <span class="pre">shape=ShapeConstraints(...))</span></code> fits a linear regression on expressions
+whose prediction is monotonic or convex in raw columns on a whole domain, see
+<a class="reference internal" href="models.html#constrained-regression"><span class="std std-ref">constrained regression</span></a>.</p>
 </section>
 </section>
 

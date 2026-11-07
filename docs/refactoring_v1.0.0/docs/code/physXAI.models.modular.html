@@ -111,105 +111,6 @@
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
 </section>
-<section id="module-physXAI.models.modular.constrained_regression">
-<span id="physxai-models-modular-constrained-regression-module"></span><h2>physXAI.models.modular.constrained_regression module<a class="headerlink" href="#module-physXAI.models.modular.constrained_regression" title="Permalink to this heading"></a></h2>
-<dl class="py data">
-<dt class="sig sig-object py" id="physXAI.models.modular.constrained_regression.LAYER_NAME">
-<span class="sig-prename descclassname"><span class="pre">physXAI.models.modular.constrained_regression.</span></span><span class="sig-name descname"><span class="pre">LAYER_NAME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'dense_constrained_regression'</span></em><a class="headerlink" href="#physXAI.models.modular.constrained_regression.LAYER_NAME" title="Permalink to this definition"></a></dt>
-<dd><p>Name of the dense layer holding the weights. It has to contain ‘dense’ for the CasADi export.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="physXAI.models.modular.constrained_regression.ConstrainedRegression">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.modular.constrained_regression.</span></span><span class="sig-name descname"><span class="pre">ConstrainedRegression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monotonies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">convexities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/constrained_regression.html#ConstrainedRegression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.constrained_regression.ConstrainedRegression" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="physXAI.models.html#physXAI.models.models.SingleStepModel" title="physXAI.models.models.SingleStepModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">SingleStepModel</span></code></a></p>
-<p>A constrained (monotone, convex, concave) linear regression on expressions, solved with CasADi / IPOPT.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>inputs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr" title="physXAI.expr.core.Expr"><em>physXAI.expr.core.Expr</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Data only expressions (<code class="code docutils literal notranslate"><span class="pre">physXAI.expr</span></code>) or column names, combined linearly.</p></li>
-<li><p><strong>monotonies</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em>) – {name: 1 | -1}. The name is either the name of an input expression or of a raw
-data column, in which case the derivative with respect to the raw column is constrained.</p></li>
-<li><p><strong>convexities</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em>) – {name: 1 (convex) | -1 (concave)}, names as for <code class="code docutils literal notranslate"><span class="pre">monotonies</span></code>.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="physXAI.models.modular.constrained_regression.ConstrainedRegression.plot_title">
-<span class="sig-name descname"><span class="pre">plot_title</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Constrained</span> <span class="pre">Regression'</span></em><a class="headerlink" href="#physXAI.models.modular.constrained_regression.ConstrainedRegression.plot_title" title="Permalink to this definition"></a></dt>
-<dd><p>Title of the plots of the model</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="physXAI.models.modular.constrained_regression.ConstrainedRegression.required_inputs">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">required_inputs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.models.modular.constrained_regression.ConstrainedRegression.required_inputs" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="physXAI.models.modular.constrained_regression.ConstrainedRegression.generate_model">
-<span class="sig-name descname"><span class="pre">generate_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/constrained_regression.html#ConstrainedRegression.generate_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.constrained_regression.ConstrainedRegression.generate_model" title="Permalink to this definition"></a></dt>
-<dd><p>Generates the keras model and the CasADi optimization problem of the regression.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="physXAI.models.modular.constrained_regression.ConstrainedRegression.compile_model">
-<span class="sig-name descname"><span class="pre">compile_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/constrained_regression.html#ConstrainedRegression.compile_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.constrained_regression.ConstrainedRegression.compile_model" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="physXAI.models.modular.constrained_regression.ConstrainedRegression.fit_model">
-<span class="sig-name descname"><span class="pre">fit_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/constrained_regression.html#ConstrainedRegression.fit_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.constrained_regression.ConstrainedRegression.fit_model" title="Permalink to this definition"></a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="physXAI.models.modular.constrained_regression.ConstrainedRegression.save_model">
-<span class="sig-name descname"><span class="pre">save_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/constrained_regression.html#ConstrainedRegression.save_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.constrained_regression.ConstrainedRegression.save_model" title="Permalink to this definition"></a></dt>
-<dd><p>Saves the Keras model to the specified path.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<em>keras.Model</em>) – The Keras model to save.</p></li>
-<li><p><strong>save_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The directory or full path where the model should be saved.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="physXAI.models.modular.constrained_regression.ConstrainedRegression.load_model">
-<span class="sig-name descname"><span class="pre">load_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">load_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/constrained_regression.html#ConstrainedRegression.load_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.constrained_regression.ConstrainedRegression.load_model" title="Permalink to this definition"></a></dt>
-<dd><p>Loads a Keras model from the specified path.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>load_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The path from which to load the model.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The loaded Keras model.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>keras.Model</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="physXAI.models.modular.constrained_regression.ConstrainedRegression.get_config">
-<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/constrained_regression.html#ConstrainedRegression.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.constrained_regression.ConstrainedRegression.get_config" title="Permalink to this definition"></a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</section>
 <section id="module-physXAI.models.modular.modular_ann">
 <span id="physxai-models-modular-modular-ann-module"></span><h2>physXAI.models.modular.modular_ann module<a class="headerlink" href="#module-physXAI.models.modular.modular_ann" title="Permalink to this heading"></a></h2>
 <p>Modular artificial neural networks: a trainable model built from a <code class="code docutils literal notranslate"><span class="pre">physXAI.expr</span></code> graph.</p>
@@ -221,9 +122,15 @@ data column, in which case the derivative with respect to the raw column is cons
 <p>Physical arithmetic (like the heat flow above) is part of the keras model. It is therefore
 recomputed in every step of a recursive prediction and exported to AgentLib-MPC together with
 the model, so the MPC only needs the raw inputs.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="physXAI.models.modular.modular_ann.CLOSED_FORM">
+<span class="sig-prename descclassname"><span class="pre">physXAI.models.modular.modular_ann.</span></span><span class="sig-name descname"><span class="pre">CLOSED_FORM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('ols',</span> <span class="pre">'qp')</span></em><a class="headerlink" href="#physXAI.models.modular.modular_ann.CLOSED_FORM" title="Permalink to this definition"></a></dt>
+<dd><p>Solvers computing the weights of a Linear block in closed form (no gradient descent)</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="physXAI.models.modular.modular_ann.ModularANN">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.modular.modular_ann.</span></span><span class="sig-name descname"><span class="pre">ModularANN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">architecture</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rescale_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'adam'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">early_stopping_epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/modular_ann.html#ModularANN"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.modular_ann.ModularANN" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.modular.modular_ann.</span></span><span class="sig-name descname"><span class="pre">ModularANN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">architecture</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rescale_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'adam'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">early_stopping_epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/modular_ann.html#ModularANN"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.modular_ann.ModularANN" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel" title="physXAI.models.ann.ann_design.ANNModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">ANNModel</span></code></a></p>
 <p>Trainable keras model defined by an expression graph.</p>
 <dl class="field-list simple">
@@ -231,8 +138,12 @@ the model, so the MPC only needs the raw inputs.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>architecture</strong> (<a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr" title="physXAI.expr.core.Expr"><em>Expr</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – The expression computing the output, e.g. <code class="code docutils literal notranslate"><span class="pre">px.Linear([...])</span></code>.</p></li>
 <li><p><strong>rescale_output</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Rescale the output with mean and standard deviation of the training targets.</p></li>
-<li><p><strong>solver</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – ‘adam’ (gradient descent) or ‘ols’ (closed form least squares; the architecture has to
-be a <code class="code docutils literal notranslate"><span class="pre">Linear</span></code> block on data only inputs without monotonicities).</p></li>
+<li><p><strong>solver</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – ‘adam’ (gradient descent), ‘ols’ (closed form least squares) or ‘qp’ (constrained least squares:
+sign bounds of <code class="code docutils literal notranslate"><span class="pre">Linear(monotonicities=...)</span></code> and <code class="code docutils literal notranslate"><span class="pre">shape</span></code>). ‘ols’ and ‘qp’ need a <code class="code docutils literal notranslate"><span class="pre">Linear</span></code> block on data
+only inputs without normalization as architecture.</p></li>
+<li><p><strong>shape</strong> (<a class="reference internal" href="#physXAI.models.modular.shape_constraints.ShapeConstraints" title="physXAI.models.modular.shape_constraints.ShapeConstraints"><em>ShapeConstraints</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> | </em><em>None</em>) – Optional <code class="code docutils literal notranslate"><span class="pre">ShapeConstraints</span></code>: monotonicity and convexity of the prediction with respect to raw data
+columns, guaranteed on a domain (requires solver=’qp’, see <code class="code docutils literal notranslate"><span class="pre">physXAI.models.modular.shape_constraints</span></code>).
+The result is stored in <code class="code docutils literal notranslate"><span class="pre">td.physics['shape_constraints']</span></code>.</p></li>
 <li><p><strong>batch_size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Batch size of the training.</p></li>
 <li><p><strong>epochs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Maximum number of epochs.</p></li>
 <li><p><strong>learning_rate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Learning rate of the Adam optimizer.</p></li>
@@ -270,6 +181,19 @@ seed (<code class="code docutils literal notranslate"><span class="pre">physXAI.
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.modular.modular_ann.ModularANN.online_pipeline">
+<span class="sig-name descname"><span class="pre">online_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/modular_ann.html#ModularANN.online_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.modular_ann.ModularANN.online_pipeline" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – </p></li>
+<li><p><strong>load_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="physXAI.models.modular.modular_ann.ModularANN.get_config">
 <span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/modular_ann.html#ModularANN.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.modular_ann.ModularANN.get_config" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
@@ -279,6 +203,194 @@ seed (<code class="code docutils literal notranslate"><span class="pre">physXAI.
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+</section>
+<section id="module-physXAI.models.modular.shape_constraints">
+<span id="physxai-models-modular-shape-constraints-module"></span><h2>physXAI.models.modular.shape_constraints module<a class="headerlink" href="#module-physXAI.models.modular.shape_constraints" title="Permalink to this heading"></a></h2>
+<p>Shape constrained least squares: a linear regression on data only expressions whose prediction is monotonic or
+convex in raw data columns, guaranteed on a domain.</p>
+<p>The model is <code class="code docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">b</span> <span class="pre">+</span> <span class="pre">sum_i</span> <span class="pre">w_i</span> <span class="pre">*</span> <span class="pre">phi_i(x)</span></code> with terms <code class="code docutils literal notranslate"><span class="pre">phi_i</span></code> (expressions of the raw columns x). Its derivative
+<code class="code docutils literal notranslate"><span class="pre">dy/dx_j</span> <span class="pre">=</span> <span class="pre">sum_i</span> <span class="pre">w_i</span> <span class="pre">*</span> <span class="pre">dphi_i/dx_j(x)</span></code> is linear in the weights, so the constraint</p>
+<blockquote>
+<div><p>s * d^k y / dx_j^k (x) &gt;= 0   for all x in D          (k = 1 monotonicity, k = 2 convexity, s = +-1)</p>
+</div></blockquote>
+<p>is a family of linear constraints, one per point of the domain D (a semi-infinite program). It is solved with the
+exchange method: a quadratic program (the least squares problem) on a finite set of constraint points, the most
+violated points of D are searched and added, until no violation is left.</p>
+<ul class="simple">
+<li><p>Domain ‘box’: the box of the training data (or <code class="code docutils literal notranslate"><span class="pre">bounds</span></code>, e.g. the bounds of the MPC). If the derivative is
+multilinear in the columns it depends on (linear, bilinear and quadratic terms), its minimum over the box lies in
+a corner. All corners are constraint points, so the constraint holds on the whole box (‘exact’). Otherwise the
+box is searched with a Sobol sample and local minimizations from its worst points (‘verified’).</p></li>
+<li><p>Domain ‘data’: the constraints hold on the training samples (‘data’).</p></li>
+</ul>
+<p>Weights of single terms can additionally be bounded in sign (<code class="code docutils literal notranslate"><span class="pre">px.Linear(monotonicities=...)</span></code>), which holds globally.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeConstraints">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.modular.shape_constraints.</span></span><span class="sig-name descname"><span class="pre">ShapeConstraints</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monotonicities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">convexities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'box'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4096</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_vertices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4096</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ridge</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qp_solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'highs'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/shape_constraints.html#ShapeConstraints"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeConstraints" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Monotonicity and convexity of the prediction with respect to raw data columns, see the module docstring.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>monotonicities</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>] </em><em>| </em><em>None</em>) – {column: 1 (increasing) | -1 (decreasing)}.</p></li>
+<li><p><strong>convexities</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>] </em><em>| </em><em>None</em>) – {column: 1 (convex) | -1 (concave)}, along the column (the second derivative with respect to
+the column, not the joint convexity in several columns).</p></li>
+<li><p><strong>domain</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – ‘box’ (default) or ‘data’.</p></li>
+<li><p><strong>bounds</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>]</em><em>] </em><em>| </em><em>None</em>) – {column: (min, max)} replacing the range of the training data in the box, e.g. the bounds of the MPC.</p></li>
+<li><p><strong>tol</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Tolerated violation, relative to the size of the derivative.</p></li>
+<li><p><strong>max_iter</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Maximum number of exchange iterations.</p></li>
+<li><p><strong>n_samples</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Size of the Sobol sample of the box searched for violations in every iteration.</p></li>
+<li><p><strong>max_vertices</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Maximum number of box corners used as constraint points (2^d for d columns of a derivative).</p></li>
+<li><p><strong>ridge</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Relative Tikhonov regularization of the standardized least squares problem (unique solution for
+collinear terms).</p></li>
+<li><p><strong>qp_solver</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – CasADi QP solver (‘highs’, ‘qpoases’, ‘osqp’, …).</p></li>
+<li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Seed of the Sobol sample.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeConstraints.columns">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeConstraints.columns" title="Permalink to this definition"></a></dt>
+<dd><p>The constrained columns.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeConstraints.constraints">
+<span class="sig-name descname"><span class="pre">constraints</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/shape_constraints.html#ShapeConstraints.constraints"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeConstraints.constraints" title="Permalink to this definition"></a></dt>
+<dd><p>(column, order of the derivative, sign) of every constraint.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeConstraints.get_config">
+<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/shape_constraints.html#ShapeConstraints.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeConstraints.get_config" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeConstraints.from_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/shape_constraints.html#ShapeConstraints.from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeConstraints.from_config" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#physXAI.models.modular.shape_constraints.ShapeConstraints" title="physXAI.models.modular.shape_constraints.ShapeConstraints"><em>ShapeConstraints</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeFitResult">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.modular.shape_constraints.</span></span><span class="sig-name descname"><span class="pre">ShapeFitResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraints=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rmse_train=nan</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rmse_train_unconstrained=nan</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seconds=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain=&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/shape_constraints.html#ShapeFitResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeFitResult" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Result of <code class="code docutils literal notranslate"><span class="pre">fit_shape_constrained</span></code>: weights in the units of the data and the diagnosis of the constraints.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>weights</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – </p></li>
+<li><p><strong>bias</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – </p></li>
+<li><p><strong>constraints</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>]</em>) – </p></li>
+<li><p><strong>rmse_train</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – </p></li>
+<li><p><strong>rmse_train_unconstrained</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – </p></li>
+<li><p><strong>iterations</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
+<li><p><strong>seconds</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – </p></li>
+<li><p><strong>domain</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeFitResult.weights">
+<span class="sig-name descname"><span class="pre">weights</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></em><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeFitResult.weights" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeFitResult.bias">
+<span class="sig-name descname"><span class="pre">bias</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></em><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeFitResult.bias" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeFitResult.constraints">
+<span class="sig-name descname"><span class="pre">constraints</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeFitResult.constraints" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeFitResult.rmse_train">
+<span class="sig-name descname"><span class="pre">rmse_train</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">nan</span></em><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeFitResult.rmse_train" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeFitResult.rmse_train_unconstrained">
+<span class="sig-name descname"><span class="pre">rmse_train_unconstrained</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">nan</span></em><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeFitResult.rmse_train_unconstrained" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeFitResult.iterations">
+<span class="sig-name descname"><span class="pre">iterations</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeFitResult.iterations" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeFitResult.seconds">
+<span class="sig-name descname"><span class="pre">seconds</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></em><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeFitResult.seconds" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeFitResult.domain">
+<span class="sig-name descname"><span class="pre">domain</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a></em><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeFitResult.domain" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeFitResult.certified">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">certified</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></em><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeFitResult.certified" title="Permalink to this definition"></a></dt>
+<dd><p>Whether no constraint is violated.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.ShapeFitResult.get_config">
+<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/shape_constraints.html#ShapeFitResult.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.shape_constraints.ShapeFitResult.get_config" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.models.modular.shape_constraints.fit_shape_constrained">
+<span class="sig-prename descclassname"><span class="pre">physXAI.models.modular.shape_constraints.</span></span><span class="sig-name descname"><span class="pre">fit_shape_constrained</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">terms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_signs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/modular/shape_constraints.html#fit_shape_constrained"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.modular.shape_constraints.fit_shape_constrained" title="Permalink to this definition"></a></dt>
+<dd><p>Least squares fit of <code class="code docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">b</span> <span class="pre">+</span> <span class="pre">sum_i</span> <span class="pre">w_i</span> <span class="pre">*</span> <span class="pre">terms_i</span></code> with sign bounds on the weights and shape constraints.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>terms</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a>) – Data only expressions (<code class="code docutils literal notranslate"><span class="pre">physXAI.expr</span></code>).</p></li>
+<li><p><strong>values</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>numpy.ndarray</em></a><em>]</em>) – Training values of the raw columns {column: array}.</p></li>
+<li><p><strong>y</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – Training targets.</p></li>
+<li><p><strong>bias</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether the model has a bias.</p></li>
+<li><p><strong>weight_signs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>] </em><em>| </em><em>None</em>) – Optional sign per term: 1 (w &gt;= 0), -1 (w &lt;= 0), 0 (free).</p></li>
+<li><p><strong>shape</strong> (<a class="reference internal" href="#physXAI.models.modular.shape_constraints.ShapeConstraints" title="physXAI.models.modular.shape_constraints.ShapeConstraints"><em>ShapeConstraints</em></a><em> | </em><em>None</em>) – Optional shape constraints with respect to raw columns.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>weights and bias in the units of the data and the diagnosis of the constraints.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#physXAI.models.modular.shape_constraints.ShapeFitResult" title="physXAI.models.modular.shape_constraints.ShapeFitResult">ShapeFitResult</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>

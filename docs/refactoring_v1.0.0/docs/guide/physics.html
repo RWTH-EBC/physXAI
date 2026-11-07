@@ -92,7 +92,7 @@
              
   <section id="physics-informed-models">
 <h1>Physics-informed models<a class="headerlink" href="#physics-informed-models" title="Permalink to this heading"></a></h1>
-<p>physXAI offers four ways to bring physical knowledge into a model. They differ in where the physics acts and
+<p>physXAI offers five ways to bring physical knowledge into a model. They differ in where the physics acts and
 what it guarantees:</p>
 <table class="docutils align-default">
 <thead>
@@ -108,17 +108,22 @@ what it guarantees:</p>
 <td><p>by construction</p></td>
 <td><p>the model including the physics</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pinn-physics-targets">PINN</a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="models.html#constrained-regression"><span class="std std-ref">Constrained regression</span></a></p></td>
+<td><p>monotonicity / convexity in raw columns of a linear regression on physical terms</p></td>
+<td><p>on the domain (box or data), with certificate</p></td>
+<td><p>the model</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pinn-physics-targets">PINN</a></p></td>
 <td><p>data column of a physical model with fixed parameters, in the loss</p></td>
 <td><p>none (soft)</p></td>
 <td><p>the network</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#physics-residuals-with-trainable-parameters">Physics residual</a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#physics-residuals-with-trainable-parameters">Physics residual</a></p></td>
 <td><p>residual with trainable physical parameters, in the loss</p></td>
 <td><p>none (soft)</p></td>
 <td><p>the network</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#physically-consistent-neural-network-pcnn">PCNN</a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#physically-consistent-neural-network-pcnn">PCNN</a></p></td>
 <td><p>linear energy balance in parallel to a recurrent network</p></td>
 <td><p>sign of the effects of controls and temperatures over the whole horizon</p></td>
 <td><p>step model (multi step)</p></td>

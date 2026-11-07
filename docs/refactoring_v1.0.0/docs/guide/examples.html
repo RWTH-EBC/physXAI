@@ -123,7 +123,7 @@ metrics, models and html reports) are written to <code class="docutils literal n
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">05_constrained_regression.py</span></code></p></td>
 <td><p>Constrained regression</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ConstrainedRegression</span></code> with monotonicity constraints on raw columns, compared with least squares</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ModularANN(solver='qp')</span></code> with <code class="docutils literal notranslate"><span class="pre">ShapeConstraints</span></code>: monotonicity on raw columns guaranteed on the box, certificates, cost of the physics, check of the exported model</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">06_multi_step.py</span></code></p></td>
 <td><p>Prediction horizon</p></td>
