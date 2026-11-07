@@ -241,34 +241,16 @@ def test_unknown_arguments_are_rejected():
     assert PreprocessingData.from_config(prep.get_config()).label_width == 3
 
 
-def test_sub_sampling_by_mean_and_warning(frame, tmp_path, caplog):
-    """aggregation='mean' averages over [t, t + time_step), the default samples and warns."""
+def test_sub_sampling_takes_the_values_at_the_time_steps_and_warns(frame, tmp_path, caplog):
     path = _csv(frame, tmp_path)
-    kwargs = dict(inputs=["mDot", "load", "T"], output="Change(T)", time_step=900, random_state=0)
     with caplog.at_level("WARNING", logger="physXAI"):
-        sampled = PreprocessingSingleStep(**kwargs).load_data(path)
-    assert "sub-sampled" in caplog.text
-    np.testing.assert_allclose(sampled["load"].to_numpy(), frame["load"].to_numpy()[::3][: len(sampled)])
-
+        data = PreprocessingSingleStep(inputs=["load", "T"], output="Change(T)", time_step=900).load_data(path)
+    assert "sub-sampled" in caplog.text and "one of every 3 values" in caplog.text
+    np.testing.assert_allclose(data["load"].to_numpy(), frame["load"].to_numpy()[::3][: len(data)])
     caplog.clear()
     with caplog.at_level("WARNING", logger="physXAI"):
-        prep = PreprocessingSingleStep(aggregation={"load": "mean", "mDot": "mean"}, **kwargs)
-        mean = prep.load_data(path)
+        PreprocessingSingleStep(inputs=["load", "T"], output="Change(T)").load_data(path)
     assert "sub-sampled" not in caplog.text
-    n = len(frame) // 3
-    np.testing.assert_allclose(mean["load"].to_numpy()[:n], frame["load"].to_numpy()[: 3 * n].reshape(n, 3).mean(1))
-    np.testing.assert_allclose(mean["T"].to_numpy(), sampled["T"].to_numpy())  # states stay point values
-    assert PreprocessingData.from_config(json.loads(json.dumps(prep.get_config()))).aggregation == prep.aggregation
-
-
-def test_mean_of_incomplete_intervals_is_missing(frame, tmp_path):
-    frame = frame.copy()
-    frame.iloc[4, frame.columns.get_loc("load")] = np.nan  # interval [3, 6) of the 300 s data
-    prep = PreprocessingSingleStep(inputs=["load", "T"], output="Change(T)", time_step=900, aggregation="mean")
-    data = prep.load_data(_csv(frame, tmp_path))
-    assert np.isnan(data["load"].iloc[1]) and not np.isnan(data["load"].iloc[2])
-    with pytest.raises(ValueError, match="aggregation"):
-        PreprocessingSingleStep(inputs=["T"], output="Change(T)", aggregation="median")
 
 
 def test_dropped_time_stamps_are_logged(frame, tmp_path, caplog):

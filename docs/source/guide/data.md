@@ -10,8 +10,7 @@
 | `shift` | 1 (default): the output at the next time step, for states (`Change(T)`) and as AgentLib-MPC uses it; 0: the output at the time of the inputs, for algebraic outputs of point sampled data (the output feature must not be an input, no recursive evaluation, not exportable) |
 | `columns` | derived data columns as expressions, see [Expressions](expressions.md) |
 | `loss_columns` | columns used only in the training loss (e.g. physics targets), `'y:name'` at the predicted time; added by models via `prep.pipeline(path, model=model)` |
-| `time_index_col`, `time_step` | time column (seconds or date time); the data is put onto a regular grid of `time_step` |
-| `aggregation` | sub-sampling to a longer `time_step`: `'sample'` (value at the time step) or `'mean'` (mean over `[t, t + time_step)`, for power, energy and controls; not for states such as temperatures), for all numeric columns or per column (`{'P_el': 'mean'}`); without it, sub-sampling takes the values at the time steps and logs a warning |
+| `time_index_col`, `time_step` | time column (seconds or date time); the data is put onto a regular grid of `time_step`. A longer `time_step` takes the values at the time steps (point sampling, with a warning): resample quantities over an interval (power, energy) before, e.g. with `pandas.DataFrame.resample` |
 | `csv_delimiter`, `csv_encoding`, `csv_header`, `csv_skiprows` | csv options |
 | `ignore_nan` | drop rows with missing values (targets are never taken across gaps) |
 | `transform` | function `DataFrame -> DataFrame` applied after loading (not serialized) |

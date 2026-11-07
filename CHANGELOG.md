@@ -121,9 +121,8 @@ loads single step models only. The export is verified against that branch, but n
   for exactly reproducible runs on a GPU.
 - `PHYSXAI_REQUIRE_AGENTLIB=1` makes the AgentLib-MPC contract tests fail instead of being skipped if AgentLib-MPC
   is missing (set in the CI); the model saved with physXAI 0.x is part of the tests.
-- `PreprocessingData(aggregation='mean' | {'column': 'mean'})`: sub-sampling to a longer `time_step` by the mean
-  over `[t, t + time_step)` (power, energy, controls) instead of the value at the time step; sub-sampling without
-  `aggregation` logs a warning. Dropped duplicate and off-grid time stamps are logged.
+- Sub-sampling to a longer `time_step` (point sampling) logs a warning: quantities over an interval (power, energy)
+  have to be resampled before. Dropped duplicate and off-grid time stamps are logged.
 
 ### Changed
 - `PINNModel(physics_targets={'pinn': w})`: physics targets are loss columns, no model outputs, so a PINN has one

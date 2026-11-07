@@ -41,8 +41,6 @@ logger = logging.getLogger("physXAI")
 LAG_PATTERN = re.compile(r"^(.*)_lag(\d+)$")
 CHANGE_PATTERN = re.compile(r"^Change\((.*)\)$")
 TARGET_PREFIX = "y:"
-#: Sub-sampling of the data to a longer time step, see `PreprocessingData(aggregation=...)`
-AGGREGATIONS = ("sample", "mean")
 
 PREPROCESSING_CLASS_REGISTRY: dict[str, type[PreprocessingData]] = dict()
 
@@ -215,14 +213,10 @@ class PreprocessingData(ABC):
                (e.g. 'Change(T)') and for outputs over the interval [t, t+1) (as AgentLib-MPC uses them). 0: the
                time of the inputs, for algebraic outputs of point sampled data, e.g. P_el(t) = f(u(t), T(t)); the
                output feature must then not be an input (only its lags), and there is no recursive evaluation.
-        time_step: Sampling time in seconds. The data is sub-sampled to it (see `aggregation`). Defaults to the
+        time_step: Sampling time in seconds. The data is sub-sampled to it by taking the values at the time steps
+                   (point sampling, logged as a warning). Quantities over an interval (power, energy) have to
+                   be resampled before (e.g. averaged with `pandas.DataFrame.resample`). Defaults to the
                    sampling time of the data.
-        aggregation: How data is sub-sampled to a longer `time_step`: 'sample' (the value at the time step, default)
-                     or 'mean' (the mean over the interval [t, t + time_step)), for all numeric columns or per column,
-                     e.g. {'P_el': 'mean', 'u': 'mean'}. The mean suits quantities over an interval (power, energy,
-                     controls held over the step); states (e.g. temperatures) are point values, their mean over
-                     [t, t + time_step) would contain values close to the next step. Intervals with missing values
-                     get no mean (missing value). Without `aggregation`, sub-sampling is logged as a warning.
         test_size: Fraction of the data used for testing.
         val_size: Fraction of the data used for validation.
         random_state: Seed of the split. Defaults to the global seed (`physXAI.set_seed`), else a
@@ -267,7 +261,6 @@ class PreprocessingData(ABC):
         ignore_nan: bool = False,
         transform: Callable[[pd.DataFrame], pd.DataFrame] | None = None,
         loss_columns: list[str] | None = None,
-        aggregation: str | dict[str, str] | None = None,
     ):
         if shift not in (0, 1) or isinstance(shift, bool):
             raise ValueError(
@@ -302,12 +295,6 @@ class PreprocessingData(ABC):
         self.ignore_nan: bool = ignore_nan
         self.transform = transform
         self.loss_columns: list[str] = list(loss_columns or [])
-        methods = [aggregation] if isinstance(aggregation, str) else list((aggregation or {}).values())
-        if any(m not in AGGREGATIONS for m in methods):
-            raise ValueError(f"Unknown aggregation {aggregation}, use one of {AGGREGATIONS} (or a dict of them).")
-        self.aggregation: str | dict[str, str] | None = (
-            dict(aggregation) if isinstance(aggregation, dict) else aggregation
-        )
 
     # The split sizes are part of the AgentLib-MPC contract
     @property
@@ -363,28 +350,21 @@ class PreprocessingData(ABC):
                            file_path, data_step)
 
         ratio = int(round(self.time_step / data_step))
-        means = self._mean_columns(df) if ratio > 1 else []
-        if ratio > 1 and self.aggregation is None:
+        if ratio > 1:
             logger.warning(
-                "The data (time step %g s) is sub-sampled to %g s by taking every %d-th value. For quantities over an "
-                "interval (power, energy, controls) set aggregation='mean' or aggregation={'column': 'mean'} (mean "
-                "over [t, t + time_step)), or aggregation='sample' to keep the values at the time steps.",
+                "The data (time step %g s) is sub-sampled to %g s by keeping one of every %d values (point "
+                "sampling). This suits states (e.g. temperatures). Quantities over an interval (power, energy, "
+                "averaged controls) have to be resampled before (e.g. averaged with pandas resample), else they are "
+                "aliased.",
                 data_step, self.time_step, ratio,
             )
 
         positions = seconds / self.time_step
-        if means:
-            # mean over [t_k, t_k + time_step) of every grid point t_k, only of complete intervals
-            bins = np.floor(positions + 1e-6).astype(np.int64)
-            grouped = df[means].apply(pd.to_numeric, errors="coerce").set_axis(bins).groupby(level=0)
-            interval_means = grouped.mean().where(grouped.count() >= ratio)
         on_grid = np.isclose(positions, np.round(positions), atol=1e-6)
         df = df.iloc[on_grid]
         positions = np.round(positions[on_grid]).astype(np.int64)
         df.index = positions
         df = df.reindex(np.arange(positions[-1] + 1))
-        if means:
-            df[means] = interval_means.reindex(df.index)
 
         if is_datetime:
             df.index = index[0] + pd.to_timedelta(df.index * self.time_step, unit="s")
@@ -392,17 +372,6 @@ class PreprocessingData(ABC):
             df.index = float(index[0]) + df.index * self.time_step
         df.index.name = "time"
         return df
-
-    def _mean_columns(self, df: pd.DataFrame) -> list[str]:
-        """Columns of the raw data sub-sampled by their mean (see `aggregation`)."""
-        if self.aggregation is None or self.aggregation == "sample":
-            return []
-        if self.aggregation == "mean":
-            return list(df.select_dtypes("number").columns)
-        missing = [c for c in self.aggregation if c not in df.columns]
-        if missing:
-            raise KeyError(f"The aggregation refers to the columns {missing}, which are not part of the data.")
-        return [c for c, method in self.aggregation.items() if method == "mean"]
 
     # --- processing -----------------------------------------------------------------------------
     def _required_columns(self) -> list[str]:
@@ -561,7 +530,6 @@ class PreprocessingData(ABC):
             "val_size": self.val_size,
             "random_state": self.random_state,
             "time_step": self.time_step,
-            "aggregation": self.aggregation,
             "split": self.split.get_config(),
             "time_index_col": self.time_index_col,
             "csv_delimiter": self.csv_delimiter,
