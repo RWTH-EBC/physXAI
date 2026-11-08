@@ -1,0 +1,742 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>physXAI package &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../_static/jquery.js"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+      <script src="../_static/doctools.js"></script>
+      <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="physXAI.agentlib_mpc_plugin package" href="physXAI.agentlib_mpc_plugin.html" />
+    <link rel="prev" title="physXAI" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/physics.html">Physics-informed models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">physXAI</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">physXAI package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.agentlib_mpc_plugin.html">physXAI.agentlib_mpc_plugin package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html">physXAI.evaluation package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html">physXAI.expr package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html">physXAI.feature_selection package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.io.html">physXAI.io package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html">physXAI.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.plotting.html">physXAI.plotting package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html">physXAI.preprocessing package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html">physXAI.training package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.utils.html">physXAI.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">physXAI</a></li>
+      <li class="breadcrumb-item active">physXAI package</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-physXAI">
+<span id="physxai-package"></span><h1>physXAI package<a class="headerlink" href="#module-physXAI" title="Permalink to this heading"></a></h1>
+<p>physXAI: physics-guided machine learning for MPC of building energy systems.</p>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="physXAI.agentlib_mpc_plugin.html">physXAI.agentlib_mpc_plugin package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.agentlib_mpc_plugin.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.agentlib_mpc_plugin.html#module-physXAI.agentlib_mpc_plugin.example">physXAI.agentlib_mpc_plugin.example module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.agentlib_mpc_plugin.html#physXAI.agentlib_mpc_plugin.example.train_model"><code class="docutils literal notranslate"><span class="pre">train_model()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.agentlib_mpc_plugin.html#module-physXAI.agentlib_mpc_plugin.example_ci">physXAI.agentlib_mpc_plugin.example_ci module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.agentlib_mpc_plugin.html#physXAI.agentlib_mpc_plugin.example_ci.train_model"><code class="docutils literal notranslate"><span class="pre">train_model()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="physXAI.evaluation.html">physXAI.evaluation package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.evaluation.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.evaluation.html#module-physXAI.evaluation.comparison">physXAI.evaluation.comparison module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.MODEL_COLORS"><code class="docutils literal notranslate"><span class="pre">MODEL_COLORS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.RunRecord"><code class="docutils literal notranslate"><span class="pre">RunRecord</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.RunRecord.model"><code class="docutils literal notranslate"><span class="pre">RunRecord.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.RunRecord.run"><code class="docutils literal notranslate"><span class="pre">RunRecord.run</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.RunRecord.training_data"><code class="docutils literal notranslate"><span class="pre">RunRecord.training_data</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.RunRecord.model_config"><code class="docutils literal notranslate"><span class="pre">RunRecord.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.RunRecord.preprocessing"><code class="docutils literal notranslate"><span class="pre">RunRecord.preprocessing</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.RunRecord.path"><code class="docutils literal notranslate"><span class="pre">RunRecord.path</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.repeat_training"><code class="docutils literal notranslate"><span class="pre">repeat_training()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison"><code class="docutils literal notranslate"><span class="pre">ModelComparison</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.models"><code class="docutils literal notranslate"><span class="pre">ModelComparison.models</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.add"><code class="docutils literal notranslate"><span class="pre">ModelComparison.add()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.load"><code class="docutils literal notranslate"><span class="pre">ModelComparison.load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.runs"><code class="docutils literal notranslate"><span class="pre">ModelComparison.runs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.metrics"><code class="docutils literal notranslate"><span class="pre">ModelComparison.metrics()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.horizon"><code class="docutils literal notranslate"><span class="pre">ModelComparison.horizon()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.common_horizon"><code class="docutils literal notranslate"><span class="pre">ModelComparison.common_horizon()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.scores"><code class="docutils literal notranslate"><span class="pre">ModelComparison.scores()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.summary"><code class="docutils literal notranslate"><span class="pre">ModelComparison.summary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.paired"><code class="docutils literal notranslate"><span class="pre">ModelComparison.paired()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.plot"><code class="docutils literal notranslate"><span class="pre">ModelComparison.plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.ModelComparison.save"><code class="docutils literal notranslate"><span class="pre">ModelComparison.save()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.comparison.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.evaluation.html#module-physXAI.evaluation.metrics">physXAI.evaluation.metrics module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.metrics.regression_kpis"><code class="docutils literal notranslate"><span class="pre">regression_kpis()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.metrics.output_names"><code class="docutils literal notranslate"><span class="pre">output_names()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.metrics.Metrics"><code class="docutils literal notranslate"><span class="pre">Metrics</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.metrics.Metrics.kpi"><code class="docutils literal notranslate"><span class="pre">Metrics.kpi()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.metrics.Metrics.get_config"><code class="docutils literal notranslate"><span class="pre">Metrics.get_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.metrics.MetricsPINN"><code class="docutils literal notranslate"><span class="pre">MetricsPINN</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.metrics.MetricsPINN.get_config"><code class="docutils literal notranslate"><span class="pre">MetricsPINN.get_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.metrics.MetricsMultiStep"><code class="docutils literal notranslate"><span class="pre">MetricsMultiStep</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.evaluation.html#module-physXAI.evaluation.rollout">physXAI.evaluation.rollout module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec"><code class="docutils literal notranslate"><span class="pre">RecursionSpec</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec.feature"><code class="docutils literal notranslate"><span class="pre">RecursionSpec.feature</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec.difference"><code class="docutils literal notranslate"><span class="pre">RecursionSpec.difference</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec.max_lag"><code class="docutils literal notranslate"><span class="pre">RecursionSpec.max_lag</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec.columns"><code class="docutils literal notranslate"><span class="pre">RecursionSpec.columns</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec.derived"><code class="docutils literal notranslate"><span class="pre">RecursionSpec.derived</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec.expressions"><code class="docutils literal notranslate"><span class="pre">RecursionSpec.expressions</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec.history"><code class="docutils literal notranslate"><span class="pre">RecursionSpec.history</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.recursion_spec"><code class="docutils literal notranslate"><span class="pre">recursion_spec()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.as_keras_step_model"><code class="docutils literal notranslate"><span class="pre">as_keras_step_model()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.build_step_function"><code class="docutils literal notranslate"><span class="pre">build_step_function()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.RecursiveCell"><code class="docutils literal notranslate"><span class="pre">RecursiveCell</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.RecursiveCell.call"><code class="docutils literal notranslate"><span class="pre">RecursiveCell.call()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.build_rollout_model"><code class="docutils literal notranslate"><span class="pre">build_rollout_model()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.rollout_data"><code class="docutils literal notranslate"><span class="pre">rollout_data()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.HorizonMetrics"><code class="docutils literal notranslate"><span class="pre">HorizonMetrics</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.HorizonMetrics.steps"><code class="docutils literal notranslate"><span class="pre">HorizonMetrics.steps</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.HorizonMetrics.hours"><code class="docutils literal notranslate"><span class="pre">HorizonMetrics.hours</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.HorizonMetrics.get_config"><code class="docutils literal notranslate"><span class="pre">HorizonMetrics.get_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.evaluation.html#physXAI.evaluation.rollout.evaluate_horizon"><code class="docutils literal notranslate"><span class="pre">evaluate_horizon()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="physXAI.expr.html">physXAI.expr package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.expr.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.expr.html#module-physXAI.expr.blocks">physXAI.expr.blocks module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Block"><code class="docutils literal notranslate"><span class="pre">Block</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Block.has_weights"><code class="docutils literal notranslate"><span class="pre">Block.has_weights</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Block.default_normalize"><code class="docutils literal notranslate"><span class="pre">Block.default_normalize</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Block.inputs"><code class="docutils literal notranslate"><span class="pre">Block.inputs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Block.params"><code class="docutils literal notranslate"><span class="pre">Block.params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Block.from_params"><code class="docutils literal notranslate"><span class="pre">Block.from_params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Block.input_tensor"><code class="docutils literal notranslate"><span class="pre">Block.input_tensor()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Block.rescale"><code class="docutils literal notranslate"><span class="pre">Block.rescale()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Block.evaluate"><code class="docutils literal notranslate"><span class="pre">Block.evaluate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Linear"><code class="docutils literal notranslate"><span class="pre">Linear</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Linear.default_normalize"><code class="docutils literal notranslate"><span class="pre">Linear.default_normalize</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Linear.params"><code class="docutils literal notranslate"><span class="pre">Linear.params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Linear.to_keras"><code class="docutils literal notranslate"><span class="pre">Linear.to_keras()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Linear.to_casadi"><code class="docutils literal notranslate"><span class="pre">Linear.to_casadi()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.MLP"><code class="docutils literal notranslate"><span class="pre">MLP</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.MLP.params"><code class="docutils literal notranslate"><span class="pre">MLP.params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.MLP.to_keras"><code class="docutils literal notranslate"><span class="pre">MLP.to_keras()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.MonotoneMLP"><code class="docutils literal notranslate"><span class="pre">MonotoneMLP</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.MonotoneMLP.params"><code class="docutils literal notranslate"><span class="pre">MonotoneMLP.params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.MonotoneMLP.to_keras"><code class="docutils literal notranslate"><span class="pre">MonotoneMLP.to_keras()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Polynomial"><code class="docutils literal notranslate"><span class="pre">Polynomial</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Polynomial.default_normalize"><code class="docutils literal notranslate"><span class="pre">Polynomial.default_normalize</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Polynomial.params"><code class="docutils literal notranslate"><span class="pre">Polynomial.params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Polynomial.to_keras"><code class="docutils literal notranslate"><span class="pre">Polynomial.to_keras()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.RBF"><code class="docutils literal notranslate"><span class="pre">RBF</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.RBF.params"><code class="docutils literal notranslate"><span class="pre">RBF.params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.RBF.to_keras"><code class="docutils literal notranslate"><span class="pre">RBF.to_keras()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Mean"><code class="docutils literal notranslate"><span class="pre">Mean</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Mean.has_weights"><code class="docutils literal notranslate"><span class="pre">Mean.has_weights</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Mean.default_normalize"><code class="docutils literal notranslate"><span class="pre">Mean.default_normalize</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Mean.params"><code class="docutils literal notranslate"><span class="pre">Mean.params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Mean.evaluate"><code class="docutils literal notranslate"><span class="pre">Mean.evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Mean.to_casadi"><code class="docutils literal notranslate"><span class="pre">Mean.to_casadi()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Mean.to_keras"><code class="docutils literal notranslate"><span class="pre">Mean.to_keras()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Normalize"><code class="docutils literal notranslate"><span class="pre">Normalize</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Normalize.params"><code class="docutils literal notranslate"><span class="pre">Normalize.params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Normalize.from_params"><code class="docutils literal notranslate"><span class="pre">Normalize.from_params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Normalize.to_keras"><code class="docutils literal notranslate"><span class="pre">Normalize.to_keras()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Pretrained"><code class="docutils literal notranslate"><span class="pre">Pretrained</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Pretrained.params"><code class="docutils literal notranslate"><span class="pre">Pretrained.params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Pretrained.from_params"><code class="docutils literal notranslate"><span class="pre">Pretrained.from_params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.Pretrained.to_keras"><code class="docutils literal notranslate"><span class="pre">Pretrained.to_keras()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.blocks.product"><code class="docutils literal notranslate"><span class="pre">product()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.expr.html#module-physXAI.expr.core">physXAI.expr.core module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.register_expression"><code class="docutils literal notranslate"><span class="pre">register_expression()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.as_expr"><code class="docutils literal notranslate"><span class="pre">as_expr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr"><code class="docutils literal notranslate"><span class="pre">Expr</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.symbol"><code class="docutils literal notranslate"><span class="pre">Expr.symbol</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.name"><code class="docutils literal notranslate"><span class="pre">Expr.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.default_name"><code class="docutils literal notranslate"><span class="pre">Expr.default_name()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.named"><code class="docutils literal notranslate"><span class="pre">Expr.named()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.nodes"><code class="docutils literal notranslate"><span class="pre">Expr.nodes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.free_vars"><code class="docutils literal notranslate"><span class="pre">Expr.free_vars()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.trainable"><code class="docutils literal notranslate"><span class="pre">Expr.trainable</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.has_weights"><code class="docutils literal notranslate"><span class="pre">Expr.has_weights</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.lag"><code class="docutils literal notranslate"><span class="pre">Expr.lag()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.substitute"><code class="docutils literal notranslate"><span class="pre">Expr.substitute()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.with_children"><code class="docutils literal notranslate"><span class="pre">Expr.with_children()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.params"><code class="docutils literal notranslate"><span class="pre">Expr.params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.from_params"><code class="docutils literal notranslate"><span class="pre">Expr.from_params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.evaluate"><code class="docutils literal notranslate"><span class="pre">Expr.evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.to_keras"><code class="docutils literal notranslate"><span class="pre">Expr.to_keras()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr.to_casadi"><code class="docutils literal notranslate"><span class="pre">Expr.to_casadi()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.BuildContext"><code class="docutils literal notranslate"><span class="pre">BuildContext</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.BuildContext.layers"><code class="docutils literal notranslate"><span class="pre">BuildContext.layers</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.BuildContext.index"><code class="docutils literal notranslate"><span class="pre">BuildContext.index()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.BuildContext.tensor"><code class="docutils literal notranslate"><span class="pre">BuildContext.tensor()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.BuildContext.values"><code class="docutils literal notranslate"><span class="pre">BuildContext.values()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Var"><code class="docutils literal notranslate"><span class="pre">Var</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Var.default_name"><code class="docutils literal notranslate"><span class="pre">Var.default_name()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Var.lag"><code class="docutils literal notranslate"><span class="pre">Var.lag()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Var.params"><code class="docutils literal notranslate"><span class="pre">Var.params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Var.evaluate"><code class="docutils literal notranslate"><span class="pre">Var.evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Var.to_keras"><code class="docutils literal notranslate"><span class="pre">Var.to_keras()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Var.to_casadi"><code class="docutils literal notranslate"><span class="pre">Var.to_casadi()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Vars"><code class="docutils literal notranslate"><span class="pre">Vars</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Const"><code class="docutils literal notranslate"><span class="pre">Const</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Const.default_name"><code class="docutils literal notranslate"><span class="pre">Const.default_name()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Const.params"><code class="docutils literal notranslate"><span class="pre">Const.params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Const.evaluate"><code class="docutils literal notranslate"><span class="pre">Const.evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Const.to_keras"><code class="docutils literal notranslate"><span class="pre">Const.to_keras()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Const.to_casadi"><code class="docutils literal notranslate"><span class="pre">Const.to_casadi()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Param"><code class="docutils literal notranslate"><span class="pre">Param</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Param.has_weights"><code class="docutils literal notranslate"><span class="pre">Param.has_weights</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Param.default_name"><code class="docutils literal notranslate"><span class="pre">Param.default_name()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Param.params"><code class="docutils literal notranslate"><span class="pre">Param.params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Param.to_keras"><code class="docutils literal notranslate"><span class="pre">Param.to_keras()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Param.to_casadi"><code class="docutils literal notranslate"><span class="pre">Param.to_casadi()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.TARGET_PREFIX"><code class="docutils literal notranslate"><span class="pre">TARGET_PREFIX</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.PREDICTION"><code class="docutils literal notranslate"><span class="pre">PREDICTION</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Prediction"><code class="docutils literal notranslate"><span class="pre">Prediction</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Prediction.default_name"><code class="docutils literal notranslate"><span class="pre">Prediction.default_name()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Prediction.to_keras"><code class="docutils literal notranslate"><span class="pre">Prediction.to_keras()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Prediction.to_casadi"><code class="docutils literal notranslate"><span class="pre">Prediction.to_casadi()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Target"><code class="docutils literal notranslate"><span class="pre">Target()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.positive"><code class="docutils literal notranslate"><span class="pre">positive()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.freeze"><code class="docutils literal notranslate"><span class="pre">freeze()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Binary"><code class="docutils literal notranslate"><span class="pre">Binary</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Binary.default_name"><code class="docutils literal notranslate"><span class="pre">Binary.default_name()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Binary.evaluate"><code class="docutils literal notranslate"><span class="pre">Binary.evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Binary.to_casadi"><code class="docutils literal notranslate"><span class="pre">Binary.to_casadi()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Binary.numpy"><code class="docutils literal notranslate"><span class="pre">Binary.numpy()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Add"><code class="docutils literal notranslate"><span class="pre">Add</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Add.symbol"><code class="docutils literal notranslate"><span class="pre">Add.symbol</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Add.numpy"><code class="docutils literal notranslate"><span class="pre">Add.numpy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Add.to_keras"><code class="docutils literal notranslate"><span class="pre">Add.to_keras()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Sub"><code class="docutils literal notranslate"><span class="pre">Sub</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Sub.symbol"><code class="docutils literal notranslate"><span class="pre">Sub.symbol</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Sub.numpy"><code class="docutils literal notranslate"><span class="pre">Sub.numpy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Sub.to_keras"><code class="docutils literal notranslate"><span class="pre">Sub.to_keras()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Mul"><code class="docutils literal notranslate"><span class="pre">Mul</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Mul.symbol"><code class="docutils literal notranslate"><span class="pre">Mul.symbol</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Mul.numpy"><code class="docutils literal notranslate"><span class="pre">Mul.numpy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Mul.to_keras"><code class="docutils literal notranslate"><span class="pre">Mul.to_keras()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Div"><code class="docutils literal notranslate"><span class="pre">Div</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Div.symbol"><code class="docutils literal notranslate"><span class="pre">Div.symbol</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Div.numpy"><code class="docutils literal notranslate"><span class="pre">Div.numpy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Div.to_keras"><code class="docutils literal notranslate"><span class="pre">Div.to_keras()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Pow"><code class="docutils literal notranslate"><span class="pre">Pow</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Pow.symbol"><code class="docutils literal notranslate"><span class="pre">Pow.symbol</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Pow.numpy"><code class="docutils literal notranslate"><span class="pre">Pow.numpy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Pow.to_keras"><code class="docutils literal notranslate"><span class="pre">Pow.to_keras()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Activation"><code class="docutils literal notranslate"><span class="pre">Activation</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Activation.default_name"><code class="docutils literal notranslate"><span class="pre">Activation.default_name()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Activation.params"><code class="docutils literal notranslate"><span class="pre">Activation.params()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Activation.evaluate"><code class="docutils literal notranslate"><span class="pre">Activation.evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Activation.to_casadi"><code class="docutils literal notranslate"><span class="pre">Activation.to_casadi()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Activation.to_keras"><code class="docutils literal notranslate"><span class="pre">Activation.to_keras()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.softplus"><code class="docutils literal notranslate"><span class="pre">softplus()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.exp"><code class="docutils literal notranslate"><span class="pre">exp()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.sigmoid"><code class="docutils literal notranslate"><span class="pre">sigmoid()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.tanh"><code class="docutils literal notranslate"><span class="pre">tanh()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.relu"><code class="docutils literal notranslate"><span class="pre">relu()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Change"><code class="docutils literal notranslate"><span class="pre">Change()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.expr.html#module-physXAI.expr.serialization">physXAI.expr.serialization module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.serialization.to_config"><code class="docutils literal notranslate"><span class="pre">to_config()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.expr.html#physXAI.expr.serialization.from_config"><code class="docutils literal notranslate"><span class="pre">from_config()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="physXAI.feature_selection.html">physXAI.feature_selection package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.feature_selection.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.feature_selection.html#module-physXAI.feature_selection.selection">physXAI.feature_selection.selection module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.Candidate"><code class="docutils literal notranslate"><span class="pre">Candidate</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.Candidate.inputs"><code class="docutils literal notranslate"><span class="pre">Candidate.inputs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.Candidate.score"><code class="docutils literal notranslate"><span class="pre">Candidate.score</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.Candidate.score_std"><code class="docutils literal notranslate"><span class="pre">Candidate.score_std</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.Candidate.single_step_rmse"><code class="docutils literal notranslate"><span class="pre">Candidate.single_step_rmse</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.Candidate.horizon_rmse"><code class="docutils literal notranslate"><span class="pre">Candidate.horizon_rmse</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.Candidate.horizon_bias"><code class="docutils literal notranslate"><span class="pre">Candidate.horizon_bias</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.Candidate.sensitivity"><code class="docutils literal notranslate"><span class="pre">Candidate.sensitivity</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.Candidate.plausible"><code class="docutils literal notranslate"><span class="pre">Candidate.plausible</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.FeatureSelectionResult"><code class="docutils literal notranslate"><span class="pre">FeatureSelectionResult</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.FeatureSelectionResult.criterion"><code class="docutils literal notranslate"><span class="pre">FeatureSelectionResult.criterion</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.FeatureSelectionResult.steps"><code class="docutils literal notranslate"><span class="pre">FeatureSelectionResult.steps</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.FeatureSelectionResult.selected"><code class="docutils literal notranslate"><span class="pre">FeatureSelectionResult.selected</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.FeatureSelectionResult.best"><code class="docutils literal notranslate"><span class="pre">FeatureSelectionResult.best</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.FeatureSelectionResult.table"><code class="docutils literal notranslate"><span class="pre">FeatureSelectionResult.table()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.FeatureSelectionResult.plot"><code class="docutils literal notranslate"><span class="pre">FeatureSelectionResult.plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.FeatureSelectionResult.save"><code class="docutils literal notranslate"><span class="pre">FeatureSelectionResult.save()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.FeatureSelectionResult.get_config"><code class="docutils literal notranslate"><span class="pre">FeatureSelectionResult.get_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.FeatureSelection"><code class="docutils literal notranslate"><span class="pre">FeatureSelection</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.FeatureSelection.removable"><code class="docutils literal notranslate"><span class="pre">FeatureSelection.removable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.FeatureSelection.evaluate"><code class="docutils literal notranslate"><span class="pre">FeatureSelection.evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.feature_selection.html#physXAI.feature_selection.selection.FeatureSelection.run"><code class="docutils literal notranslate"><span class="pre">FeatureSelection.run()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="physXAI.io.html">physXAI.io package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.io.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.io.html#module-physXAI.io.agentlib">physXAI.io.agentlib module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.io.html#physXAI.io.agentlib.AGENTLIB_RNN_BRANCH"><code class="docutils literal notranslate"><span class="pre">AGENTLIB_RNN_BRANCH</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.io.html#physXAI.io.agentlib.AgentLibCompatibilityError"><code class="docutils literal notranslate"><span class="pre">AgentLibCompatibilityError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.io.html#physXAI.io.agentlib.split_lag"><code class="docutils literal notranslate"><span class="pre">split_lag()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.io.html#physXAI.io.agentlib.output_feature"><code class="docutils literal notranslate"><span class="pre">output_feature()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.io.html#physXAI.io.agentlib.agentlib_supports_recurrent_models"><code class="docutils literal notranslate"><span class="pre">agentlib_supports_recurrent_models()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.io.html#physXAI.io.agentlib.check_agentlib_compatibility"><code class="docutils literal notranslate"><span class="pre">check_agentlib_compatibility()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.io.html#physXAI.io.agentlib.save_for_agentlib"><code class="docutils literal notranslate"><span class="pre">save_for_agentlib()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.io.html#module-physXAI.io.run">physXAI.io.run module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.io.html#physXAI.io.run.set_log_level"><code class="docutils literal notranslate"><span class="pre">set_log_level()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.io.html#physXAI.io.run.keras_verbosity"><code class="docutils literal notranslate"><span class="pre">keras_verbosity()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.io.html#physXAI.io.run.keras_verbosity_int"><code class="docutils literal notranslate"><span class="pre">keras_verbosity_int()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.io.html#physXAI.io.run.output_path"><code class="docutils literal notranslate"><span class="pre">output_path()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.io.html#physXAI.io.run.input_path"><code class="docutils literal notranslate"><span class="pre">input_path()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.io.html#physXAI.io.run.Run"><code class="docutils literal notranslate"><span class="pre">Run</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.io.html#physXAI.io.run.Run.file"><code class="docutils literal notranslate"><span class="pre">Run.file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.io.html#physXAI.io.run.Run.save_json"><code class="docutils literal notranslate"><span class="pre">Run.save_json()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.io.html#physXAI.io.run.Run.save"><code class="docutils literal notranslate"><span class="pre">Run.save()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.io.html#physXAI.io.run.Run.save_for_agentlib"><code class="docutils literal notranslate"><span class="pre">Run.save_for_agentlib()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.io.html#physXAI.io.run.Run.version_info"><code class="docutils literal notranslate"><span class="pre">Run.version_info()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.io.html#physXAI.io.run.environment_info"><code class="docutils literal notranslate"><span class="pre">environment_info()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="physXAI.models.html">physXAI.models package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.models.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.html">physXAI.models.ann package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.html#module-physXAI.models.ann.ann_design">physXAI.models.ann.ann_design module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.modular.html">physXAI.models.modular package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#module-physXAI.models.modular.modular_ann">physXAI.models.modular.modular_ann module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.modular.html#module-physXAI.models.modular.shape_constraints">physXAI.models.modular.shape_constraints module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.models.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.models.html#module-physXAI.models.models">physXAI.models.models module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.CONFIG_META_KEYS"><code class="docutils literal notranslate"><span class="pre">CONFIG_META_KEYS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.train_data_float64"><code class="docutils literal notranslate"><span class="pre">train_data_float64()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel"><code class="docutils literal notranslate"><span class="pre">AbstractModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.generate_model"><code class="docutils literal notranslate"><span class="pre">AbstractModel.generate_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.compile_model"><code class="docutils literal notranslate"><span class="pre">AbstractModel.compile_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.fit_model"><code class="docutils literal notranslate"><span class="pre">AbstractModel.fit_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.evaluate"><code class="docutils literal notranslate"><span class="pre">AbstractModel.evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.plot_title"><code class="docutils literal notranslate"><span class="pre">AbstractModel.plot_title</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.plot"><code class="docutils literal notranslate"><span class="pre">AbstractModel.plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.save_plot"><code class="docutils literal notranslate"><span class="pre">AbstractModel.save_plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.save_model"><code class="docutils literal notranslate"><span class="pre">AbstractModel.save_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.load_model"><code class="docutils literal notranslate"><span class="pre">AbstractModel.load_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.prepare"><code class="docutils literal notranslate"><span class="pre">AbstractModel.prepare()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.trained_model"><code class="docutils literal notranslate"><span class="pre">AbstractModel.trained_model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.pipeline"><code class="docutils literal notranslate"><span class="pre">AbstractModel.pipeline()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.online_pipeline"><code class="docutils literal notranslate"><span class="pre">AbstractModel.online_pipeline()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.online_pipeline_internal"><code class="docutils literal notranslate"><span class="pre">AbstractModel.online_pipeline_internal()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.get_config"><code class="docutils literal notranslate"><span class="pre">AbstractModel.get_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.from_config"><code class="docutils literal notranslate"><span class="pre">AbstractModel.from_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.AbstractModel.model_from_config"><code class="docutils literal notranslate"><span class="pre">AbstractModel.model_from_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.register_model"><code class="docutils literal notranslate"><span class="pre">register_model()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.SingleStepModel"><code class="docutils literal notranslate"><span class="pre">SingleStepModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.SingleStepModel.evaluate"><code class="docutils literal notranslate"><span class="pre">SingleStepModel.evaluate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.LinearRegressionModel"><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.LinearRegressionModel.plot_title"><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel.plot_title</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.LinearRegressionModel.generate_model"><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel.generate_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.LinearRegressionModel.fit_model"><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel.fit_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.LinearRegressionModel.compile_model"><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel.compile_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.LinearRegressionModel.save_model"><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel.save_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.LinearRegressionModel.load_model"><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel.load_model()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.MultiStepModel"><code class="docutils literal notranslate"><span class="pre">MultiStepModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.MultiStepModel.fit_model"><code class="docutils literal notranslate"><span class="pre">MultiStepModel.fit_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.html#physXAI.models.models.MultiStepModel.evaluate"><code class="docutils literal notranslate"><span class="pre">MultiStepModel.evaluate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="physXAI.plotting.html">physXAI.plotting package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.plotting.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.plotting.html#module-physXAI.plotting.plotting">physXAI.plotting.plotting module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.plotting.html#physXAI.plotting.plotting.subplots"><code class="docutils literal notranslate"><span class="pre">subplots()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.plotting.html#physXAI.plotting.plotting.save_figure"><code class="docutils literal notranslate"><span class="pre">save_figure()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.plotting.html#physXAI.plotting.plotting.binned_median"><code class="docutils literal notranslate"><span class="pre">binned_median()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.plotting.html#physXAI.plotting.plotting.MAX_POINTS"><code class="docutils literal notranslate"><span class="pre">MAX_POINTS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.plotting.html#physXAI.plotting.plotting.plot_prediction_correlation"><code class="docutils literal notranslate"><span class="pre">plot_prediction_correlation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.plotting.html#physXAI.plotting.plotting.plot_predictions"><code class="docutils literal notranslate"><span class="pre">plot_predictions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.plotting.html#physXAI.plotting.plotting.plot_training_history"><code class="docutils literal notranslate"><span class="pre">plot_training_history()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.plotting.html#physXAI.plotting.plotting.plot_metrics_table"><code class="docutils literal notranslate"><span class="pre">plot_metrics_table()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.plotting.html#physXAI.plotting.plotting.plot_horizon_metrics"><code class="docutils literal notranslate"><span class="pre">plot_horizon_metrics()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.plotting.html#physXAI.plotting.plotting.model_report"><code class="docutils literal notranslate"><span class="pre">model_report()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.plotting.html#physXAI.plotting.plotting.plot_shape_constraints_table"><code class="docutils literal notranslate"><span class="pre">plot_shape_constraints_table()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="physXAI.preprocessing.html">physXAI.preprocessing package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.preprocessing.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.preprocessing.html#module-physXAI.preprocessing.preprocessing">physXAI.preprocessing.preprocessing module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.register_preprocessing"><code class="docutils literal notranslate"><span class="pre">register_preprocessing()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.expand_lags"><code class="docutils literal notranslate"><span class="pre">expand_lags()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.max_lag"><code class="docutils literal notranslate"><span class="pre">max_lag()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.ensure_column"><code class="docutils literal notranslate"><span class="pre">ensure_column()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.output_feature"><code class="docutils literal notranslate"><span class="pre">output_feature()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.order_inputs"><code class="docutils literal notranslate"><span class="pre">order_inputs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.input_lag"><code class="docutils literal notranslate"><span class="pre">input_lag()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.depends_on"><code class="docutils literal notranslate"><span class="pre">depends_on()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.holds_current_value"><code class="docutils literal notranslate"><span class="pre">holds_current_value()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.check_multi_step_inputs"><code class="docutils literal notranslate"><span class="pre">check_multi_step_inputs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData"><code class="docutils literal notranslate"><span class="pre">PreprocessingData</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.test_size"><code class="docutils literal notranslate"><span class="pre">PreprocessingData.test_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.val_size"><code class="docutils literal notranslate"><span class="pre">PreprocessingData.val_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.load_data"><code class="docutils literal notranslate"><span class="pre">PreprocessingData.load_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.build_training_data"><code class="docutils literal notranslate"><span class="pre">PreprocessingData.build_training_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.resolve_inputs"><code class="docutils literal notranslate"><span class="pre">PreprocessingData.resolve_inputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.pipeline"><code class="docutils literal notranslate"><span class="pre">PreprocessingData.pipeline()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.get_config"><code class="docutils literal notranslate"><span class="pre">PreprocessingData.get_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.from_config"><code class="docutils literal notranslate"><span class="pre">PreprocessingData.from_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingSingleStep"><code class="docutils literal notranslate"><span class="pre">PreprocessingSingleStep</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingSingleStep.pipeline"><code class="docutils literal notranslate"><span class="pre">PreprocessingSingleStep.pipeline()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingSingleStep.get_config"><code class="docutils literal notranslate"><span class="pre">PreprocessingSingleStep.get_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingMultiStep"><code class="docutils literal notranslate"><span class="pre">PreprocessingMultiStep</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingMultiStep.pipeline"><code class="docutils literal notranslate"><span class="pre">PreprocessingMultiStep.pipeline()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingMultiStep.get_config"><code class="docutils literal notranslate"><span class="pre">PreprocessingMultiStep.get_config()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.preprocessing.html#module-physXAI.preprocessing.splitting">physXAI.preprocessing.splitting module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.BlockSplit"><code class="docutils literal notranslate"><span class="pre">BlockSplit</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.BlockSplit.get_config"><code class="docutils literal notranslate"><span class="pre">BlockSplit.get_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.BlockSplit.from_config"><code class="docutils literal notranslate"><span class="pre">BlockSplit.from_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.BlockSplit.resolve_block_length"><code class="docutils literal notranslate"><span class="pre">BlockSplit.resolve_block_length()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.BlockSplit.assign"><code class="docutils literal notranslate"><span class="pre">BlockSplit.assign()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.apply_embargo"><code class="docutils literal notranslate"><span class="pre">apply_embargo()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.split_fingerprint"><code class="docutils literal notranslate"><span class="pre">split_fingerprint()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.split_summary"><code class="docutils literal notranslate"><span class="pre">split_summary()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.preprocessing.html#module-physXAI.preprocessing.training_data">physXAI.preprocessing.training_data module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.recursive_training_record"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.recursive_training_record</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.physics"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.physics</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.add_training_record"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.add_training_record()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.add_predictions"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.add_predictions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.add_metrics"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.add_metrics()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.add_training_time"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.add_training_time()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.add_file_path"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.add_file_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.get_config"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.get_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.X_train_single"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.X_train_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.y_train_single"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.y_train_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.X_val_single"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.X_val_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.y_val_single"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.y_val_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.X_test_single"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.X_test_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.y_test_single"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.y_test_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.y_train_pred_single"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.y_train_pred_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.y_val_pred_single"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.y_val_pred_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.y_test_pred_single"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.y_test_pred_single</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData"><code class="docutils literal notranslate"><span class="pre">TrainingData</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.horizon_metrics"><code class="docutils literal notranslate"><span class="pre">TrainingData.horizon_metrics</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.column"><code class="docutils literal notranslate"><span class="pre">TrainingData.column()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.rows"><code class="docutils literal notranslate"><span class="pre">TrainingData.rows()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.X"><code class="docutils literal notranslate"><span class="pre">TrainingData.X()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.y"><code class="docutils literal notranslate"><span class="pre">TrainingData.y()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.values"><code class="docutils literal notranslate"><span class="pre">TrainingData.values()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.window_starts"><code class="docutils literal notranslate"><span class="pre">TrainingData.window_starts()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.windows"><code class="docutils literal notranslate"><span class="pre">TrainingData.windows()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.has_split"><code class="docutils literal notranslate"><span class="pre">TrainingData.has_split()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.summary"><code class="docutils literal notranslate"><span class="pre">TrainingData.summary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.X_train"><code class="docutils literal notranslate"><span class="pre">TrainingData.X_train</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.X_val"><code class="docutils literal notranslate"><span class="pre">TrainingData.X_val</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.X_test"><code class="docutils literal notranslate"><span class="pre">TrainingData.X_test</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.y_train"><code class="docutils literal notranslate"><span class="pre">TrainingData.y_train</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.y_val"><code class="docutils literal notranslate"><span class="pre">TrainingData.y_val</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.y_test"><code class="docutils literal notranslate"><span class="pre">TrainingData.y_test</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.X_train_single"><code class="docutils literal notranslate"><span class="pre">TrainingData.X_train_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.y_train_single"><code class="docutils literal notranslate"><span class="pre">TrainingData.y_train_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.X_val_single"><code class="docutils literal notranslate"><span class="pre">TrainingData.X_val_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.y_val_single"><code class="docutils literal notranslate"><span class="pre">TrainingData.y_val_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.X_test_single"><code class="docutils literal notranslate"><span class="pre">TrainingData.X_test_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.y_test_single"><code class="docutils literal notranslate"><span class="pre">TrainingData.y_test_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.get_config"><code class="docutils literal notranslate"><span class="pre">TrainingData.get_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.save"><code class="docutils literal notranslate"><span class="pre">TrainingData.save()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.load"><code class="docutils literal notranslate"><span class="pre">TrainingData.load()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.features"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.features</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.difference"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.difference</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.absolute"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.absolute</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.horizon_metrics"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.horizon_metrics</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.sequences"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.sequences()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.trajectory"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.trajectory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.has_split"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.has_split()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.X"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.X()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.targets"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.targets()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.initial"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.initial()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.y"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.y()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.X_train"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.X_train</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.X_val"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.X_val</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.X_test"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.X_test</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.y_train"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.y_train</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.y_val"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.y_val</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.y_test"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.y_test</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.X_train_single"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.X_train_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.X_val_single"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.X_val_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.X_test_single"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.X_test_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.y_train_single"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.y_train_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.y_val_single"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.y_val_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.y_test_single"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.y_test_single</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.summary"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.summary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.get_config"><code class="docutils literal notranslate"><span class="pre">TrainingDataMultiStep.get_config()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.preprocessing.html#module-physXAI.preprocessing.windows">physXAI.preprocessing.windows module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.windows.window_starts"><code class="docutils literal notranslate"><span class="pre">window_starts()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.windows.gather_windows"><code class="docutils literal notranslate"><span class="pre">gather_windows()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="physXAI.training.html">physXAI.training package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.training.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.training.html#module-physXAI.training.recursive">physXAI.training.recursive module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.training.html#physXAI.training.recursive.Mode"><code class="docutils literal notranslate"><span class="pre">Mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.training.html#physXAI.training.recursive.RecursiveTraining"><code class="docutils literal notranslate"><span class="pre">RecursiveTraining</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html#physXAI.training.recursive.RecursiveTraining.resolve_horizon"><code class="docutils literal notranslate"><span class="pre">RecursiveTraining.resolve_horizon()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html#physXAI.training.recursive.RecursiveTraining.weights"><code class="docutils literal notranslate"><span class="pre">RecursiveTraining.weights()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html#physXAI.training.recursive.RecursiveTraining.get_config"><code class="docutils literal notranslate"><span class="pre">RecursiveTraining.get_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html#physXAI.training.recursive.RecursiveTraining.from_config"><code class="docutils literal notranslate"><span class="pre">RecursiveTraining.from_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.training.html#physXAI.training.recursive.step_weights"><code class="docutils literal notranslate"><span class="pre">step_weights()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.training.html#physXAI.training.recursive.weighted_step_loss"><code class="docutils literal notranslate"><span class="pre">weighted_step_loss()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.training.html#physXAI.training.recursive.fit_recursive"><code class="docutils literal notranslate"><span class="pre">fit_recursive()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="physXAI.utils.html">physXAI.utils package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.utils.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.utils.html#module-physXAI.utils.seed">physXAI.utils.seed module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.utils.html#physXAI.utils.seed.set_seed"><code class="docutils literal notranslate"><span class="pre">set_seed()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.utils.html#physXAI.utils.seed.get_seed"><code class="docutils literal notranslate"><span class="pre">get_seed()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.utils.html#physXAI.utils.seed.resolve_seed"><code class="docutils literal notranslate"><span class="pre">resolve_seed()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="physXAI" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="physXAI.agentlib_mpc_plugin.html" class="btn btn-neutral float-right" title="physXAI.agentlib_mpc_plugin package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

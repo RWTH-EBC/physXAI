@@ -1,0 +1,355 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>physXAI.models.modular.modular_ann &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../../../../_static/jquery.js"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+      <script src="../../../../_static/doctools.js"></script>
+      <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guide/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guide/expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guide/data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guide/models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guide/multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guide/physics.html">Physics-informed models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guide/agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">physXAI.models.modular.modular_ann</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for physXAI.models.modular.modular_ann</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Modular artificial neural networks: a trainable model built from a `physXAI.expr` graph.</span>
+
+<span class="sd">    &gt;&gt;&gt; from physXAI import expr as px</span>
+<span class="sd">    &gt;&gt;&gt; v = px.Vars()</span>
+<span class="sd">    &gt;&gt;&gt; model = ModularANN(px.Linear([v.mDot, v.load, v.mDot * (v.T_in - v.T), v.T]), solver="ols")</span>
+
+<span class="sd">Physical arithmetic (like the heat flow above) is part of the keras model. It is therefore</span>
+<span class="sd">recomputed in every step of a recursive prediction and exported to AgentLib-MPC together with</span>
+<span class="sd">the model, so the MPC only needs the raw inputs.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.expr</span><span class="w"> </span><span class="kn">import</span> <span class="n">Expr</span><span class="p">,</span> <span class="n">Linear</span><span class="p">,</span> <span class="n">from_config</span><span class="p">,</span> <span class="n">to_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.expr.blocks</span><span class="w"> </span><span class="kn">import</span> <span class="n">_nominal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.expr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">BuildContext</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.ann_design</span><span class="w"> </span><span class="kn">import</span> <span class="n">ANNModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.model_construction.ann_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">output_scale</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_model</span><span class="p">,</span> <span class="n">train_data_float64</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.modular.shape_constraints</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ShapeConstraints</span><span class="p">,</span>
+    <span class="n">ShapeFitResult</span><span class="p">,</span>
+    <span class="n">constrained_least_squares</span><span class="p">,</span>
+    <span class="n">fit_shape_constrained</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.training_data</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingDataGeneric</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"TF_CPP_MIN_LOG_LEVEL"</span><span class="p">,</span> <span class="s2">"2"</span><span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">keras</span>  <span class="c1"># noqa: E402</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"physXAI"</span><span class="p">)</span>
+
+<span class="n">SOLVERS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"adam"</span><span class="p">,</span> <span class="s2">"ols"</span><span class="p">,</span> <span class="s2">"qp"</span><span class="p">)</span>
+<span class="c1">#: Solvers computing the weights of a Linear block in closed form (no gradient descent)</span>
+<span class="n">CLOSED_FORM</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"ols"</span><span class="p">,</span> <span class="s2">"qp"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ModularANN"><a class="viewcode-back" href="../../../../code/physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN">[docs]</a><span class="nd">@register_model</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ModularANN</span><span class="p">(</span><span class="n">ANNModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Trainable keras model defined by an expression graph.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        architecture: The expression computing the output, e.g. `px.Linear([...])`.</span>
+<span class="sd">        rescale_output: Rescale the output with mean and standard deviation of the training targets.</span>
+<span class="sd">        solver: 'adam' (gradient descent), 'ols' (closed form least squares) or 'qp' (constrained least squares:</span>
+<span class="sd">                sign bounds of `Linear(monotonicities=...)` and `shape`). 'ols' and 'qp' need a `Linear` block on data</span>
+<span class="sd">                only inputs without normalization as architecture.</span>
+<span class="sd">        shape: Optional `ShapeConstraints`: monotonicity and convexity of the prediction with respect to raw data</span>
+<span class="sd">               columns, guaranteed on a domain (requires solver='qp', see `physXAI.models.modular.shape_constraints`).</span>
+<span class="sd">               The result is stored in `td.physics['shape_constraints']`.</span>
+<span class="sd">        batch_size: Batch size of the training.</span>
+<span class="sd">        epochs: Maximum number of epochs.</span>
+<span class="sd">        learning_rate: Learning rate of the Adam optimizer.</span>
+<span class="sd">        early_stopping_epochs: Patience of the early stopping on the validation loss (None: no early stopping).</span>
+<span class="sd">        random_seed: Seed of the weights and the batch order, set when the model is generated. Defaults to the global</span>
+<span class="sd">                     seed (`physXAI.set_seed`), else a new seed is drawn (stored in the config).</span>
+<span class="sd">        warm_start: With solver='adam' and a normalized `Linear` block as architecture: the training starts at the</span>
+<span class="sd">                    least squares solution of its data only terms (sign bounds of its monotonicities included), the</span>
+<span class="sd">                    trainable terms (e.g. a `px.MLP` for the remaining dynamics) start with weight 0. The model starts</span>
+<span class="sd">                    as the linear model and the network learns its residual, which makes the training independent of</span>
+<span class="sd">                    a bad initialization. No effect for other architectures.</span>
+<span class="sd">    """</span>
+
+    <span class="n">plot_title</span> <span class="o">=</span> <span class="s2">"Modular ANN"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">architecture</span><span class="p">:</span> <span class="n">Expr</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">rescale_output</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">solver</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"adam"</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
+        <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
+        <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
+        <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">shape</span><span class="p">:</span> <span class="n">ShapeConstraints</span> <span class="o">|</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">warm_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">epochs</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">,</span> <span class="n">early_stopping_epochs</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">architecture</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">architecture</span> <span class="o">=</span> <span class="n">from_config</span><span class="p">(</span><span class="n">architecture</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="n">ShapeConstraints</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">solver</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SOLVERS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown solver '</span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2">', use one of </span><span class="si">{</span><span class="n">SOLVERS</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">architecture</span><span class="p">:</span> <span class="n">Expr</span> <span class="o">=</span> <span class="n">architecture</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rescale_output</span> <span class="o">=</span> <span class="n">rescale_output</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">=</span> <span class="n">solver</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span> <span class="n">ShapeConstraints</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">warm_start</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">warm_start</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ctx</span><span class="p">:</span> <span class="n">BuildContext</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rescaling</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">solver</span> <span class="o">!=</span> <span class="s2">"qp"</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Shape constraints require solver='qp'."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">solver</span> <span class="ow">in</span> <span class="n">CLOSED_FORM</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_closed_form</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">physics</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"solver='</span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2">' cannot be combined with a physics residual, use solver='adam'."</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">recursive_training</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Shape constraints cannot be combined with recursive_training: the training on the "</span>
+                                 <span class="s2">"multi step error (gradient descent) would not keep them."</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">required_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Data columns the model needs (free variables of the architecture)."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">architecture</span><span class="o">.</span><span class="n">free_vars</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_closed_form</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">arch</span><span class="p">,</span> <span class="n">solver</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">architecture</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arch</span><span class="p">,</span> <span class="n">Linear</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"solver='</span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2">' requires a Linear block as architecture."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">arch</span><span class="o">.</span><span class="n">monotonicities</span> <span class="ow">and</span> <span class="n">solver</span> <span class="o">==</span> <span class="s2">"ols"</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"solver='ols' cannot enforce monotonicities, use solver='qp'."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">arch</span><span class="o">.</span><span class="n">normalize</span> <span class="ow">or</span> <span class="n">arch</span><span class="o">.</span><span class="n">nominal_range</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"solver='</span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2">' requires a Linear block without normalization and nominal range."</span><span class="p">)</span>
+        <span class="n">trainable</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">arch</span><span class="o">.</span><span class="n">inputs</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">trainable</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">trainable</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"solver='</span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2">' requires data only inputs, but </span><span class="si">{</span><span class="n">trainable</span><span class="si">}</span><span class="s2"> are trainable."</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ModularANN.generate_model"><a class="viewcode-back" href="../../../../code/physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.generate_model">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">"td"</span><span class="p">]</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span>
+        <span class="c1"># float64: the values adapt the normalizations and are the data of the closed form solvers</span>
+        <span class="n">X</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">train_data_float64</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_inputs</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The architecture needs the inputs </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">, which are not part of the data </span><span class="si">{</span><span class="n">inputs</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="n">ctx</span> <span class="o">=</span> <span class="n">BuildContext</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">),)),</span> <span class="n">inputs</span><span class="p">,</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">X</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">inputs</span><span class="p">)})</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">architecture</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rescaling</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rescale_output</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rescaling</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">y</span><span class="p">)),</span> <span class="n">output_scale</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Rescaling</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_rescaling</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_rescaling</span><span class="p">[</span><span class="mi">0</span><span class="p">])(</span><span class="n">x</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ctx</span> <span class="o">=</span> <span class="n">ctx</span>
+        <span class="k">return</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">input</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">warm_start_applies</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Whether the training starts at the least squares solution (see `warm_start`)."""</span>
+        <span class="n">arch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">architecture</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">warm_start</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">==</span> <span class="s2">"adam"</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arch</span><span class="p">,</span> <span class="n">Linear</span><span class="p">)</span> <span class="ow">and</span> <span class="n">arch</span><span class="o">.</span><span class="n">normalize</span>
+                <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">trainable</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">arch</span><span class="o">.</span><span class="n">inputs</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initialize_least_squares</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Warm start: the Linear block starts at the least squares solution of its data only terms."""</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+        <span class="n">arch</span><span class="p">:</span> <span class="n">Linear</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">architecture</span>
+        <span class="n">dense</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ctx</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">arch</span><span class="p">)]</span>
+        <span class="c1"># the inputs of the dense layer: the (normalized) terms, as the model computes them</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span> <span class="n">dense</span><span class="o">.</span><span class="n">input</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">4096</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">train_data_float64</span><span class="p">(</span><span class="n">td</span><span class="p">)[</span><span class="mi">1</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rescaling</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rescaling</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rescaling</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">nominal</span> <span class="o">=</span> <span class="n">_nominal</span><span class="p">(</span><span class="n">arch</span><span class="o">.</span><span class="n">nominal_range</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">nominal</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">nominal</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">nominal</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">arch</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">trainable</span><span class="p">]</span>
+        <span class="n">signs</span> <span class="o">=</span> <span class="n">arch</span><span class="o">.</span><span class="n">_per_input</span><span class="p">(</span><span class="n">arch</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">)</span>
+        <span class="n">weights</span><span class="p">,</span> <span class="n">bias</span> <span class="o">=</span> <span class="n">constrained_least_squares</span><span class="p">(</span><span class="n">features</span><span class="p">[:,</span> <span class="n">data</span><span class="p">],</span> <span class="n">y</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">arch</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span>
+                                                  <span class="n">weight_signs</span><span class="o">=</span><span class="p">[</span><span class="n">signs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data</span><span class="p">])</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">arch</span><span class="o">.</span><span class="n">inputs</span><span class="p">))</span>
+        <span class="n">kernel</span><span class="p">[</span><span class="n">data</span><span class="p">]</span> <span class="o">=</span> <span class="n">weights</span>
+        <span class="n">dense</span><span class="o">.</span><span class="n">set_weights</span><span class="p">([</span><span class="n">kernel</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)]</span>
+                          <span class="o">+</span> <span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">bias</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)]</span> <span class="k">if</span> <span class="n">arch</span><span class="o">.</span><span class="n">bias</span> <span class="k">else</span> <span class="p">[]))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Warm start: least squares solution of </span><span class="si">%d</span><span class="s2"> data only term(s), </span><span class="si">%d</span><span class="s2"> trainable term(s) start at 0 "</span>
+                    <span class="s2">"(</span><span class="si">%.2f</span><span class="s2"> s)"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">arch</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ModularANN.fit_model"><a class="viewcode-back" href="../../../../code/physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.fit_model">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">==</span> <span class="s2">"adam"</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">warm_start_applies</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_least_squares</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span>
+
+        <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+        <span class="n">arch</span><span class="p">:</span> <span class="n">Linear</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">architecture</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">train_data_float64</span><span class="p">(</span><span class="n">td</span><span class="p">)[</span><span class="mi">1</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rescaling</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rescaling</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rescaling</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">==</span> <span class="s2">"ols"</span><span class="p">:</span>
+            <span class="n">features</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_ctx</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">arch</span><span class="o">.</span><span class="n">inputs</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">arch</span><span class="o">.</span><span class="n">bias</span><span class="p">:</span>
+                <span class="n">features</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">features</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">features</span><span class="p">))])</span>
+            <span class="n">coef</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">rcond</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+            <span class="n">kernel</span><span class="p">,</span> <span class="n">bias</span> <span class="o">=</span> <span class="n">coef</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">arch</span><span class="o">.</span><span class="n">inputs</span><span class="p">)],</span> <span class="n">coef</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">fit_shape_constrained</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">arch</span><span class="o">.</span><span class="n">inputs</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ctx</span><span class="o">.</span><span class="n">train_values</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">arch</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span>
+                                           <span class="n">weight_signs</span><span class="o">=</span><span class="n">arch</span><span class="o">.</span><span class="n">_per_input</span><span class="p">(</span><span class="n">arch</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">),</span> <span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">kernel</span><span class="p">,</span> <span class="n">bias</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">result</span><span class="o">.</span><span class="n">bias</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_store_shape_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span>
+        <span class="n">dense</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ctx</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">arch</span><span class="p">)]</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">[</span><span class="n">kernel</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">+</span> <span class="p">([</span><span class="n">bias</span><span class="p">]</span> <span class="k">if</span> <span class="n">arch</span><span class="o">.</span><span class="n">bias</span> <span class="k">else</span> <span class="p">[])</span>
+        <span class="n">dense</span><span class="o">.</span><span class="n">set_weights</span><span class="p">([</span><span class="n">w</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">weights</span><span class="p">])</span>
+        <span class="n">td</span><span class="o">.</span><span class="n">add_training_time</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">recursive_training</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># the least squares solution initializes the training on the multi step error</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fit_multi_step</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dense</span><span class="o">.</span><span class="n">trainable</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_store_shape_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">ShapeFitResult</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Writes the diagnosis of the constrained fit into `td.physics['shape_constraints']` and the log."""</span>
+        <span class="n">td</span><span class="o">.</span><span class="n">physics</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">physics</span> <span class="ow">or</span> <span class="p">{}),</span> <span class="s2">"shape_constraints"</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">get_config</span><span class="p">()}</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Constrained least squares: train RMSE </span><span class="si">%.4g</span><span class="s2"> (unconstrained </span><span class="si">%.4g</span><span class="s2">), </span><span class="si">%d</span><span class="s2"> iteration(s), </span><span class="si">%.2f</span><span class="s2"> s"</span><span class="p">,</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">rmse_train</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">rmse_train_unconstrained</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">iterations</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">constraints</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"  </span><span class="si">%s</span><span class="s2"> </span><span class="si">%s</span><span class="s2"> (</span><span class="si">%+d</span><span class="s2">): </span><span class="si">%s</span><span class="s2">, max violation </span><span class="si">%.2g</span><span class="s2">, </span><span class="si">%d</span><span class="s2"> constraint points"</span><span class="p">,</span> <span class="n">c</span><span class="p">[</span><span class="s2">"type"</span><span class="p">],</span> <span class="n">c</span><span class="p">[</span><span class="s2">"column"</span><span class="p">],</span>
+                        <span class="n">c</span><span class="p">[</span><span class="s2">"sign"</span><span class="p">],</span> <span class="n">c</span><span class="p">[</span><span class="s2">"certificate"</span><span class="p">],</span> <span class="n">c</span><span class="p">[</span><span class="s2">"max_violation"</span><span class="p">],</span> <span class="n">c</span><span class="p">[</span><span class="s2">"constraint_points"</span><span class="p">])</span>
+
+<div class="viewcode-block" id="ModularANN.online_pipeline"><a class="viewcode-back" href="../../../../code/physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.online_pipeline">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">online_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">,</span> <span class="n">load_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="ow">in</span> <span class="n">CLOSED_FORM</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"solver='</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="si">}</span><span class="s2">' solves the least squares problem in closed form, there is no further training. "</span>
+                <span class="s2">"Train a new model on the combined data instead."</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">online_pipeline</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="n">load_path</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ModularANN.get_config"><a class="viewcode-back" href="../../../../code/physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.get_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">"architecture"</span><span class="p">:</span> <span class="n">to_config</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">architecture</span><span class="p">),</span>
+                <span class="s2">"rescale_output"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">rescale_output</span><span class="p">,</span>
+                <span class="s2">"solver"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="p">,</span>
+                <span class="s2">"shape"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">"warm_start"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">warm_start</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">config</span></div></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
