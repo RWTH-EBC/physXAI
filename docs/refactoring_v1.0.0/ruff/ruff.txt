@@ -11,8 +11,9 @@ physXAI/models/ann/model_construction/ann_models.py:12:1: E402 Module level impo
 physXAI/models/ann/model_construction/residual_models.py:13:1: E402 Module level import not at top of file
 physXAI/models/ann/pinn/physics.py:168:67: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
 physXAI/models/models.py:26:1: E402 Module level import not at top of file
-physXAI/preprocessing/preprocessing.py:619:25: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
-physXAI/preprocessing/preprocessing.py:740:16: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
-physXAI/preprocessing/preprocessing.py:742:16: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
-Found 16 errors.
-No fixes available (11 hidden fixes can be enabled with the `--unsafe-fixes` option).
+physXAI/preprocessing/preprocessing.py:626:25: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/preprocessing/preprocessing.py:628:8: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/preprocessing/preprocessing.py:751:16: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/preprocessing/preprocessing.py:753:16: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+Found 17 errors.
+No fixes available (12 hidden fixes can be enabled with the `--unsafe-fixes` option).
