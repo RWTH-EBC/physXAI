@@ -119,15 +119,13 @@
 <dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config">
 <em class="property"><span class="pre">pydantic</span> <span class="pre">model</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.configs.ann_model_configs.</span></span><span class="sig-name descname"><span class="pre">ClassicalANNConstruction_config</span></span><a class="reference internal" href="../_modules/physXAI/models/ann/configs/ann_model_configs.html#ClassicalANNConstruction_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
-<p>Settings of a feed forward network: layers, neurons, activations, normalization and output rescaling.</p>
+<p>Settings of a feed forward network: layers, neurons, activations and output rescaling.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Fields<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.activation_function" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.activation_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">activation_function</span> <span class="pre">(str</span> <span class="pre">|</span> <span class="pre">list[str])</span></code></a></p></li>
-<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_features" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_features"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_features</span> <span class="pre">(int</span> <span class="pre">|</span> <span class="pre">None)</span></code></a></p></li>
 <li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_layers" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_layers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_layers</span> <span class="pre">(int)</span></code></a></p></li>
 <li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_neurons" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_neurons"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_neurons</span> <span class="pre">(int</span> <span class="pre">|</span> <span class="pre">list[int])</span></code></a></p></li>
-<li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.normalize" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.normalize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalize</span> <span class="pre">(bool)</span></code></a></p></li>
 <li><p><a class="reference internal" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.rescale_output" title="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.rescale_output"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rescale_output</span> <span class="pre">(bool)</span></code></a></p></li>
 </ul>
 </dd>
@@ -149,11 +147,6 @@
 </dd>
 </dl>
 </dd></dl>
-
-<dl class="py attribute pydantic_field">
-<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_features">
-<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_features</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_features" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
 
 <dl class="py attribute pydantic_field">
 <dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.n_layers">
@@ -178,11 +171,6 @@
 </dd>
 </dl>
 </dd></dl>
-
-<dl class="py attribute pydantic_field">
-<dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.normalize">
-<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">normalize</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.normalize" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
 
 <dl class="py attribute pydantic_field">
 <dt class="sig sig-object py" id="physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.rescale_output">

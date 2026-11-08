@@ -12,7 +12,8 @@ in particular for [AgentLib-MPC](https://github.com/RWTH-EBC/AgentLib-MPC). A ty
 
 ## Installation
 
-physXAI needs Python >= 3.11 and runs on Linux and Windows.
+physXAI runs on Python 3.11, 3.12 and 3.13 on Linux and Windows. Newer Python versions follow once
+TensorFlow provides wheels for them.
 
 ```bash
 pip install .                    # user

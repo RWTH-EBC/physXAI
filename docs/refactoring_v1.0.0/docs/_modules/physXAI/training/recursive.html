@@ -268,7 +268,7 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.evaluation.rollout</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_rollout_model</span><span class="p">,</span> <span class="n">recursion_spec</span><span class="p">,</span> <span class="n">rollout_data</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.io.run</span><span class="w"> </span><span class="kn">import</span> <span class="n">keras_verbosity</span>
 
-    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="s2">"shift"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">td</span><span class="o">.</span><span class="n">shift</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Multi step training predicts the next step recursively and needs shift=1."</span><span class="p">)</span>
     <span class="n">spec</span> <span class="o">=</span> <span class="n">recursion_spec</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>

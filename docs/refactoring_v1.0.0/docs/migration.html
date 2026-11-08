@@ -94,11 +94,13 @@
 <h1>Migration from physXAI 0.x to 1.0<a class="headerlink" href="#migration-from-physxai-0-x-to-1-0" title="Permalink to this heading"></a></h1>
 <p>physXAI 1.0 is not backwards compatible. The integration into AgentLib-MPC keeps working: the training
 script signature and the saved files are the same.</p>
+<p>The guide covers the releases 0.x and the development branch <code class="docutils literal notranslate"><span class="pre">26-integrate-modular-anns</span></code> (modular models
+<code class="docutils literal notranslate"><span class="pre">Modular*</span></code>, <code class="docutils literal notranslate"><span class="pre">ModularANN</span></code> and <code class="docutils literal notranslate"><span class="pre">ConstrainedRegression</span></code>).</p>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
 <table class="docutils align-default">
 <thead>
-<tr class="row-odd"><th class="head"><p>0.x</p></th>
+<tr class="row-odd"><th class="head"><p>0.x / branch 26</p></th>
 <th class="head"><p>1.0</p></th>
 </tr>
 </thead>
@@ -139,11 +141,23 @@ script signature and the saved files are the same.</p>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ModularLinear</span></code>, <code class="docutils literal notranslate"><span class="pre">ModularMonotoneLinear</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">px.Linear(monotonicities=...)</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ModularTrainable</span></code>, <code class="docutils literal notranslate"><span class="pre">ModularAverage</span></code>, <code class="docutils literal notranslate"><span class="pre">ModularNormalization</span></code>, <code class="docutils literal notranslate"><span class="pre">ModularExistingModel</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ModularPolynomial</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">px.Polynomial</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ModularTrainable</span></code>, <code class="docutils literal notranslate"><span class="pre">ModularAverage</span></code>, <code class="docutils literal notranslate"><span class="pre">ModularNormalization</span></code>, <code class="docutils literal notranslate"><span class="pre">ModularExistingModel</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">px.Param</span></code>, <code class="docutils literal notranslate"><span class="pre">px.Mean</span></code>, <code class="docutils literal notranslate"><span class="pre">px.Normalize</span></code>, <code class="docutils literal notranslate"><span class="pre">px.Pretrained</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ModularFeature</span></code>, <code class="docutils literal notranslate"><span class="pre">feature.input()</span></code>, <code class="docutils literal notranslate"><span class="pre">ModularAdd</span></code>, …</p></td>
+<td><p>expressions of <code class="docutils literal notranslate"><span class="pre">px.Vars()</span></code> with <code class="docutils literal notranslate"><span class="pre">+</span> <span class="pre">-</span> <span class="pre">*</span> <span class="pre">/</span> <span class="pre">**</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">modular_expression_config.json</span></code></p></td>
 <td><p>part of the model config</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ModularANN(architecture=...)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ModularANN(architecture=...)</span></code> on <code class="docutils literal notranslate"><span class="pre">px</span></code> expressions, also <code class="docutils literal notranslate"><span class="pre">solver='ols'</span></code> (closed form)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ConstrainedRegression(inputs,</span> <span class="pre">monotonies={...},</span> <span class="pre">convexities={...})</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ModularANN(px.Linear(inputs),</span> <span class="pre">solver='qp',</span> <span class="pre">shape=ShapeConstraints(monotonicities={...},</span> <span class="pre">convexities={...}))</span></code> for raw columns, <code class="docutils literal notranslate"><span class="pre">px.Linear(inputs,</span> <span class="pre">monotonicities={...})</span></code> for the sign of single terms</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RNNModel(init_layer=...)</span></code>, <code class="docutils literal notranslate"><span class="pre">PreprocessingMultiStep(init_features=...)</span></code></p></td>
 <td><p>warmup from zero states: <code class="docutils literal notranslate"><span class="pre">warmup_width</span></code></p></td>

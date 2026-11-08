@@ -134,8 +134,8 @@
     <span class="n">lin</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">'linear'</span><span class="p">)</span>
 
     <span class="c1"># Add input layer</span>
-    <span class="n">n_featues</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">inputs</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_featues</span><span class="p">,))</span>
+    <span class="n">n_features</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_features</span><span class="p">,))</span>
 
     <span class="c1"># Construct rbf model</span>
     <span class="n">rbf_model</span> <span class="o">=</span> <span class="n">RBFModelConstruction</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span>

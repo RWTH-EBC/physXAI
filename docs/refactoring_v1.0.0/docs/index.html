@@ -139,7 +139,7 @@ If you have any questions regarding physXAI, feel free to contact us at ebc-tool
 <h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this heading"></a></h2>
 <p>The <a class="reference external" href="https://rwth-ebc.github.io/physXAI/main/docs/index.html">documentation</a> contains a user guide, the API reference and a
 <a class="reference external" href="https://rwth-ebc.github.io/physXAI/main/docs/migration.html">migration guide from physXAI 0.x to 1.0</a>. <br />
-The <a class="reference external" href="https://github.com/RWTH-EBC/physXAI/tree/main/examples"><code class="docutils literal notranslate"><span class="pre">examples</span></code></a> directory is a tutorial in 13 numbered,
+The <a class="reference external" href="https://github.com/RWTH-EBC/physXAI/tree/main/examples"><code class="docutils literal notranslate"><span class="pre">examples</span></code></a> directory is a tutorial in numbered,
 commented scripts, from a first model (<code class="docutils literal notranslate"><span class="pre">01_first_model.py</span></code>) over expressions, recurrent and physics-informed models
 and the comparison of models to the export for AgentLib-MPC (<code class="docutils literal notranslate"><span class="pre">13_agentlib_mpc.py</span></code>). They serve as a starting point
 for new projects:</p>
@@ -161,28 +161,34 @@ for new projects:</p>
 </pre></div>
 </div>
 </section>
-<section id="current-model-types">
-<h2>Current Model Types<a class="headerlink" href="#current-model-types" title="Permalink to this heading"></a></h2>
-<p>physXAI currently focuses on physics-guided neural networks built with Keras and TensorFlow.
-Models in this repository are categorized into two main types:</p>
+<section id="model-types">
+<h2>Model Types<a class="headerlink" href="#model-types" title="Permalink to this heading"></a></h2>
+<p>physXAI focuses on physics-guided models built with Keras and TensorFlow (and scikit-learn for the linear regression).
+The models fall into two groups:</p>
 <ul class="simple">
-<li><p>Single-Step Models: Predicting one step ahead. Applied recursively in the MPC, evaluated and optionally
-trained on the error over the prediction horizon.</p>
+<li><p>Single step models predict one step ahead. In the MPC they are applied recursively; they are evaluated and
+optionally trained on the error over the prediction horizon.</p>
 <ul>
-<li><p>Linear Regression (scikit-learn)</p></li>
-<li><p>Classical ANN</p></li>
-<li><p>Radial Basis Function Network (RBF): RBF Models extrapolate to 0. Useful for residual models.</p></li>
-<li><p>Residual Model: hybrid model combining a Linear Regression model with an RBF, that models the residuals of the linear regression.</p></li>
-<li><p>Constrained Monotonic Neural Network (CMNN): Enforces monotonicity in selected inputs (with convex, concave and saturated activations).</p></li>
-<li><p>Physics-Informed Neural Network (PINN): Allows to add physics-informed loss functions</p></li>
-<li><p>Modular ANN: physically motivated expressions and trainable blocks (linear, MLP, CMNN, RBF, …) in one model</p></li>
-<li><p>Constrained Regression: linear regression on physical terms, monotonic or convex in raw inputs on the box of the training data or given bounds (with a certificate per constraint)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code>: linear regression (scikit-learn).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ClassicalANNModel</span></code>: feed forward neural network.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RBFModel</span></code>: radial basis function network. It extrapolates to 0, which makes it useful for residual models.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LinANNModel</span></code>: linear regression plus an RBF network trained on its residuals.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CMNNModel</span></code>: constrained monotonic neural network, monotonic in selected inputs (convex, concave and saturated activations).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PINNModel</span></code>: physics-informed neural network, trained on the data and on physics targets (data columns of a physical model).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ModularANN</span></code>: physically motivated expressions and trainable blocks (linear, MLP, monotonic MLP, RBF, …) in one model
+(<code class="docutils literal notranslate"><span class="pre">physXAI.expr</span></code>), trained by gradient descent or, for a linear block, in closed form (<code class="docutils literal notranslate"><span class="pre">solver='ols'</span></code>).</p></li>
+<li><p>Constrained regression, <code class="docutils literal notranslate"><span class="pre">ModularANN(px.Linear(terms),</span> <span class="pre">solver='qp',</span> <span class="pre">shape=ShapeConstraints(...))</span></code>: linear
+regression on physical terms whose prediction is monotonic or convex in raw inputs, guaranteed on the box of the
+training data or on given bounds (with a certificate per constraint).</p></li>
+<li><p>Physics residuals with trainable physical parameters (<code class="docutils literal notranslate"><span class="pre">physics=PhysicsResidual(...)</span></code>) for the keras networks: a
+grey-box model is calibrated on the data and acts as an additional loss term.</p></li>
 </ul>
 </li>
-<li><p>Multi-Step Models: Predicting a trajectory.</p>
+<li><p>Multi step models predict a trajectory.</p>
 <ul>
-<li><p>Recurrent Neural Network: SimpleRNN, GRU and LSTM, warmed up on the measured past.</p></li>
-<li><p>Physically Consistent Neural Network (PCNN, Di Natale et al. 2022): the predicted temperature rises with heating and outside temperature by construction.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code>: SimpleRNN, GRU or LSTM, warmed up on the measured past, with closed loop prediction of fed back features.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PCNNModel</span></code>: physically consistent neural network (Di Natale et al. 2022), the predicted temperature rises with
+heating and outside temperature by construction.</p></li>
 </ul>
 </li>
 </ul>
@@ -204,10 +210,10 @@ Several models, each trained with several seeds, can be compared with <code clas
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">expr</span></code>: Expression language for physically motivated terms and trainable blocks (NumPy, Keras and CasADi).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">preprocessing</span></code>: Loading, derived columns, leakage free split and training data.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">models</span></code>: Model definitions (linear regression, ANNs, modular models, RNNs).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">models</span></code>: Model definitions (linear regression, ANNs, modular models, recurrent models, physics residuals).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">training</span></code>: Training on the error over the prediction horizon.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">evaluation</span></code>: Metrics, errors over the horizon and the comparison of models.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">feature_selection</span></code>: (Automatic) feature selection.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">feature_selection</span></code>: Feature selection by backward elimination (experimental).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">plotting</span></code>: Reports of trained models.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">io</span></code>: Run directories and the export for AgentLib-MPC.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">agentlib_mpc_plugin</span></code>: Example training scripts for AgentLib-MPC.</p></li>

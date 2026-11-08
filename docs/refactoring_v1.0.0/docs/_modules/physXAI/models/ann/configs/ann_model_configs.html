@@ -92,14 +92,12 @@
 
 
 <div class="viewcode-block" id="ClassicalANNConstruction_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ClassicalANNConstruction_config</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Settings of a feed forward network: layers, neurons, activations, normalization and output rescaling."""</span>
+<span class="w">    </span><span class="sd">"""Settings of a feed forward network: layers, neurons, activations and output rescaling."""</span>
 
     <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">n_neurons</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">32</span>
     <span class="n">activation_function</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'softplus'</span>
     <span class="n">rescale_output</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="ClassicalANNConstruction_config.validate_n_neurons"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_n_neurons">[docs]</a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s1">'n_neurons'</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">validate_n_neurons</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>

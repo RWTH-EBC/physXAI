@@ -513,7 +513,6 @@
 <div class="viewcode-block" id="PreprocessingData.build_training_data"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData.build_training_data">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">build_training_data</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
-        <span class="n">extra_targets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">eval_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">eval_stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainingData</span><span class="p">:</span>
@@ -522,7 +521,6 @@
 
 <span class="sd">        Args:</span>
 <span class="sd">            df: Data on a regular time grid, see `load_data`.</span>
-<span class="sd">            extra_targets: Further columns to shift like the outputs (e.g. warmup features).</span>
 <span class="sd">            eval_horizon: Steps of the multi step evaluation stored in the training data.</span>
 <span class="sd">            eval_stride: Distance between two evaluation windows.</span>
 <span class="sd">        """</span>
@@ -539,7 +537,7 @@
         <span class="n">plain_loss</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_columns</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">TARGET_PREFIX</span><span class="p">)]</span>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">plain_loss</span><span class="p">:</span>
             <span class="n">ensure_column</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-        <span class="n">shifted</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">([</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="n">extra_targets</span> <span class="ow">or</span> <span class="p">[]),</span> <span class="o">*</span><span class="n">shifted_loss</span><span class="p">]))</span>
+        <span class="n">shifted</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">([</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="n">shifted_loss</span><span class="p">]))</span>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">([</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span> <span class="o">*</span><span class="n">shifted</span><span class="p">]):</span>
             <span class="n">ensure_column</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
         <span class="c1"># raw features of the outputs and the variables of derived columns are kept for recursive</span>

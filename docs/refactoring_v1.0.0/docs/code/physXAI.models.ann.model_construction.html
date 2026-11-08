@@ -199,9 +199,8 @@ input shape, and determining monotonicity constraints based on column names.</p>
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rbf_models.RBFModelConstruction">
 <span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.rbf_models.</span></span><span class="sig-name descname"><span class="pre">RBFModelConstruction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/rbf_models.html#RBFModelConstruction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.rbf_models.RBFModelConstruction" title="Permalink to this definition"></a></dt>
 <dd><p>Constructs a Radial Basis Function (RBF) Network model using Keras.</p>
-<p>The first RBF layer’s centers can be initialized using K-Means clustering
-on the training data. Subsequent RBF layers (if any) will have their
-centers initialized by the RBFLayer’s default mechanism or as specified.</p>
+<p>The network has one RBF layer. Its centers are the k-means centers of the (normalized) training data and stay
+fixed, as does the width of the gaussians; only the output layer is trained.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">

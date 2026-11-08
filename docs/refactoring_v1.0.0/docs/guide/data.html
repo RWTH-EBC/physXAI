@@ -156,7 +156,7 @@ training side, so validation and test blocks stay complete,</p></li>
 blocks of the same weeks and season, so the test error measures how well the model interpolates within the period
 of the data. For a new period (another season or year) it is optimistic. To estimate that, use
 <code class="docutils literal notranslate"><span class="pre">split='holdout_end'</span></code> (the end of the data for validation and test), a longer <code class="docutils literal notranslate"><span class="pre">gap_steps</span></code> or a separate data set.
-<code class="docutils literal notranslate"><span class="pre">split='random_rows'</span></code> is the old random split (for comparisons only).</p>
+<code class="docutils literal notranslate"><span class="pre">split='random_rows'</span></code> splits random rows (for comparisons only).</p>
 <p>The split depends on <code class="docutils literal notranslate"><span class="pre">random_state</span></code>. Training a model with several seeds shows how much the errors depend
 on the split, see <a class="reference internal" href="evaluation.html#comparing-models"><span class="std std-ref">Comparing models</span></a>.</p>
 </section>

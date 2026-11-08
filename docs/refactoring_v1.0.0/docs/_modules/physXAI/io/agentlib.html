@@ -112,10 +112,12 @@
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreprocessingData</span>
 
+<span class="c1"># The name rules below mirror the parser of AgentLib-MPC and are independent of `physXAI.preprocessing` on</span>
+<span class="c1"># purpose: the check has to decide as AgentLib-MPC does, also if the rules of physXAI change.</span>
 <span class="n">CHANGE_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"Change\((.*)\)"</span><span class="p">)</span>
 <span class="n">LAG_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"_lag(\d+)$"</span><span class="p">)</span>
 <span class="n">MULTI_STEP_CLASS</span> <span class="o">=</span> <span class="s2">"PreprocessingMultiStep"</span>
-<span class="c1">#: Branch of AgentLib-MPC supporting recurrent models (not released yet, AgentLib-MPC 1.1.1 has no support)</span>
+<span class="c1">#: Branch of AgentLib-MPC supporting recurrent models (AgentLib-MPC releases up to 1.1.1 have no support)</span>
 <span class="n">AGENTLIB_RNN_BRANCH</span> <span class="o">=</span> <span class="s2">"143-feature-multistep-model-support"</span>
 
 
@@ -155,7 +157,7 @@
     <span class="n">supported</span> <span class="o">=</span> <span class="n">agentlib_supports_recurrent_models</span><span class="p">()</span>
     <span class="n">message</span> <span class="o">=</span> <span class="p">(</span>
         <span class="s2">"Recurrent models (RNNModel, PCNNModel) need AgentLib-MPC with support for recurrent models (branch "</span>
-        <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">AGENTLIB_RNN_BRANCH</span><span class="si">}</span><span class="s2">'); the released AgentLib-MPC 1.1.1 cannot load them."</span>
+        <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">AGENTLIB_RNN_BRANCH</span><span class="si">}</span><span class="s2">'); AgentLib-MPC releases up to 1.1.1 cannot load them."</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="n">supported</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"</span><span class="si">%s</span><span class="s2"> The installed AgentLib-MPC has no support."</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>

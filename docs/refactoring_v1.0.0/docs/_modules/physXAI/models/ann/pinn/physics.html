@@ -381,10 +381,9 @@
 <span class="sd">        physics_learning_rate: Learning rate of a calibration by gradient descent. Defaults to 10 x the learning rate.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        dict: 'parameters' (trained values by name), 'fit' (RMSE of the physics term and of the physics model</span>
+<span class="sd">        dict: 'name' (of the residual), 'parameters' (trained values by name), 'fit' (RMSE of the physics term and of the physics model</span>
 <span class="sd">              per split), 'calibration_record' (result of the least squares solver or the history of the gradient</span>
-<span class="sd">              descent, None without calibration) and 'record' (keras</span>
-<span class="sd">              history of the training of the network).</span>
+<span class="sd">              descent, None without calibration) and 'record' (keras history of the training of the network).</span>
 <span class="sd">    """</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">tensorflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tf</span>

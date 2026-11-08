@@ -124,14 +124,12 @@
     <span class="k">return</span> <span class="n">gamma</span></div>
 
 
-
 <div class="viewcode-block" id="RBFModelConstruction"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rbf_models.RBFModelConstruction">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">RBFModelConstruction</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Constructs a Radial Basis Function (RBF) Network model using Keras.</span>
 
-<span class="sd">    The first RBF layer's centers can be initialized using K-Means clustering</span>
-<span class="sd">    on the training data. Subsequent RBF layers (if any) will have their</span>
-<span class="sd">    centers initialized by the RBFLayer's default mechanism or as specified.</span>
+<span class="sd">    The network has one RBF layer. Its centers are the k-means centers of the (normalized) training data and stay</span>
+<span class="sd">    fixed, as does the width of the gaussians; only the output layer is trained.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        config (dict): A dictionary containing the configuration parameters for the RBF network.</span>
@@ -149,25 +147,18 @@
 
     <span class="c1"># Get config</span>
     <span class="n">n_neurons</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'n_neurons'</span><span class="p">]</span>
-    <span class="c1"># If n_neurons is a single integer, replicate it for all layers</span>
+    <span class="c1"># one RBF layer: a list holds its number of neurons as only element</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
         <span class="n">n_neurons</span> <span class="o">=</span> <span class="n">n_neurons</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'n_features'</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">n_features</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'n_features'</span><span class="p">]</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">n_features</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">n_features</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 
     <span class="c1"># Add input layer</span>
     <span class="n">input_layer</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_features</span><span class="p">,))</span>
     <span class="c1"># Add normalization layer</span>
-    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'normalize'</span><span class="p">]:</span>
-        <span class="n">normalization</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Normalization</span><span class="p">()</span>
-        <span class="n">normalization</span><span class="o">.</span><span class="n">adapt</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="p">)</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="n">normalization</span><span class="p">(</span><span class="n">input_layer</span><span class="p">)</span>
-        <span class="n">training_data</span> <span class="o">=</span> <span class="n">normalization</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="n">input_layer</span>
-        <span class="n">training_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="p">)</span>
+    <span class="n">normalization</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Normalization</span><span class="p">()</span>
+    <span class="n">normalization</span><span class="o">.</span><span class="n">adapt</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">normalization</span><span class="p">(</span><span class="n">input_layer</span><span class="p">)</span>
+    <span class="n">training_data</span> <span class="o">=</span> <span class="n">normalization</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
 
     <span class="n">kmeans</span> <span class="o">=</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">n_neurons</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">'random_state'</span><span class="p">],</span> <span class="n">n_init</span><span class="o">=</span><span class="s1">'auto'</span><span class="p">)</span>
     <span class="n">kmeans</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">training_data</span><span class="p">)</span>
