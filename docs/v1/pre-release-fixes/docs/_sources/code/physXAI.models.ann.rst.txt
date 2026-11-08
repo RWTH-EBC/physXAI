@@ -1,0 +1,29 @@
+physXAI.models.ann package
+==========================
+
+.. automodule:: physXAI.models.ann
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   physXAI.models.ann.configs
+   physXAI.models.ann.keras_models
+   physXAI.models.ann.model_construction
+   physXAI.models.ann.pinn
+
+Submodules
+----------
+
+physXAI.models.ann.ann\_design module
+-------------------------------------
+
+.. automodule:: physXAI.models.ann.ann_design
+   :members:
+   :undoc-members:
+   :show-inheritance:

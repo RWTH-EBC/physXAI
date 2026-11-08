@@ -1,0 +1,249 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Getting started &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../_static/jquery.js"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+      <script src="../_static/doctools.js"></script>
+      <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Examples" href="examples.html" />
+    <link rel="prev" title="physXAI" href="../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#gpu">GPU</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#a-first-model">A first model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#run-directories-and-logging">Run directories and logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#reproducibility">Reproducibility</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Physics-informed models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Getting started</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="getting-started">
+<h1>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this heading"></a></h1>
+<p>physXAI trains data driven models of building energy systems for model predictive control (MPC),
+in particular for <a class="reference external" href="https://github.com/RWTH-EBC/AgentLib-MPC">AgentLib-MPC</a>. A typical workflow:</p>
+<ol class="arabic simple">
+<li><p><strong>Preprocessing</strong> loads a csv file, derives lags and changes, splits the data without leakage and
+returns training data.</p></li>
+<li><p><strong>A model</strong> is trained and evaluated: single step metrics and, for models applied recursively in an
+MPC, the error over the prediction horizon.</p></li>
+<li><p><strong>A run directory</strong> stores configs, metrics, the model and a report, so runs can be reproduced and
+compared, and AgentLib-MPC can load the model.</p></li>
+</ol>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h2>
+<p>physXAI runs on Python 3.11, 3.12 and 3.13 on Linux and Windows. Newer Python versions follow once
+TensorFlow provides wheels for them.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>.<span class="w">                    </span><span class="c1"># user</span>
+pip<span class="w"> </span>install<span class="w"> </span>.<span class="w"> </span>-c<span class="w"> </span>constraints.txt<span class="w"> </span><span class="c1"># user, with the versions physXAI was tested with (reproducible environment)</span>
+pip<span class="w"> </span>install<span class="w"> </span>.<span class="o">[</span>gpu<span class="o">]</span><span class="w">               </span><span class="c1"># user, training on a GPU (Linux or WSL2, see below)</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>dev,agentlib<span class="o">]</span><span class="w">   </span><span class="c1"># developer: tests, linting, AgentLib-MPC contract tests</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>docs<span class="o">]</span><span class="w">           </span><span class="c1"># documentation: sphinx-apidoc -M -o docs/source/code physXAI &amp;&amp; sphinx-build -b html docs/source docs_output</span>
+</pre></div>
+</div>
+<p>The dependencies have upper bounds on their next major versions. <code class="docutils literal notranslate"><span class="pre">constraints.txt</span></code> pins all (also transitive)
+packages to the combination tested for the release.</p>
+<section id="gpu">
+<h3>GPU<a class="headerlink" href="#gpu" title="Permalink to this heading"></a></h3>
+<p>physXAI needs no changes to train on a GPU: TensorFlow places the operations on a GPU if it finds one. Only the
+installation differs:</p>
+<ul class="simple">
+<li><p><strong>Linux:</strong> <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.[gpu]</span></code> installs TensorFlow with CUDA (<code class="docutils literal notranslate"><span class="pre">tensorflow[and-cuda]</span></code>), an NVIDIA driver is needed.
+<code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-c</span> <span class="pre">&quot;import</span> <span class="pre">tensorflow</span> <span class="pre">as</span> <span class="pre">tf;</span> <span class="pre">print(tf.config.list_physical_devices('GPU'))&quot;</span></code> shows the GPUs found.</p></li>
+<li><p><strong>Windows:</strong> TensorFlow &gt;= 2.11 has no GPU support on native Windows (it prints a warning and uses the CPU). Use
+WSL2 with the Linux installation.</p></li>
+</ul>
+<p>The small networks of building models often train about as fast on a CPU; a GPU pays off for large data sets,
+recurrent models and many repeated trainings (<code class="docutils literal notranslate"><span class="pre">repeat_training</span></code>).</p>
+</section>
+</section>
+<section id="a-first-model">
+<h2>A first model<a class="headerlink" href="#a-first-model" title="Permalink to this heading"></a></h2>
+<p>The air temperature of a room is predicted as change per time step, <code class="docutils literal notranslate"><span class="pre">Change(T)</span> <span class="pre">=</span> <span class="pre">T(t+1)</span> <span class="pre">-</span> <span class="pre">T(t)</span></code>.
+A model predicting a change is applied recursively in the MPC: the predicted temperature becomes the
+input of the next step.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI</span><span class="w"> </span><span class="kn">import</span> <span class="n">expr</span> <span class="k">as</span> <span class="n">px</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">Run</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegressionModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreprocessingSingleStep</span>
+
+<span class="n">run</span> <span class="o">=</span> <span class="n">Run</span><span class="p">(</span><span class="s2">"results"</span><span class="p">,</span> <span class="s2">"TAir"</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">prep</span> <span class="o">=</span> <span class="n">PreprocessingSingleStep</span><span class="p">(</span>
+    <span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="s2">"weaSta_reaWeaTDryBul_y"</span><span class="p">,</span> <span class="s2">"oveHeaPumY_u"</span><span class="p">,</span> <span class="s2">"oveHeaPumY_u_lag1"</span><span class="p">,</span> <span class="s2">"reaTZon_y"</span><span class="p">],</span>
+    <span class="n">output</span><span class="o">=</span><span class="n">px</span><span class="o">.</span><span class="n">Change</span><span class="p">(</span><span class="s2">"reaTZon_y"</span><span class="p">),</span>   <span class="c1"># or the string 'Change(reaTZon_y)'</span>
+    <span class="n">time_index_col</span><span class="o">=</span><span class="s2">"time"</span><span class="p">,</span>
+    <span class="n">eval_horizon</span><span class="o">=</span><span class="s2">"12h"</span><span class="p">,</span>              <span class="c1"># also evaluate the recursive prediction over 12 h</span>
+<span class="p">)</span>
+<span class="n">td</span> <span class="o">=</span> <span class="n">prep</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="s2">"data/bestest_hydronic_heat_pump/pid_data.csv"</span><span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>                   <span class="c1"># train and evaluate</span>
+
+<span class="n">run</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">"model"</span><span class="p">,</span> <span class="n">prep</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span>   <span class="c1"># configs, metrics, model and report</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">run.save</span></code> writes into <code class="docutils literal notranslate"><span class="pre">results/TAir/</span></code>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>Content</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">model_preprocessing.json</span></code></p></td>
+<td><p>config of the preprocessing (<code class="docutils literal notranslate"><span class="pre">PreprocessingData.from_config</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">model_model.json</span></code></p></td>
+<td><p>config of the model (<code class="docutils literal notranslate"><span class="pre">AbstractModel.model_from_config</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">model_training_data.json</span></code></p></td>
+<td><p>metrics per output and split, errors over the horizon, training time and history</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">model.joblib</span></code> / <code class="docutils literal notranslate"><span class="pre">model.keras</span></code></p></td>
+<td><p>the trained model</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">model.html</span></code></p></td>
+<td><p>report: true vs. predicted, errors over the horizon, training history, metrics</p></td>
+</tr>
+</tbody>
+</table>
+<p>Lagged inputs such as <code class="docutils literal notranslate"><span class="pre">oveHeaPumY_u_lag1</span></code> and the output <code class="docutils literal notranslate"><span class="pre">Change(reaTZon_y)</span></code> are derived from the data
+automatically. The <a class="reference internal" href="examples.html"><span class="std std-doc">examples</span></a> continue this tutorial step by step.</p>
+</section>
+<section id="run-directories-and-logging">
+<h2>Run directories and logging<a class="headerlink" href="#run-directories-and-logging" title="Permalink to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">Run(base_path,</span> <span class="pre">name,</span> <span class="pre">overwrite=False)</span></code> is an explicit directory. Paths are absolute or relative to the
+current working directory, there are no interactive prompts and no files are deleted. Without
+<code class="docutils literal notranslate"><span class="pre">overwrite=True</span></code>, existing files are not overwritten (<code class="docutils literal notranslate"><span class="pre">FileExistsError</span></code>).</p>
+<p>physXAI logs with the standard <code class="docutils literal notranslate"><span class="pre">logging</span></code> module (logger <code class="docutils literal notranslate"><span class="pre">&quot;physXAI&quot;</span></code>). By default metrics and the
+training progress are shown:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_log_level</span>
+
+<span class="n">set_log_level</span><span class="p">(</span><span class="s2">"warning"</span><span class="p">)</span>   <span class="c1"># only warnings, no keras progress bars</span>
+</pre></div>
+</div>
+<p>If the application configures logging itself (e.g. <code class="docutils literal notranslate"><span class="pre">logging.basicConfig</span></code>), physXAI messages are passed
+on to it instead of being printed.</p>
+</section>
+<section id="reproducibility">
+<h2>Reproducibility<a class="headerlink" href="#reproducibility" title="Permalink to this heading"></a></h2>
+<p>Every random choice (split, weights, batches, k-means centers) is seeded. <code class="docutils literal notranslate"><span class="pre">physXAI.set_seed(42)</span></code> sets one global
+seed for Python, NumPy and Keras, which is the default of <code class="docutils literal notranslate"><span class="pre">random_state</span></code> (preprocessing) and <code class="docutils literal notranslate"><span class="pre">random_seed</span></code> (models).
+Without a seed, every object draws one and stores it in its config, so every run can be reproduced from its saved
+configs. The saved configs also record the versions of Python and of the main packages (<code class="docutils literal notranslate"><span class="pre">environment</span></code>).</p>
+<p>On a CPU, a seeded run is reproduced exactly. On a GPU, some TensorFlow kernels are not deterministic, so two runs
+with the same seed differ slightly. <code class="docutils literal notranslate"><span class="pre">physXAI.set_seed(42,</span> <span class="pre">deterministic=True)</span></code> enables the deterministic kernels of
+TensorFlow: runs on a GPU are reproduced exactly, the training is slower, and it stays enabled for the rest of the
+process.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../index.html" class="btn btn-neutral float-left" title="physXAI" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,18 @@
+physXAI.training package
+========================
+
+.. automodule:: physXAI.training
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+physXAI.training.recursive module
+---------------------------------
+
+.. automodule:: physXAI.training.recursive
+   :members:
+   :undoc-members:
+   :show-inheritance:
