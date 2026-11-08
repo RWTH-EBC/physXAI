@@ -5,7 +5,7 @@
 **physXAI** is a toolbox for creating physics-guided machine learning models, also known as physics-informed or physics-constrained models. The toolbox is specifically designed for application in Model Predictive Control (MPC) of Building Energy Systems (BES). It provides preprocessing pipelines, various neural network architectures (including classical ANNs, RBF networks, residual models, constrained monotonic networks, RNNs, and physics-informed neural networks), feature selection tools, evaluation metrics, and visualization utilities.
 
 ### Key Information
-- **Language**: Python (3.9-3.12)
+- **Language**: Python (3.11-3.13)
 - **License**: BSD-3-Clause
 - **Testing**: pytest (unit tests live in `unittests/`)
 - **Dependencies**: Core (numpy, pandas, scikit-learn, keras, tensorflow, pydantic, plotly), Optional (dev dependencies for testing and coverage)
@@ -127,7 +127,7 @@ Reviewers should validate schema changes carefully: prefer additive, optional fi
 
 #### 5. CI/CD Considerations
 - **Import errors**: New dependencies must be in `pyproject.toml` dependencies or optional-dependencies
-- **Python version compatibility**: Code must work on Python 3.9-3.12
+- **Python version compatibility**: Code must work on Python 3.11-3.13
 - **Test execution**: Changes to `unittests/` structure or execution patterns
 - **Example scripts**: `executables/` should remain functional (may be tested by CI)
 - **Keras/TensorFlow compatibility**: Ensure compatibility with keras and tensorflow
