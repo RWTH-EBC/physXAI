@@ -96,28 +96,28 @@
 
     <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">n_neurons</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">32</span>
-    <span class="n">activation_function</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'softplus'</span>
+    <span class="n">activation_function</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"softplus"</span>
     <span class="n">rescale_output</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 
-<div class="viewcode-block" id="ClassicalANNConstruction_config.validate_n_neurons"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_n_neurons">[docs]</a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s1">'n_neurons'</span><span class="p">)</span>
+<div class="viewcode-block" id="ClassicalANNConstruction_config.validate_n_neurons"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_n_neurons">[docs]</a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">"n_neurons"</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">validate_n_neurons</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
-        <span class="n">ls</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'n_layers'</span><span class="p">)</span>
+        <span class="n">ls</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"n_layers"</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ls</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'List of n_neurons must have same length than n_layers'</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"List of n_neurons must have same length than n_layers"</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'n_neurons must be greater than 0'</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"n_neurons must be greater than 0"</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'n_neurons must be greater than 0'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"n_neurons must be greater than 0"</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">v</span></div>
 
-<div class="viewcode-block" id="ClassicalANNConstruction_config.validate_activation"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_activation">[docs]</a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s1">'activation_function'</span><span class="p">)</span>
+<div class="viewcode-block" id="ClassicalANNConstruction_config.validate_activation"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.ClassicalANNConstruction_config.validate_activation">[docs]</a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">"activation_function"</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">validate_activation</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
-        <span class="n">ls</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'n_layers'</span><span class="p">)</span>
+        <span class="n">ls</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"n_layers"</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ls</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'List of activation functions must have same length than n_layers'</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"List of activation functions must have same length than n_layers"</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">v</span></div></div>
 
 
@@ -126,37 +126,37 @@
 
     <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span>
-    <span class="n">rescale_mean</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-        <span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Mean value for z-score normalization of outputs"</span>
-    <span class="p">)</span>
-    <span class="n">rescale_sigma</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-        <span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Standard deviation for z-score normalization of outputs"</span>
-    <span class="p">)</span></div>
+    <span class="n">rescale_mean</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Mean value for z-score normalization of outputs"</span><span class="p">)</span>
+    <span class="n">rescale_sigma</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Standard deviation for z-score normalization of outputs"</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="CMNNModelConstruction_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">CMNNModelConstruction_config</span><span class="p">(</span><span class="n">ClassicalANNConstruction_config</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Settings of a CMNN: monotonicities per input and the shares of convex, concave and saturated neurons."""</span>
 
+    <span class="c1"># without a hidden layer only the non negative weights of the output layer remain, which would make the</span>
+    <span class="c1"># prediction increasing in every input (also in inputs with monotonicity -1 or 0)</span>
+    <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">monotonicities</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">activation_split</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
 
-<div class="viewcode-block" id="CMNNModelConstruction_config.validate_monotonicities"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_monotonicities">[docs]</a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s1">'monotonicities'</span><span class="p">)</span>
+<div class="viewcode-block" id="CMNNModelConstruction_config.validate_monotonicities"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_monotonicities">[docs]</a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">"monotonicities"</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">validate_monotonicities</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
                 <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'monotonicities must be 0 (no monotony), 1 (positive monotony) '</span>
-                                     <span class="s1">'or -1 (negative monotony)'</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">"monotonicities must be 0 (no monotony), 1 (positive monotony) or -1 (negative monotony)"</span>
+                    <span class="p">)</span>
         <span class="k">return</span> <span class="n">v</span></div>
 
-<div class="viewcode-block" id="CMNNModelConstruction_config.validate_activation_split"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_activation_split">[docs]</a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s1">'activation_split'</span><span class="p">)</span>
+<div class="viewcode-block" id="CMNNModelConstruction_config.validate_activation_split"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_activation_split">[docs]</a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">"activation_split"</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">validate_activation_split</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'activation_split must have 3 elements'</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"activation_split must have 3 elements"</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'activation_split must be greater than 0'</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"activation_split must be greater than 0"</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"activation_split should contain at least one none-zero value"</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">v</span></div></div>
@@ -164,6 +164,7 @@
 
 <div class="viewcode-block" id="RNNModelConstruction_config"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.RNNModelConstruction_config">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RNNModelConstruction_config</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Settings of the recurrent layer of an RNN or PCNN."""</span>
+
     <span class="n">rnn_units</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="n">gt</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">rnn_layer</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"RNN"</span><span class="p">,</span> <span class="s2">"GRU"</span><span class="p">,</span> <span class="s2">"LSTM"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"RNN"</span></div>
 </pre></div>

@@ -134,6 +134,7 @@
 <li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config"><code class="docutils literal notranslate"><span class="pre">CMNNModelConstruction_config</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.activation_split"><code class="docutils literal notranslate"><span class="pre">CMNNModelConstruction_config.activation_split</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.monotonicities"><code class="docutils literal notranslate"><span class="pre">CMNNModelConstruction_config.monotonicities</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.n_layers"><code class="docutils literal notranslate"><span class="pre">CMNNModelConstruction_config.n_layers</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_activation_split"><code class="docutils literal notranslate"><span class="pre">CMNNModelConstruction_config.validate_activation_split</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.models.ann.configs.html#physXAI.models.ann.configs.ann_model_configs.CMNNModelConstruction_config.validate_monotonicities"><code class="docutils literal notranslate"><span class="pre">CMNNModelConstruction_config.validate_monotonicities</span></code></a></li>
 </ul>
@@ -243,6 +244,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.build_pcnn_step_model"><code class="docutils literal notranslate"><span class="pre">build_pcnn_step_model()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.pcnn_initial_values"><code class="docutils literal notranslate"><span class="pre">pcnn_initial_values()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.pcnn_parameters"><code class="docutils literal notranslate"><span class="pre">pcnn_parameters()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.state_sizes"><code class="docutils literal notranslate"><span class="pre">state_sizes()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.ZeroStates"><code class="docutils literal notranslate"><span class="pre">ZeroStates</span></code></a><ul>
@@ -949,7 +951,8 @@ the training split by nonnegative least squares (see the class docstring).</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="physXAI.models.ann.ann_design.PCNNModel.evaluate">
 <span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/ann_design.html#PCNNModel.evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.ann_design.PCNNModel.evaluate" title="Permalink to this definition"></a></dt>
-<dd><p>Evaluates the model like an RNN and stores the trained physical parameters in <code class="code docutils literal notranslate"><span class="pre">td.physics</span></code>.</p>
+<dd><p>Evaluates the model like an RNN and stores the trained physical parameters and the initial rates the model was
+built with in <code class="code docutils literal notranslate"><span class="pre">td.physics</span></code> (both read from the model, also for a loaded model trained further on other data).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep" title="physXAI.preprocessing.training_data.TrainingDataMultiStep"><em>TrainingDataMultiStep</em></a>) – </p>
@@ -961,7 +964,8 @@ the training split by nonnegative least squares (see the class docstring).</p>
 <dt class="sig sig-object py" id="physXAI.models.ann.ann_design.PCNNModel.physics_parameters">
 <span class="sig-name descname"><span class="pre">physics_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/ann_design.html#PCNNModel.physics_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.ann_design.PCNNModel.physics_parameters" title="Permalink to this definition"></a></dt>
 <dd><p>Trained parameters of the energy accumulator per hour (heating and cooling rates in K/h per unit of
-the input, loss rates in 1/h) and the check of the physical consistency 1 - sum(loss rates per step) &gt; 0.</p>
+the input, loss rates in 1/h) and the check of the physical consistency 1 - sum(loss rates per step) &gt; 0.
+The parameters are read from the model: trained factor times the initial value built into it.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep" title="physXAI.preprocessing.training_data.TrainingDataMultiStep"><em>TrainingDataMultiStep</em></a>) – </p>

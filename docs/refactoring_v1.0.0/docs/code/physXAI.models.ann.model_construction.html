@@ -456,14 +456,31 @@ concatenate, dense, simple_rnn, normalization, rescaling, add), the layer names 
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.pcnn_initial_values">
+<span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.rnn_models.</span></span><span class="sig-name descname"><span class="pre">pcnn_initial_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/rnn_models.html#pcnn_initial_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.pcnn_initial_values" title="Permalink to this definition"></a></dt>
+<dd><p>Initial values of the parameters of the energy accumulator per time step, as built into the model (the constants
+<code class="code docutils literal notranslate"><span class="pre">constant_pcnn_scale_&lt;j&gt;</span></code>). They are read from the model, since the initial rates of a loaded model may have been
+estimated from other data than the current one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>step_model</strong> (<em>Model</em>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.pcnn_parameters">
-<span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.rnn_models.</span></span><span class="sig-name descname"><span class="pre">pcnn_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">terms</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/rnn_models.html#pcnn_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.pcnn_parameters" title="Permalink to this definition"></a></dt>
-<dd><p>Trained parameters of the energy accumulator per time step, in the order of <code class="code docutils literal notranslate"><span class="pre">terms</span></code>.</p>
+<span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.rnn_models.</span></span><span class="sig-name descname"><span class="pre">pcnn_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">terms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/rnn_models.html#pcnn_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.pcnn_parameters" title="Permalink to this definition"></a></dt>
+<dd><p>Trained parameters of the energy accumulator per time step: the trained factor times the initial value built into
+the model, in the order of the terms of the model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>step_model</strong> (<em>Model</em>) – </p></li>
-<li><p><strong>terms</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference internal" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm" title="physXAI.models.ann.model_construction.rnn_models.PCNNTerm"><em>physXAI.models.ann.model_construction.rnn_models.PCNNTerm</em></a><em>]</em>) – </p></li>
+<li><p><strong>step_model</strong> (<em>Model</em>) – The PCNN step model.</p></li>
+<li><p><strong>terms</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference internal" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm" title="physXAI.models.ann.model_construction.rnn_models.PCNNTerm"><em>physXAI.models.ann.model_construction.rnn_models.PCNNTerm</em></a><em>] </em><em>| </em><em>None</em>) – Optional terms of the model, only to check their number.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>

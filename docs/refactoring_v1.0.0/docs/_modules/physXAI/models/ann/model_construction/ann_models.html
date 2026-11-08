@@ -94,10 +94,10 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.keras_models.keras_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConcaveActivation</span><span class="p">,</span> <span class="n">NonNegPartial</span><span class="p">,</span> <span class="n">SaturatedActivation</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.training_data</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingDataGeneric</span>
 
-<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'TF_CPP_MIN_LOG_LEVEL'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'2'</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"TF_CPP_MIN_LOG_LEVEL"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"2"</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">keras</span>
 
-<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'TF_CPP_MIN_LOG_LEVEL'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'0'</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"TF_CPP_MIN_LOG_LEVEL"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"0"</span>
 
 
 <div class="viewcode-block" id="output_scale"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.ann_models.output_scale">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">output_scale</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
@@ -129,15 +129,15 @@
     <span class="n">config</span> <span class="o">=</span> <span class="n">ClassicalANNConstruction_config</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
 
     <span class="c1"># Get config</span>
-    <span class="n">n_layers</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'n_layers'</span><span class="p">]</span>
-    <span class="n">n_neurons</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'n_neurons'</span><span class="p">]</span>
+    <span class="n">n_layers</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"n_layers"</span><span class="p">]</span>
+    <span class="n">n_neurons</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"n_neurons"</span><span class="p">]</span>
     <span class="c1"># If n_neurons is a single integer, replicate it for all layers</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
         <span class="n">n_neurons</span> <span class="o">=</span> <span class="p">[</span><span class="n">n_neurons</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_layers</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_layers</span>
     <span class="n">n_features</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">activation_function</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'activation_function'</span><span class="p">]</span>
+    <span class="n">activation_function</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"activation_function"</span><span class="p">]</span>
     <span class="c1"># If activation_function is a single string, replicate it for all layers</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">activation_function</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">activation_function</span> <span class="o">=</span> <span class="p">[</span><span class="n">activation_function</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_layers</span>
@@ -159,9 +159,9 @@
         <span class="c1"># For each layer add dense</span>
         <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">activation</span><span class="o">=</span><span class="n">activation_function</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
     <span class="c1"># Add output layer</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">'linear'</span><span class="p">))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">))</span>
     <span class="c1"># Add rescaling</span>
-    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'rescale_output'</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">"rescale_output"</span><span class="p">]:</span>
         <span class="c1"># Rescaling for output layer</span>
         <span class="n">rescale_mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">))</span>
         <span class="n">rescale_sigma</span> <span class="o">=</span> <span class="n">output_scale</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">)</span>
@@ -188,15 +188,15 @@
     <span class="n">config</span> <span class="o">=</span> <span class="n">CMNNModelConstruction_config</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
 
     <span class="c1"># Get config</span>
-    <span class="n">n_layers</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'n_layers'</span><span class="p">]</span>
-    <span class="n">n_neurons</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'n_neurons'</span><span class="p">]</span>
+    <span class="n">n_layers</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"n_layers"</span><span class="p">]</span>
+    <span class="n">n_neurons</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"n_neurons"</span><span class="p">]</span>
     <span class="c1"># If n_neurons is a single integer, replicate it for all layers</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
         <span class="n">n_neurons</span> <span class="o">=</span> <span class="p">[</span><span class="n">n_neurons</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_layers</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_layers</span>
     <span class="n">n_features</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">activation_function</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'activation_function'</span><span class="p">]</span>
+    <span class="n">activation_function</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"activation_function"</span><span class="p">]</span>
     <span class="c1"># If activation_function is a single string, replicate it for all layers</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">activation_function</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">activation_function</span> <span class="o">=</span> <span class="p">[</span><span class="n">activation_function</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_layers</span>
@@ -204,7 +204,7 @@
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">activation_function</span><span class="p">)</span> <span class="o">==</span> <span class="n">n_layers</span>
 
     <span class="c1"># Get monotonicity constraints</span>
-    <span class="n">mono</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'monotonicities'</span><span class="p">]</span>
+    <span class="n">mono</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"monotonicities"</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">mono</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">monotonicities</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_features</span>
     <span class="k">else</span><span class="p">:</span>
@@ -223,7 +223,7 @@
     <span class="n">x</span> <span class="o">=</span> <span class="n">normalization</span><span class="p">(</span><span class="n">input_layer</span><span class="p">)</span>
 
     <span class="c1"># Add dense layer</span>
-    <span class="n">activation_split</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">'activation_split'</span><span class="p">]</span>
+    <span class="n">activation_split</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"activation_split"</span><span class="p">]</span>
     <span class="c1"># Convex, concave and saturated neurons. Only convex neurons with the non negative weights of the following layers</span>
     <span class="c1"># would make the prediction convex in all inputs, also without monotonicities.</span>
     <span class="k">if</span> <span class="n">activation_split</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -234,20 +234,27 @@
         <span class="n">x_split</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
         <span class="c1"># Convex activation</span>
         <span class="k">if</span> <span class="n">activation_split</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">x1</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">_split_units</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">activation_split</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
-                                    <span class="n">activation</span><span class="o">=</span><span class="n">activation_function</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">kernel_constraint</span><span class="o">=</span><span class="n">kernel_contraint</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">x1</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span>
+                <span class="n">_split_units</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">activation_split</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                <span class="n">activation</span><span class="o">=</span><span class="n">activation_function</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">kernel_constraint</span><span class="o">=</span><span class="n">kernel_contraint</span><span class="p">,</span>
+            <span class="p">)(</span><span class="n">x</span><span class="p">)</span>
             <span class="n">x_split</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x1</span><span class="p">)</span>
         <span class="c1"># Concave activation</span>
         <span class="k">if</span> <span class="n">activation_split</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">x2</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">_split_units</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">activation_split</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
-                                    <span class="n">activation</span><span class="o">=</span><span class="n">ConcaveActivation</span><span class="p">(</span><span class="n">activation_function</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
-                                    <span class="n">kernel_constraint</span><span class="o">=</span><span class="n">kernel_contraint</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">x2</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span>
+                <span class="n">_split_units</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">activation_split</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="n">activation</span><span class="o">=</span><span class="n">ConcaveActivation</span><span class="p">(</span><span class="n">activation_function</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
+                <span class="n">kernel_constraint</span><span class="o">=</span><span class="n">kernel_contraint</span><span class="p">,</span>
+            <span class="p">)(</span><span class="n">x</span><span class="p">)</span>
             <span class="n">x_split</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x2</span><span class="p">)</span>
         <span class="c1"># Saturated activation</span>
         <span class="k">if</span> <span class="n">activation_split</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">x3</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">_split_units</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">activation_split</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
-                                    <span class="n">activation</span><span class="o">=</span><span class="n">SaturatedActivation</span><span class="p">(</span><span class="n">activation_function</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
-                                    <span class="n">kernel_constraint</span><span class="o">=</span><span class="n">kernel_contraint</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">x3</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span>
+                <span class="n">_split_units</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">activation_split</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                <span class="n">activation</span><span class="o">=</span><span class="n">SaturatedActivation</span><span class="p">(</span><span class="n">activation_function</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
+                <span class="n">kernel_constraint</span><span class="o">=</span><span class="n">kernel_contraint</span><span class="p">,</span>
+            <span class="p">)(</span><span class="n">x</span><span class="p">)</span>
             <span class="n">x_split</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x3</span><span class="p">)</span>
         <span class="c1"># Concatenate activations</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_split</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
@@ -260,10 +267,10 @@
         <span class="n">kernel_contraint</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">NonNeg</span><span class="p">()</span>
 
     <span class="c1"># Add output layer</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">'linear'</span><span class="p">,</span> <span class="n">kernel_constraint</span><span class="o">=</span><span class="n">keras</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">NonNeg</span><span class="p">())(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">kernel_constraint</span><span class="o">=</span><span class="n">keras</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">NonNeg</span><span class="p">())(</span><span class="n">x</span><span class="p">)</span>
 
     <span class="c1"># Add rescaling</span>
-    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s1">'rescale_output'</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="s2">"rescale_output"</span><span class="p">]:</span>
         <span class="c1"># Rescaling for output layer</span>
         <span class="n">rescale_mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">))</span>
         <span class="n">rescale_sigma</span> <span class="o">=</span> <span class="n">output_scale</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span><span class="p">)</span>

@@ -95,43 +95,43 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.model_construction.rbf_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RBFModelConstruction</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.training_data</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingDataGeneric</span>
 
-<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'TF_CPP_MIN_LOG_LEVEL'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'1'</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"TF_CPP_MIN_LOG_LEVEL"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"1"</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">keras</span>
 
-<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'TF_CPP_MIN_LOG_LEVEL'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'0'</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"TF_CPP_MIN_LOG_LEVEL"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"0"</span>
 
 
 <div class="viewcode-block" id="LinResidualANNConstruction"><a class="viewcode-back" href="../../../../../code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.residual_models.LinResidualANNConstruction">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">LinResidualANNConstruction</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">,</span> <span class="n">lin_model</span><span class="p">:</span> <span class="n">LinearRegression</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">        Constructs a hybrid Keras model that combines a pre-trained linear regression model</span>
-<span class="sd">        with a Radial Basis Function (RBF) network. The RBF network is trained to model</span>
-<span class="sd">        the residuals (errors) of the linear regression model.</span>
+<span class="sd">    Constructs a hybrid Keras model that combines a pre-trained linear regression model</span>
+<span class="sd">    with a Radial Basis Function (RBF) network. The RBF network is trained to model</span>
+<span class="sd">    the residuals (errors) of the linear regression model.</span>
 
-<span class="sd">        The final prediction is the sum of the linear model's prediction and the RBF network's</span>
-<span class="sd">        prediction (which learns the residuals).</span>
+<span class="sd">    The final prediction is the sum of the linear model's prediction and the RBF network's</span>
+<span class="sd">    prediction (which learns the residuals).</span>
 
-<span class="sd">        Args:</span>
-<span class="sd">            config (dict): A dictionary containing configuration parameters, primarily for</span>
-<span class="sd">                           the RBF network part of the model. This config will be modified</span>
-<span class="sd">                           to set rescaling parameters for the RBF network based on the</span>
-<span class="sd">                           linear model's residuals.</span>
-<span class="sd">            td (TrainingDataGeneric): An object containing the training data.</span>
-<span class="sd">                               Used to calculate residuals and for the RBF model construction.</span>
-<span class="sd">            lin_model (sklearn.linear_model.LinearRegression): A pre-trained scikit-learn</span>
-<span class="sd">                                                               LinearRegression model.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        config (dict): A dictionary containing configuration parameters, primarily for</span>
+<span class="sd">                       the RBF network part of the model. This config will be modified</span>
+<span class="sd">                       to set rescaling parameters for the RBF network based on the</span>
+<span class="sd">                       linear model's residuals.</span>
+<span class="sd">        td (TrainingDataGeneric): An object containing the training data.</span>
+<span class="sd">                           Used to calculate residuals and for the RBF model construction.</span>
+<span class="sd">        lin_model (sklearn.linear_model.LinearRegression): A pre-trained scikit-learn</span>
+<span class="sd">                                                           LinearRegression model.</span>
 
-<span class="sd">        Returns:</span>
-<span class="sd">            keras.Model: The constructed Keras functional model, which combines the linear</span>
-<span class="sd">                         model and the residual-fitting RBF network.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        keras.Model: The constructed Keras functional model, which combines the linear</span>
+<span class="sd">                     model and the residual-fitting RBF network.</span>
 <span class="sd">    """</span>
 
     <span class="c1"># Determine predictions of linear regression for rescaling</span>
     <span class="n">y_train_pred</span> <span class="o">=</span> <span class="n">lin_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="p">)</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">'rescale_sigma'</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_scale</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span> <span class="o">-</span> <span class="n">y_train_pred</span><span class="p">)</span>
-    <span class="n">config</span><span class="p">[</span><span class="s1">'rescale_mean'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">config</span><span class="p">[</span><span class="s2">"rescale_sigma"</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_scale</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">y_train_single</span> <span class="o">-</span> <span class="n">y_train_pred</span><span class="p">)</span>
+    <span class="n">config</span><span class="p">[</span><span class="s2">"rescale_mean"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="c1"># Add linear regression as dense keras layer</span>
-    <span class="n">lin</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">'linear'</span><span class="p">)</span>
+    <span class="n">lin</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">)</span>
 
     <span class="c1"># Add input layer</span>
     <span class="n">n_features</span> <span class="o">=</span> <span class="n">td</span><span class="o">.</span><span class="n">X_train_single</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>

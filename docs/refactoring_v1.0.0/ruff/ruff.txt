@@ -1,18 +1,18 @@
 physXAI/evaluation/comparison.py:247:12: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
-physXAI/evaluation/rollout.py:193:32: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/evaluation/rollout.py:196:32: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
 physXAI/expr/blocks.py:58:12: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
-physXAI/expr/blocks.py:433:35: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
-physXAI/expr/blocks.py:455:29: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
-physXAI/models/ann/ann_design.py:51:1: E402 Module level import not at top of file
+physXAI/expr/blocks.py:442:35: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/expr/blocks.py:464:29: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/models/ann/ann_design.py:52:1: E402 Module level import not at top of file
 physXAI/models/ann/keras_models/keras_models.py:13:1: E402 Module level import not at top of file
-physXAI/models/ann/keras_models/keras_models.py:261:12: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
-physXAI/models/ann/keras_models/keras_models.py:392:14: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/models/ann/keras_models/keras_models.py:263:12: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/models/ann/keras_models/keras_models.py:398:14: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
 physXAI/models/ann/model_construction/ann_models.py:12:1: E402 Module level import not at top of file
 physXAI/models/ann/model_construction/residual_models.py:13:1: E402 Module level import not at top of file
-physXAI/models/ann/pinn/physics.py:166:67: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/models/ann/pinn/physics.py:168:67: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
 physXAI/models/models.py:26:1: E402 Module level import not at top of file
-physXAI/preprocessing/preprocessing.py:603:25: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
-physXAI/preprocessing/preprocessing.py:724:16: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
-physXAI/preprocessing/preprocessing.py:726:16: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/preprocessing/preprocessing.py:619:25: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/preprocessing/preprocessing.py:740:16: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+physXAI/preprocessing/preprocessing.py:742:16: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
 Found 16 errors.
 No fixes available (11 hidden fixes can be enabled with the `--unsafe-fixes` option).

@@ -121,6 +121,9 @@ loads the trained model into the MPC. The script provides</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">X_lagN</span></code> is the value of <code class="docutils literal notranslate"><span class="pre">X</span></code> N steps in the past,</p></li>
 <li><p>lags of a feature are consecutive and ascending, the recursive feature and its lags are the last inputs
 (inputs taken from the model are ordered like that automatically),</p></li>
+<li><p>the lags of a feature start at the feature itself: <code class="docutils literal notranslate"><span class="pre">['u',</span> <span class="pre">'u_lag1',</span> <span class="pre">'T']</span></code>, not <code class="docutils literal notranslate"><span class="pre">['u_lag1',</span> <span class="pre">'T']</span></code>. AgentLib-MPC
+passes the values of a feature from lag 0 on and would otherwise feed the wrong time steps. physXAI itself allows
+isolated lags (e.g. a dead time), only the export needs the complete group,</p></li>
 <li><p>single step models have exactly one output and <code class="docutils literal notranslate"><span class="pre">shift=1</span></code> (AgentLib-MPC evaluates an output over the interval
 <code class="docutils literal notranslate"><span class="pre">[t,</span> <span class="pre">t+1)</span></code> of the inputs),</p></li>
 <li><p>inputs are variables of the MPC: inputs computed by the preprocessing (<code class="docutils literal notranslate"><span class="pre">columns</span></code>, <code class="docutils literal notranslate"><span class="pre">transform</span></code>) have to be
