@@ -34,7 +34,9 @@ def heat_pump(n=2000, seed=0, conflict=0.0):
 
 def prediction(terms, result, values):
     n = len(next(iter(values.values())))
-    return result.bias + sum(w * np.broadcast_to(t.evaluate(values), (n,)) for w, t in zip(result.weights, terms, strict=True))
+    return result.bias + sum(
+        w * np.broadcast_to(t.evaluate(values), (n,)) for w, t in zip(result.weights, terms, strict=True)
+    )
 
 
 def box_points(result, n=20000, seed=1):
@@ -92,8 +94,8 @@ def _gap_data():
     """y = u^3 - 1.5 u^2 + 0.6 u is decreasing around u = 0.5, where there is no data."""
     rng = np.random.default_rng(0)
     u = np.concatenate([rng.uniform(0.0, 0.3, 300), rng.uniform(0.7, 1.0, 300)])
-    y = u ** 3 - 1.5 * u ** 2 + 0.6 * u + rng.normal(0.0, 1e-3, len(u))
-    return [v.u, v.u ** 2, v.u ** 3], {"u": u}, y
+    y = u**3 - 1.5 * u**2 + 0.6 * u + rng.normal(0.0, 1e-3, len(u))
+    return [v.u, v.u**2, v.u**3], {"u": u}, y
 
 
 def test_exchange_finds_violations_between_the_data():
@@ -107,8 +109,7 @@ def test_exchange_finds_violations_between_the_data():
 
 def test_domain_data_only_constrains_the_samples():
     terms, values, y = _gap_data()
-    result = fit_shape_constrained(terms, values, y,
-                                   shape=ShapeConstraints(monotonicities={"u": 1}, domain="data"))
+    result = fit_shape_constrained(terms, values, y, shape=ShapeConstraints(monotonicities={"u": 1}, domain="data"))
     assert result.constraints[0]["certificate"] == "data"
     assert derivative(terms, result, values, "u", h=1e-6).min() >= -1e-4
 
@@ -138,8 +139,9 @@ def test_corners_are_checked_on_the_final_solution(monkeypatch):
     terms, values, y, shape = _corner_case()
     assert fit_shape_constrained(terms, values, y, shape=shape).constraints[0]["certificate"] == "exact"
     original = shape_constraints._LeastSquares.solve
-    monkeypatch.setattr(shape_constraints._LeastSquares, "solve",
-                        lambda self, rows: original(self, np.zeros((0, rows.shape[1]))))  # ignores the constraints
+    monkeypatch.setattr(
+        shape_constraints._LeastSquares, "solve", lambda self, rows: original(self, np.zeros((0, rows.shape[1])))
+    )  # ignores the constraints
     result = fit_shape_constrained(terms, values, y, shape=shape)
     assert result.constraints[0]["certificate"] == "violated"
 
@@ -171,14 +173,17 @@ def test_trivial_convexity_of_linear_terms():
     assert result.constraints[0]["active_share_data"] is None
 
 
-@pytest.mark.parametrize("kwargs, match", [
-    ({}, "at least one"),
-    ({"monotonicities": {"u": 2}}, "monotonicities"),
-    ({"convexities": {"u": 0}}, "convexities"),
-    ({"monotonicities": {"u": 1}, "domain": "everywhere"}, "domain"),
-    ({"monotonicities": {"u": 1}, "bounds": {"u": (1.0, 0.0)}}, "bounds"),
-    ({"monotonicities": {"u": 1}, "qp_solver": "unknown"}, "QP solver"),
-])
+@pytest.mark.parametrize(
+    "kwargs, match",
+    [
+        ({}, "at least one"),
+        ({"monotonicities": {"u": 2}}, "monotonicities"),
+        ({"convexities": {"u": 0}}, "convexities"),
+        ({"monotonicities": {"u": 1}, "domain": "everywhere"}, "domain"),
+        ({"monotonicities": {"u": 1}, "bounds": {"u": (1.0, 0.0)}}, "bounds"),
+        ({"monotonicities": {"u": 1}, "qp_solver": "unknown"}, "QP solver"),
+    ],
+)
 def test_invalid_shape_constraints(kwargs, match):
     with pytest.raises(ValueError, match=match):
         ShapeConstraints(**kwargs)
@@ -226,8 +231,9 @@ def test_modular_ann_qp_end_to_end(csv, tmp_path):
 
     files = Run(tmp_path, "qp", overwrite=True).save("model", prep, model, td)
     saved = keras.saving.load_model(files["model"])
-    np.testing.assert_allclose(saved.predict(td.X_test, verbose=0), model.trained_model.predict(td.X_test, verbose=0),
-                               rtol=1e-6)
+    np.testing.assert_allclose(
+        saved.predict(td.X_test, verbose=0), model.trained_model.predict(td.X_test, verbose=0), rtol=1e-6
+    )
     # the exported keras model itself keeps the constraint on random points of the box (automatic differentiation)
     rng = np.random.default_rng(2)
     box = shape["domain"]["box"]
@@ -281,8 +287,13 @@ def test_online_learning_of_closed_form_solvers(csv, tmp_path, solver):
 
 # --- warm start of gradient based training -------------------------------------------------------------------
 def _hybrid(**kwargs):
-    return ModularANN(px.Linear([v.u, v.u * v.T_amb, v.T_amb, px.MLP([v.u, v.T], n_neurons=4)], normalize=True,
-                                **kwargs.pop("linear", {})), epochs=1, **kwargs)
+    return ModularANN(
+        px.Linear(
+            [v.u, v.u * v.T_amb, v.T_amb, px.MLP([v.u, v.T], n_neurons=4)], normalize=True, **kwargs.pop("linear", {})
+        ),
+        epochs=1,
+        **kwargs,
+    )
 
 
 def test_warm_start_starts_at_the_least_squares_solution(csv):
@@ -297,8 +308,12 @@ def test_warm_start_starts_at_the_least_squares_solution(csv):
     ols = ModularANN(px.Linear([v.u, v.u * v.T_amb, v.T_amb]), solver="ols")
     td_ols = prep.pipeline(csv, model=ols)
     ols.pipeline(td_ols, plot=False)
-    np.testing.assert_allclose(keras_model.predict(td.X_test, verbose=0),
-                               ols.trained_model.predict(td_ols.X_test, verbose=0), rtol=1e-4, atol=1e-2)
+    np.testing.assert_allclose(
+        keras_model.predict(td.X_test, verbose=0),
+        ols.trained_model.predict(td_ols.X_test, verbose=0),
+        rtol=1e-4,
+        atol=1e-2,
+    )
 
 
 def test_warm_start_keeps_sign_bounds(csv):

@@ -189,11 +189,14 @@ def test_wrong_models_and_data(csv):
         RNNModel(epochs=1).pipeline(single, plot=False, save_model=False)
 
 
-@pytest.mark.parametrize("inputs, columns", [
-    (["mDot", "load", "T_in", "T_lag1"], None),
-    (["mDot", "load", "T_in", "T", "Change(T)"], None),
-    (["mDot", "load", "dT", "T"], "dT"),
-])
+@pytest.mark.parametrize(
+    "inputs, columns",
+    [
+        (["mDot", "load", "T_in", "T_lag1"], None),
+        (["mDot", "load", "T_in", "T", "Change(T)"], None),
+        (["mDot", "load", "dT", "T"], "dT"),
+    ],
+)
 def test_inputs_holding_the_predicted_feature_are_rejected(csv, inputs, columns):
     """Regression: lags, changes and derived columns of a predicted feature would leak its measured values."""
     kwargs = {"columns": {"dT": px.Var("T_in") - px.Var("T")}} if columns else {}

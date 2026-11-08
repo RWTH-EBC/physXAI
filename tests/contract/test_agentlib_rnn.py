@@ -17,8 +17,10 @@ from physXAI.io.agentlib import AGENTLIB_RNN_BRANCH, agentlib_supports_recurrent
 casadi_predictor = import_agentlib("agentlib_mpc.models.casadi_predictor")
 if not agentlib_supports_recurrent_models():
     # allowed also in the CI until AgentLib-MPC releases the support of recurrent models
-    pytest.skip(f"The installed AgentLib-MPC does not support recurrent models (branch {AGENTLIB_RNN_BRANCH}).",
-                allow_module_level=True)
+    pytest.skip(
+        f"The installed AgentLib-MPC does not support recurrent models (branch {AGENTLIB_RNN_BRANCH}).",
+        allow_module_level=True,
+    )
 import casadi as ca  # noqa: E402
 import keras  # noqa: E402
 from agentlib_mpc.machine_learning_plugins.physXAI.model_config_creation import physXAI_2_agentlib_json  # noqa: E402
@@ -60,8 +62,9 @@ def test_casadi_step_function_reproduces_the_rnn(rnn_layer, pcnn, tmp_path):
     sequence = td.X("test")[0]
     step_model = keras.saving.load_model(run.path / "T.keras")
     expected = np.asarray(
-        step_model.predict([sequence[None], *[np.zeros((1, int(t.shape[-1]))) for t in step_model.inputs[1:]]],
-                           verbose=0)[0]
+        step_model.predict(
+            [sequence[None], *[np.zeros((1, int(t.shape[-1]))) for t in step_model.inputs[1:]]], verbose=0
+        )[0]
     ).reshape(-1)
     states = ca.DM.zeros(predictor.state_dimension, 1)
     predictions = list()

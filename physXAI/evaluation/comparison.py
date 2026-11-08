@@ -258,7 +258,9 @@ class ModelComparison:
             if len(groups) > 1 and all(len(g[2]) == 1 for g in groups):
                 logger.warning(
                     "Every sub directory of '%s' is loaded as a model with one run. If they are runs of one "
-                    "model, use ModelComparison.load(['%s']).", root, root
+                    "model, use ModelComparison.load(['%s']).",
+                    root,
+                    root,
                 )
         else:
             items = paths.items() if isinstance(paths, Mapping) else ((Path(p).name, p) for p in paths)
@@ -397,7 +399,9 @@ class ModelComparison:
         scores = self.scores(split, horizon)
         columns = [c for c in scores.columns if c not in ("model", "run")]
         long = scores.melt(id_vars=["model", "run"], value_vars=columns, var_name="score").dropna(subset=["value"])
-        summary = long.groupby(["score", "model"], sort=False)["value"].agg(["count", "mean", "std", "min", "median", "max"])
+        summary = long.groupby(["score", "model"], sort=False)["value"].agg(
+            ["count", "mean", "std", "min", "median", "max"]
+        )
         return summary.rename(columns={"count": "runs"})
 
     def paired(
@@ -456,8 +460,11 @@ class ModelComparison:
             raise ValueError("by has to be 'auto', 'split_seed' or 'run'.")
         if baseline not in self.models:
             raise ValueError(f"Unknown baseline '{baseline}', the models are {self.models}.")
-        others = [m for m in self.models if m != baseline] if models is None else (
-            [models] if isinstance(models, str) else list(models))
+        others = (
+            [m for m in self.models if m != baseline]
+            if models is None
+            else ([models] if isinstance(models, str) else list(models))
+        )
         unknown = [m for m in others if m not in self.models]
         if unknown:
             raise ValueError(f"Unknown models {unknown}, the models are {self.models}.")
@@ -475,7 +482,11 @@ class ModelComparison:
                 logger.warning(
                     "Paired comparison of '%s' with '%s': %d of %d pairs were evaluated on different %s data (other "
                     "split settings, e.g. block length or horizon). Use the same split settings for paired comparisons.",
-                    model, baseline, len(known) - sum(known), len(known), split,
+                    model,
+                    baseline,
+                    len(known) - sum(known),
+                    len(known),
+                    split,
                 )
             for column in scores.columns:
                 if not column.startswith(("RMSE ", "Bias ", "R2 ", "Horizon RMSE ")):
@@ -502,20 +513,44 @@ class ModelComparison:
                         p_value = float(2 * stats.t.sf(abs(mean) / se, n - 1))
                     elif mean != 0:
                         p_value = 0.0  # the same difference on every split
-                rows.append({
-                    "score": name, "model": model, "pairs": n, "baseline": float(np.median(a)),
-                    "model_median": float(np.median(b)), "mean_difference": mean, "ci_low": ci[0], "ci_high": ci[1],
-                    "median_difference": float(np.median(difference)), "better": float(np.mean(better)),
-                    "p_value": p_value, "resampling": resampling, "same_data": same_data,
-                })
-        columns = ["score", "model", "pairs", "baseline", "model_median", "mean_difference", "ci_low", "ci_high",
-                   "median_difference", "better", "p_value", "resampling", "same_data"]
+                rows.append(
+                    {
+                        "score": name,
+                        "model": model,
+                        "pairs": n,
+                        "baseline": float(np.median(a)),
+                        "model_median": float(np.median(b)),
+                        "mean_difference": mean,
+                        "ci_low": ci[0],
+                        "ci_high": ci[1],
+                        "median_difference": float(np.median(difference)),
+                        "better": float(np.mean(better)),
+                        "p_value": p_value,
+                        "resampling": resampling,
+                        "same_data": same_data,
+                    }
+                )
+        columns = [
+            "score",
+            "model",
+            "pairs",
+            "baseline",
+            "model_median",
+            "mean_difference",
+            "ci_low",
+            "ci_high",
+            "median_difference",
+            "better",
+            "p_value",
+            "resampling",
+            "same_data",
+        ]
         return pd.DataFrame(rows, columns=columns).set_index(["score", "model"])
 
     def _pairs(self, baseline: str, model: str, by: str) -> list[tuple[str, str]]:
         """Pairs of run names (baseline, model) on the same split, see `paired`."""
         keys = dict()
-        for mode in (["split_seed", "run"] if by == "auto" else [by]):
+        for mode in ["split_seed", "run"] if by == "auto" else [by]:
             for label in (baseline, model):
                 runs = [r for r in self.records if r.model == label]
                 values = [_split_seed(r) if mode == "split_seed" else r.run for r in runs]
@@ -527,8 +562,13 @@ class ModelComparison:
                 if common:
                     unpaired = len(keys[baseline]) + len(keys[model]) - 2 * len(common)
                     if unpaired:
-                        logger.info("Paired comparison of '%s' with '%s' by %s: %d run(s) without a partner are left out.",
-                                    model, baseline, mode, unpaired)
+                        logger.info(
+                            "Paired comparison of '%s' with '%s' by %s: %d run(s) without a partner are left out.",
+                            model,
+                            baseline,
+                            mode,
+                            unpaired,
+                        )
                     return [(keys[baseline][k], keys[model][k]) for k in common]
             keys = dict()
         raise ValueError(
@@ -591,7 +631,9 @@ class ModelComparison:
                             "figure": self._horizon_figure(feature_data, axis, kpi, band, colors, x_title, title),
                         }
                     )
-            horizon_scores = [c for c in scores.columns if c.startswith("Horizon RMSE ") or (c.startswith("RMSE ") and " @ " in c)]
+            horizon_scores = [
+                c for c in scores.columns if c.startswith("Horizon RMSE ") or (c.startswith("RMSE ") and " @ " in c)
+            ]
             figures.append(
                 {
                     "title": f"Mean RMSE over the horizon and RMSE at {_horizon_label(axis, end)} ({split})",
@@ -600,7 +642,9 @@ class ModelComparison:
                 }
             )
 
-        figures.append({"title": f"Summary ({split})", "type": "table", "figure": _table_figure(self.summary(split, horizon))})
+        figures.append(
+            {"title": f"Summary ({split})", "type": "table", "figure": _table_figure(self.summary(split, horizon))}
+        )
         fig = subplots(f"Model comparison: {', '.join(self.models)}", *figures, show=False)
         _deduplicate_legend(fig)
         fig.update_layout(boxmode="group")
@@ -642,8 +686,9 @@ class ModelComparison:
         return fig
 
     @staticmethod
-    def _horizon_figure(data: pd.DataFrame, axis: str, kpi: str, band: str | None, colors: dict, x_title: str,
-                        y_title: str) -> go.Figure:
+    def _horizon_figure(
+        data: pd.DataFrame, axis: str, kpi: str, band: str | None, colors: dict, x_title: str, y_title: str
+    ) -> go.Figure:
         fig = go.Figure()
         for model, color in colors.items():
             rows = data[data["model"] == model]
@@ -685,8 +730,15 @@ class ModelComparison:
         return fig
 
     # --- saving --------------------------------------------------------------------------------
-    def save(self, run, name: str = "comparison", split: str = "test", horizon: float | None = None,
-             band: str | None = "iqr", baseline: str | None = None) -> dict:
+    def save(
+        self,
+        run,
+        name: str = "comparison",
+        split: str = "test",
+        horizon: float | None = None,
+        band: str | None = "iqr",
+        baseline: str | None = None,
+    ) -> dict:
         """
         Saves the comparison into a run directory: `{name}.html` (plot), `{name}_summary.csv`,
         `{name}_scores.csv` (one row per run), `{name}_metrics.csv`, `{name}_horizon.csv` and, with a `baseline`,
@@ -821,8 +873,10 @@ def _resampling_ratio(records: list[RunRecord], split: str) -> float:
             if size is not None and train > 0:
                 ratios.append(size / train)
     if not ratios:
-        logger.warning("Paired comparison: the split sizes of the runs are unknown, the t-test is not corrected for "
-                       "the overlap of the splits (too optimistic).")
+        logger.warning(
+            "Paired comparison: the split sizes of the runs are unknown, the t-test is not corrected for "
+            "the overlap of the splits (too optimistic)."
+        )
         return 0.0
     return float(np.mean(ratios))
 
@@ -902,8 +956,11 @@ def main(argv: list[str] | None = None) -> ModelComparison:
 
     from physXAI.io.run import Run
 
-    parser = argparse.ArgumentParser(prog="python -m physXAI.evaluation.comparison", description=main.__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        prog="python -m physXAI.evaluation.comparison",
+        description=main.__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument("paths", nargs="+", help="directory of model directories, or model directories")
     parser.add_argument("--models", action="store_true", help="every given path is a model (also a single one)")
     parser.add_argument("--name", help="only files '{name}_training_data.json'")
@@ -922,8 +979,11 @@ def main(argv: list[str] | None = None) -> ModelComparison:
         print(comparison.summary(args.split, args.horizon).to_string(float_format="{:.4g}".format))
         if args.baseline:
             print(f"\nPaired with '{args.baseline}' (difference = model - baseline):")
-            print(comparison.paired(args.baseline, split=args.split, horizon=args.horizon)
-                  .to_string(float_format="{:.4g}".format))
+            print(
+                comparison.paired(args.baseline, split=args.split, horizon=args.horizon).to_string(
+                    float_format="{:.4g}".format
+                )
+            )
     out = Path(args.out) if args.out else Path(args.paths[0]) / "comparison"
     run = Run(out.parent, out.name, overwrite=True)
     comparison.save(run, split=args.split, horizon=args.horizon, band=band, baseline=args.baseline)

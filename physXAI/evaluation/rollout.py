@@ -103,8 +103,11 @@ def recursion_spec(td: TrainingData) -> RecursionSpec | None:
         return None
     # lags of the feature come from the predicted history, lags of other columns from the data shifted by the lag
     # (e.g. 'mDot_lag1' in the history of 'Q_lag1'), they do not have to be columns of the data
-    missing = [c for c in columns if c not in td.all_columns and _base_and_lag(c)[0] != feature
-               and _base_and_lag(c)[0] not in td.all_columns]
+    missing = [
+        c
+        for c in columns
+        if c not in td.all_columns and _base_and_lag(c)[0] != feature and _base_and_lag(c)[0] not in td.all_columns
+    ]
     if missing:
         logger.info("Recursive evaluation skipped: the data holds no columns %s.", missing)
         return None
@@ -228,8 +231,9 @@ def rollout_data(td: TrainingData, spec: RecursionSpec, split: str, horizon: int
     """
     starts = td.window_starts(split, horizon, stride)
     # lagged data columns which are no columns of the data are the data shifted by their lag
-    shifted = {c: _base_and_lag(c) for c in spec.columns
-               if c not in td.all_columns and _base_and_lag(c)[0] != spec.feature}
+    shifted = {
+        c: _base_and_lag(c) for c in spec.columns if c not in td.all_columns and _base_and_lag(c)[0] != spec.feature
+    }
     starts = starts[starts >= max([spec.max_lag, *(lag for _, lag in shifted.values())])]
     feature = td.column(spec.feature)
     history = np.stack([feature[starts - k] for k in range(spec.max_lag + 1)], axis=1)

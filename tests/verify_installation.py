@@ -9,18 +9,18 @@ from physXAI.io import Run
 from physXAI.models.models import LinearRegressionModel
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 
-base_path = os.path.join(pathlib.Path(__file__).resolve().parent.parent, 'results')
+base_path = os.path.join(pathlib.Path(__file__).resolve().parent.parent, "results")
 
 # Directory of the run
-run = Run(base_path, 'tests/verify_installation', overwrite=True)
+run = Run(base_path, "tests/verify_installation", overwrite=True)
 
 # File path to data
 file_path = r"data/bestest_hydronic_heat_pump/pid_data.csv"
 
 # List of input features. Lagged inputs ('X_lag1') are derived automatically
-inputs = ['oveHeaPumY_u', 'Func(logistic)', 'weaSta_reaWeaTDryBul_y', 'reaTZon_y']
+inputs = ["oveHeaPumY_u", "Func(logistic)", "weaSta_reaWeaTDryBul_y", "reaTZon_y"]
 # Output feature
-output = 'reaPHeaPum_y'
+output = "reaPHeaPum_y"
 
 # Create Training data
 prep = PreprocessingSingleStep(inputs=inputs, output=output)
@@ -34,4 +34,4 @@ m = LinearRegressionModel()
 model = m.pipeline(td)
 
 # Save configs, metrics, model and report
-run.save('model', prep, m, td)
+run.save("model", prep, m, td)

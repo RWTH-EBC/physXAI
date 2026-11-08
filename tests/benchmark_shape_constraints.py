@@ -66,8 +66,7 @@ def run(sizes: list[int]) -> list[tuple[int, float]]:
             model.pipeline(td, plot=False)
             seconds = time.perf_counter() - start
             results.append((n, seconds))
-            print(f"N = {n:>7d}  {seconds:8.2f} s  (test RMSE {td.metrics.kpi('test', 'rmse'):.1f} W)",
-                  flush=True)
+            print(f"N = {n:>7d}  {seconds:8.2f} s  (test RMSE {td.metrics.kpi('test', 'rmse'):.1f} W)", flush=True)
     return results
 
 

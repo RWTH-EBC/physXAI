@@ -64,7 +64,10 @@ def test_isolated_lags_are_stricter_than_agentlib(inputs):
     T(k) (one recursive input), for 'u_lag1' the values u(k) and u(k-1). physXAI rejects these configs.
     """
     translated = physXAI_2_agentlib_json("001", _config(inputs))
-    lags = {**{n: f["lag"] for n, f in translated["input"].items()}, **{n: f["lag"] for n, f in translated["output"].items()}}
+    lags = {
+        **{n: f["lag"] for n, f in translated["input"].items()},
+        **{n: f["lag"] for n, f in translated["output"].items()},
+    }
     assert lags == ({"u": 1, "T": 1} if inputs[1] == "T_lag1" else {"u": 2, "T": 1})  # no trace of the lag 1 offset
     with pytest.raises(AgentLibCompatibilityError, match="lag 0 on"):
         check_agentlib_compatibility(_config(inputs))

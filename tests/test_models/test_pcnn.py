@@ -17,8 +17,20 @@ from physXAI.preprocessing.preprocessing import PreprocessingMultiStep
 WARMUP, LABEL = 3, 6
 INPUTS = ["load", "T_in", "mDot", "T"]  # T is fed back
 #: CasADi translation of AgentLib-MPC recognizes the layer types by these parts of their names
-SUPPORTED = ("input", "dense", "normalization", "concatenate", "constant", "add", "subtract", "multiply",
-             "simple_rnn", "lstm", "gru", "rescaling")
+SUPPORTED = (
+    "input",
+    "dense",
+    "normalization",
+    "concatenate",
+    "constant",
+    "add",
+    "subtract",
+    "multiply",
+    "simple_rnn",
+    "lstm",
+    "gru",
+    "rescaling",
+)
 
 
 @pytest.fixture(scope="module")
@@ -30,15 +42,23 @@ def csv(tmp_path_factory):
 
 @pytest.fixture(scope="module")
 def data(csv):
-    prep = PreprocessingMultiStep(inputs=INPUTS, output=px.Change("T"), label_width=LABEL, warmup_width=WARMUP,
-                                  random_state=0)
+    prep = PreprocessingMultiStep(
+        inputs=INPUTS, output=px.Change("T"), label_width=LABEL, warmup_width=WARMUP, random_state=0
+    )
     return prep, prep.pipeline(csv)
 
 
 def _train(td, rnn_layer="LSTM", **kwargs):
     # heating by the internal load (K/h per W), losses to the supply temperature (1/h); mDot is a disturbance of f
-    kwargs = {"heating": {"load": 0.03}, "losses": {"T_in": 0.5}, "rnn_units": 4, "rnn_layer": rnn_layer,
-              "epochs": 1, "early_stopping_epochs": None, **kwargs}
+    kwargs = {
+        "heating": {"load": 0.03},
+        "losses": {"T_in": 0.5},
+        "rnn_units": 4,
+        "rnn_layer": rnn_layer,
+        "epochs": 1,
+        "early_stopping_epochs": None,
+        **kwargs,
+    }
     m = PCNNModel(**kwargs)
     return m, m.pipeline(td, plot=False, save_model=False)
 
@@ -69,8 +89,9 @@ def test_step_model_and_closed_loop(data, rnn_layer, tmp_path):
     assert step_model.name == "rnn_step"
     # states: energy accumulator E (1) and the states of f
     assert [int(t.shape[-1]) for t in step_model.inputs[1:]] == [1] + [4] * (2 if rnn_layer == "LSTM" else 1)
-    assert all(any(s in layer.name for s in SUPPORTED) for layer in step_model.layers), \
-        [layer.name for layer in step_model.layers]
+    assert all(any(s in layer.name for s in SUPPORTED) for layer in step_model.layers), [
+        layer.name for layer in step_model.layers
+    ]
     X, initial = td.X("test")[:4], td.initial("test")[:4]
     np.testing.assert_allclose(td.y_test_pred[:4], _rollout(step_model, X, initial), rtol=1e-4, atol=1e-4)
 
@@ -126,8 +147,9 @@ def test_parameters_are_read_from_the_model_after_online_training(csv, data, tmp
     other = simulate_one_room(n_steps=1200)
     other["load"] = other["load"] / 3
     other.to_csv(tmp_path / "other.csv", sep=";")
-    td_other = PreprocessingMultiStep(inputs=INPUTS, output=px.Change("T"), label_width=LABEL, warmup_width=WARMUP,
-                                      random_state=0).pipeline(str(tmp_path / "other.csv"))
+    td_other = PreprocessingMultiStep(
+        inputs=INPUTS, output=px.Change("T"), label_width=LABEL, warmup_width=WARMUP, random_state=0
+    ).pipeline(str(tmp_path / "other.csv"))
     online = PCNNModel(heating={"load": None}, losses={"T_in": None}, rnn_units=4, epochs=1, early_stopping_epochs=None)
     assert online.initial_rates(td_other)["load"] == pytest.approx(3 * initial["load"], rel=0.1)
     model = online.online_pipeline(td_other, str(tmp_path / "pcnn.keras"), plot=False, save_model=False)
@@ -189,12 +211,14 @@ def test_estimated_rates_are_not_taken_from_another_series(csv):
     import pickle
 
     m = PCNNModel(heating={"load": None}, losses={"T_in": None})
-    first = PreprocessingMultiStep(inputs=INPUTS, output=px.Change("T"), label_width=LABEL, warmup_width=WARMUP,
-                                   random_state=0).pipeline(csv)
+    first = PreprocessingMultiStep(
+        inputs=INPUTS, output=px.Change("T"), label_width=LABEL, warmup_width=WARMUP, random_state=0
+    ).pipeline(csv)
     rates = m.initial_rates(first)
     m._estimated = (m._estimated[0], {k: 123.0 for k in rates})  # mark the cache
     assert m.initial_rates(first)["load"] == 123.0
-    second = PreprocessingMultiStep(inputs=INPUTS, output=px.Change("T"), label_width=LABEL, warmup_width=WARMUP,
-                                    random_state=5).pipeline(csv)
+    second = PreprocessingMultiStep(
+        inputs=INPUTS, output=px.Change("T"), label_width=LABEL, warmup_width=WARMUP, random_state=5
+    ).pipeline(csv)
     assert m.initial_rates(second)["load"] != 123.0
     assert pickle.loads(pickle.dumps(m))._estimated is None

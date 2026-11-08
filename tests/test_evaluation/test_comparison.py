@@ -25,8 +25,9 @@ def csv(tmp_path_factory):
 
 @pytest.fixture(scope="module")
 def prep():
-    return PreprocessingSingleStep(inputs=["mDot", "load", "T_in", "T"], output="Change(T)", eval_horizon=6,
-                                   random_state=7)
+    return PreprocessingSingleStep(
+        inputs=["mDot", "load", "T_in", "T"], output="Change(T)", eval_horizon=6, random_state=7
+    )
 
 
 @pytest.fixture(scope="module")
@@ -34,8 +35,9 @@ def saved(csv, prep, tmp_path_factory):
     """Linear regression and a small ANN, three and two runs, saved into one run directory."""
     run = Run(tmp_path_factory.mktemp("runs"), "compare", overwrite=True)
     linreg = repeat_training(csv, prep, LinearRegressionModel(), seeds=3, run=run, name="linreg")
-    ann = repeat_training(csv, prep, ClassicalANNModel(n_neurons=4, epochs=1), seeds=[0, 1], run=run,
-                          name="ann", plot=True)
+    ann = repeat_training(
+        csv, prep, ClassicalANNModel(n_neurons=4, epochs=1), seeds=[0, 1], run=run, name="ann", plot=True
+    )
     return run, linreg + ann
 
 
@@ -44,7 +46,10 @@ def test_repeated_runs_are_saved(saved, prep):
     for seed in range(3):
         folder = run.path / "linreg" / f"seed_{seed}"
         assert {p.name for p in folder.iterdir()} == {
-            "linreg_preprocessing.json", "linreg_model.json", "linreg_training_data.json", "linreg.joblib"
+            "linreg_preprocessing.json",
+            "linreg_model.json",
+            "linreg_training_data.json",
+            "linreg.joblib",
         }
         assert json.loads((folder / "linreg_preprocessing.json").read_text())["random_state"] == seed
     folder = run.path / "ann" / "seed_1"
@@ -112,11 +117,12 @@ def test_plot_and_save(saved, tmp_path):
 def test_single_step_models_and_rnn_on_a_common_horizon(csv):
     """An RNN evaluated over 8 steps and a single step model over 6 steps are compared over 6 steps."""
     single = PreprocessingSingleStep(inputs=["mDot", "load", "T_in", "T"], output="Change(T)", eval_horizon=6)
-    multi = PreprocessingMultiStep(inputs=["mDot", "load", "T_in", "T"], output=px.Change("T"), label_width=4,
-                                   warmup_width=2, eval_horizon=8)
-    comparison = (repeat_training(csv, single, LinearRegressionModel(), seeds=2, name="linreg")
-                  + repeat_training(csv, multi, RNNModel(rnn_units=2, epochs=1, early_stopping_epochs=None), seeds=2,
-                                    name="rnn"))
+    multi = PreprocessingMultiStep(
+        inputs=["mDot", "load", "T_in", "T"], output=px.Change("T"), label_width=4, warmup_width=2, eval_horizon=8
+    )
+    comparison = repeat_training(csv, single, LinearRegressionModel(), seeds=2, name="linreg") + repeat_training(
+        csv, multi, RNNModel(rnn_units=2, epochs=1, early_stopping_epochs=None), seeds=2, name="rnn"
+    )
     assert comparison.common_horizon() == ("hours", 0.5)
     scores = comparison.scores()
     assert scores["RMSE T @ 0.5 h"].notna().all()
@@ -130,8 +136,11 @@ def test_runs_of_physxai_below_1(tmp_path):
     for i, rmse in enumerate([0.1, 0.2]):
         folder = tmp_path / "old" / f"run{i}"
         folder.mkdir(parents=True)
-        metrics = {"train_kpis": {"MSE Train": rmse**2, "RMSE Train": rmse, "R2 Train": 0.9},
-                   "val_kpis": None, "test_kpis": {"MSE Test": rmse**2, "RMSE Test": rmse, "R2 Test": 0.8}}
+        metrics = {
+            "train_kpis": {"MSE Train": rmse**2, "RMSE Train": rmse, "R2 Train": 0.9},
+            "val_kpis": None,
+            "test_kpis": {"MSE Test": rmse**2, "RMSE Test": rmse, "R2 Test": 0.8},
+        }
         (folder / "training_data.json").write_text(json.dumps({"metrics": metrics, "training_time": 1.0}))
         (folder / "model_config.json").write_text(json.dumps({"__class_name__": "LinearRegressionModel"}))
     comparison = ModelComparison.load(tmp_path)
@@ -150,14 +159,18 @@ def test_invalid_vary(csv, prep):
 def _legacy_run(folder, rmse, steps=None, time_step=900):
     """A run saved by the Logger of physXAI < 1.0."""
     folder.mkdir(parents=True)
-    metrics = {"train_kpis": {"MSE Train": rmse**2, "RMSE Train": rmse, "R2 Train": 0.9}, "val_kpis": None,
-               "test_kpis": {"MSE Test": rmse**2, "RMSE Test": rmse, "R2 Test": 0.8}}
+    metrics = {
+        "train_kpis": {"MSE Train": rmse**2, "RMSE Train": rmse, "R2 Train": 0.9},
+        "val_kpis": None,
+        "test_kpis": {"MSE Test": rmse**2, "RMSE Test": rmse, "R2 Test": 0.8},
+    }
     if steps is not None:  # MetricsMultiStep of physXAI < 1.0
         metrics.update(rmse_train_l=steps, rmse_val_l=None, rmse_test_l=steps)
     (folder / "training_data.json").write_text(json.dumps({"metrics": metrics, "training_time": 1.0}))
     (folder / "model_config.json").write_text(json.dumps({"__class_name__": "CMNNModel", "random_seed": 42}))
     (folder / "preprocessing_config.json").write_text(
-        json.dumps({"output": ["Change(T)"], "time_step": time_step, "random_state": int(rmse * 1000)}))
+        json.dumps({"output": ["Change(T)"], "time_step": time_step, "random_state": int(rmse * 1000)})
+    )
 
 
 def test_model_directory_with_many_runs(tmp_path, saved, caplog):
@@ -239,8 +252,9 @@ def test_runs_share_no_state_and_vary_block_seeds(csv):
     from physXAI.models import ModularANN
 
     v = px.Vars()
-    model = ModularANN(px.Linear([px.RBF([v.mDot, v.T], units=3, random_state=11), v.T], normalize=True),
-                       epochs=1, random_seed=11)
+    model = ModularANN(
+        px.Linear([px.RBF([v.mDot, v.T], units=3, random_state=11), v.T], normalize=True), epochs=1, random_seed=11
+    )
     copies = [_model_with_seed(model, seed) for seed in (0, 1)]
     assert all(c is not model and c.architecture is not model.architecture for c in copies)
     rbf = [c.architecture.inputs[0] for c in copies]
@@ -335,9 +349,12 @@ def test_paired_saved_runs(saved, tmp_path):
 def test_fingerprint_shows_other_splits(csv):
     """The same seed gives other test blocks for another window length (horizon)."""
     a = PreprocessingSingleStep(inputs=["mDot", "T"], output="Change(T)", eval_horizon=6, random_state=3).pipeline(csv)
-    b = PreprocessingSingleStep(inputs=["mDot", "load", "T"], output="Change(T)", eval_horizon=6,
-                                random_state=3).pipeline(csv)
-    c = PreprocessingSingleStep(inputs=["mDot", "T"], output="Change(T)", eval_horizon=100, random_state=3).pipeline(csv)
+    b = PreprocessingSingleStep(
+        inputs=["mDot", "load", "T"], output="Change(T)", eval_horizon=6, random_state=3
+    ).pipeline(csv)
+    c = PreprocessingSingleStep(inputs=["mDot", "T"], output="Change(T)", eval_horizon=100, random_state=3).pipeline(
+        csv
+    )
     fa, fb, fc = (td.summary()["fingerprint"] for td in (a, b, c))
     assert fa["test"] == fb["test"] and fa["val"] == fb["val"]
     assert fa["test"] != fc["test"]

@@ -379,11 +379,17 @@ def plot_shape_constraints_table(shape: dict) -> go.Figure:
         rows[2].append(f"{c['max_violation']:.2g}")
         rows[3].append("" if c["active_share_data"] is None else f"{c['active_share_data']:.1%}")
         rows[4].append(str(c["constraint_points"]))
-    for label, value in (("Train RMSE (constrained)", shape["rmse_train"]),
-                         ("Train RMSE (unconstrained)", shape["rmse_train_unconstrained"])):
+    for label, value in (
+        ("Train RMSE (constrained)", shape["rmse_train"]),
+        ("Train RMSE (unconstrained)", shape["rmse_train_unconstrained"]),
+    ):
         for k, cell in enumerate((label, f"{value:.4g}", "", "", "")):
             rows[k].append(cell)
     fig = go.Figure()
-    fig.add_trace(go.Table(header=dict(values=["Constraint", "Certificate", "Max violation", "Binding on data",
-                                               "Constraint points"]), cells=dict(values=rows)))
+    fig.add_trace(
+        go.Table(
+            header=dict(values=["Constraint", "Certificate", "Max violation", "Binding on data", "Constraint points"]),
+            cells=dict(values=rows),
+        )
+    )
     return fig

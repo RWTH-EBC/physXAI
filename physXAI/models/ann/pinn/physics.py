@@ -133,8 +133,10 @@ class PhysicsResidual:
         duplicates = sorted({n for n in names if names.count(n) > 1})
         if duplicates:
             # parameters are calibrated, reported and frozen by name
-            raise ValueError(f"The parameters of a physics residual need unique names, {duplicates} are used several "
-                             "times: px.Param(..., name='...') or px.positive(value, name).")
+            raise ValueError(
+                f"The parameters of a physics residual need unique names, {duplicates} are used several "
+                "times: px.Param(..., name='...') or px.positive(value, name)."
+            )
         if weight < 0:
             raise ValueError("The weight of a physics residual must not be negative.")
         self.residual = residual
@@ -254,8 +256,17 @@ def calibrate_least_squares(physics: PhysicsResidual, td, scale: float = 1.0) ->
 
     theta0 = np.array([float(p.init) for p in parameters])
     initial = evaluate(theta0)[0]
-    solution = least_squares(lambda t: evaluate(t)[0], theta0, jac=lambda t: evaluate(t)[1], method="trf",
-                             x_scale="jac", ftol=1e-12, xtol=1e-12, gtol=1e-12, max_nfev=1000)
+    solution = least_squares(
+        lambda t: evaluate(t)[0],
+        theta0,
+        jac=lambda t: evaluate(t)[1],
+        method="trf",
+        x_scale="jac",
+        ftol=1e-12,
+        xtol=1e-12,
+        gtol=1e-12,
+        max_nfev=1000,
+    )
     if not solution.success:
         logger.warning("Calibration of the physics residual '%s': %s", physics.name, solution.message)
     return {
@@ -265,14 +276,15 @@ def calibrate_least_squares(physics: PhysicsResidual, td, scale: float = 1.0) ->
             "success": bool(solution.success),
             "message": str(solution.message),
             "evaluations": int(solution.nfev),
-            "fit_loss_initial": float(np.mean(initial ** 2) / scale),
-            "fit_loss": float(np.mean(solution.fun ** 2) / scale),
+            "fit_loss_initial": float(np.mean(initial**2) / scale),
+            "fit_loss": float(np.mean(solution.fun**2) / scale),
         },
     }
 
 
-def fit_with_physics(model, td, settings, physics: PhysicsResidual, mode: str = "calibrate",
-                     physics_learning_rate: float | None = None) -> dict:
+def fit_with_physics(
+    model, td, settings, physics: PhysicsResidual, mode: str = "calibrate", physics_learning_rate: float | None = None
+) -> dict:
     """
     Trains a single output keras model on the data and a physics residual.
 
@@ -339,16 +351,30 @@ def fit_with_physics(model, td, settings, physics: PhysicsResidual, mode: str = 
         return ds.batch(settings.batch_size).prefetch(tf.data.AUTOTUNE)
 
     def fit(loss, learning_rate, monitor):
-        wrapper.compile(keras.optimizers.Adam(learning_rate=learning_rate), loss=loss,
-                        metrics=_term_metrics(scale_y, scale_r, physics.name))
+        wrapper.compile(
+            keras.optimizers.Adam(learning_rate=learning_rate),
+            loss=loss,
+            metrics=_term_metrics(scale_y, scale_r, physics.name),
+        )
         callbacks = list()
         if settings.early_stopping_epochs is not None and val is not None:
-            callbacks.append(keras.callbacks.EarlyStopping(monitor=monitor, mode="min",
-                                                           patience=settings.early_stopping_epochs,
-                                                           restore_best_weights=True,
-                                                           verbose=keras_verbosity_int()))
-        return wrapper.fit(dataset(train, True), validation_data=dataset(val, False) if val is not None else None,
-                           epochs=settings.epochs, callbacks=callbacks, verbose=keras_verbosity(), shuffle=False)
+            callbacks.append(
+                keras.callbacks.EarlyStopping(
+                    monitor=monitor,
+                    mode="min",
+                    patience=settings.early_stopping_epochs,
+                    restore_best_weights=True,
+                    verbose=keras_verbosity_int(),
+                )
+            )
+        return wrapper.fit(
+            dataset(train, True),
+            validation_data=dataset(val, False) if val is not None else None,
+            epochs=settings.epochs,
+            callbacks=callbacks,
+            verbose=keras_verbosity(),
+            shuffle=False,
+        )
 
     calibration = None
     if mode == "calibrate" and parameter_layers:
@@ -360,12 +386,15 @@ def fit_with_physics(model, td, settings, physics: PhysicsResidual, mode: str = 
                     layer.set_weights([np.full(np.shape(layer.get_weights()[0]), result["parameters"][p.name])])
             calibration = result["record"]
         else:
-            logger.info("The residual '%s' cannot be calibrated by least squares, gradient descent is used.",
-                        physics.name)
+            logger.info(
+                "The residual '%s' cannot be calibrated by least squares, gradient descent is used.", physics.name
+            )
             model.trainable = False
-            calibration = fit(_residual_loss(scale_y, scale_r, 0.0, 1.0, data_weight=0.0),
-                              physics_learning_rate or 10 * settings.learning_rate,
-                              f"val_{physics.name}_fit_loss").history
+            calibration = fit(
+                _residual_loss(scale_y, scale_r, 0.0, 1.0, data_weight=0.0),
+                physics_learning_rate or 10 * settings.learning_rate,
+                f"val_{physics.name}_fit_loss",
+            ).history
             model.trainable = True
     if mode in ("calibrate", "fixed"):
         for layer in parameter_layers:
@@ -375,8 +404,11 @@ def fit_with_physics(model, td, settings, physics: PhysicsResidual, mode: str = 
         record = fit(_residual_loss(scale_y, scale_r, physics.weight, 1.0), settings.learning_rate, "val_data_loss")
 
     # trained parameters (also the named ones, e.g. px.positive) and the fit of the physics model
-    values = {p.name: float(np.asarray(shared[id(p)].get_weights()[0]).reshape(-1)[0])
-              for p in physics.parameters() if id(p) in shared}
+    values = {
+        p.name: float(np.asarray(shared[id(p)].get_weights()[0]).reshape(-1)[0])
+        for p in physics.parameters()
+        if id(p) in shared
+    }
     parameters = dict(values)
     for node in physics.named_values():
         parameters[node.name] = float(np.asarray(freeze(node, values).evaluate({})).reshape(-1)[0])

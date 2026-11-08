@@ -48,10 +48,10 @@ from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneri
 from physXAI.training.recursive import step_weights, weighted_step_loss
 from physXAI.utils.seed import resolve_seed
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import keras
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"
 
 if TYPE_CHECKING:  # pragma: no cover
     from physXAI.training import RecursiveTraining
@@ -77,11 +77,19 @@ class ANNModel(SingleStepModel, ABC):
 
     plot_title = "Artificial Neural Network"
 
-    def __init__(self, batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: int | None = 100, random_seed: int | None = None,
-                 recursive_training: Union['RecursiveTraining', dict] | None = None,
-                 physics: PhysicsResidual | dict | None = None, physics_fit: str = 'calibrate',
-                 physics_learning_rate: float | None = None, **kwargs):
+    def __init__(
+        self,
+        batch_size: int = 32,
+        epochs: int = 1000,
+        learning_rate: float = 0.001,
+        early_stopping_epochs: int | None = 100,
+        random_seed: int | None = None,
+        recursive_training: Union["RecursiveTraining", dict] | None = None,
+        physics: PhysicsResidual | dict | None = None,
+        physics_fit: str = "calibrate",
+        physics_learning_rate: float | None = None,
+        **kwargs,
+    ):
         """
         Initializes common hyperparameters for ANN training.
 
@@ -109,12 +117,13 @@ class ANNModel(SingleStepModel, ABC):
         self.early_stopping_epochs: int | None = early_stopping_epochs
         self.random_seed: int = resolve_seed(random_seed)
         from physXAI.training.recursive import RecursiveTraining
+
         if isinstance(recursive_training, dict):
             recursive_training = RecursiveTraining.from_config(recursive_training)
         self.recursive_training: RecursiveTraining | None = recursive_training
         if isinstance(physics, dict):
             physics = PhysicsResidual.from_config(physics)
-        if physics_fit not in ('calibrate', 'joint', 'fixed'):
+        if physics_fit not in ("calibrate", "joint", "fixed"):
             raise ValueError(f"Unknown physics_fit '{physics_fit}', use 'calibrate', 'joint' or 'fixed'.")
         self.physics: PhysicsResidual | None = physics
         self.physics_fit: str = physics_fit
@@ -161,8 +170,11 @@ class ANNModel(SingleStepModel, ABC):
         Args:
             model (keras.Model): The Keras model to compile.
         """
-        model.compile(keras.optimizers.Adam(learning_rate=self.learning_rate), loss='mse',
-                      metrics=[keras.metrics.RootMeanSquaredError(name='rmse', dtype=None)])
+        model.compile(
+            keras.optimizers.Adam(learning_rate=self.learning_rate),
+            loss="mse",
+            metrics=[keras.metrics.RootMeanSquaredError(name="rmse", dtype=None)],
+        )
 
     def prepare(self):
         """Seeds keras before the model is generated, so weight initializations are reproducible."""
@@ -177,17 +189,20 @@ class ANNModel(SingleStepModel, ABC):
             model (keras.Model): The Keras model to fit.
             td (TrainingDataGeneric): The TrainingData object
         """
-        mode = self.recursive_training.mode if self.recursive_training is not None else 'single_step'
-        if mode in ('single_step', 'single_then_multi'):
+        mode = self.recursive_training.mode if self.recursive_training is not None else "single_step"
+        if mode in ("single_step", "single_then_multi"):
             self.fit_single_step(model, td)
-        if mode in ('multi_step', 'single_then_multi'):
+        if mode in ("multi_step", "single_then_multi"):
             self.fit_multi_step(model, td)
 
     def fit_multi_step(self, model, td: TrainingDataGeneric):
         """Trains the model on the multi step error (`physXAI.training.recursive`)."""
         from physXAI.training.recursive import fit_recursive
+
         if not isinstance(td, TrainingData):
-            raise NotImplementedError('Multi step training of single step models requires PreprocessingSingleStep data.')
+            raise NotImplementedError(
+                "Multi step training of single step models requires PreprocessingSingleStep data."
+            )
         start_time = time.perf_counter()
         record = fit_recursive(model, td, self.recursive_training, self)
         td.add_training_time((td.training_time or 0) + time.perf_counter() - start_time)
@@ -197,12 +212,12 @@ class ANNModel(SingleStepModel, ABC):
 
     def _fit_data(self, td: TrainingDataGeneric, split: str):
         """Inputs and targets the model is fitted on, None for a split without data."""
-        X = getattr(td, f'X_{split}_single')
-        return None if X is None else (X, getattr(td, f'y_{split}_single'))
+        X = getattr(td, f"X_{split}_single")
+        return None if X is None else (X, getattr(td, f"y_{split}_single"))
 
     def _early_stopping_monitor(self) -> str:
         """Validation metric of the early stopping."""
-        return 'val_loss'
+        return "val_loss"
 
     def fit_single_step(self, model, td: TrainingDataGeneric):
         """Fits the Keras model on the single step error (and the physics residual, if any)."""
@@ -210,21 +225,25 @@ class ANNModel(SingleStepModel, ABC):
             start_time = time.perf_counter()
             result = fit_with_physics(model, td, self, self.physics, self.physics_fit, self.physics_learning_rate)
             td.add_training_time(time.perf_counter() - start_time)
-            td.add_training_record(result.pop('record'))
+            td.add_training_record(result.pop("record"))
             td.physics = result
-            self.physics_parameters = result['parameters']
+            self.physics_parameters = result["parameters"]
             # the network was trained inside a wrapper: build its own optimizer, so the saved model loads cleanly
-            if getattr(model, 'optimizer', None) is not None and not model.optimizer.built:
+            if getattr(model, "optimizer", None) is not None and not model.optimizer.built:
                 model.optimizer.build(model.trainable_variables)
             logger.info("Physics parameters: %s", self.physics_parameters)
             return
-        train, val = self._fit_data(td, 'train'), self._fit_data(td, 'val')
+        train, val = self._fit_data(td, "train"), self._fit_data(td, "val")
         # Early stopping (only possible with validation data)
         callbacks = list()
         if self.early_stopping_epochs is not None and val is not None:
-            es = keras.callbacks.EarlyStopping(monitor=self._early_stopping_monitor(), mode='min',
-                                               patience=self.early_stopping_epochs,
-                                               restore_best_weights=True, verbose=keras_verbosity_int())
+            es = keras.callbacks.EarlyStopping(
+                monitor=self._early_stopping_monitor(),
+                mode="min",
+                patience=self.early_stopping_epochs,
+                restore_best_weights=True,
+                verbose=keras_verbosity_int(),
+            )
             callbacks.append(es)
 
         # Fit model, track training time
@@ -233,33 +252,33 @@ class ANNModel(SingleStepModel, ABC):
         # Create tf.data.Dataset for better performance
         train_ds = tf.data.Dataset.from_tensor_slices(train)
         train_ds = (
-            train_ds
-            .cache()                                                                     # 1. Cache first so data is not reloaded, may need to be removed for large datasets
+            train_ds.cache()  # 1. Cache first so data is not reloaded, may need to be removed for large datasets
             # 2. Shuffle randomly every epoch. The buffer holds all samples: the samples are ordered in time, a smaller
             #    buffer would fill every batch with neighbouring time steps only.
             .shuffle(buffer_size=train[0].shape[0], reshuffle_each_iteration=True)
-            .batch(self.batch_size)                                                      # 3. Group into batches
-            .prefetch(buffer_size=tf.data.AUTOTUNE)                                      # 4. Prepare next batch in background
+            .batch(self.batch_size)  # 3. Group into batches
+            .prefetch(buffer_size=tf.data.AUTOTUNE)  # 4. Prepare next batch in background
         )
 
         # Check for validation data
         if val is not None:
             val_ds = tf.data.Dataset.from_tensor_slices(val)
             val_ds = (
-                val_ds
-                .cache()                                        # 1. Cache first so data is not reloaded, may need to be removed for large datasets
-                .batch(self.batch_size)                         # 2. Group into batches
-                .prefetch(buffer_size=tf.data.AUTOTUNE)         # 3. Prepare next batch in background
+                val_ds.cache()  # 1. Cache first so data is not reloaded, may need to be removed for large datasets
+                .batch(self.batch_size)  # 2. Group into batches
+                .prefetch(buffer_size=tf.data.AUTOTUNE)  # 3. Prepare next batch in background
             )
         else:
             val_ds = None
 
-        training_history = model.fit(train_ds,
-                                     validation_data=val_ds,
-                                     epochs=self.epochs,
-                                     callbacks=callbacks,
-                                     verbose=keras_verbosity(),
-                                     shuffle=False)  # the dataset is reshuffled in every epoch
+        training_history = model.fit(
+            train_ds,
+            validation_data=val_ds,
+            epochs=self.epochs,
+            callbacks=callbacks,
+            verbose=keras_verbosity(),
+            shuffle=False,
+        )  # the dataset is reshuffled in every epoch
         stop_time = time.perf_counter()
 
         # Add metrics to training data
@@ -277,7 +296,7 @@ class ANNModel(SingleStepModel, ABC):
             model (keras.Model): The Keras model to save.
             save_path (str): The directory or full path where the model should be saved.
         """
-        save_path = output_path(save_path, '.keras')
+        save_path = output_path(save_path, ".keras")
         model.save(save_path)
 
     def load_model(self, load_path: str):
@@ -297,17 +316,21 @@ class ANNModel(SingleStepModel, ABC):
 
     def get_config(self) -> dict:
         c = super().get_config()
-        c.update({
-            'batch_size': self.batch_size,
-            'epochs': self.epochs,
-            'learning_rate': self.learning_rate,
-            'early_stopping_epochs': self.early_stopping_epochs,
-            'random_seed': self.random_seed,
-            'recursive_training': self.recursive_training.get_config() if self.recursive_training is not None else None,
-            'physics': self.physics.get_config() if self.physics is not None else None,
-            'physics_fit': self.physics_fit,
-            'physics_learning_rate': self.physics_learning_rate,
-        })
+        c.update(
+            {
+                "batch_size": self.batch_size,
+                "epochs": self.epochs,
+                "learning_rate": self.learning_rate,
+                "early_stopping_epochs": self.early_stopping_epochs,
+                "random_seed": self.random_seed,
+                "recursive_training": self.recursive_training.get_config()
+                if self.recursive_training is not None
+                else None,
+                "physics": self.physics.get_config() if self.physics is not None else None,
+                "physics_fit": self.physics_fit,
+                "physics_learning_rate": self.physics_learning_rate,
+            }
+        )
         return c
 
 
@@ -317,26 +340,35 @@ class ClassicalANNModel(ANNModel):
     A classical (standard feed-forward) Artificial Neural Network model.
     """
 
-    def __init__(self, n_layers: int = 1, n_neurons: int | list[int] = 32,
-                 activation_function: str | list[str] = 'softplus', rescale_output: bool = True,
-                 batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: int | None = 100, random_seed: int | None = None, **kwargs):
+    def __init__(
+        self,
+        n_layers: int = 1,
+        n_neurons: int | list[int] = 32,
+        activation_function: str | list[str] = "softplus",
+        rescale_output: bool = True,
+        batch_size: int = 32,
+        epochs: int = 1000,
+        learning_rate: float = 0.001,
+        early_stopping_epochs: int | None = 100,
+        random_seed: int | None = None,
+        **kwargs,
+    ):
         """
-          Initializes the ClassicalANNModel.
+        Initializes the ClassicalANNModel.
 
-          Args:
-              n_layers (int): Number of hidden layers.
-              n_neurons (int or list[int]): Number of neurons in each hidden layer.
-                                            If int, same for all. If list, specifies for each layer.
-              activation_function (str or list[str]): Activation function(s) for hidden layers.
-                                                      If str, same for all. If list, specifies for each layer.
-              rescale_output (bool): Whether to rescale the model's output to the original target range.
-              batch_size (int): Number of samples per gradient update.
-              epochs (int): Number of times to iterate over the entire training dataset.
-              learning_rate (float): Learning rate for the Adam optimizer.
-              early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
-                                           If None, early stopping is disabled.
-              random_seed (int, optional): Seed of the weights and the batch order, defaults to the global seed.
+        Args:
+            n_layers (int): Number of hidden layers.
+            n_neurons (int or list[int]): Number of neurons in each hidden layer.
+                                          If int, same for all. If list, specifies for each layer.
+            activation_function (str or list[str]): Activation function(s) for hidden layers.
+                                                    If str, same for all. If list, specifies for each layer.
+            rescale_output (bool): Whether to rescale the model's output to the original target range.
+            batch_size (int): Number of samples per gradient update.
+            epochs (int): Number of times to iterate over the entire training dataset.
+            learning_rate (float): Learning rate for the Adam optimizer.
+            early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
+                                         If None, early stopping is disabled.
+            random_seed (int, optional): Seed of the weights and the batch order, defaults to the global seed.
         """
 
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
@@ -345,30 +377,34 @@ class ClassicalANNModel(ANNModel):
         self.activation_function: str | list[str] = activation_function
         self.rescale_output: bool = rescale_output
 
-        self.model_config.update({
-            "n_layers": self.n_layers,
-            "n_neurons": self.n_neurons,
-            "activation_function": self.activation_function,
-            "rescale_output": self.rescale_output,
-        })
+        self.model_config.update(
+            {
+                "n_layers": self.n_layers,
+                "n_neurons": self.n_neurons,
+                "activation_function": self.activation_function,
+                "rescale_output": self.rescale_output,
+            }
+        )
 
     def generate_model(self, **kwargs):
         """
         Generates the Keras model using ClassicalANNConstruction.
         """
 
-        td = kwargs['td']
+        td = kwargs["td"]
         model = ClassicalANNConstruction(self.model_config, td)
         return model
 
     def get_config(self) -> dict:
         config = super().get_config()
-        config.update({
-            "n_layers": self.n_layers,
-            "n_neurons": self.n_neurons,
-            "activation_function": self.activation_function,
-            "rescale_output": self.rescale_output
-        })
+        config.update(
+            {
+                "n_layers": self.n_layers,
+                "n_neurons": self.n_neurons,
+                "activation_function": self.activation_function,
+                "rescale_output": self.rescale_output,
+            }
+        )
         return config
 
 
@@ -378,9 +414,18 @@ class LinANNModel(ANNModel):
     A hybrid model: a linear regression (fitted first, then frozen) plus an RBF network trained on its residuals.
     """
 
-    def __init__(self, n_layers: int = 1, n_neurons: int | list[int] = 32, rescale_output: bool = True,
-                 batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: int | None = 100, random_seed: int | None = None, **kwargs):
+    def __init__(
+        self,
+        n_layers: int = 1,
+        n_neurons: int | list[int] = 32,
+        rescale_output: bool = True,
+        batch_size: int = 32,
+        epochs: int = 1000,
+        learning_rate: float = 0.001,
+        early_stopping_epochs: int | None = 100,
+        random_seed: int | None = None,
+        **kwargs,
+    ):
         """
         Initializes the LinANNModel.
 
@@ -400,11 +445,13 @@ class LinANNModel(ANNModel):
         self.n_neurons: int | list[int] = n_neurons
         self.rescale_output: bool = rescale_output
 
-        self.model_config.update({
-            "n_layers": self.n_layers,
-            "n_neurons": self.n_neurons,
-            "rescale_output": self.rescale_output,
-        })
+        self.model_config.update(
+            {
+                "n_layers": self.n_layers,
+                "n_neurons": self.n_neurons,
+                "rescale_output": self.rescale_output,
+            }
+        )
 
     def generate_model(self, **kwargs):
         """
@@ -413,7 +460,7 @@ class LinANNModel(ANNModel):
         is constructed to model its residuals.
         """
 
-        td = kwargs['td']
+        td = kwargs["td"]
 
         # Fit the linear regression (only fitted: its evaluation would overwrite the results in td)
         lr_model = LinearRegressionModel().generate_model()
@@ -426,11 +473,7 @@ class LinANNModel(ANNModel):
 
     def get_config(self) -> dict:
         config = super().get_config()
-        config.update({
-            "n_layers": self.n_layers,
-            "n_neurons": self.n_neurons,
-            "rescale_output": self.rescale_output
-        })
+        config.update({"n_layers": self.n_layers, "n_neurons": self.n_neurons, "rescale_output": self.rescale_output})
         return config
 
 
@@ -440,9 +483,18 @@ class RBFModel(ANNModel):
     A Radial Basis Function (RBF) Network model.
     """
 
-    def __init__(self, n_layers: int = 1, n_neurons: int | list[int] = 32, rescale_output: bool = True,
-                 batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: int | None = 100, random_seed: int | None = None, **kwargs):
+    def __init__(
+        self,
+        n_layers: int = 1,
+        n_neurons: int | list[int] = 32,
+        rescale_output: bool = True,
+        batch_size: int = 32,
+        epochs: int = 1000,
+        learning_rate: float = 0.001,
+        early_stopping_epochs: int | None = 100,
+        random_seed: int | None = None,
+        **kwargs,
+    ):
         """
         Initializes the RBFModel.
 
@@ -462,29 +514,27 @@ class RBFModel(ANNModel):
         self.n_neurons: int | list[int] = n_neurons
         self.rescale_output: bool = rescale_output
 
-        self.model_config.update({
-            "n_layers": self.n_layers,
-            "n_neurons": self.n_neurons,
-            "rescale_output": self.rescale_output,
-        })
+        self.model_config.update(
+            {
+                "n_layers": self.n_layers,
+                "n_neurons": self.n_neurons,
+                "rescale_output": self.rescale_output,
+            }
+        )
 
     def generate_model(self, **kwargs):
         """
         Generates the Keras RBF model using RBFModelConstruction.
         """
 
-        td = kwargs['td']
+        td = kwargs["td"]
         # the k-means seed is the seed of the model, also if it changed after __init__ (repeat_training)
         model = RBFModelConstruction({**self.model_config, "random_state": self.random_seed % 2**32}, td)
         return model
 
     def get_config(self) -> dict:
         config = super().get_config()
-        config.update({
-            "n_layers": self.n_layers,
-            "n_neurons": self.n_neurons,
-            "rescale_output": self.rescale_output
-        })
+        config.update({"n_layers": self.n_layers, "n_neurons": self.n_neurons, "rescale_output": self.rescale_output})
         return config
 
 
@@ -495,11 +545,21 @@ class CMNNModel(ANNModel):
     Allows enforcing monotonicity constraints on input features.
     """
 
-    def __init__(self, n_layers: int = 1, n_neurons: int | list[int] = 32,
-                 activation_function: str | list[str] = 'softplus', rescale_output: bool = True,
-                 monotonies: dict[str, int] = None, activation_split: list[float] = None,
-                 batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: int | None = 100, random_seed: int | None = None, **kwargs):
+    def __init__(
+        self,
+        n_layers: int = 1,
+        n_neurons: int | list[int] = 32,
+        activation_function: str | list[str] = "softplus",
+        rescale_output: bool = True,
+        monotonies: dict[str, int] = None,
+        activation_split: list[float] = None,
+        batch_size: int = 32,
+        epochs: int = 1000,
+        learning_rate: float = 0.001,
+        early_stopping_epochs: int | None = 100,
+        random_seed: int | None = None,
+        **kwargs,
+    ):
         """
         Initializes the CMNNModel.
 
@@ -530,34 +590,38 @@ class CMNNModel(ANNModel):
         self.monotonies: dict[str, int] = monotonies
         self.activation_split: list[float] = activation_split
 
-        self.model_config.update({
-            "n_layers": self.n_layers,
-            "n_neurons": self.n_neurons,
-            "activation_function": self.activation_function,
-            "rescale_output": self.rescale_output,
-            "monotonicities": self.monotonies,
-            "activation_split": activation_split,
-        })
+        self.model_config.update(
+            {
+                "n_layers": self.n_layers,
+                "n_neurons": self.n_neurons,
+                "activation_function": self.activation_function,
+                "rescale_output": self.rescale_output,
+                "monotonicities": self.monotonies,
+                "activation_split": activation_split,
+            }
+        )
 
     def generate_model(self, **kwargs):
         """
         Generates the Keras CMNN model using CMNNModelConstruction.
         """
 
-        td = kwargs['td']
+        td = kwargs["td"]
         model = CMNNModelConstruction(self.model_config, td)
         return model
 
     def get_config(self) -> dict:
         config = super().get_config()
-        config.update({
-            "n_layers": self.n_layers,
-            "n_neurons": self.n_neurons,
-            "activation_function": self.activation_function,
-            "rescale_output": self.rescale_output,
-            "monotonies": self.monotonies,
-            "activation_split": self.activation_split
-        })
+        config.update(
+            {
+                "n_layers": self.n_layers,
+                "n_neurons": self.n_neurons,
+                "activation_function": self.activation_function,
+                "rescale_output": self.rescale_output,
+                "monotonies": self.monotonies,
+                "activation_split": self.activation_split,
+            }
+        )
         return config
 
 
@@ -586,12 +650,24 @@ class PINNModel(ANNModel):
 
     plot_title = "Physics-Informed Neural Network"
 
-    def __init__(self, physics_targets: dict[str, float], n_layers: int = 1, n_neurons: int | list[int] = 32,
-                 activation_function: str | list[str] = 'softplus', rescale_output: bool = True,
-                 monotonies: dict[str, int] = None, activation_split: list[float] = None,
-                 normalize_terms: bool = True, early_stopping_on: str = 'data',
-                 batch_size: int = 32, epochs: int = 1000, learning_rate: float = 0.001,
-                 early_stopping_epochs: int | None = 100, random_seed: int | None = None, **kwargs):
+    def __init__(
+        self,
+        physics_targets: dict[str, float],
+        n_layers: int = 1,
+        n_neurons: int | list[int] = 32,
+        activation_function: str | list[str] = "softplus",
+        rescale_output: bool = True,
+        monotonies: dict[str, int] = None,
+        activation_split: list[float] = None,
+        normalize_terms: bool = True,
+        early_stopping_on: str = "data",
+        batch_size: int = 32,
+        epochs: int = 1000,
+        learning_rate: float = 0.001,
+        early_stopping_epochs: int | None = 100,
+        random_seed: int | None = None,
+        **kwargs,
+    ):
         """
         Initializes the PINNModel.
 
@@ -622,9 +698,10 @@ class PINNModel(ANNModel):
         if not physics_targets:
             raise ValueError("PINNModel needs physics targets, e.g. physics_targets={'pinn': 1.0}.")
         if self.physics is not None:
-            raise ValueError("PINNModel uses physics targets; for a physics residual use another model, e.g. "
-                             "CMNNModel(physics=...).")
-        if early_stopping_on not in ('data', 'total'):
+            raise ValueError(
+                "PINNModel uses physics targets; for a physics residual use another model, e.g. CMNNModel(physics=...)."
+            )
+        if early_stopping_on not in ("data", "total"):
             raise ValueError("early_stopping_on has to be 'data' or 'total'.")
         _check_monotone_layers(n_layers, self)
         self.physics_targets: dict[str, float] = {str(k): float(w) for k, w in physics_targets.items()}
@@ -638,14 +715,16 @@ class PINNModel(ANNModel):
         self.early_stopping_on: str = early_stopping_on
         self._scale: float = 1.0
 
-        self.model_config.update({
-            "n_layers": self.n_layers,
-            "n_neurons": self.n_neurons,
-            "activation_function": self.activation_function,
-            "rescale_output": self.rescale_output,
-            "monotonicities": self.monotonies,
-            "activation_split": activation_split,
-        })
+        self.model_config.update(
+            {
+                "n_layers": self.n_layers,
+                "n_neurons": self.n_neurons,
+                "activation_function": self.activation_function,
+                "rescale_output": self.rescale_output,
+                "monotonicities": self.monotonies,
+                "activation_split": activation_split,
+            }
+        )
 
     @property
     def required_loss_columns(self) -> list[str]:
@@ -657,7 +736,7 @@ class PINNModel(ANNModel):
         missing = [c for c in self.required_loss_columns if c not in td.loss_columns]
         if missing:
             raise ValueError(
-                f"The training data holds no physics targets {[c[len(TARGET_PREFIX):] for c in missing]}. "
+                f"The training data holds no physics targets {[c[len(TARGET_PREFIX) :] for c in missing]}. "
                 "Pass the model to the preprocessing, prep.pipeline(path, model=model), so it adds them."
             )
         variance = float(np.var(td.y_train_single[:, 0])) if self.normalize_terms else 1.0
@@ -667,16 +746,18 @@ class PINNModel(ANNModel):
         """
         Generates the Keras model (a CMNN) with one output.
         """
-        td = kwargs['td']
+        td = kwargs["td"]
         return CMNNModelConstruction(self.model_config, td)
 
     def compile_model(self, model):
         """
         Compiles the model with the physics loss and the metrics of every term (`data_loss`, `<target>_loss`).
         """
-        model.compile(keras.optimizers.Adam(learning_rate=self.learning_rate),
-                      loss=PhysicsLoss(list(self.physics_targets.values()), self._scale),
-                      metrics=physics_metrics(list(self.physics_targets), self._scale))
+        model.compile(
+            keras.optimizers.Adam(learning_rate=self.learning_rate),
+            loss=PhysicsLoss(list(self.physics_targets.values()), self._scale),
+            metrics=physics_metrics(list(self.physics_targets), self._scale),
+        )
 
     def _fit_data(self, td: TrainingDataGeneric, split: str):
         data = super()._fit_data(td, split)
@@ -686,7 +767,7 @@ class PINNModel(ANNModel):
         return data[0], np.concatenate([data[1], targets], axis=1)
 
     def _early_stopping_monitor(self) -> str:
-        return 'val_data_loss' if self.early_stopping_on == 'data' else 'val_loss'
+        return "val_data_loss" if self.early_stopping_on == "data" else "val_loss"
 
     def evaluate(self, model, td: TrainingDataGeneric):
         """
@@ -695,7 +776,7 @@ class PINNModel(ANNModel):
         """
         SingleStepModel.evaluate(model, td)
         physics = {
-            name: {split: td.values(split, [column]) for split in ('train', 'val', 'test') if td.has_split(split)}
+            name: {split: td.values(split, [column]) for split in ("train", "val", "test") if td.has_split(split)}
             for name, column in zip(self.physics_targets, self.required_loss_columns, strict=True)
         }
         td.add_metrics(MetricsPINN(td, physics, self._scale))
@@ -717,18 +798,21 @@ class PINNModel(ANNModel):
 
     def get_config(self) -> dict:
         config = super().get_config()
-        config.update({
-            "n_layers": self.n_layers,
-            "n_neurons": self.n_neurons,
-            "activation_function": self.activation_function,
-            "physics_targets": self.physics_targets,
-            "normalize_terms": self.normalize_terms,
-            "early_stopping_on": self.early_stopping_on,
-            "rescale_output": self.rescale_output,
-            "monotonies": self.monotonies,
-            "activation_split": self.activation_split
-        })
+        config.update(
+            {
+                "n_layers": self.n_layers,
+                "n_neurons": self.n_neurons,
+                "activation_function": self.activation_function,
+                "physics_targets": self.physics_targets,
+                "normalize_terms": self.normalize_terms,
+                "early_stopping_on": self.early_stopping_on,
+                "rescale_output": self.rescale_output,
+                "monotonies": self.monotonies,
+                "activation_split": self.activation_split,
+            }
+        )
         return config
+
 
 @register_model
 class RNNModel(MultiStepModel):
@@ -888,9 +972,15 @@ class RNNModel(MultiStepModel):
 
         callbacks = list()
         if self.early_stopping_epochs is not None and val is not None:
-            callbacks.append(keras.callbacks.EarlyStopping(
-                monitor="val_loss", mode="min", patience=self.early_stopping_epochs,
-                restore_best_weights=True, verbose=keras_verbosity_int()))
+            callbacks.append(
+                keras.callbacks.EarlyStopping(
+                    monitor="val_loss",
+                    mode="min",
+                    patience=self.early_stopping_epochs,
+                    restore_best_weights=True,
+                    verbose=keras_verbosity_int(),
+                )
+            )
 
         start_time = time.perf_counter()
         training_history = model.fit(
@@ -904,8 +994,15 @@ class RNNModel(MultiStepModel):
         td.add_training_time(time.perf_counter() - start_time)
         td.add_training_record(training_history)
 
-    def online_pipeline(self, td: TrainingDataMultiStep, load_path: str, save_path: str = None,
-                        plot: bool = True, save_model: bool = True, show_plot: bool = False):
+    def online_pipeline(
+        self,
+        td: TrainingDataMultiStep,
+        load_path: str,
+        save_path: str = None,
+        plot: bool = True,
+        save_model: bool = True,
+        show_plot: bool = False,
+    ):
         """Loads a saved step model, trains it further on `td`, evaluates, plots and saves it."""
         self._check_training_data(td)
         self.prepare()
@@ -923,7 +1020,7 @@ class RNNModel(MultiStepModel):
             model (keras.Model): The sequence model returned by the pipeline, or the step model.
             save_path (str): The path of the file ('.keras' is appended if missing).
         """
-        find_step_model(model).save(output_path(save_path, '.keras'))
+        find_step_model(model).save(output_path(save_path, ".keras"))
 
     def load_model(self, load_path: str):
         """
@@ -940,21 +1037,25 @@ class RNNModel(MultiStepModel):
 
     def get_config(self) -> dict:
         config = super().get_config()
-        config.update({
-            'rnn_units': self.rnn_units,
-            'rnn_layer': self.rnn_layer,
-            'epochs': self.epochs,
-            'learning_rate': self.learning_rate,
-            'batch_size': self.batch_size,
-            'early_stopping_epochs': self.early_stopping_epochs,
-            'random_seed': self.random_seed,
-            'feature_architecture': expr_to_config(self.feature_architecture)
-                                    if self.feature_architecture is not None else None,
-            'loss_on': self.loss_on,
-            'first_step_weight': self.first_step_weight,
-            'step_weights': self.step_weights,
-        })
+        config.update(
+            {
+                "rnn_units": self.rnn_units,
+                "rnn_layer": self.rnn_layer,
+                "epochs": self.epochs,
+                "learning_rate": self.learning_rate,
+                "batch_size": self.batch_size,
+                "early_stopping_epochs": self.early_stopping_epochs,
+                "random_seed": self.random_seed,
+                "feature_architecture": expr_to_config(self.feature_architecture)
+                if self.feature_architecture is not None
+                else None,
+                "loss_on": self.loss_on,
+                "first_step_weight": self.first_step_weight,
+                "step_weights": self.step_weights,
+            }
+        )
         return config
+
 
 @register_model
 class PCNNModel(RNNModel):
@@ -1005,11 +1106,19 @@ class PCNNModel(RNNModel):
 
     plot_title = "Physically Consistent Neural Network"
 
-    def __init__(self, heating: dict[str, float] | None = None, cooling: dict[str, float] | None = None,
-                 losses: dict[str, float] | None = None, rnn_units: int = 32, rnn_layer: str = "LSTM", **kwargs):
+    def __init__(
+        self,
+        heating: dict[str, float] | None = None,
+        cooling: dict[str, float] | None = None,
+        losses: dict[str, float] | None = None,
+        rnn_units: int = 32,
+        rnn_layer: str = "LSTM",
+        **kwargs,
+    ):
         if kwargs.get("feature_architecture") is not None:
             raise ValueError("PCNNModel has no feature_architecture, the inputs of f are all non-physics inputs.")
         super().__init__(rnn_units=rnn_units, rnn_layer=rnn_layer, **kwargs)
+
         def rates_of(values):
             return {str(k): (None if v is None else float(v)) for k, v in (values or {}).items()}
 
@@ -1087,12 +1196,19 @@ class PCNNModel(RNNModel):
             # a rate of 0 would switch the term off for good (the network only learns a factor): start at a weak one
             floor = 1e-2 * float(np.std(change)) / max(float(np.std(features[:, k])), 1e-12)
             if weights[k] < floor:
-                logger.warning("PCNN: the training data show no positive effect of '%s' (estimated %.3g per step), "
-                               "it starts at the weak rate %.3g per step.", name, weights[k], floor)
+                logger.warning(
+                    "PCNN: the training data show no positive effect of '%s' (estimated %.3g per step), "
+                    "it starts at the weak rate %.3g per step.",
+                    name,
+                    weights[k],
+                    floor,
+                )
             estimated[name] = max(float(weights[k]), floor) / hours
         self._estimated = (weakref.ref(td.series), estimated)
-        logger.info("PCNN initial rates estimated from the training data (per hour): %s",
-                    {k: v for k, v in estimated.items() if given[k] is None})
+        logger.info(
+            "PCNN initial rates estimated from the training data (per hour): %s",
+            {k: v for k, v in estimated.items() if given[k] is None},
+        )
         return {**estimated, **fixed}
 
     def __getstate__(self):
@@ -1117,8 +1233,10 @@ class PCNNModel(RNNModel):
         MultiStepModel.evaluate(model, td)
         terms = self._terms(td)
         hours = td.time_step / 3600.0
-        initial = {td.inputs[term.input]: value / hours
-                   for term, value in zip(terms, pcnn_initial_values(find_step_model(model)), strict=True)}
+        initial = {
+            td.inputs[term.input]: value / hours
+            for term, value in zip(terms, pcnn_initial_values(find_step_model(model)), strict=True)
+        }
         td.physics = {"parameters": self.physics_parameters(model, td), "initial_rates": initial}
 
     def physics_parameters(self, model, td: TrainingDataMultiStep) -> dict:
@@ -1137,8 +1255,11 @@ class PCNNModel(RNNModel):
         margin = 1.0 - sum(v for term, v in zip(terms, per_step, strict=True) if term.kind == "loss")
         parameters["consistency_margin"] = margin
         if margin <= 0:
-            logger.warning("PCNN: the loss rates per time step sum up to %.3g >= 1, the prediction is not "
-                           "physically consistent anymore.", 1.0 - margin)
+            logger.warning(
+                "PCNN: the loss rates per time step sum up to %.3g >= 1, the prediction is not "
+                "physically consistent anymore.",
+                1.0 - margin,
+            )
         logger.info("PCNN parameters (per hour): %s", parameters)
         return parameters
 
@@ -1147,4 +1268,3 @@ class PCNNModel(RNNModel):
         config.pop("feature_architecture", None)
         config.update({"heating": self.heating, "cooling": self.cooling, "losses": self.losses})
         return config
-

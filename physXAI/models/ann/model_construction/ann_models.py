@@ -8,10 +8,10 @@ from physXAI.models.ann.configs.ann_model_configs import ClassicalANNConstructio
 from physXAI.models.ann.keras_models.keras_models import ConcaveActivation, NonNegPartial, SaturatedActivation
 from physXAI.preprocessing.training_data import TrainingDataGeneric
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import keras
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"
 
 
 def output_scale(y) -> float:
@@ -43,15 +43,15 @@ def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
     config = ClassicalANNConstruction_config.model_validate(config).model_dump()
 
     # Get config
-    n_layers = config['n_layers']
-    n_neurons = config['n_neurons']
+    n_layers = config["n_layers"]
+    n_neurons = config["n_neurons"]
     # If n_neurons is a single integer, replicate it for all layers
     if isinstance(n_neurons, int):
         n_neurons = [n_neurons] * n_layers
     else:
         assert len(n_neurons) == n_layers
     n_features = td.X_train_single.shape[1]
-    activation_function = config['activation_function']
+    activation_function = config["activation_function"]
     # If activation_function is a single string, replicate it for all layers
     if isinstance(activation_function, str):
         activation_function = [activation_function] * n_layers
@@ -73,9 +73,9 @@ def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
         # For each layer add dense
         model.add(keras.layers.Dense(n_neurons[i], activation=activation_function[i]))
     # Add output layer
-    model.add(keras.layers.Dense(1, activation='linear'))
+    model.add(keras.layers.Dense(1, activation="linear"))
     # Add rescaling
-    if config['rescale_output']:
+    if config["rescale_output"]:
         # Rescaling for output layer
         rescale_mean = float(np.mean(td.y_train_single))
         rescale_sigma = output_scale(td.y_train_single)
@@ -102,15 +102,15 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
     config = CMNNModelConstruction_config.model_validate(config).model_dump()
 
     # Get config
-    n_layers = config['n_layers']
-    n_neurons = config['n_neurons']
+    n_layers = config["n_layers"]
+    n_neurons = config["n_neurons"]
     # If n_neurons is a single integer, replicate it for all layers
     if isinstance(n_neurons, int):
         n_neurons = [n_neurons] * n_layers
     else:
         assert len(n_neurons) == n_layers
     n_features = td.X_train_single.shape[1]
-    activation_function = config['activation_function']
+    activation_function = config["activation_function"]
     # If activation_function is a single string, replicate it for all layers
     if isinstance(activation_function, str):
         activation_function = [activation_function] * n_layers
@@ -118,7 +118,7 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
         assert len(activation_function) == n_layers
 
     # Get monotonicity constraints
-    mono = config['monotonicities']
+    mono = config["monotonicities"]
     if mono is None:
         monotonicities = [0] * n_features
     else:
@@ -137,7 +137,7 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
     x = normalization(input_layer)
 
     # Add dense layer
-    activation_split = config['activation_split']
+    activation_split = config["activation_split"]
     # Convex, concave and saturated neurons. Only convex neurons with the non negative weights of the following layers
     # would make the prediction convex in all inputs, also without monotonicities.
     if activation_split is None:
@@ -148,20 +148,27 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
         x_split = list()
         # Convex activation
         if activation_split[0] > 0:
-            x1 = keras.layers.Dense(_split_units(n_neurons[i], activation_split, 0),
-                                    activation=activation_function[i], kernel_constraint=kernel_contraint)(x)
+            x1 = keras.layers.Dense(
+                _split_units(n_neurons[i], activation_split, 0),
+                activation=activation_function[i],
+                kernel_constraint=kernel_contraint,
+            )(x)
             x_split.append(x1)
         # Concave activation
         if activation_split[1] > 0:
-            x2 = keras.layers.Dense(_split_units(n_neurons[i], activation_split, 1),
-                                    activation=ConcaveActivation(activation_function[i]),
-                                    kernel_constraint=kernel_contraint)(x)
+            x2 = keras.layers.Dense(
+                _split_units(n_neurons[i], activation_split, 1),
+                activation=ConcaveActivation(activation_function[i]),
+                kernel_constraint=kernel_contraint,
+            )(x)
             x_split.append(x2)
         # Saturated activation
         if activation_split[2] > 0:
-            x3 = keras.layers.Dense(_split_units(n_neurons[i], activation_split, 2),
-                                    activation=SaturatedActivation(activation_function[i]),
-                                    kernel_constraint=kernel_contraint)(x)
+            x3 = keras.layers.Dense(
+                _split_units(n_neurons[i], activation_split, 2),
+                activation=SaturatedActivation(activation_function[i]),
+                kernel_constraint=kernel_contraint,
+            )(x)
             x_split.append(x3)
         # Concatenate activations
         if len(x_split) > 1:
@@ -174,10 +181,10 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
         kernel_contraint = keras.constraints.NonNeg()
 
     # Add output layer
-    x = keras.layers.Dense(1, activation='linear', kernel_constraint=keras.constraints.NonNeg())(x)
+    x = keras.layers.Dense(1, activation="linear", kernel_constraint=keras.constraints.NonNeg())(x)
 
     # Add rescaling
-    if config['rescale_output']:
+    if config["rescale_output"]:
         # Rescaling for output layer
         rescale_mean = float(np.mean(td.y_train_single))
         rescale_sigma = output_scale(td.y_train_single)

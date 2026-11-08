@@ -9,13 +9,13 @@ import os
 
 import numpy as np
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import keras
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"
 
 
-@keras.saving.register_keras_serializable(package='custom_constraint', name='NonNegPartial')
+@keras.saving.register_keras_serializable(package="custom_constraint", name="NonNegPartial")
 class NonNegPartial(keras.constraints.Constraint):
     """
     A Keras constraint that enforces non-negativity or non-positivity on specific parts of a weight tensor.
@@ -40,51 +40,54 @@ class NonNegPartial(keras.constraints.Constraint):
 
         allowed_items = [-1, 0, 1]
         if not all(item in allowed_items for item in monotonicities):
-            raise ValueError('Monotonicities must be in [-1, 0, 1]')
+            raise ValueError("Monotonicities must be in [-1, 0, 1]")
         self.monotonicities: list[int] = monotonicities
 
     def __call__(self, w):
         """
-         Applies the constraint to the weight tensor.
-         This method is called by Keras during the training process after each weight update.
+        Applies the constraint to the weight tensor.
+        This method is called by Keras during the training process after each weight update.
 
-         Args:
-             w: The weight tensor to be constrained.
+        Args:
+            w: The weight tensor to be constrained.
 
-         Returns:
-             The constrained weight tensor.
+        Returns:
+            The constrained weight tensor.
 
-         Raises:
-             ValueError: If the length of `monotonicities` does not match the first dimension
-                         of the weight tensor `w`.
-         """
+        Raises:
+            ValueError: If the length of `monotonicities` does not match the first dimension
+                        of the weight tensor `w`.
+        """
 
         w = keras.ops.convert_to_tensor(w)
 
         if len(self.monotonicities) != w.shape[0]:
-            raise ValueError('Length of monotonicities list must be equal'
-                             ' to the first element of the weight tensor´s shape.')
+            raise ValueError(
+                "Length of monotonicities list must be equal to the first element of the weight tensor´s shape."
+            )
 
         w_split = keras.ops.split(w, w.shape[0])
         for i in range(0, w.shape[0]):
             # non-negativity
             if self.monotonicities[i] == 1:
-                w_split[i] = w_split[i] * keras.ops.cast(keras.ops.greater_equal(w_split[i], 0.),
-                                                         dtype=w_split[i].dtype)
+                w_split[i] = w_split[i] * keras.ops.cast(
+                    keras.ops.greater_equal(w_split[i], 0.0), dtype=w_split[i].dtype
+                )
             # non - positivity
             elif self.monotonicities[i] == -1:
-                w_split[i] = w_split[i] * keras.ops.cast(keras.ops.greater_equal(-w_split[i], 0.),
-                                                         dtype=w_split[i].dtype)
+                w_split[i] = w_split[i] * keras.ops.cast(
+                    keras.ops.greater_equal(-w_split[i], 0.0), dtype=w_split[i].dtype
+                )
             else:
                 continue
 
         return keras.ops.concatenate(w_split)
 
     def get_config(self):
-        return {'monotonicities': self.monotonicities}
+        return {"monotonicities": self.monotonicities}
 
 
-@keras.saving.register_keras_serializable(package='custom_activation', name='ConcaveActivation')
+@keras.saving.register_keras_serializable(package="custom_activation", name="ConcaveActivation")
 class ConcaveActivation:
     """
     A Keras activation function wrapper that transforms a given activation function
@@ -118,14 +121,14 @@ class ConcaveActivation:
         return -self.activation_fcn(-x)
 
     def get_config(self):
-        return {'activation': self.activation}
+        return {"activation": self.activation}
 
     @classmethod
     def from_config(cls, config):
         return cls(**config)
 
 
-@keras.saving.register_keras_serializable(package='custom_activation', name='SaturatedActivation')
+@keras.saving.register_keras_serializable(package="custom_activation", name="SaturatedActivation")
 class SaturatedActivation:
     """
     A Keras activation function that creates a saturated version of a given base activation.
@@ -166,41 +169,40 @@ class SaturatedActivation:
         )
 
     def get_config(self):
-        return {'activation': self.activation}
+        return {"activation": self.activation}
 
     @classmethod
     def from_config(cls, config):
         return cls(**config)
 
 
-@keras.saving.register_keras_serializable(package='custom_layer', name='RBFLayer')
+@keras.saving.register_keras_serializable(package="custom_layer", name="RBFLayer")
 class RBFLayer(keras.Layer):
     """
-        Custom Radial Basis Function (RBF) Layer.
+    Custom Radial Basis Function (RBF) Layer.
 
-        This layer implements RBF neurons, where the activation is typically a Gaussian function
-        of the Euclidean distance between the input and the neuron's center.
+    This layer implements RBF neurons, where the activation is typically a Gaussian function
+    of the Euclidean distance between the input and the neuron's center.
 
-        Arguments:
-            units (int): Positive integer, dimensionality of the output space (number of RBF neurons).
-            gamma (float or list/array): The gamma parameter of the Gaussian function, controlling the width.
-                                         Can be a scalar (same gamma for all neurons) or a tensor/array
-                                         of length `units` (individual gamma per neuron).
-            initial_centers (np.ndarray, optional): A NumPy array of shape (units, input_dim)
-                                                     for the initial centers. If None, they are
-                                                     initialized using a default initializer (RandomUniform).
-            learnable_centers (bool): Whether the centers should be trainable. Defaults to True.
-            learnable_gamma (bool): Whether gamma should be trainable. Defaults to True.
+    Arguments:
+        units (int): Positive integer, dimensionality of the output space (number of RBF neurons).
+        gamma (float or list/array): The gamma parameter of the Gaussian function, controlling the width.
+                                     Can be a scalar (same gamma for all neurons) or a tensor/array
+                                     of length `units` (individual gamma per neuron).
+        initial_centers (np.ndarray, optional): A NumPy array of shape (units, input_dim)
+                                                 for the initial centers. If None, they are
+                                                 initialized using a default initializer (RandomUniform).
+        learnable_centers (bool): Whether the centers should be trainable. Defaults to True.
+        learnable_gamma (bool): Whether gamma should be trainable. Defaults to True.
 
-        Input shape:
-            2D tensor with shape `(batch_size, input_dim)`.
+    Input shape:
+        2D tensor with shape `(batch_size, input_dim)`.
 
-        Output shape:
-            2D tensor with shape `(batch_size, units)`.
+    Output shape:
+        2D tensor with shape `(batch_size, units)`.
     """
 
-    def __init__(self, units, gamma=1.0, initial_centers=None,
-                 learnable_centers=True, learnable_gamma=True, **kwargs):
+    def __init__(self, units, gamma=1.0, initial_centers=None, learnable_centers=True, learnable_gamma=True, **kwargs):
         """
         Initializes the RBFLayer.
 
@@ -246,14 +248,14 @@ class RBFLayer(keras.Layer):
             centers_initializer = keras.initializers.Constant(self.initial_centers)
         else:
             # Default initializer for centers if none are provided (RandomUniform)
-            centers_initializer = keras.initializers.RandomUniform(minval=0., maxval=1.)
+            centers_initializer = keras.initializers.RandomUniform(minval=0.0, maxval=1.0)
 
         # Add centers as a trainable weight to the layer
         self.centers = self.add_weight(
-            name='centers',
+            name="centers",
             shape=(self.units, self.input_dim),
             initializer=centers_initializer,
-            trainable=self.learnable_centers
+            trainable=self.learnable_centers,
         )
 
         # Initialize gamma parameters (width of the Gaussian function)
@@ -271,10 +273,10 @@ class RBFLayer(keras.Layer):
 
         # Add log_gamma as a trainable weight
         self.log_gamma = self.add_weight(
-            name='log_gamma',
+            name="log_gamma",
             shape=(self.units,),
             initializer=keras.initializers.Constant(initial_log_gamma),
-            trainable=self.learnable_gamma
+            trainable=self.learnable_gamma,
         )
         super().build(input_shape)
 
@@ -304,7 +306,7 @@ class RBFLayer(keras.Layer):
         # Then, sum the squares along the input_dim axis (axis=2)
         distances_sq = keras.ops.sum(
             keras.ops.square(inputs_expanded - centers_expanded), axis=2
-        )   # Resulting shape: (batch_size, units)
+        )  # Resulting shape: (batch_size, units)
 
         # Apply the Gaussian RBF activation function: exp(-gamma * ||x - c||^2)
         # Retrieve gamma from log_gamma (shape: (units,))
@@ -329,15 +331,21 @@ class RBFLayer(keras.Layer):
 
     def get_config(self):
         config = super().get_config()
-        config.update({
-            "units": self.units,
-            # Store the original gamma value(s), not log_gamma, for easier interpretation
-            "gamma": np.exp(self.log_gamma.numpy()).tolist() if self.log_gamma is not None else self.gamma_init_value,
-            # Convert initial centers to list
-            "initial_centers": self.initial_centers.tolist() if isinstance(self.initial_centers, np.ndarray) else None,
-            "learnable_centers": self.learnable_centers,
-            "learnable_gamma": self.learnable_gamma
-        })
+        config.update(
+            {
+                "units": self.units,
+                # Store the original gamma value(s), not log_gamma, for easier interpretation
+                "gamma": np.exp(self.log_gamma.numpy()).tolist()
+                if self.log_gamma is not None
+                else self.gamma_init_value,
+                # Convert initial centers to list
+                "initial_centers": self.initial_centers.tolist()
+                if isinstance(self.initial_centers, np.ndarray)
+                else None,
+                "learnable_centers": self.learnable_centers,
+                "learnable_gamma": self.learnable_gamma,
+            }
+        )
         return config
 
     @classmethod
@@ -349,7 +357,7 @@ class RBFLayer(keras.Layer):
         return cls(**config)
 
 
-@keras.saving.register_keras_serializable(package='custom_layer', name='InputSliceLayer')
+@keras.saving.register_keras_serializable(package="custom_layer", name="InputSliceLayer")
 class InputSliceLayer(keras.Layer):
     """
     A simple layer to select specific features from the last axis.
@@ -374,9 +382,7 @@ class InputSliceLayer(keras.Layer):
 
     def get_config(self):
         config = super().get_config()
-        config.update({
-            "feature_indices": self.feature_indices
-        })
+        config.update({"feature_indices": self.feature_indices})
         return config
 
     @classmethod
@@ -395,7 +401,7 @@ class InputSliceLayer(keras.Layer):
         return tuple(output_shape)
 
 
-@keras.saving.register_keras_serializable(package='custom_layer', name='ConstantLayer')
+@keras.saving.register_keras_serializable(package="custom_layer", name="ConstantLayer")
 class ConstantLayer(keras.Layer):
     """
     A layer that returns a constant tensor, broadcasted to the batch size.
@@ -449,12 +455,14 @@ class ConstantLayer(keras.Layer):
 
     def get_config(self):
         config = super().get_config()
-        config.update({
-            "value": self.value,
-            "shape": self.target_shape,
-            # name of the weight (e.g. of a px.Param), kept after loading; configs without it load as before
-            "weight_name": self.weight_name,
-        })
+        config.update(
+            {
+                "value": self.value,
+                "shape": self.target_shape,
+                # name of the weight (e.g. of a px.Param), kept after loading; configs without it load as before
+                "weight_name": self.weight_name,
+            }
+        )
         return config
 
     @classmethod
@@ -462,7 +470,7 @@ class ConstantLayer(keras.Layer):
         return cls(**config)
 
 
-@keras.saving.register_keras_serializable(package='custom_layer', name='DivideLayer')
+@keras.saving.register_keras_serializable(package="custom_layer", name="DivideLayer")
 class DivideLayer(keras.Layer):
     """
     A layer that divides two layers.
@@ -486,7 +494,7 @@ class DivideLayer(keras.Layer):
         return cls(**config)
 
 
-@keras.saving.register_keras_serializable(package='custom_layer', name='PowerLayer')
+@keras.saving.register_keras_serializable(package="custom_layer", name="PowerLayer")
 class PowerLayer(keras.Layer):
     """
     A layer that computes the power of two layers.

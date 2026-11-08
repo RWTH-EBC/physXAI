@@ -126,7 +126,9 @@ def check_agentlib_compatibility(preprocessing: PreprocessingData | dict) -> Non
 def _warn_derived_inputs(config: dict, inputs: list[str]) -> None:
     """Inputs computed by the preprocessing are no variables of the MPC: AgentLib-MPC has to compute them itself."""
     derived = set(config.get("columns") or {})
-    computed = [name for name in inputs if split_lag(name)[0] in derived or CHANGE_PATTERN.fullmatch(split_lag(name)[0])]
+    computed = [
+        name for name in inputs if split_lag(name)[0] in derived or CHANGE_PATTERN.fullmatch(split_lag(name)[0])
+    ]
     if computed:
         logger.warning(
             "The inputs %s are computed by the preprocessing, AgentLib-MPC needs them as variables of the MPC model. "

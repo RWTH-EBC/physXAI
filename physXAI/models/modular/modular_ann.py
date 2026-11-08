@@ -106,8 +106,10 @@ class ModularANN(ANNModel):
             if self.physics is not None:
                 raise ValueError(f"solver='{solver}' cannot be combined with a physics residual, use solver='adam'.")
             if shape is not None and self.recursive_training is not None:
-                raise ValueError("Shape constraints cannot be combined with recursive_training: the training on the "
-                                 "multi step error (gradient descent) would not keep them.")
+                raise ValueError(
+                    "Shape constraints cannot be combined with recursive_training: the training on the "
+                    "multi step error (gradient descent) would not keep them."
+                )
 
     @property
     def required_inputs(self) -> list[str]:
@@ -148,8 +150,13 @@ class ModularANN(ANNModel):
     def warm_start_applies(self) -> bool:
         """Whether the training starts at the least squares solution (see `warm_start`)."""
         arch = self.architecture
-        return (self.warm_start and self.solver == "adam" and isinstance(arch, Linear) and arch.normalize
-                and any(not c.trainable for c in arch.inputs))
+        return (
+            self.warm_start
+            and self.solver == "adam"
+            and isinstance(arch, Linear)
+            and arch.normalize
+            and any(not c.trainable for c in arch.inputs)
+        )
 
     def _initialize_least_squares(self, model, td: TrainingDataGeneric):
         """Warm start: the Linear block starts at the least squares solution of its data only terms."""
@@ -166,14 +173,20 @@ class ModularANN(ANNModel):
             y = (y - nominal[0]) / nominal[1]
         data = [i for i, c in enumerate(arch.inputs) if not c.trainable]
         signs = arch._per_input(arch.monotonicities)
-        weights, bias = constrained_least_squares(features[:, data], y, bias=arch.bias,
-                                                  weight_signs=[signs[i] for i in data])
+        weights, bias = constrained_least_squares(
+            features[:, data], y, bias=arch.bias, weight_signs=[signs[i] for i in data]
+        )
         kernel = np.zeros(len(arch.inputs))
         kernel[data] = weights
-        dense.set_weights([kernel.reshape(-1, 1).astype(np.float32)]
-                          + ([np.array([bias], dtype=np.float32)] if arch.bias else []))
-        logger.info("Warm start: least squares solution of %d data only term(s), %d trainable term(s) start at 0 "
-                    "(%.2f s)", len(data), len(arch.inputs) - len(data), time.perf_counter() - start)
+        dense.set_weights(
+            [kernel.reshape(-1, 1).astype(np.float32)] + ([np.array([bias], dtype=np.float32)] if arch.bias else [])
+        )
+        logger.info(
+            "Warm start: least squares solution of %d data only term(s), %d trainable term(s) start at 0 (%.2f s)",
+            len(data),
+            len(arch.inputs) - len(data),
+            time.perf_counter() - start,
+        )
 
     def fit_model(self, model, td: TrainingDataGeneric):
         if self.solver == "adam":
@@ -195,8 +208,14 @@ class ModularANN(ANNModel):
             coef, *_ = np.linalg.lstsq(features, y, rcond=None)
             kernel, bias = coef[: len(arch.inputs)], coef[-1:]
         else:
-            result = fit_shape_constrained(list(arch.inputs), self._ctx.train_values, y, bias=arch.bias,
-                                           weight_signs=arch._per_input(arch.monotonicities), shape=self.shape)
+            result = fit_shape_constrained(
+                list(arch.inputs),
+                self._ctx.train_values,
+                y,
+                bias=arch.bias,
+                weight_signs=arch._per_input(arch.monotonicities),
+                shape=self.shape,
+            )
             kernel, bias = result.weights, np.array([result.bias])
             self._store_shape_result(result, td)
         dense = self._ctx.layers[id(arch)]
@@ -212,11 +231,23 @@ class ModularANN(ANNModel):
     def _store_shape_result(self, result: ShapeFitResult, td: TrainingDataGeneric):
         """Writes the diagnosis of the constrained fit into `td.physics['shape_constraints']` and the log."""
         td.physics = {**(td.physics or {}), "shape_constraints": result.get_config()}
-        logger.info("Constrained least squares: train RMSE %.4g (unconstrained %.4g), %d iteration(s), %.2f s",
-                    result.rmse_train, result.rmse_train_unconstrained, result.iterations, result.seconds)
+        logger.info(
+            "Constrained least squares: train RMSE %.4g (unconstrained %.4g), %d iteration(s), %.2f s",
+            result.rmse_train,
+            result.rmse_train_unconstrained,
+            result.iterations,
+            result.seconds,
+        )
         for c in result.constraints:
-            logger.info("  %s %s (%+d): %s, max violation %.2g, %d constraint points", c["type"], c["column"],
-                        c["sign"], c["certificate"], c["max_violation"], c["constraint_points"])
+            logger.info(
+                "  %s %s (%+d): %s, max violation %.2g, %d constraint points",
+                c["type"],
+                c["column"],
+                c["sign"],
+                c["certificate"],
+                c["max_violation"],
+                c["constraint_points"],
+            )
 
     def online_pipeline(self, td: TrainingDataGeneric, load_path: str, *args, **kwargs):
         if self.solver in CLOSED_FORM:
@@ -240,4 +271,3 @@ class ModularANN(ANNModel):
             }
         )
         return config
-

@@ -26,20 +26,27 @@ from physXAI.models import ModularANN
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 
 
-def train_model(base_path: str, folder_name: str, training_data_path: str, time_step: int,
-                output_name: str = 'reaTZon_y') -> str:
+def train_model(
+    base_path: str, folder_name: str, training_data_path: str, time_step: int, output_name: str = "reaTZon_y"
+) -> str:
     """Training script called by AgentLib-MPC: trains the model of the air temperature and returns its name."""
-    run = Run(base_path, folder_name, overwrite=True, log_level='warning')
+    run = Run(base_path, folder_name, overwrite=True, log_level="warning")
 
     # Physical terms inside the model: the MPC only provides the raw inputs
     v = px.Vars()
     T, T_amb, u_hp = v.reaTZon_y, v.weaSta_reaWeaTDryBul_y, v.oveHeaPumY_u
-    model = ModularANN(px.Linear([T - T_amb, u_hp, u_hp.lag(1), v.weaSta_reaWeaHDirNor_y,
-                                  px.MLP([u_hp, T_amb, T], n_neurons=8)], normalize=True),
-                       epochs=200, early_stopping_epochs=20)
+    model = ModularANN(
+        px.Linear(
+            [T - T_amb, u_hp, u_hp.lag(1), v.weaSta_reaWeaHDirNor_y, px.MLP([u_hp, T_amb, T], n_neurons=8)],
+            normalize=True,
+        ),
+        epochs=200,
+        early_stopping_epochs=20,
+    )
 
-    prep = PreprocessingSingleStep(output=px.Change('reaTZon_y'), time_step=time_step, time_index_col='time',
-                                   csv_delimiter=';')
+    prep = PreprocessingSingleStep(
+        output=px.Change("reaTZon_y"), time_step=time_step, time_index_col="time", csv_delimiter=";"
+    )
     td = prep.pipeline(training_data_path, model=model)
     model.pipeline(td)
 
@@ -47,17 +54,17 @@ def train_model(base_path: str, folder_name: str, training_data_path: str, time_
     return run.save_for_agentlib(output_name, prep, model, td)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ROOT = Path(__file__).resolve().parents[1]
-    DATA = ROOT / 'data' / 'bestest_hydronic_heat_pump' / 'pid_data.csv'
+    DATA = ROOT / "data" / "bestest_hydronic_heat_pump" / "pid_data.csv"
 
     # A configuration AgentLib-MPC cannot use: the recursive feature has to be the last input
     try:
-        check_agentlib_compatibility(PreprocessingSingleStep(inputs=['reaTZon_y', 'oveHeaPumY_u'],
-                                                             output='Change(reaTZon_y)'))
+        check_agentlib_compatibility(
+            PreprocessingSingleStep(inputs=["reaTZon_y", "oveHeaPumY_u"], output="Change(reaTZon_y)")
+        )
     except AgentLibCompatibilityError as error:
-        print('Not compatible with AgentLib-MPC:', error)
+        print("Not compatible with AgentLib-MPC:", error)
 
-    name = train_model(str(ROOT / 'results'), '13_agentlib_mpc', str(DATA), time_step=900)
-    print('Files for AgentLib-MPC:', *sorted(p.name for p in (ROOT / 'results' / '13_agentlib_mpc')
-                                              .glob(f'{name}*')))
+    name = train_model(str(ROOT / "results"), "13_agentlib_mpc", str(DATA), time_step=900)
+    print("Files for AgentLib-MPC:", *sorted(p.name for p in (ROOT / "results" / "13_agentlib_mpc").glob(f"{name}*")))

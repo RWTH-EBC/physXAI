@@ -162,16 +162,20 @@ def test_monotone_mlp_block_is_monotonic(td):
 
 @pytest.mark.parametrize(
     "model",
-    [CMNNModel(monotonies={"load": 1}, n_neurons=6, **FAST), RBFModel(n_neurons=6, **FAST),
-     LinANNModel(n_neurons=6, **FAST)],
+    [
+        CMNNModel(monotonies={"load": 1}, n_neurons=6, **FAST),
+        RBFModel(n_neurons=6, **FAST),
+        LinANNModel(n_neurons=6, **FAST),
+    ],
     ids=lambda m: m.__class__.__name__,
 )
 def test_saved_model_predicts_the_same(model, td, tmp_path):
     trained = model.pipeline(td, plot=False)
     model.save_model(trained, tmp_path / "model")
     loaded = model.load_model(tmp_path / "model.keras")
-    np.testing.assert_allclose(loaded.predict(td.X_test, verbose=0), trained.predict(td.X_test, verbose=0),
-                               rtol=1e-6, atol=1e-7)
+    np.testing.assert_allclose(
+        loaded.predict(td.X_test, verbose=0), trained.predict(td.X_test, verbose=0), rtol=1e-6, atol=1e-7
+    )
     # the results in td are those of the trained model (LinANN must not leave its linear regression in td)
     np.testing.assert_allclose(td.y_test_pred, trained.predict(td.X_test, verbose=0), rtol=1e-6, atol=1e-7)
 
@@ -274,8 +278,9 @@ def test_cmnn_without_monotonicities_is_not_convex(one_room_csv):
     from physXAI.models import CMNNModel
     from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 
-    td = PreprocessingSingleStep(inputs=["mDot", "load", "T"], output="Change(T)", random_state=0,
-                                 csv_delimiter=",").pipeline(one_room_csv)
+    td = PreprocessingSingleStep(
+        inputs=["mDot", "load", "T"], output="Change(T)", random_state=0, csv_delimiter=","
+    ).pipeline(one_room_csv)
     model = CMNNModel(n_neurons=12, epochs=1, random_seed=0).generate_model(td=td)
     activations = {type(layer.activation).__name__ for layer in model.layers if hasattr(layer, "activation")}
     assert {"ConcaveActivation", "SaturatedActivation"} <= activations
