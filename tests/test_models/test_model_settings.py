@@ -203,6 +203,47 @@ def test_cmnn_rejects_unknown_monotonicities(td):
         CMNNModel(monotonies={"mdot": 1}, **FAST).pipeline(td, plot=False, save_model=False)
 
 
+@pytest.mark.parametrize("model", [CMNNModel, lambda **kw: PINNModel(physics_targets={"pinn": 1.0}, **kw)])
+def test_monotone_networks_need_a_hidden_layer(model):
+    """Without a hidden layer, the non negative output weights would make the prediction increasing in all inputs."""
+    with pytest.raises(ValueError, match="hidden layer"):
+        model(n_layers=0, monotonies={"mDot": -1})
+    with pytest.raises(ValueError, match="hidden layer"):
+        px.MonotoneMLP([px.Var("mDot")], monotonicities={"mDot": -1}, n_layers=0)
+    from physXAI.models.ann.configs.ann_model_configs import CMNNModelConstruction_config
+
+    with pytest.raises(ValueError):
+        CMNNModelConstruction_config.model_validate({"n_layers": 0})
+
+
+def test_agentlib_export_needs_lags_from_lag_0(td):
+    """
+    AgentLib-MPC passes the values of a feature from lag 0 on: ['u', 'T_lag1'] would get T(k) instead of T(k-1).
+    The export rejects isolated lags, physXAI itself trains with them (e.g. a dead time).
+    """
+    from physXAI.io import AgentLibCompatibilityError, check_agentlib_compatibility
+
+    def config(inputs):
+        return {"__class_name__": "PreprocessingSingleStep", "inputs": inputs, "output": ["Change(T)"], "shift": 1}
+
+    for inputs, missing in ((["mDot", "T_lag1"], "['T']"), (["mDot_lag2", "T"], "['mDot', 'mDot_lag1']")):
+        with pytest.raises(AgentLibCompatibilityError, match="lag 0 on") as error:
+            check_agentlib_compatibility(config(inputs))
+        assert missing in str(error.value)
+    check_agentlib_compatibility(config(["mDot", "mDot_lag1", "T", "T_lag1"]))
+
+    # physXAI: isolated lags are fine
+    v = px.Vars()
+    model = ModularANN(px.Linear([v.mDot.lag(1), v.load, v.T]), solver="ols")
+    prep = PreprocessingSingleStep(output="Change(T)", csv_delimiter=",", random_state=0, eval_horizon=12)
+    data = prep.pipeline(td.file_path, model=model)
+    assert prep.inputs == ["mDot_lag1", "load", "T"]
+    model.pipeline(data, plot=False, save_model=False)
+    assert data.horizon_metrics is not None
+    with pytest.raises(AgentLibCompatibilityError, match="lag 0 on"):
+        check_agentlib_compatibility(prep)
+
+
 def test_cmnn_keeps_one_neuron_per_activation_part(td):
     model = CMNNModel(monotonies={"mDot": 1}, n_neurons=2, **FAST).pipeline(td, plot=False, save_model=False)
     units = [layer.units for layer in model.layers if hasattr(layer, "units")]

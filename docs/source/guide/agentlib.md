@@ -33,6 +33,9 @@ AgentLib-MPC reads the inputs and the output from their names:
 - `X_lagN` is the value of `X` N steps in the past,
 - lags of a feature are consecutive and ascending, the recursive feature and its lags are the last inputs
   (inputs taken from the model are ordered like that automatically),
+- the lags of a feature start at the feature itself: `['u', 'u_lag1', 'T']`, not `['u_lag1', 'T']`. AgentLib-MPC
+  passes the values of a feature from lag 0 on and would otherwise feed the wrong time steps. physXAI itself allows
+  isolated lags (e.g. a dead time), only the export needs the complete group,
 - single step models have exactly one output and `shift=1` (AgentLib-MPC evaluates an output over the interval
   `[t, t+1)` of the inputs),
 - inputs are variables of the MPC: inputs computed by the preprocessing (`columns`, `transform`) have to be

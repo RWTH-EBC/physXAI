@@ -316,6 +316,22 @@ def test_warm_start_keeps_sign_bounds(csv):
     assert kernel[3] == 0  # the MLP starts at 0
 
 
+def test_online_training_does_not_warm_start(csv, tmp_path, monkeypatch):
+    """Regression: online_pipeline failed with the warm start (no build context) and would overwrite the weights."""
+    model = _hybrid()
+    td = PreprocessingSingleStep(output="P", random_state=0).pipeline(csv, model=model)
+    model.pipeline(td, plot=False, save_path=str(tmp_path / "m"))
+
+    def no_warm_start(*args, **kwargs):
+        raise AssertionError("a loaded model must not be warm started")
+
+    for online in (model, _hybrid()):  # the same object after its pipeline and a new one
+        monkeypatch.setattr(online, "_initialize_least_squares", no_warm_start)
+        td_online = PreprocessingSingleStep(output="P", random_state=1).pipeline(csv, model=online)
+        trained = online.online_pipeline(td_online, str(tmp_path / "m.keras"), plot=False, save_model=False)
+        assert trained is online.trained_model and td_online.metrics.kpi("test") is not None
+
+
 def test_warm_start_applies_only_to_normalized_linear_blocks():
     assert not ModularANN(px.Linear([v.u, px.MLP([v.u])])).warm_start_applies  # not normalized
     assert not ModularANN(px.MLP([v.u, v.T])).warm_start_applies

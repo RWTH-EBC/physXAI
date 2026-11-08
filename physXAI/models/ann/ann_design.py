@@ -31,6 +31,7 @@ from physXAI.models.ann.model_construction.rnn_models import (
     build_sequence_model,
     build_step_model,
     find_step_model,
+    pcnn_initial_values,
     pcnn_parameters,
     sequence_inputs,
 )
@@ -56,6 +57,15 @@ if TYPE_CHECKING:  # pragma: no cover
     from physXAI.training import RecursiveTraining
 
 logger = logging.getLogger("physXAI")
+
+
+def _check_monotone_layers(n_layers: int, model) -> None:
+    """
+    Monotone networks (CMNN, PINN) need a hidden layer: without one, only the non negative weights of the output
+    layer remain, which would make the prediction increasing in every input (also with monotonicity -1 or 0).
+    """
+    if n_layers < 1:
+        raise ValueError(f"{model.__class__.__name__} needs at least one hidden layer (n_layers >= 1).")
 
 
 class ANNModel(SingleStepModel, ABC):
@@ -512,6 +522,7 @@ class CMNNModel(ANNModel):
             random_seed (int, optional): Seed of the weights and the batch order, defaults to the global seed.
         """
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
+        _check_monotone_layers(n_layers, self)
         self.n_layers: int = n_layers
         self.n_neurons: int | list[int] = n_neurons
         self.activation_function: str | list[str] = activation_function
@@ -615,6 +626,7 @@ class PINNModel(ANNModel):
                              "CMNNModel(physics=...).")
         if early_stopping_on not in ('data', 'total'):
             raise ValueError("early_stopping_on has to be 'data' or 'total'.")
+        _check_monotone_layers(n_layers, self)
         self.physics_targets: dict[str, float] = {str(k): float(w) for k, w in physics_targets.items()}
         self.n_layers: int = n_layers
         self.n_neurons: int | list[int] = n_neurons
@@ -1098,14 +1110,22 @@ class PCNNModel(RNNModel):
         return self._training_model(step_model, td)
 
     def evaluate(self, model, td: TrainingDataMultiStep):
-        """Evaluates the model like an RNN and stores the trained physical parameters in `td.physics`."""
+        """
+        Evaluates the model like an RNN and stores the trained physical parameters and the initial rates the model was
+        built with in `td.physics` (both read from the model, also for a loaded model trained further on other data).
+        """
         MultiStepModel.evaluate(model, td)
-        td.physics = {"parameters": self.physics_parameters(model, td), "initial_rates": self.initial_rates(td)}
+        terms = self._terms(td)
+        hours = td.time_step / 3600.0
+        initial = {td.inputs[term.input]: value / hours
+                   for term, value in zip(terms, pcnn_initial_values(find_step_model(model)), strict=True)}
+        td.physics = {"parameters": self.physics_parameters(model, td), "initial_rates": initial}
 
     def physics_parameters(self, model, td: TrainingDataMultiStep) -> dict:
         """
         Trained parameters of the energy accumulator per hour (heating and cooling rates in K/h per unit of
         the input, loss rates in 1/h) and the check of the physical consistency 1 - sum(loss rates per step) > 0.
+        The parameters are read from the model: trained factor times the initial value built into it.
         """
         terms = self._terms(td)
         per_step = pcnn_parameters(find_step_model(model), terms)

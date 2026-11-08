@@ -220,10 +220,31 @@ def build_pcnn_step_model(config: dict, td, terms: list[PCNNTerm], name: str = S
     return keras.Model([sequence, energy_state, *states], [prediction, new_energy_state, *new_states], name=name)
 
 
-def pcnn_parameters(step_model: keras.Model, terms: list[PCNNTerm]) -> list[float]:
-    """Trained parameters of the energy accumulator per time step, in the order of `terms`."""
+def pcnn_initial_values(step_model: keras.Model) -> list[float]:
+    """
+    Initial values of the parameters of the energy accumulator per time step, as built into the model (the constants
+    `constant_pcnn_scale_<j>`). They are read from the model, since the initial rates of a loaded model may have been
+    estimated from other data than the current one.
+    """
+    n_terms = int(step_model.get_layer(PCNN_PHYSICS_LAYER).get_weights()[0].shape[0])
+    return [abs(float(np.ravel(step_model.get_layer(f"constant_pcnn_scale_{j}").get_weights()[0])[0]))
+            for j in range(n_terms)]
+
+
+def pcnn_parameters(step_model: keras.Model, terms: list[PCNNTerm] | None = None) -> list[float]:
+    """
+    Trained parameters of the energy accumulator per time step: the trained factor times the initial value built into
+    the model, in the order of the terms of the model.
+
+    Args:
+        step_model: The PCNN step model.
+        terms: Optional terms of the model, only to check their number.
+    """
     weights = step_model.get_layer(PCNN_PHYSICS_LAYER).get_weights()[0][:, 0]
-    return [float(w * term.initial) for w, term in zip(weights, terms, strict=True)]
+    initial = pcnn_initial_values(step_model)
+    if terms is not None and len(terms) != len(weights):
+        raise ValueError(f"The PCNN holds {len(weights)} terms, the model settings define {len(terms)}.")
+    return [float(w * s) for w, s in zip(weights, initial, strict=True)]
 
 
 def state_sizes(step_model: keras.Model) -> list[int]:

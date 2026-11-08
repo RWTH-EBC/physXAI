@@ -141,7 +141,14 @@ def _warn_derived_inputs(config: dict, inputs: list[str]) -> None:
 
 
 def _check_lag_order(inputs: list[str], recursive_feature: str) -> list[str]:
-    """Lags of a feature have to be consecutive, ascending and the recursive feature has to be last."""
+    """
+    Lags of a feature have to start at the feature itself (lag 0), be consecutive and ascending, and the recursive
+    feature has to be last.
+
+    AgentLib-MPC only counts the inputs of a feature and passes its values from lag 0 on: for the inputs
+    ['u', 'T_lag1'] it would pass T(k) instead of T(k-1), without an error. AgentLib-MPC does not check this itself,
+    so this rule is stricter than its parser. physXAI itself allows isolated lags (e.g. a dead time 'u_lag3').
+    """
     errors = list()
     groups: dict[str, list[tuple[int, int]]] = defaultdict(list)
     for index, name in enumerate(inputs):
@@ -149,6 +156,13 @@ def _check_lag_order(inputs: list[str], recursive_feature: str) -> list[str]:
         groups[base].append((index, lag))
 
     for base, items in groups.items():
+        first = min(lag for _, lag in items)
+        if first != 0:
+            missing = [base] + [f"{base}_lag{k}" for k in range(1, first)]
+            errors.append(
+                f"The inputs of '{base}' start at lag {first}: AgentLib-MPC passes the values of '{base}' from lag 0 on, "
+                f"add {missing} as inputs."
+            )
         for (i0, lag0), (i1, lag1) in zip(items, items[1:], strict=False):
             if i1 != i0 + 1:
                 errors.append(

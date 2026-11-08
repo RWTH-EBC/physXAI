@@ -51,6 +51,9 @@ class RBFConstruction_config(ClassicalANNConstruction_config):
 class CMNNModelConstruction_config(ClassicalANNConstruction_config):
     """Settings of a CMNN: monotonicities per input and the shares of convex, concave and saturated neurons."""
 
+    # without a hidden layer only the non negative weights of the output layer remain, which would make the
+    # prediction increasing in every input (also in inputs with monotonicity -1 or 0)
+    n_layers: int = Field(..., ge=1)
     monotonicities: dict[str, int] | None = None
     activation_split: list[float] | None = [1, 1, 1]
 

@@ -236,6 +236,10 @@ class MonotoneMLP(Block):
         super().__init__(inputs, name, normalize, nominal_range)
         self.monotonicities = dict(monotonicities or {})
         self._per_input(self.monotonicities)
+        if n_layers < 1:
+            # without a hidden layer only the non negative weights of the output layer remain: the prediction would
+            # be increasing in every input
+            raise ValueError("MonotoneMLP needs at least one hidden layer (n_layers >= 1).")
         self.n_layers = n_layers
         self.n_neurons = _per_layer(n_neurons, n_layers, "n_neurons")
         self.activation = _per_layer(activation, n_layers, "activation")

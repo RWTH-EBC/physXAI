@@ -112,6 +112,38 @@ def test_parameters_and_config(data, tmp_path):
     assert json.loads(files["training_data"].read_text())["physics"]["parameters"]["heating"]["load"] > 0
 
 
+def test_parameters_are_read_from_the_model_after_online_training(csv, data, tmp_path):
+    """
+    Regression: after online_pipeline on other data, the parameters were reported with the initial rates estimated
+    from the new data instead of the initial rates built into the loaded model.
+    """
+    _, td = data
+    m, _ = _train(td, heating={"load": None}, losses={"T_in": None})
+    m.save_model(m.trained_model, str(tmp_path / "pcnn"))
+    initial = dict(td.physics["initial_rates"])
+
+    # other data: a third of the load gives the same temperatures, so the heating rate estimated from them triples
+    other = simulate_one_room(n_steps=1200)
+    other["load"] = other["load"] / 3
+    other.to_csv(tmp_path / "other.csv", sep=";")
+    td_other = PreprocessingMultiStep(inputs=INPUTS, output=px.Change("T"), label_width=LABEL, warmup_width=WARMUP,
+                                      random_state=0).pipeline(str(tmp_path / "other.csv"))
+    online = PCNNModel(heating={"load": None}, losses={"T_in": None}, rnn_units=4, epochs=1, early_stopping_epochs=None)
+    assert online.initial_rates(td_other)["load"] == pytest.approx(3 * initial["load"], rel=0.1)
+    model = online.online_pipeline(td_other, str(tmp_path / "pcnn.keras"), plot=False, save_model=False)
+
+    from physXAI.models.ann.model_construction.rnn_models import PCNN_PHYSICS_LAYER, find_step_model
+
+    step = find_step_model(model)
+    factors = step.get_layer(PCNN_PHYSICS_LAYER).get_weights()[0][:, 0]
+    hours = td_other.time_step / 3600
+    assert td_other.physics["initial_rates"] == pytest.approx(initial, rel=1e-5)  # those of the loaded model
+    parameters = td_other.physics["parameters"]
+    assert parameters["heating"]["load"] == pytest.approx(factors[0] * initial["load"], rel=1e-5)
+    assert parameters["losses"]["T_in"] == pytest.approx(factors[1] * initial["T_in"], rel=1e-5)
+    assert parameters["consistency_margin"] == pytest.approx(1 - factors[1] * initial["T_in"] * hours, rel=1e-5)
+
+
 def test_invalid_configurations(csv, data):
     _, td = data
     with pytest.raises(ValueError, match="at least one term"):

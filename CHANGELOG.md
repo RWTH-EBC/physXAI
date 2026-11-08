@@ -21,7 +21,9 @@ loads single step models only. The export is verified against that branch, but n
 - `physXAI.io.Run`: explicit output directory for a training run, replaces the global `Logger`. The default
   directory of the runs is `results/` (before `stored_data/`).
 - `physXAI.io.save_for_agentlib` and `check_agentlib_compatibility`: write and validate the files
-  consumed by AgentLib-MPC.
+  consumed by AgentLib-MPC. The check is stricter than AgentLib-MPC for lags without the feature itself (e.g.
+  `['u', 'T_lag1']`): AgentLib-MPC accepts them, but passes the values from lag 0 on (T(k) instead of T(k-1)).
+  physXAI itself trains with such isolated lags.
 - Contract tests against AgentLib-MPC (`tests/contract`, optional extra `physXAI[agentlib]`).
 - `physXAI.set_seed`: one global seed for Python, NumPy and Keras, default `random_state` / `random_seed` of all
   objects (splits, weight initialization, batch order, k-means of RBF networks).
@@ -209,6 +211,8 @@ loads single step models only. The export is verified against that branch, but n
   inputs, which held its measured values over the horizon (data leakage); they are rejected now.
 - `CMNNModel` and `PINNModel` without monotonicities had convex neurons only, which with the non negative weights of
   the following layers made the prediction convex in all inputs. `activation_split` defaults to `[1, 1, 1]` now.
+- `CMNNModel` and `PINNModel` with `n_layers=0` only had the non negative weights of the output layer, so the
+  prediction was increasing in every input (also with monotonicity -1); they need `n_layers >= 1` now.
 - A constant training target gave an output rescaling with the scale 0 (a constant model); the scale is 1 then.
 - Single step networks shuffled with a buffer of 10000 samples: with more samples, ordered in
   time, a batch held neighbouring time steps only. The buffer holds all samples now.
