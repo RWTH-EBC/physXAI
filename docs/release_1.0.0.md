@@ -61,8 +61,8 @@ Every other branch gets its own preview after a push: `https://rwth-ebc.github.i
    v1.0.0 → Target: main*, release notes from `CHANGELOG.md`). Keep the **known limitation** at the top of the release
    notes: the export of `RNNModel` / `PCNNModel` needs AgentLib-MPC branch `143-feature-multistep-model-support`.
 2. The workflow **Version Check** runs on the tag: it compares the tag with `version = "1.0.0"` in `pyproject.toml`
-   and requires the entry `## [1.0.0]` in `CHANGELOG.md`. Before tagging, replace `unreleased` in that entry by the
-   release date in a commit on `main`.
+   and requires the entry `## [1.0.0]` in `CHANGELOG.md` with a release date (`YYYY-MM-DD`). Before tagging, replace
+   `unreleased` in that entry by the release date in a commit on `main`, else the check fails on the tag.
 3. PyPI is not used yet (`PYPI_RELEASE: false` in `ci.yml`).
 4. Later releases: update `constraints.txt` to the versions the release was tested with (the job `tested-versions`
    of `windows.yml` installs them on Linux and Windows).

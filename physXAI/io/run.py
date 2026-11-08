@@ -181,6 +181,20 @@ class Run:
         Returns:
             dict: The written files by kind ('preprocessing', 'model_config', 'training_data', 'model', 'plot').
         """
+        if model is not None and trained_model is None:
+            trained_model = getattr(model, "trained_model", None)
+        plot = plot and model is not None and getattr(training_data, "metrics", None) is not None
+        # check all files before writing any, so a run without overwrite is not left half written
+        targets = [
+            *([f"{name}_preprocessing.json"] if preprocessing is not None else []),
+            *([f"{name}_model.json"] if model is not None else []),
+            *([f"{name}_training_data.json"] if training_data is not None else []),
+            *([f"{name}.keras", f"{name}.joblib"] if model is not None and trained_model is not None else []),
+            *([f"{name}.html"] if plot else []),
+        ]
+        for target in targets:
+            self.file(target)  # raises if the file exists and the run does not overwrite
+
         files: dict[str, Path] = dict()
         version = self.version_info()
         if preprocessing is not None:
@@ -193,20 +207,15 @@ class Run:
             files["training_data"] = self.save_json(
                 f"{name}_training_data.json", {**training_data.get_config(), **version}
             )
-        if model is not None:
-            if trained_model is None:
-                trained_model = getattr(model, "trained_model", None)
-            if trained_model is not None:
-                for suffix in (".keras", ".joblib"):
-                    self.file(name + suffix)  # raises if the model exists and the run does not overwrite
-                model.save_model(trained_model, str(self.path / name))
-                saved = [self.path / (name + s) for s in (".keras", ".joblib") if (self.path / (name + s)).exists()]
-                if saved:
-                    files["model"] = saved[0]
-            if plot and training_data is not None and getattr(training_data, "metrics", None) is not None:
-                from physXAI.plotting.plotting import save_figure
+        if model is not None and trained_model is not None:
+            model.save_model(trained_model, str(self.path / name))
+            saved = [self.path / (name + s) for s in (".keras", ".joblib") if (self.path / (name + s)).exists()]
+            if saved:
+                files["model"] = saved[0]
+        if plot:
+            from physXAI.plotting.plotting import save_figure
 
-                files["plot"] = save_figure(model.plot(training_data), self.file(f"{name}.html"))
+            files["plot"] = save_figure(model.plot(training_data), self.file(f"{name}.html"))
         logger.info("Saved '%s' in %s", name, self.path)
         return files
 
