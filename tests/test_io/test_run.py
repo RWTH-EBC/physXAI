@@ -112,5 +112,12 @@ def test_save(tmp_path, one_room_csv):
     assert isinstance(loaded, LinearRegressionModel)
     with pytest.raises(FileExistsError):
         run.save("lr", prep, m, td)
+    # an existing model file stops the save before any config is written
+    partial = Run(tmp_path, "partial")
+    (partial.path / "lr.joblib").write_bytes(b"old")
+    with pytest.raises(FileExistsError, match="lr.joblib"):
+        partial.save("lr", prep, m, td)
+    assert sorted(p.name for p in partial.path.iterdir()) == ["lr.joblib"]
+    assert (partial.path / "lr.joblib").read_bytes() == b"old"
     # only configs, without a trained model
     assert set(Run(tmp_path, "configs").save("x", prep, LinearRegressionModel())) == {"preprocessing", "model_config"}

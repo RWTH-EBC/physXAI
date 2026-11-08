@@ -102,6 +102,38 @@ def test_config_roundtrip_reproduces_the_split(frame, tmp_path):
     assert td.eval_horizon == td2.eval_horizon == 24
 
 
+def test_lags_of_model_inputs_survive_the_config(frame, tmp_path):
+    """Lags of inputs taken from the model are kept in the config until the inputs are resolved (repeat_training)."""
+    from physXAI import expr as px
+    from physXAI.models import ModularANN
+
+    v = px.Vars()
+    model = ModularANN(px.Linear([v.mDot, v.T]), solver="ols")
+    prep = PreprocessingSingleStep(output="Change(T)", lags={"T": 2}, random_state=0)
+    restored = PreprocessingData.from_config(json.loads(json.dumps(prep.get_config())))
+    assert restored.get_config()["lags"] == {"T": 2}
+
+    path = _csv(frame, tmp_path)
+    prep.pipeline(path, model=model)
+    restored.pipeline(path, model=model)
+    assert restored.inputs == prep.inputs == ["mDot", "T", "T_lag1", "T_lag2"]
+    # once resolved, the lags are part of the inputs
+    config = prep.get_config()
+    assert config["lags"] is None
+    assert PreprocessingData.from_config(config).inputs == prep.inputs
+
+
+def test_steps_given_as_numbers():
+    from physXAI.preprocessing.preprocessing import _resolve_steps
+
+    assert _resolve_steps(96, 900.0) == 96
+    assert _resolve_steps(96.0, 900.0) == 96  # not 96 ns
+    assert _resolve_steps(np.float64(4.0), 900.0) == 4
+    assert _resolve_steps("1h", 900.0) == 4
+    with pytest.raises(ValueError, match="whole"):
+        _resolve_steps(2.5, 900.0)
+
+
 def test_global_seed():
     physXAI.set_seed(5)
     try:

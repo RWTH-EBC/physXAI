@@ -292,7 +292,8 @@ class PreprocessingData(ABC):
         if output is None:
             raise ValueError("An output is required.")
         self.inputs: list[str] | None = expand_lags(list(inputs), lags) if inputs is not None else None
-        self._lags = lags if inputs is None else None
+        # lags of inputs taken from the model, expanded in `resolve_inputs` (until then part of the config)
+        self._lags: dict[str, int] | None = dict(lags) if inputs is None and lags else None
         self.output: list[str] = [output] if isinstance(output, str) else list(output)
         from physXAI.expr import from_config as expr_from_config
 
@@ -528,6 +529,7 @@ class PreprocessingData(ABC):
             if required is None:
                 raise ValueError("No inputs given: pass inputs or a model with an expression graph to pipeline().")
             self.inputs = order_inputs(expand_lags(required, self._lags), self.output)
+            self._lags = None  # part of the inputs now
         elif required is not None:
             missing = [name for name in required if name not in self.inputs]
             if missing:
@@ -560,6 +562,8 @@ class PreprocessingData(ABC):
         return {
             "__class_name__": self.__class__.__name__,
             "inputs": self.inputs,
+            # only set while the inputs are not resolved yet (taken from the model), else the lags are part of inputs
+            "lags": self._lags,
             "output": self.output,
             "columns": {name: expr_to_config(e) for name, e in self.columns.items()} or None,
             "shift": self.shift,
@@ -615,9 +619,16 @@ def _is_multiple(value: float, base: float) -> bool:
 
 
 def _resolve_steps(value: int | str | None, time_step: float) -> int | None:
-    """Converts a number of steps or a time delta string ('24h') into steps."""
+    """
+    Converts a number of steps or a time delta string ('24h') into steps. Whole floats (e.g. 96.0) are steps as well,
+    other numbers raise a `ValueError` (pandas would read a number as nanoseconds).
+    """
     if value is None or isinstance(value, (int, np.integer)):
         return value
+    if isinstance(value, (float, np.floating)):
+        if not float(value).is_integer():
+            raise ValueError(f"A number of steps has to be whole, got {value}. Use a time delta string, e.g. '90min'.")
+        return int(value)
     return int(round(pd.Timedelta(value).total_seconds() / time_step))
 
 
