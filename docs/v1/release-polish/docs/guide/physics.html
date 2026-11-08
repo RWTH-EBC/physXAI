@@ -1,0 +1,276 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Physics-informed models &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/autodoc_pydantic.css" />
+
+  
+      <script src="../_static/jquery.js"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+      <script src="../_static/doctools.js"></script>
+      <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Evaluation, comparison and feature selection" href="evaluation.html" />
+    <link rel="prev" title="Recurrent models" href="rnn.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rnn.html">Recurrent models</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Physics-informed models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pinn-physics-targets">PINN: physics targets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#physics-residuals-with-trainable-parameters">Physics residuals with trainable parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#physically-consistent-neural-network-pcnn">Physically consistent neural network (PCNN)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Physics-informed models</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="physics-informed-models">
+<h1>Physics-informed models<a class="headerlink" href="#physics-informed-models" title="Permalink to this heading"></a></h1>
+<p>physXAI offers five ways to bring physical knowledge into a model. They differ in where the physics acts and
+what it guarantees:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Approach</p></th>
+<th class="head"><p>Physics</p></th>
+<th class="head"><p>Guarantee</p></th>
+<th class="head"><p>Exported model</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Structure (<a class="reference internal" href="expressions.html"><span class="std std-doc">expressions</span></a>)</p></td>
+<td><p>inside the model, e.g. <code class="docutils literal notranslate"><span class="pre">px.Linear(monotonicities=...)</span></code></p></td>
+<td><p>by construction</p></td>
+<td><p>the model including the physics</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="models.html#constrained-regression"><span class="std std-ref">Constrained regression</span></a></p></td>
+<td><p>monotonicity / convexity in raw columns of a linear regression on physical terms</p></td>
+<td><p>on the domain (box or data), with certificate</p></td>
+<td><p>the model</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pinn-physics-targets">PINN</a></p></td>
+<td><p>data column of a physical model with fixed parameters, in the loss</p></td>
+<td><p>none (soft)</p></td>
+<td><p>the network</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#physics-residuals-with-trainable-parameters">Physics residual</a></p></td>
+<td><p>residual with trainable physical parameters, in the loss</p></td>
+<td><p>none (soft)</p></td>
+<td><p>the network</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#physically-consistent-neural-network-pcnn">PCNN</a></p></td>
+<td><p>linear energy balance in parallel to a recurrent network</p></td>
+<td><p>sign of the effects of controls and temperatures over the whole horizon</p></td>
+<td><p>step model (multi step)</p></td>
+</tr>
+</tbody>
+</table>
+<section id="pinn-physics-targets">
+<h2>PINN: physics targets<a class="headerlink" href="#pinn-physics-targets" title="Permalink to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">v</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Vars</span><span class="p">()</span>
+<span class="n">physics</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">u_hp</span> <span class="o">*</span> <span class="mi">10000</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">T_room</span> <span class="o">+</span> <span class="mi">15</span> <span class="o">-</span> <span class="n">v</span><span class="o">.</span><span class="n">T_amb</span><span class="p">)</span> <span class="o">/</span> <span class="p">((</span><span class="n">v</span><span class="o">.</span><span class="n">T_room</span> <span class="o">+</span> <span class="mi">15</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.55</span><span class="p">)</span>
+<span class="n">prep</span> <span class="o">=</span> <span class="n">PreprocessingSingleStep</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="n">output</span><span class="o">=</span><span class="s1">'P_el'</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'pinn'</span><span class="p">:</span> <span class="n">physics</span><span class="p">})</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">PINNModel</span><span class="p">(</span><span class="n">physics_targets</span><span class="o">=</span><span class="p">{</span><span class="s1">'pinn'</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">})</span>
+<span class="n">td</span> <span class="o">=</span> <span class="n">prep</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The loss is <code class="docutils literal notranslate"><span class="pre">mse(ŷ,</span> <span class="pre">y)/s</span> <span class="pre">+</span> <span class="pre">Σ</span> <span class="pre">w_i</span> <span class="pre">·</span> <span class="pre">mse(ŷ,</span> <span class="pre">p_i)/s</span></code> with <code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">=</span> <span class="pre">var(y_train)</span></code>, see <a class="reference internal" href="models.html"><span class="std std-doc">Models</span></a>. Physics
+targets are taken at the predicted time; for a step model of <code class="docutils literal notranslate"><span class="pre">Change(T)</span></code>, shift the column by one step
+(<code class="docutils literal notranslate"><span class="pre">columns={'dT':</span> <span class="pre">step.lag(1)}</span></code>).</p>
+</section>
+<section id="physics-residuals-with-trainable-parameters">
+<h2>Physics residuals with trainable parameters<a class="headerlink" href="#physics-residuals-with-trainable-parameters" title="Permalink to this heading"></a></h2>
+<p>A residual <code class="docutils literal notranslate"><span class="pre">r(x,</span> <span class="pre">y;</span> <span class="pre">θ)</span></code> that should be zero, written with <code class="docutils literal notranslate"><span class="pre">px.Prediction()</span></code> (the output of the model) and
+trainable parameters, can be added to every single step keras model:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.pinn.physics</span><span class="w"> </span><span class="kn">import</span> <span class="n">PhysicsResidual</span>
+
+<span class="n">dt</span> <span class="o">=</span> <span class="mf">900.0</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Vars</span><span class="p">()</span>
+<span class="n">tau</span><span class="p">,</span> <span class="n">K_u</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">positive</span><span class="p">(</span><span class="mi">20</span> <span class="o">*</span> <span class="mf">3600.0</span><span class="p">,</span> <span class="s1">'tau'</span><span class="p">),</span> <span class="n">px</span><span class="o">.</span><span class="n">positive</span><span class="p">(</span><span class="mf">20.0</span><span class="p">,</span> <span class="s1">'K_u'</span><span class="p">)</span>
+<span class="n">K_0</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'K_0'</span><span class="p">)</span>
+<span class="n">dT</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">px</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">dt</span> <span class="o">/</span> <span class="n">tau</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">T_amb</span> <span class="o">+</span> <span class="n">K_u</span> <span class="o">*</span> <span class="n">v</span><span class="o">.</span><span class="n">u_hp</span> <span class="o">+</span> <span class="n">K_0</span> <span class="o">-</span> <span class="n">v</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>       <span class="c1"># 1R1C, exact zero order hold</span>
+
+<span class="n">m</span> <span class="o">=</span> <span class="n">ClassicalANNModel</span><span class="p">(</span><span class="n">physics</span><span class="o">=</span><span class="n">PhysicsResidual</span><span class="p">(</span><span class="n">px</span><span class="o">.</span><span class="n">Prediction</span><span class="p">()</span> <span class="o">-</span> <span class="n">dT</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'rc'</span><span class="p">),</span>
+                      <span class="n">physics_fit</span><span class="o">=</span><span class="s1">'calibrate'</span><span class="p">)</span>
+<span class="n">td</span> <span class="o">=</span> <span class="n">prep</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>   <span class="c1"># the columns of the residual become loss columns</span>
+<span class="n">m</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">physics_parameters</span>                <span class="c1"># {'tau': ..., 'K_u': ..., 'K_0': ..., 'log_tau': ..., ...}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">px.positive(value,</span> <span class="pre">name)</span></code> is <code class="docutils literal notranslate"><span class="pre">value</span> <span class="pre">·</span> <span class="pre">exp(p)</span></code> with a trainable <code class="docutils literal notranslate"><span class="pre">p</span> <span class="pre">=</span> <span class="pre">0</span></code>: positive, scaled by the physical
+initial value, changed relatively by the training. <code class="docutils literal notranslate"><span class="pre">px.Param</span></code> is a plain (signed) parameter.</p></li>
+<li><p>The residual is evaluated with the prediction (<code class="docutils literal notranslate"><span class="pre">r(x,</span> <span class="pre">ŷ)</span></code>, the physics term of the network) and with the
+measured target (<code class="docutils literal notranslate"><span class="pre">r(x,</span> <span class="pre">y)</span></code>, the fit of the physical model to the data), with shared parameters.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">physics_fit='calibrate'</span></code> (default): the parameters are first fitted to the data (grey-box identification),
+then fixed while the network is trained. When parameters are trained together with the network only through
+the physics term, they follow the network and lose their physical meaning. <code class="docutils literal notranslate"><span class="pre">'joint'</span></code> trains both together
+(including the fit term), <code class="docutils literal notranslate"><span class="pre">'fixed'</span></code> keeps the initial values.</p></li>
+<li><p>The calibration is a nonlinear least squares problem in the few parameters, <code class="docutils literal notranslate"><span class="pre">min</span> <span class="pre">Σ</span> <span class="pre">r(x,</span> <span class="pre">y;</span> <span class="pre">θ)²</span></code> on the training
+data. It is solved deterministically with a trust region method (<code class="docutils literal notranslate"><span class="pre">scipy.optimize.least_squares</span></code>) and the exact
+Jacobian of the residual (CasADi), independent of the seed, the batch order and a learning rate, and converged to
+the minimum (gradient descent with early stopping stops somewhere in the flat valley of correlated parameters, so
+its estimates depend on the seed). <code class="docutils literal notranslate"><span class="pre">td.physics['calibration_record']</span></code> holds the result of the solver. Residuals
+without CasADi form (e.g. a <code class="docutils literal notranslate"><span class="pre">px.Param</span></code> without initial value) are calibrated by gradient descent
+(<code class="docutils literal notranslate"><span class="pre">physics_learning_rate</span></code>).</p></li>
+<li><p>History: <code class="docutils literal notranslate"><span class="pre">data_loss</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;_loss</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;_fit_loss</span></code>; results in <code class="docutils literal notranslate"><span class="pre">td.physics</span></code> (parameters, fit per split,
+history of the calibration). Only parameters are trainable in residuals, no blocks.</p></li>
+<li><p>The variables of the residual are data columns at the time of the inputs; <code class="docutils literal notranslate"><span class="pre">px.Target(name)</span></code> is a column at the
+predicted time. They do not have to be inputs of the model (the MPC never sees them): only the network is
+saved and exported.</p></li>
+<li><p>Discretize physical models exactly over the time step (zero order hold), an explicit Euler step is inaccurate
+and unstable for time constants of the order of the time step. Only the time constant and steady state gains
+are identifiable from temperatures, not R and C separately. Data recorded under feedback control correlate the
+control with the temperatures, which correlates the estimates.</p></li>
+<li><p>With <code class="docutils literal notranslate"><span class="pre">RecursiveTraining</span></code>, the residual acts in the single step phase; the multi step phase uses the error of
+the recursive prediction.</p></li>
+</ul>
+<p>See <code class="docutils literal notranslate"><span class="pre">examples/09_physics_residual.py</span></code>.</p>
+</section>
+<section id="physically-consistent-neural-network-pcnn">
+<h2>Physically consistent neural network (PCNN)<a class="headerlink" href="#physically-consistent-neural-network-pcnn" title="Permalink to this heading"></a></h2>
+<p>Following Di Natale et al. (2022), <em>Physically Consistent Neural Networks for building thermal modeling: Theory
+and analysis</em>, Applied Energy 325, 119806, the temperature is the sum of an energy accumulator <code class="docutils literal notranslate"><span class="pre">E</span></code> and the unforced
+dynamics <code class="docutils literal notranslate"><span class="pre">D</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>E(k+1) = E(k) + Σ a·u_heating(k) − Σ d·u_cooling(k) + Σ b·(T_x(k) − T(k))
+D(k+1) = D(k) + f(D(k), x(k))          T = D + E
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">f</span></code> is a recurrent network on <code class="docutils literal notranslate"><span class="pre">D</span></code> and the remaining inputs <code class="docutils literal notranslate"><span class="pre">x</span></code> (e.g. solar radiation), which excludes the controls
+and the temperatures <code class="docutils literal notranslate"><span class="pre">T_x</span></code>. Because <code class="docutils literal notranslate"><span class="pre">D</span></code> does not depend on them,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>∂T(k+i)/∂u(k+i−j) = (1 − Σ b)^(j−1) · a &gt; 0
+</pre></div>
+</div>
+<p>for any network: the predicted temperature rises with heating and with <code class="docutils literal notranslate"><span class="pre">T_x</span></code> and falls with cooling over the
+whole horizon, also on unseen inputs. The parameters are positive by construction (<code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">=</span> <span class="pre">s₀</span> <span class="pre">·</span> <span class="pre">s̃</span></code>, <code class="docutils literal notranslate"><span class="pre">s̃</span> <span class="pre">≥</span> <span class="pre">0</span></code>,
+starting at 1), <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">−</span> <span class="pre">Σ</span> <span class="pre">b</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> is checked after the training (<code class="docutils literal notranslate"><span class="pre">consistency_margin</span></code>).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI</span><span class="w"> </span><span class="kn">import</span> <span class="n">expr</span> <span class="k">as</span> <span class="n">px</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PCNNModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreprocessingMultiStep</span>
+
+<span class="n">prep</span> <span class="o">=</span> <span class="n">PreprocessingMultiStep</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="s1">'oveHeaPumY_u'</span><span class="p">,</span> <span class="s1">'weaSta_reaWeaTDryBul_y'</span><span class="p">,</span> <span class="s1">'weaSta_reaWeaHDirNor_y'</span><span class="p">,</span> <span class="s1">'reaTZon_y'</span><span class="p">],</span>
+                              <span class="n">output</span><span class="o">=</span><span class="n">px</span><span class="o">.</span><span class="n">Change</span><span class="p">(</span><span class="s1">'reaTZon_y'</span><span class="p">),</span> <span class="n">warmup_width</span><span class="o">=</span><span class="s1">'3h'</span><span class="p">,</span> <span class="n">label_width</span><span class="o">=</span><span class="s1">'12h'</span><span class="p">,</span> <span class="n">eval_horizon</span><span class="o">=</span><span class="s1">'24h'</span><span class="p">,</span>
+                              <span class="n">time_index_col</span><span class="o">=</span><span class="s1">'time'</span><span class="p">)</span>   <span class="c1"># the time column of the BOPTEST data</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">PCNNModel</span><span class="p">(</span><span class="n">heating</span><span class="o">=</span><span class="p">{</span><span class="s1">'oveHeaPumY_u'</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">},</span>              <span class="c1"># +1 K in 2 h at full power: 0.5 K/h</span>
+              <span class="n">losses</span><span class="o">=</span><span class="p">{</span><span class="s1">'weaSta_reaWeaTDryBul_y'</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">},</span>    <span class="c1"># -1.5 K in 6 h at 25 K colder outside: 0.01 1/h</span>
+              <span class="n">rnn_layer</span><span class="o">=</span><span class="s1">'LSTM'</span><span class="p">,</span> <span class="n">rnn_units</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+<span class="n">td</span> <span class="o">=</span> <span class="n">prep</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+<span class="n">td</span><span class="o">.</span><span class="n">physics</span><span class="p">[</span><span class="s1">'parameters'</span><span class="p">]</span>        <span class="c1"># trained rates per hour and the consistency margin</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>The initial rates are given per hour (heating, cooling: K/h per unit of the input; losses: 1/h) and scaled to the
+time step: rules of thumb, or <code class="docutils literal notranslate"><span class="pre">None</span></code> to estimate them from the training data by nonnegative least squares of the
+single step energy balance <code class="docutils literal notranslate"><span class="pre">T(k+1)</span> <span class="pre">−</span> <span class="pre">T(k)</span> <span class="pre">=</span> <span class="pre">Σ</span> <span class="pre">a·u_heating</span> <span class="pre">−</span> <span class="pre">Σ</span> <span class="pre">d·u_cooling</span> <span class="pre">+</span> <span class="pre">Σ</span> <span class="pre">b·(T_x</span> <span class="pre">−</span> <span class="pre">T)</span> <span class="pre">+</span> <span class="pre">c</span></code> (the offset c
+belongs to D). <code class="docutils literal notranslate"><span class="pre">td.physics['initial_rates']</span></code> reports them. A rate of 0 would switch a term off for good, so a term without positive effect in the data starts at a
+weak rate (warning).</p></li>
+<li><p>T is an input and fed back (closed loop); the model warms up on the measured past, as in AgentLib-MPC, and is
+trained on the trajectory over <code class="docutils literal notranslate"><span class="pre">label_width</span></code>.</p></li>
+<li><p>The saved step model <code class="docutils literal notranslate"><span class="pre">[sequence,</span> <span class="pre">E,</span> <span class="pre">*states</span> <span class="pre">of</span> <span class="pre">f]</span> <span class="pre">→</span> <span class="pre">[ΔT,</span> <span class="pre">E,</span> <span class="pre">*states</span> <span class="pre">of</span> <span class="pre">f]</span></code> consists of layers AgentLib-MPC
+translates to CasADi; it is used like an RNN.</p></li>
+<li><p>Consistency only holds for the inputs of the physics module (paper, section 6.3), e.g. not for solar gains
+processed by <code class="docutils literal notranslate"><span class="pre">f</span></code>. Time features (time of day, month) have to be data columns.</p></li>
+</ul>
+<p>See <code class="docutils literal notranslate"><span class="pre">examples/10_pcnn.py</span></code>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="rnn.html" class="btn btn-neutral float-left" title="Recurrent models" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="evaluation.html" class="btn btn-neutral float-right" title="Evaluation, comparison and feature selection" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
