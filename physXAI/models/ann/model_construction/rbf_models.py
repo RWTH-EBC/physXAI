@@ -38,14 +38,12 @@ def gamma_init(centers, overlap=0.5) -> float:
     return gamma
 
 
-
 def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
     """
     Constructs a Radial Basis Function (RBF) Network model using Keras.
 
-    The first RBF layer's centers can be initialized using K-Means clustering
-    on the training data. Subsequent RBF layers (if any) will have their
-    centers initialized by the RBFLayer's default mechanism or as specified.
+    The network has one RBF layer. Its centers are the k-means centers of the (normalized) training data and stay
+    fixed, as does the width of the gaussians; only the output layer is trained.
 
     Args:
         config (dict): A dictionary containing the configuration parameters for the RBF network.
@@ -63,25 +61,18 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
 
     # Get config
     n_neurons = config['n_neurons']
-    # If n_neurons is a single integer, replicate it for all layers
+    # one RBF layer: a list holds its number of neurons as only element
     if isinstance(n_neurons, list):
         n_neurons = n_neurons[0]
-    if config['n_features'] is not None:
-        n_features = config['n_features']
-    else:
-        n_features = td.X_train_single.shape[1]
+    n_features = td.X_train_single.shape[1]
 
     # Add input layer
     input_layer = keras.layers.Input(shape=(n_features,))
     # Add normalization layer
-    if config['normalize']:
-        normalization = keras.layers.Normalization()
-        normalization.adapt(td.X_train_single)
-        x = normalization(input_layer)
-        training_data = normalization(td.X_train_single).numpy()
-    else:
-        x = input_layer
-        training_data = np.asarray(td.X_train_single)
+    normalization = keras.layers.Normalization()
+    normalization.adapt(td.X_train_single)
+    x = normalization(input_layer)
+    training_data = normalization(td.X_train_single).numpy()
 
     kmeans = KMeans(n_clusters=n_neurons, random_state=config['random_state'], n_init='auto')
     kmeans.fit(training_data)

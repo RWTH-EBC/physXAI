@@ -48,8 +48,8 @@ def LinResidualANNConstruction(config: dict, td: TrainingDataGeneric, lin_model:
     lin = keras.layers.Dense(1, activation='linear')
 
     # Add input layer
-    n_featues = td.X_train_single.shape[1]
-    inputs = keras.layers.Input(shape=(n_featues,))
+    n_features = td.X_train_single.shape[1]
+    inputs = keras.layers.Input(shape=(n_features,))
 
     # Construct rbf model
     rbf_model = RBFModelConstruction(config, td)

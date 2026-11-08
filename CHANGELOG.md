@@ -8,7 +8,9 @@ and has to match the git tag of a release.
 ## [1.0.0] – unreleased
 
 Major release, not backwards compatible except for the AgentLib-MPC integration
-(`agentlib_mpc.machine_learning_plugins.physXAI`). A migration guide is part of the documentation.
+(`agentlib_mpc.machine_learning_plugins.physXAI`). A migration guide is part of the documentation. The changes are
+listed relative to 0.3.0 and to the development branch `26-integrate-modular-anns` (modular models, constrained
+regression).
 
 **Known limitation:** the export of recurrent models (`RNNModel`, `PCNNModel`) needs AgentLib-MPC with support for
 recurrent models (branch `143-feature-multistep-model-support`), which is not released yet: AgentLib-MPC 1.1.1
@@ -31,9 +33,10 @@ loads single step models only. The export is verified against that branch, but n
 - Expression language `physXAI.expr` (replaces constructed features and modular expressions): variables
   (`px.Vars()`), parameters, arithmetic, activations and trainable blocks (`Linear`, `MLP`, `MonotoneMLP`,
   `Polynomial`, `RBF`, `Mean`, `Normalize`, `Pretrained`) in one graph, evaluated with NumPy, Keras or CasADi.
-- `ModularANN(architecture, solver='adam' | 'ols')`: the whole graph is part of the keras model, the MPC only
-  needs raw inputs. `solver='ols'` solves linear regressions on expressions in closed form.
-- Constrained regression: `ModularANN(px.Linear(terms), solver='qp', shape=ShapeConstraints(...))` fits a linear
+- `ModularANN(architecture, solver='adam' | 'ols')` on `physXAI.expr` graphs: the whole graph is part of the keras
+  model, the MPC only needs raw inputs. `solver='ols'` solves linear regressions on expressions in closed form.
+- Constrained regression (replaces `ConstrainedRegression` of branch 26, an NLP over all samples with IPOPT):
+  `ModularANN(px.Linear(terms), solver='qp', shape=ShapeConstraints(...))` fits a linear
   regression on expressions whose prediction is monotonic or convex in raw data columns, guaranteed on a domain (the
   box of the data or `bounds`) by an exchange method for the semi-infinite program, with a certificate per
   constraint (`exact`, `verified`, `data`, `violated`), the cost of the constraints and a report table. Solved as QP
@@ -41,16 +44,12 @@ loads single step models only. The export is verified against that branch, but n
   with `solver='qp'`.
 - Warm start of `ModularANN` (`warm_start=True`): with a normalized `Linear` block as architecture, the gradient
   based training starts at the least squares solution of its data only terms, trainable terms (e.g. `px.MLP`) start
-  with weight 0. Without it, single seeds of the hybrid architectures diverged.
-- Physics residuals: the calibration (`physics_fit='calibrate'`) is a deterministic least squares fit
-  (`scipy.optimize.least_squares` with the CasADi Jacobian) instead of gradient descent; the parameters no longer
-  depend on the seed and reach the minimum of the calibration problem. `px.Param` and `px.Prediction` have a
-  CasADi form.
-- `PCNNModel`: initial rates given as `None` are estimated from the training data by nonnegative least squares of
-  the single step energy balance (reported in `td.physics['initial_rates']`); example 10 uses them.
+  with weight 0, so the training does not depend on a bad initialization.
 - Inputs of the preprocessing can be derived from the model: `prep.pipeline(path, model=model)`, ordered as
   AgentLib-MPC expects them (recursive feature and its lags last, missing intermediate lags added).
 - `columns={'name': expression}` in the preprocessing for derived data columns (e.g. PINN targets).
+- `loss_columns` in the preprocessing: columns used only in the loss, added from `model.required_loss_columns` by
+  `prep.pipeline(path, model=model)`.
 - Contract tests: every block translates to CasADi; a linear model with a derived input inside the model
   is exported as KerasANN on raw inputs only.
 - Recursive (multi step) evaluation of single step models (`physXAI.evaluation.rollout`): with
@@ -97,19 +96,22 @@ loads single step models only. The export is verified against that branch, but n
   also with several models per run directory (AgentLib-MPC) and from the command line
   (`python -m physXAI.evaluation.comparison results`).
 - Documentation with Sphinx (MyST Markdown, API reference from the docstrings): user guide (getting started,
-  expressions, data pipeline and split, models, multi step evaluation and training, recurrent models, evaluation and
-  comparison, AgentLib-MPC export, examples) and migration guide from 0.x. Published at
+  expressions, data pipeline and split, models, multi step evaluation and training, recurrent models,
+  physics-informed models, evaluation and comparison, AgentLib-MPC export, examples) and migration guide from 0.x. Published at
   https://rwth-ebc.github.io/physXAI/main/docs/index.html.
 - `PCNNModel`: physically consistent neural network after Di Natale et al. (2022): energy accumulator with
   positive heating, cooling and loss rates (initial rules of thumb per hour) in parallel to a recurrent network of
   the unforced dynamics; the predicted temperature provably rises with heating and outside temperature over the
-  horizon. Closed loop, warmup and step model export as for `RNNModel`, verified against AgentLib-MPC (CasADi).
-  Example `examples/10_pcnn.py`.
+  horizon. Initial rates given as `None` are estimated from the training data by nonnegative least squares of the
+  single step energy balance (`td.physics['initial_rates']`). Closed loop, warmup and step model export as for
+  `RNNModel`, verified against AgentLib-MPC (CasADi). Example `examples/10_pcnn.py`.
 - Physics residuals with trainable physical parameters for all single step keras models:
   `physics=PhysicsResidual(px.Prediction() - model, weight)`, `physics_fit='calibrate'` (grey-box identification
   first, then the network), `'joint'` or `'fixed'`; `px.Prediction`, `px.Target`, `px.positive`, `px.freeze`;
-  trained parameters in `td.physics`. Only the network is exported. Example `examples/09_physics_residual.py`.
-- User guide page on physics-informed models; `docs/branch_review.md` documents the review of the old branches.
+  trained parameters in `td.physics`. The calibration is a deterministic least squares fit
+  (`scipy.optimize.least_squares` with the CasADi Jacobian), gradient descent only for residuals without CasADi
+  form. Only the network is exported. Example `examples/09_physics_residual.py`.
+- `docs/branch_review.md` documents the review of the old branches.
 - Saved configs record the environment (`environment`: versions of Python, NumPy, pandas, scikit-learn, Keras,
   TensorFlow and CasADi) next to `physXAI_version`.
 - `check_agentlib_compatibility` warns about inputs computed by the preprocessing (`columns`, `Change(X)`,
@@ -134,8 +136,6 @@ loads single step models only. The export is verified against that branch, but n
   output and is exportable to AgentLib-MPC. The loss `mse(ŷ, y)/s + Σ w_i·mse(ŷ, p_i)/s` is normalized by the
   variance of the training targets and no longer averaged over the terms; early stopping monitors the validation
   data loss (`early_stopping_on`); history, metrics (`td.metrics.physics`) and report hold every term.
-- `loss_columns` in the preprocessing: columns used only in the loss, added from `model.required_loss_columns` by
-  `prep.pipeline(path, model=model)`.
 - `FeatureSelectionResult.save(run)` replaces `save_result`.
 - Unknown arguments of the preprocessing and of the models raise a `TypeError` instead of being ignored.
 - `shift` is 1 (next time step, default, required by AgentLib-MPC) or 0 (algebraic outputs of point sampled data,
@@ -143,7 +143,6 @@ loads single step models only. The export is verified against that branch, but n
   modelled with lagged inputs, a prediction over several steps recursively (`eval_horizon`).
 - `random_seed` of the keras models defaults to the global seed (`physXAI.set_seed`), else a new seed is drawn and
   stored in the config (before: 42).
-- Python >= 3.11 is required (3.9 and 3.10 are end of life), as in 0.3.0.
 - CI uses the shared template of the institute (RWTH-EBC/ci_templates, like AgentLib and AgentLib-MPC): tests,
   coverage, package build, pylint/ruff reports, documentation and GitHub Pages; additionally the unit tests on
   Windows, a smoke run of the examples (one epoch, `tests/smoke_examples.py`) and strict ruff and Sphinx
@@ -152,11 +151,7 @@ loads single step models only. The export is verified against that branch, but n
 - `casadi` is now a declared dependency (it was imported, but missing).
 - Upper bounds on the next major versions of all dependencies (e.g. `keras<4`, `tensorflow<3`): the CasADi converter
   of AgentLib-MPC recognizes keras layers by their names and attributes.
-- `keras>=3.15.0`: older versions have known vulnerabilities in loading models (unsafe deserialization, file
-  disclosure via HDF5), see the GitHub security advisories.
 - Default run folder names no longer contain `:` (invalid on Windows).
-- The embargo of multi step data no longer adds the warmup: the warmup lies inside the split of its sequence, so the
-  reach of a sample plus `shift` suffices (more training data at every boundary).
 - Single step data is split in blocks instead of random rows by default (random rows overestimate
   the test performance because of autocorrelation).
 - Data is loaded onto a regular time grid: missing time stamps are missing values instead of being
@@ -197,11 +192,8 @@ loads single step models only. The export is verified against that branch, but n
 - Modular models (now `physXAI.expr`): loading a config twice failed (config mutated in place); references to not
   yet built expressions became None; global caches of keras tensors broke a second model in the same process;
   auto names depended on the process history.
-- `ModularANN(solver='ols')`: `online_pipeline` set the weights of a stale model; closed form solvers now raise a
-  `NotImplementedError` (train a new model on the combined data).
 - The training history plot failed for models trained without keras history.
 - The multi step evaluation of single step models wrote its predictions into the training data.
-- `BuildContext` cached tensors by `id()` of temporary expressions, which Python reuses.
 - Early stopping on `val_loss` without validation data; random seeds were set when a model object was
   created instead of when the model is generated.
 - RNN: the summary was always printed, the verbosity ignored, the `Rescaling` layer held tensors instead of
@@ -209,42 +201,23 @@ loads single step models only. The export is verified against that branch, but n
 - `PINNModel.pipeline` and `online_pipeline` returned None instead of the trained model.
 - Metrics of several outputs were computed on the flattened outputs (mixing their units).
 - Feature selection: `input()` prompts, the preprocessing was changed in place, lags were parsed from strings.
-- Split: the embargo purged rows of test or validation blocks next to a training block shorter than `gap_steps`.
-- `physXAI.set_seed` had no effect on the keras models (their default seed 42 was set again).
 - Keras single step networks trained on several outputs broadcast them against their single output neuron;
   they now require one output.
-- `shift > 1` gave wrong errors over the horizon, multi step trainings and RNN trajectories.
 - `LinANNModel` wrote the evaluation of its linear regression into the training data; `RBFModel` and
-  `LinANNModel` did not use the seed of `repeat_training` for their k-means; the RBF construction failed without
-  normalization.
-- Recurrent models (`RNNModel`, `PCNNModel`) accepted lags, changes and derived columns of a predicted feature as
+  `LinANNModel` used a fixed k-means seed instead of the seed of the model.
+- `RNNModel` accepted lags, changes and derived columns of a predicted feature as
   inputs, which held its measured values over the horizon (data leakage); they are rejected now.
-- The recursive evaluation and training of single step models (and the criterion of the feature selection) took
-  inputs `Change(T)` (also lagged or inside a derived column) of the recursive feature, and lags (`Q_lag1`) and
-  changes (`Change(Q)`) of derived columns depending on it, from the data; they are recomputed from the predicted
-  trajectory.
-- `shift=0` did not reject inputs holding the target through a change of a derived column (`Change(Q)` with Q of
-  the output) or nested derived columns.
 - `CMNNModel` and `PINNModel` without monotonicities had convex neurons only, which with the non negative weights of
   the following layers made the prediction convex in all inputs. `activation_split` defaults to `[1, 1, 1]` now.
-- Settings of the split (`test_size`, `val_size`, `block_length`, `gap_steps`) next to a `split=BlockSplit(...)` were
-  ignored silently; different values raise a `ValueError`.
 - A constant training target gave an output rescaling with the scale 0 (a constant model); the scale is 1 then.
-- The default embargo of the split ignored the reach of `Change(X)` inputs (X(t-1)) and of lags inside derived
-  columns, so a value of the data could be part of a training and a test sample. The documentation no longer claims
-  that the embargo removes the autocorrelation (test blocks lie in the period of the training data).
-- Single step networks and physics residuals shuffled with a buffer of 10000 samples: with more samples, ordered in
+- Single step networks shuffled with a buffer of 10000 samples: with more samples, ordered in
   time, a batch held neighbouring time steps only. The buffer holds all samples now.
 - `CMNNModel` / `PINNModel` silently ignored monotonicities of names which are no inputs (now a `ValueError`) and
   built layers without neurons for small `n_neurons`.
-- `repeat_training` shallow copied the model, so runs could share state (e.g. a trainable `px.Pretrained`); every
-  run now gets a new model from the config, and the init seed also seeds the blocks of expressions (`px.RBF`).
-- `PCNNModel` cached the estimated initial rates by `id()` of the data, which Python reuses.
-- `px.Param` names were lost when a saved model was loaded (`ConstantLayer` config).
-- Closed form solvers (linear regression, `ModularANN(solver='ols' | 'qp')`, least squares calibration of physics
-  residuals) were fitted on float32 data; they use float64 now (`TrainingData.X(split, dtype)`).
-- Physics residuals with several parameters of the same name (e.g. unnamed `px.Param`) raise a `ValueError`, since
-  parameters are calibrated and reported by name.
+- Names of trainable parameters of modular models (`ModularTrainable`, now `px.Param`) were lost when a saved model
+  was loaded (`ConstantLayer` config).
+- `LinearRegressionModel` was fitted on float32 data; all closed form solvers use float64
+  (`TrainingData.X(split, dtype)`).
 
 ### Removed
 - Compatibility code of 0.x: `recursive_feature_elimination_pipeline` and `save_result`, the flat metrics
@@ -253,11 +226,13 @@ loads single step models only. The export is verified against that branch, but n
   `PreprocessingMultiStep`.
 - `physXAI.preprocessing.constructed` (`Feature`, `FeatureConstruction`): lags and `Change(X)` are derived
   natively, other quantities are expressions (`physXAI.expr`), preferably inside the model.
-- `physXAI.models.modular.modular_expression` and the `Modular*` classes: replaced by `physXAI.expr`
+- `physXAI.models.modular.modular_expression` and the `Modular*` classes of branch 26: replaced by `physXAI.expr`
   (`ModularModel` -> `px.MLP` / `px.MonotoneMLP`, `ModularLinear` / `ModularMonotoneLinear` -> `px.Linear`,
-  `ModularTrainable` -> `px.Param`, `ModularAverage` -> `px.Mean`, `ModularNormalization` -> `px.Normalize`,
-  `ModularExistingModel` -> `px.Pretrained`). The separate `modular_expression_config.json` is gone, the graph
-  is part of the model config.
+  `ModularPolynomial` -> `px.Polynomial`, `ModularTrainable` -> `px.Param`, `ModularAverage` -> `px.Mean`,
+  `ModularNormalization` -> `px.Normalize`, `ModularExistingModel` -> `px.Pretrained`). The separate
+  `modular_expression_config.json` is gone, the graph is part of the model config.
+- `physXAI.models.modular.constrained_regression.ConstrainedRegression` of branch 26: replaced by
+  `ModularANN(px.Linear(terms), solver='qp', shape=ShapeConstraints(...))`.
 - RNN initialization models (`init_layer`) and the warmup features of the preprocessing (`init_features`,
   `warmup_columns_*`).
 - Multi step evaluation of single step models with `PreprocessingMultiStep` (`SingleStepModel.evaluate_multi`):

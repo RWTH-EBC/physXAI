@@ -33,12 +33,6 @@ import numpy as np
 logger = logging.getLogger("physXAI")
 
 DOMAINS = ("box", "data")
-CERTIFICATES = {
-    "exact": "holds on the whole box (multilinear derivative, all corners constrained)",
-    "verified": "no violation found on the box (Sobol sample and local search)",
-    "data": "holds on the training samples",
-    "violated": "violated, see max_violation",
-}
 
 
 class ShapeConstraints:
@@ -143,7 +137,12 @@ def _signs(values: dict | None, label: str, meaning: str) -> dict[str, int]:
 
 @dataclass
 class ShapeFitResult:
-    """Result of `fit_shape_constrained`: weights in the units of the data and the diagnosis of the constraints."""
+    """
+    Result of `fit_shape_constrained`: weights in the units of the data and the diagnosis of the constraints.
+
+    Every entry of `constraints` holds a certificate (see the module docstring): 'exact', 'verified', 'data' or
+    'violated' (no convergence after `max_iter`, see `max_violation`).
+    """
 
     weights: np.ndarray
     bias: float

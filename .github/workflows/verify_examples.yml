@@ -1,7 +1,7 @@
 name: Verify Examples
 
 # Smoke run of all examples on Linux and Windows: every keras fit is limited to one epoch and no plots are
-# opened (tests/smoke_examples.py), the scripts themselves are unchanged. All 13 examples take about 1-2 min.
+# opened (tests/smoke_examples.py), the scripts themselves are unchanged.
 # The examples run whenever something they depend on changes, so an API change that breaks an example fails here.
 on:
   pull_request:

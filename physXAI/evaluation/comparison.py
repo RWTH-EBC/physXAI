@@ -29,7 +29,7 @@ import copy
 import json
 import logging
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -55,7 +55,6 @@ class RunRecord:
     model_config: dict | None = None
     preprocessing: dict | None = None
     path: str | None = None
-    extra: dict = field(default_factory=dict)
 
 
 # --- training ------------------------------------------------------------------------------------

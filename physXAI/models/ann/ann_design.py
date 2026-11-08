@@ -648,8 +648,6 @@ class PINNModel(ANNModel):
                 f"The training data holds no physics targets {[c[len(TARGET_PREFIX):] for c in missing]}. "
                 "Pass the model to the preprocessing, prep.pipeline(path, model=model), so it adds them."
             )
-        if len(td.outputs) != 1:
-            raise ValueError(f"PINNModel predicts one output, got {td.outputs}. Physics targets are no outputs.")
         variance = float(np.var(td.y_train_single[:, 0])) if self.normalize_terms else 1.0
         self._scale = max(variance, 1e-12)
 

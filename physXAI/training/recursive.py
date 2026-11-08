@@ -182,7 +182,7 @@ def fit_recursive(keras_model: keras.Model, td, config: RecursiveTraining, model
     from physXAI.evaluation.rollout import build_rollout_model, recursion_spec, rollout_data
     from physXAI.io.run import keras_verbosity
 
-    if getattr(td, "shift", 1) != 1:
+    if td.shift != 1:
         raise ValueError("Multi step training predicts the next step recursively and needs shift=1.")
     spec = recursion_spec(td)
     if spec is None:

@@ -47,7 +47,7 @@ If you have any questions regarding physXAI, feel free to contact us at ebc-tool
 ## Getting Started
 The [documentation](https://rwth-ebc.github.io/physXAI/main/docs/index.html) contains a user guide, the API reference and a
 [migration guide from physXAI 0.x to 1.0](https://rwth-ebc.github.io/physXAI/main/docs/migration.html). <br />
-The [`examples`](https://github.com/RWTH-EBC/physXAI/tree/main/examples) directory is a tutorial in 13 numbered,
+The [`examples`](https://github.com/RWTH-EBC/physXAI/tree/main/examples) directory is a tutorial in numbered,
 commented scripts, from a first model (`01_first_model.py`) over expressions, recurrent and physics-informed models
 and the comparison of models to the export for AgentLib-MPC (`13_agentlib_mpc.py`). They serve as a starting point
 for new projects:
@@ -71,23 +71,29 @@ model.pipeline(td)                    # train, evaluate (single step and recursi
 run.save('model', prep, model, td)    # configs, metrics, model and report (html)
 ```
 
-## Current Model Types
-physXAI currently focuses on physics-guided neural networks built with Keras and TensorFlow.
-Models in this repository are categorized into two main types:
+## Model Types
+physXAI focuses on physics-guided models built with Keras and TensorFlow (and scikit-learn for the linear regression).
+The models fall into two groups:
 
-- Single-Step Models: Predicting one step ahead. Applied recursively in the MPC, evaluated and optionally
-  trained on the error over the prediction horizon.
-	- Linear Regression (scikit-learn)
-	- Classical ANN
-	- Radial Basis Function Network (RBF): RBF Models extrapolate to 0. Useful for residual models.
-	- Residual Model: hybrid model combining a Linear Regression model with an RBF, that models the residuals of the linear regression.
-	- Constrained Monotonic Neural Network (CMNN): Enforces monotonicity in selected inputs (with convex, concave and saturated activations).
-	- Physics-Informed Neural Network (PINN): Allows to add physics-informed loss functions
-	- Modular ANN: physically motivated expressions and trainable blocks (linear, MLP, CMNN, RBF, ...) in one model
-	- Constrained Regression: linear regression on physical terms, monotonic or convex in raw inputs on the box of the training data or given bounds (with a certificate per constraint)
-- Multi-Step Models: Predicting a trajectory.
-	- Recurrent Neural Network: SimpleRNN, GRU and LSTM, warmed up on the measured past.
-	- Physically Consistent Neural Network (PCNN, Di Natale et al. 2022): the predicted temperature rises with heating and outside temperature by construction.
+- Single step models predict one step ahead. In the MPC they are applied recursively; they are evaluated and
+  optionally trained on the error over the prediction horizon.
+	- `LinearRegressionModel`: linear regression (scikit-learn).
+	- `ClassicalANNModel`: feed forward neural network.
+	- `RBFModel`: radial basis function network. It extrapolates to 0, which makes it useful for residual models.
+	- `LinANNModel`: linear regression plus an RBF network trained on its residuals.
+	- `CMNNModel`: constrained monotonic neural network, monotonic in selected inputs (convex, concave and saturated activations).
+	- `PINNModel`: physics-informed neural network, trained on the data and on physics targets (data columns of a physical model).
+	- `ModularANN`: physically motivated expressions and trainable blocks (linear, MLP, monotonic MLP, RBF, ...) in one model
+	  (`physXAI.expr`), trained by gradient descent or, for a linear block, in closed form (`solver='ols'`).
+	- Constrained regression, `ModularANN(px.Linear(terms), solver='qp', shape=ShapeConstraints(...))`: linear
+	  regression on physical terms whose prediction is monotonic or convex in raw inputs, guaranteed on the box of the
+	  training data or on given bounds (with a certificate per constraint).
+	- Physics residuals with trainable physical parameters (`physics=PhysicsResidual(...)`) for the keras networks: a
+	  grey-box model is calibrated on the data and acts as an additional loss term.
+- Multi step models predict a trajectory.
+	- `RNNModel`: SimpleRNN, GRU or LSTM, warmed up on the measured past, with closed loop prediction of fed back features.
+	- `PCNNModel`: physically consistent neural network (Di Natale et al. 2022), the predicted temperature rises with
+	  heating and outside temperature by construction.
 
 Trained models can be used in [AgentLib-MPC](https://github.com/RWTH-EBC/AgentLib-MPC).
 Several models, each trained with several seeds, can be compared with `physXAI.evaluation.comparison`.
@@ -102,10 +108,10 @@ The project is organized into the following directories:
 - `physXAI`: Contains the core logic and main functionalities of the physXAI Toolbox.
 	- `expr`: Expression language for physically motivated terms and trainable blocks (NumPy, Keras and CasADi).
 	- `preprocessing`: Loading, derived columns, leakage free split and training data.
-	- `models`: Model definitions (linear regression, ANNs, modular models, RNNs).
+	- `models`: Model definitions (linear regression, ANNs, modular models, recurrent models, physics residuals).
 	- `training`: Training on the error over the prediction horizon.
 	- `evaluation`: Metrics, errors over the horizon and the comparison of models.
-	- `feature_selection`: (Automatic) feature selection.
+	- `feature_selection`: Feature selection by backward elimination (experimental).
 	- `plotting`: Reports of trained models.
 	- `io`: Run directories and the export for AgentLib-MPC.
 	- `agentlib_mpc_plugin`: Example training scripts for AgentLib-MPC.

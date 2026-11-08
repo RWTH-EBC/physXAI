@@ -15,8 +15,6 @@ from physXAI.preprocessing.training_data import TrainingDataGeneric, TrainingDat
 
 logger = logging.getLogger("physXAI")
 
-SPLITS = ("train", "val", "test")
-
 
 def regression_kpis(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
     """MSE, RMSE, MAE, R2 and bias (mean of prediction - truth) of one output."""

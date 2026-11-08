@@ -26,10 +26,12 @@ from physXAI.io.run import Run, logger
 if TYPE_CHECKING:  # pragma: no cover
     from physXAI.preprocessing.preprocessing import PreprocessingData
 
+# The name rules below mirror the parser of AgentLib-MPC and are independent of `physXAI.preprocessing` on
+# purpose: the check has to decide as AgentLib-MPC does, also if the rules of physXAI change.
 CHANGE_PATTERN = re.compile(r"Change\((.*)\)")
 LAG_PATTERN = re.compile(r"_lag(\d+)$")
 MULTI_STEP_CLASS = "PreprocessingMultiStep"
-#: Branch of AgentLib-MPC supporting recurrent models (not released yet, AgentLib-MPC 1.1.1 has no support)
+#: Branch of AgentLib-MPC supporting recurrent models (AgentLib-MPC releases up to 1.1.1 have no support)
 AGENTLIB_RNN_BRANCH = "143-feature-multistep-model-support"
 
 
@@ -69,7 +71,7 @@ def _check_recurrent_support(config: dict) -> None:
     supported = agentlib_supports_recurrent_models()
     message = (
         "Recurrent models (RNNModel, PCNNModel) need AgentLib-MPC with support for recurrent models (branch "
-        f"'{AGENTLIB_RNN_BRANCH}'); the released AgentLib-MPC 1.1.1 cannot load them."
+        f"'{AGENTLIB_RNN_BRANCH}'); AgentLib-MPC releases up to 1.1.1 cannot load them."
     )
     if supported is False:
         logger.warning("%s The installed AgentLib-MPC has no support.", message)

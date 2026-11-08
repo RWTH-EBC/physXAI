@@ -1,6 +1,6 @@
 # Examples
 
-A tutorial in 13 scripts. Each script is self-contained and documented in its docstring; together they show the
+A tutorial in numbered scripts. Each script is self-contained and documented in its docstring; together they show the
 features of physXAI 1.0 in a sensible reading order. All examples use the data of the BOPTEST case
 [Bestest Hydronic Heat Pump](https://ibpsa.github.io/project1-boptest/testcases/ibpsa/testcases_ibpsa_bestest_hydronic_heat_pump/)
 (`data/bestest_hydronic_heat_pump/pid_data.csv`, 14 days, one sample every 15 min): the air temperature of the zone

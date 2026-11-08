@@ -1,3 +1,7 @@
+"""
+Creates standard model to predict the power of the heat pump using the Boptest data
+"""
+
 import os
 import pathlib
 
@@ -5,9 +9,6 @@ from physXAI.io import Run
 from physXAI.models.models import LinearRegressionModel
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 
-"""
-Creates standard model to predict the power of the heat pump using the Boptest data
-"""
 base_path = os.path.join(pathlib.Path(__file__).resolve().parent.parent, 'results')
 
 # Directory of the run
