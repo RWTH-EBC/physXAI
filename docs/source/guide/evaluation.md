@@ -86,7 +86,7 @@ results/
   cmnn/
     a1b2c3d4/   training_data.json, model_config.json, preprocessing_config.json   (physXAI < 1.0)
     x9y8z7w6/   ...
-    ...         (e.g. 50 runs)
+    ...
   ann/
     seed_0/     ann_training_data.json, ann_model.json, ann_preprocessing.json, ann.keras   (Run.save)
 ```

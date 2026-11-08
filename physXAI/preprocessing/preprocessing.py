@@ -427,7 +427,6 @@ class PreprocessingData(ABC):
     def build_training_data(
         self,
         df: pd.DataFrame,
-        extra_targets: list[str] | None = None,
         eval_horizon: int | None = None,
         eval_stride: int = 1,
     ) -> TrainingData:
@@ -436,7 +435,6 @@ class PreprocessingData(ABC):
 
         Args:
             df: Data on a regular time grid, see `load_data`.
-            extra_targets: Further columns to shift like the outputs (e.g. warmup features).
             eval_horizon: Steps of the multi step evaluation stored in the training data.
             eval_stride: Distance between two evaluation windows.
         """
@@ -453,7 +451,7 @@ class PreprocessingData(ABC):
         plain_loss = [c for c in self.loss_columns if not c.startswith(TARGET_PREFIX)]
         for name in plain_loss:
             ensure_column(df, name)
-        shifted = list(dict.fromkeys([*self.output, *(extra_targets or []), *shifted_loss]))
+        shifted = list(dict.fromkeys([*self.output, *shifted_loss]))
         for name in dict.fromkeys([*self.inputs, *shifted]):
             ensure_column(df, name)
         # raw features of the outputs and the variables of derived columns are kept for recursive

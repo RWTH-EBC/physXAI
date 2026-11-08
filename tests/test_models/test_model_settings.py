@@ -176,13 +176,6 @@ def test_saved_model_predicts_the_same(model, td, tmp_path):
     np.testing.assert_allclose(td.y_test_pred, trained.predict(td.X_test, verbose=0), rtol=1e-6, atol=1e-7)
 
 
-def test_rbf_without_normalization(td):
-    from physXAI.models.ann.model_construction.rbf_models import RBFModelConstruction
-
-    model = RBFModelConstruction({"n_layers": 1, "n_neurons": 4, "normalize": False}, td)
-    assert model.predict(td.X_test, verbose=0).shape == (len(td.X_test), 1)
-
-
 def test_recurrent_export_reports_missing_agentlib_support(caplog, monkeypatch):
     from physXAI.io import agentlib
     from physXAI.preprocessing.preprocessing import PreprocessingMultiStep

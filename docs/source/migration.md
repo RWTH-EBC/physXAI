@@ -3,9 +3,12 @@
 physXAI 1.0 is not backwards compatible. The integration into AgentLib-MPC keeps working: the training
 script signature and the saved files are the same.
 
+The guide covers the releases 0.x and the development branch `26-integrate-modular-anns` (modular models
+`Modular*`, `ModularANN` and `ConstrainedRegression`).
+
 ## Overview
 
-| 0.x | 1.0 |
+| 0.x / branch 26 | 1.0 |
 |---|---|
 | `Logger.setup_logger(folder_name='x', override=True)` | `run = Run('results', 'x', overwrite=True)` |
 | `Logger.log_setup(prep, m)`, `Logger.save_training_data(td)` | `run.save('model', prep, m, td)` |
@@ -19,8 +22,12 @@ script signature and the saved files are the same.
 | `ModularModel(ClassicalANNModel)` | `px.MLP` |
 | `ModularModel(CMNNModel)` | `px.MonotoneMLP` |
 | `ModularLinear`, `ModularMonotoneLinear` | `px.Linear(monotonicities=...)` |
+| `ModularPolynomial` | `px.Polynomial` |
 | `ModularTrainable`, `ModularAverage`, `ModularNormalization`, `ModularExistingModel` | `px.Param`, `px.Mean`, `px.Normalize`, `px.Pretrained` |
+| `ModularFeature`, `feature.input()`, `ModularAdd`, ... | expressions of `px.Vars()` with `+ - * / **` |
 | `modular_expression_config.json` | part of the model config |
+| `ModularANN(architecture=...)` | `ModularANN(architecture=...)` on `px` expressions, also `solver='ols'` (closed form) |
+| `ConstrainedRegression(inputs, monotonies={...}, convexities={...})` | `ModularANN(px.Linear(inputs), solver='qp', shape=ShapeConstraints(monotonicities={...}, convexities={...}))` for raw columns, `px.Linear(inputs, monotonicities={...})` for the sign of single terms |
 | `RNNModel(init_layer=...)`, `PreprocessingMultiStep(init_features=...)` | warmup from zero states: `warmup_width` |
 | `PreprocessingMultiStep(batch_size=...)` | `RNNModel(batch_size=...)` |
 | single step model on `PreprocessingMultiStep` data (`evaluate_multi`) | `PreprocessingSingleStep(eval_horizon='24h')` |

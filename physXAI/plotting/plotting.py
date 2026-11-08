@@ -333,7 +333,7 @@ def model_report(td: TrainingDataGeneric, title: str, show: bool = False) -> go.
         show: Whether to open the figure.
     """
     names = _output_names(td)
-    # PINN data hold further target columns next to the predicted outputs
+    # one panel per predicted output, as in `Metrics`
     n_outputs = np.asarray(td.y_train_pred_single).reshape(len(td.y_train_pred_single), -1).shape[1]
     if len(names) != n_outputs:
         names = names[:n_outputs] if len(names) > n_outputs else [f"output_{j}" for j in range(n_outputs)]

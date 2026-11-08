@@ -39,7 +39,7 @@ The embargo removes shared samples, not the autocorrelation of the building: tes
 blocks of the same weeks and season, so the test error measures how well the model interpolates within the period
 of the data. For a new period (another season or year) it is optimistic. To estimate that, use
 `split='holdout_end'` (the end of the data for validation and test), a longer `gap_steps` or a separate data set.
-`split='random_rows'` is the old random split (for comparisons only).
+`split='random_rows'` splits random rows (for comparisons only).
 
 The split depends on `random_state`. Training a model with several seeds shows how much the errors depend
 on the split, see [Comparing models](evaluation.md#comparing-models).

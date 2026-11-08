@@ -295,10 +295,9 @@ def fit_with_physics(model, td, settings, physics: PhysicsResidual, mode: str = 
         physics_learning_rate: Learning rate of a calibration by gradient descent. Defaults to 10 x the learning rate.
 
     Returns:
-        dict: 'parameters' (trained values by name), 'fit' (RMSE of the physics term and of the physics model
+        dict: 'name' (of the residual), 'parameters' (trained values by name), 'fit' (RMSE of the physics term and of the physics model
               per split), 'calibration_record' (result of the least squares solver or the history of the gradient
-              descent, None without calibration) and 'record' (keras
-              history of the training of the network).
+              descent, None without calibration) and 'record' (keras history of the training of the network).
     """
     import numpy as np
     import tensorflow as tf

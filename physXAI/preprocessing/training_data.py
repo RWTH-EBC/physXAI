@@ -371,9 +371,9 @@ class TrainingData(TrainingDataGeneric):
             eval_horizon=meta["eval_horizon"],
             eval_stride=meta["eval_stride"],
             targets=meta["targets"],
-            loss_columns=meta.get("loss_columns"),
-            derived={name: from_config(e) for name, e in meta.get("derived", {}).items()},
-            shift=meta.get("shift", 1),
+            loss_columns=meta["loss_columns"],
+            derived={name: from_config(e) for name, e in meta["derived"].items()},
+            shift=meta["shift"],
         )
         td.file_path = file_path
         return td

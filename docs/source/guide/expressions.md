@@ -73,9 +73,8 @@ model = ModularANN(architecture, epochs=200)
 
 Warm start (`warm_start=True`, default): when the architecture is a normalized `Linear` block, the training starts
 at the least squares solution of its data only terms (with the sign bounds of `monotonicities`), the trainable terms
-(here the `px.MLP`) start with weight 0. The model starts as the linear model and the network learns its residual.
-A bad initialization can no longer spoil the training: without warm start, single seeds of this architecture
-diverge.
+(here the `px.MLP`) start with weight 0. The model starts as the linear model and the network learns its residual,
+so the training does not depend on a bad initialization of the weights.
 
 Physical parameters: `px.Param(init)` is a trainable scalar, `px.positive(value, name)` a positive one
 (`value · exp(p)`), `px.freeze(expr, values)` replaces the parameters by numbers. `px.Prediction()` (the model

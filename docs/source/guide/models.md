@@ -109,7 +109,7 @@ m.pipeline(td)
 [Recurrent models](rnn.md). `PCNNModel(heating, cooling, losses)` is a physically consistent recurrent model, see
 [Physics-informed models](physics.md).
 
-Every single step keras model takes a physics residual with trainable physical parameters
+Every single step keras model except `PINNModel` takes a physics residual with trainable physical parameters
 (`physics=PhysicsResidual(...)`), see [Physics-informed models](physics.md).
 
 ## Saving and loading

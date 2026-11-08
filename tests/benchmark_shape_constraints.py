@@ -5,9 +5,6 @@ Synthetic heat pump data with N samples, 4 terms and 2 monotonicity constraints 
 `model.pipeline` (graph, fit and evaluation) is measured for every N. Not part of pytest (manual check, see
 `tests/test_models/test_shape_constraints.py` for a coarse upper bound in the test suite).
 
-Measured on a laptop (physXAI 1.0.0): 0.2 s, 0.25 s and 1.1 s for N = 1e3, 1e4, 1e5. The `ConstrainedRegression` of
-the 1.0 refactoring (symbolic NLP over all samples, IPOPT) took 0.8 s, 1.5 s and 28 s for the same fits.
-
 Usage:
 
     python tests/benchmark_shape_constraints.py                     # N = 1e3, 1e4, 1e5

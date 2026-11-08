@@ -76,7 +76,7 @@ def test_holdout_end_is_chronological():
     assert list(labels[90:]) == [TEST] * 10
 
 
-def test_random_rows_legacy():
+def test_random_rows():
     labels = BlockSplit(0.1, 0.1, strategy="random_rows").assign(1000, seed=0)
     assert np.sum(labels == TEST) == 100
     assert np.sum(labels == VAL) == 100

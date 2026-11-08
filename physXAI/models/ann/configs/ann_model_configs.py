@@ -6,14 +6,12 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class ClassicalANNConstruction_config(BaseModel):
-    """Settings of a feed forward network: layers, neurons, activations, normalization and output rescaling."""
+    """Settings of a feed forward network: layers, neurons, activations and output rescaling."""
 
     n_layers: int = Field(..., ge=0)
     n_neurons: int | list[int] = 32
     activation_function: str | list[str] = 'softplus'
     rescale_output: bool = True
-    normalize: bool = True
-    n_features: int | None = None
 
     @field_validator('n_neurons')
     def validate_n_neurons(cls, v, info):

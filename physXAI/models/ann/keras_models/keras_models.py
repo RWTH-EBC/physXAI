@@ -173,51 +173,6 @@ class SaturatedActivation:
         return cls(**config)
 
 
-@keras.saving.register_keras_serializable(package='custom_activation', name='LimitedActivation')
-class LimitedActivation:
-    """
-    A Keras activation function that clips the input tensor to a specified minimum and/or maximum value.
-    """
-
-    def __init__(self, max_value: float = None, min_value: float = None):
-        """
-        Initializes the LimitedActivation.
-
-        Args:
-            max_value (float, optional): The maximum value to clip to. If None, no upper limit is applied.
-                                         Defaults to None.
-            min_value (float, optional): The minimum value to clip to. If None, no lower limit is applied.
-                                         Defaults to None.
-        """
-
-        self.max_value = max_value
-        self.min_value = min_value
-
-    def __call__(self, x):
-        """
-        Applies the clipping to the input tensor.
-
-        Args:
-            x: The input tensor.
-
-        Returns:
-            The clipped tensor.
-        """
-
-        if self.min_value is not None:
-            x = keras.ops.maximum(x, self.min_value)
-        if self.max_value is not None:
-            x = keras.ops.minimum(x, self.max_value)
-        return x
-
-    def get_config(self):
-        return {'max_value': self.max_value, 'min_value': self.min_value}
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)
-
-
 @keras.saving.register_keras_serializable(package='custom_layer', name='RBFLayer')
 class RBFLayer(keras.Layer):
     """
@@ -376,7 +331,7 @@ class RBFLayer(keras.Layer):
         config = super().get_config()
         config.update({
             "units": self.units,
-            # Store the original gamma value(s), not log_gamma, for easier interpretatio
+            # Store the original gamma value(s), not log_gamma, for easier interpretation
             "gamma": np.exp(self.log_gamma.numpy()).tolist() if self.log_gamma is not None else self.gamma_init_value,
             # Convert initial centers to list
             "initial_centers": self.initial_centers.tolist() if isinstance(self.initial_centers, np.ndarray) else None,
