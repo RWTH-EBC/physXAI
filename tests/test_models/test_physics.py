@@ -35,8 +35,14 @@ def _residual(k1=2.0, k2=0.002, weight=0.5):
 
 
 def _fit(csv, inputs=("mDot", "T_in", "load", "T"), **kwargs):
-    kwargs = {"n_neurons": 4, "epochs": 40, "learning_rate": 0.003, "early_stopping_epochs": None,
-              "physics": _residual(), **kwargs}
+    kwargs = {
+        "n_neurons": 4,
+        "epochs": 40,
+        "learning_rate": 0.003,
+        "early_stopping_epochs": None,
+        "physics": _residual(),
+        **kwargs,
+    }
     m = ClassicalANNModel(**kwargs)
     prep = PreprocessingSingleStep(inputs=list(inputs), output="Change(T)", random_state=0)
     td = prep.pipeline(csv, model=m)

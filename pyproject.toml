@@ -42,7 +42,7 @@ dependencies = [
 dev = [
     "pytest>=8.4.1",
     "pytest-cov>=6.2.1",
-    "ruff>=0.12",
+    "ruff>=0.17.4",  # formatting as in .pre-commit-config.yaml and quality.yml
     "pre-commit>=4.2",
 ]
 # Required for the AgentLib-MPC contract tests (tests/contract). Tests are skipped if not installed, unless the

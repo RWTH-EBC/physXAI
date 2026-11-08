@@ -119,8 +119,13 @@ def test_training_data_save_and_load(frame, tmp_path):
     frame = frame.set_index(pd.Timestamp("2024-03-01") + pd.to_timedelta(frame.index, unit="s"))
     frame.index.name = "time"
     v = px.Vars()
-    prep = PreprocessingSingleStep(inputs=["mDot", "q", "T"], output="Change(T)", columns={"q": v.mDot * v.T},
-                                   loss_columns=["y:load"], eval_horizon=6)
+    prep = PreprocessingSingleStep(
+        inputs=["mDot", "q", "T"],
+        output="Change(T)",
+        columns={"q": v.mDot * v.T},
+        loss_columns=["y:load"],
+        eval_horizon=6,
+    )
     td = prep.pipeline(_csv(frame, tmp_path))
     td.save(tmp_path / "td")
     loaded = TrainingData.load(tmp_path / "td")
@@ -200,8 +205,9 @@ def test_shift_zero_accepts_lags_of_derived_columns(frame, tmp_path):
     from physXAI import expr as px
 
     v = px.Vars()
-    prep = PreprocessingSingleStep(inputs=["mDot", "q_lag1", "Change(T_lag1)"], output="T", shift=0,
-                                   columns={"q": v.mDot * v.T}, random_state=0)
+    prep = PreprocessingSingleStep(
+        inputs=["mDot", "q_lag1", "Change(T_lag1)"], output="T", shift=0, columns={"q": v.mDot * v.T}, random_state=0
+    )
     td = prep.pipeline(_csv(frame, tmp_path))
     assert td.inputs == ["mDot", "q_lag1", "Change(T_lag1)"]
 

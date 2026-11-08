@@ -145,7 +145,8 @@ class Linear(Block):
         if not bias and self.normalize:
             logger.warning(
                 "Linear '%s' has no bias, but normalizes its inputs: the normalization subtracts the mean of the "
-                "training data, which acts as a bias. Use normalize=False for a model without offset.", self.name
+                "training data, which acts as a bias. Use normalize=False for a model without offset.",
+                self.name,
             )
 
     def params(self):
@@ -236,6 +237,10 @@ class MonotoneMLP(Block):
         super().__init__(inputs, name, normalize, nominal_range)
         self.monotonicities = dict(monotonicities or {})
         self._per_input(self.monotonicities)
+        if n_layers < 1:
+            # without a hidden layer only the non negative weights of the output layer remain: the prediction would
+            # be increasing in every input
+            raise ValueError("MonotoneMLP needs at least one hidden layer (n_layers >= 1).")
         self.n_layers = n_layers
         self.n_neurons = _per_layer(n_neurons, n_layers, "n_neurons")
         self.activation = _per_layer(activation, n_layers, "activation")
@@ -365,7 +370,11 @@ class RBF(Block):
             if self.normalize:
                 data = (data - data.mean(axis=0)) / np.where(data.std(axis=0) > 0, data.std(axis=0), 1.0)
             units = min(self.units, len(data))
-            centers = KMeans(n_clusters=units, random_state=self.random_state % 2**32, n_init="auto").fit(data).cluster_centers_
+            centers = (
+                KMeans(n_clusters=units, random_state=self.random_state % 2**32, n_init="auto")
+                .fit(data)
+                .cluster_centers_
+            )
             gamma = gamma_init(centers) if units > 1 else 1.0
         layer = RBFLayer(self.units if centers is None else len(centers), gamma=gamma, initial_centers=centers)
         return self.rescale(keras.layers.Dense(1, activation="linear")(layer(x)))

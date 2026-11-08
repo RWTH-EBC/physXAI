@@ -138,12 +138,15 @@ def test_reach_of_inputs_into_the_past():
     assert input_lag("nested", columns) == 3
 
 
-@pytest.mark.parametrize("kwargs, gap", [
-    ({"inputs": ["mDot", "T"]}, 1),
-    ({"inputs": ["mDot", "T", "Change(T)"]}, 2),
-    ({"inputs": ["mDot", "T", "d3"], "columns": "d3"}, 4),
-    ({"inputs": ["mDot", "T"], "lags": {"T": 2}}, 3),
-])
+@pytest.mark.parametrize(
+    "kwargs, gap",
+    [
+        ({"inputs": ["mDot", "T"]}, 1),
+        ({"inputs": ["mDot", "T", "Change(T)"]}, 2),
+        ({"inputs": ["mDot", "T", "d3"], "columns": "d3"}, 4),
+        ({"inputs": ["mDot", "T"], "lags": {"T": 2}}, 3),
+    ],
+)
 def test_embargo_covers_changes_and_derived_columns(one_room_csv, kwargs, gap):
     """Regression: no value of the data is part of a training and a test sample (changes and derived columns)."""
     from physXAI import expr as px
@@ -184,11 +187,19 @@ def test_multi_step_embargo_without_warmup(one_room_csv):
     """The warmup lies inside the split of its sequence: the embargo is the reach of a sample plus the shift."""
     from physXAI.preprocessing.preprocessing import PreprocessingMultiStep
 
-    prep = PreprocessingMultiStep(inputs=["mDot", "load", "T"], output="Change(T)", label_width=6, warmup_width=8,
-                                  random_state=0, csv_delimiter=",")
+    prep = PreprocessingMultiStep(
+        inputs=["mDot", "load", "T"],
+        output="Change(T)",
+        label_width=6,
+        warmup_width=8,
+        random_state=0,
+        csv_delimiter=",",
+    )
     td = prep.pipeline(one_room_csv)
     assert prep._default_gap() == 1
     # no row is part of a training and a test sequence
     length = td.warmup_width + td.label_width
-    rows = {s: set((td.series.window_starts(s, length)[:, None] + np.arange(length + 1)).ravel()) for s in ("train", "test")}
+    rows = {
+        s: set((td.series.window_starts(s, length)[:, None] + np.arange(length + 1)).ravel()) for s in ("train", "test")
+    }
     assert not rows["train"] & rows["test"]

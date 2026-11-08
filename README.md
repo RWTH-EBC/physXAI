@@ -62,13 +62,17 @@ from physXAI.io import Run
 from physXAI.models import LinearRegressionModel
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 
-run = Run('results', 'TAir', overwrite=True)
-prep = PreprocessingSingleStep(inputs=['weaSta_reaWeaTDryBul_y', 'oveHeaPumY_u', 'reaTZon_y'],
-                               output=px.Change('reaTZon_y'), time_index_col='time', eval_horizon='12h')
-td = prep.pipeline('data/bestest_hydronic_heat_pump/pid_data.csv')
+run = Run("results", "TAir", overwrite=True)
+prep = PreprocessingSingleStep(
+    inputs=["weaSta_reaWeaTDryBul_y", "oveHeaPumY_u", "reaTZon_y"],
+    output=px.Change("reaTZon_y"),
+    time_index_col="time",
+    eval_horizon="12h",
+)
+td = prep.pipeline("data/bestest_hydronic_heat_pump/pid_data.csv")
 model = LinearRegressionModel()
-model.pipeline(td)                    # train, evaluate (single step and recursively over 12 h)
-run.save('model', prep, model, td)    # configs, metrics, model and report (html)
+model.pipeline(td)  # train, evaluate (single step and recursively over 12 h)
+run.save("model", prep, model, td)  # configs, metrics, model and report (html)
 ```
 
 ## Model Types

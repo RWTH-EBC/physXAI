@@ -60,7 +60,7 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
     config = RBFConstruction_config.model_validate(config).model_dump()
 
     # Get config
-    n_neurons = config['n_neurons']
+    n_neurons = config["n_neurons"]
     # one RBF layer: a list holds its number of neurons as only element
     if isinstance(n_neurons, list):
         n_neurons = n_neurons[0]
@@ -74,35 +74,36 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
     x = normalization(input_layer)
     training_data = normalization(td.X_train_single).numpy()
 
-    kmeans = KMeans(n_clusters=n_neurons, random_state=config['random_state'], n_init='auto')
+    kmeans = KMeans(n_clusters=n_neurons, random_state=config["random_state"], n_init="auto")
     kmeans.fit(training_data)
     initial_centers_kmeans = kmeans.cluster_centers_
 
-    x = RBFLayer(n_neurons,
-                 initial_centers=initial_centers_kmeans,
-                 gamma=gamma_init(initial_centers_kmeans, overlap=0.5),
-                 learnable_centers=False,
-                 learnable_gamma=False)(x)
+    x = RBFLayer(
+        n_neurons,
+        initial_centers=initial_centers_kmeans,
+        gamma=gamma_init(initial_centers_kmeans, overlap=0.5),
+        learnable_centers=False,
+        learnable_gamma=False,
+    )(x)
 
     # Add output layer
-    x = keras.layers.Dense(1, activation='linear', use_bias=False)(x)
+    x = keras.layers.Dense(1, activation="linear", use_bias=False)(x)
 
     # Add rescaling
-    if config['rescale_output']:
-
+    if config["rescale_output"]:
         # Rescaling for output layer
         # Custom rescaling
         # --- Sigma (Scale) ---
-        if 'rescale_sigma' in config and config['rescale_sigma'] is not None:
-            rescale_sigma = config['rescale_sigma']
+        if "rescale_sigma" in config and config["rescale_sigma"] is not None:
+            rescale_sigma = config["rescale_sigma"]
         else:
             # Auto-calculate from data
             rescale_sigma = output_scale(td.y_train_single)
         # --- Mean (Offset) ---
         # CASE A: Residual Mode -> Config must provide 0.0
         # CASE B: Direct Prediction -> Config is None, calculate from data
-        if 'rescale_mean' in config and config['rescale_mean'] is not None:
-            rescale_mean = config['rescale_mean']
+        if "rescale_mean" in config and config["rescale_mean"] is not None:
+            rescale_mean = config["rescale_mean"]
         else:
             rescale_mean = float(np.mean(td.y_train_single))
 

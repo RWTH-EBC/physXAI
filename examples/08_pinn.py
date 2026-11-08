@@ -24,25 +24,31 @@ from physXAI.models import PINNModel
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA = ROOT / 'data' / 'bestest_hydronic_heat_pump' / 'pid_data.csv'
+DATA = ROOT / "data" / "bestest_hydronic_heat_pump" / "pid_data.csv"
 
-run = Run(ROOT / 'results', '08_pinn', overwrite=True, log_level='warning')
+run = Run(ROOT / "results", "08_pinn", overwrite=True, log_level="warning")
 physXAI.set_seed(0)
 
 # Physical model of the power: compressor power with a Carnot like efficiency plus auxiliaries when running
 v = px.Vars()
-u_hp, u_hp_on = v.oveHeaPumY_u, v['Func(logistic)']
+u_hp, u_hp_on = v.oveHeaPumY_u, v["Func(logistic)"]
 T_amb, T_room = v.weaSta_reaWeaTDryBul_y, v.reaTZon_y
 physics = u_hp * 10000 * ((T_room + 15 - T_amb) / ((T_room + 15) * 0.55)) + (1110 + 500) * u_hp_on
 
-prep = PreprocessingSingleStep(inputs=['oveHeaPumY_u', 'Func(logistic)', 'weaSta_reaWeaTDryBul_y', 'reaTZon_y'],
-                               output='reaPHeaPum_y', columns={'pinn': physics}, time_index_col='time')
+prep = PreprocessingSingleStep(
+    inputs=["oveHeaPumY_u", "Func(logistic)", "weaSta_reaWeaTDryBul_y", "reaTZon_y"],
+    output="reaPHeaPum_y",
+    columns={"pinn": physics},
+    time_index_col="time",
+)
 
 # physics_targets maps the physics columns to their weight. The base architecture is a CMNN.
-model = PINNModel(physics_targets={'pinn': 0.5}, epochs=200, early_stopping_epochs=20)
+model = PINNModel(physics_targets={"pinn": 0.5}, epochs=200, early_stopping_epochs=20)
 td = prep.pipeline(DATA, model=model)  # the model adds its physics targets to the loss columns
 model.pipeline(td)
-run.save('model', prep, model, td)
+run.save("model", prep, model, td)
 
-print(f"PINN test RMSE {td.metrics.kpi('test', 'rmse'):.1f} W, "
-      f"disagreement with the physical model (test RMSE) {td.metrics.physics['pinn']['test']['rmse']:.1f} W")
+print(
+    f"PINN test RMSE {td.metrics.kpi('test', 'rmse'):.1f} W, "
+    f"disagreement with the physical model (test RMSE) {td.metrics.physics['pinn']['test']['rmse']:.1f} W"
+)

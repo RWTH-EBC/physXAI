@@ -2,7 +2,8 @@ name: Code Quality
 
 # Strict checks next to the CI template, whose ruff and pylint jobs only report (exit zero) and whose
 # Sphinx build does not fail on warnings:
-# - ruff on the package, the tests and the examples,
+# - ruff (lint and format) on the package, the tests and the examples. The version is pinned like in
+#   .pre-commit-config.yaml, since the formatting can change between ruff versions,
 # - the documentation with the same commands as the template, warnings are errors.
 on:
   push:
@@ -18,8 +19,9 @@ jobs:
         python-version: '3.12'
     - name: Ruff
       run: |
-        pip install "ruff>=0.12"
+        pip install "ruff==0.17.4"
         ruff check physXAI tests examples
+        ruff format --check .
 
   docs:
     runs-on: ubuntu-latest

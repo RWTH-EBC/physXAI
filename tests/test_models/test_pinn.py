@@ -36,8 +36,13 @@ def _physics_step():
 def _pinn_data(csv, **prep_kwargs):
     # the physics prediction of T(t+1) - T(t) is computed from the data at t; physics targets are taken
     # at the predicted time t+1 like the output, so the column is shifted back by one step
-    prep = PreprocessingSingleStep(inputs=["mDot", "load", "T_in", "T"], output="Change(T)",
-                                   columns={"dT_rc": _physics_step().lag(1)}, random_state=0, **prep_kwargs)
+    prep = PreprocessingSingleStep(
+        inputs=["mDot", "load", "T_in", "T"],
+        output="Change(T)",
+        columns={"dT_rc": _physics_step().lag(1)},
+        random_state=0,
+        **prep_kwargs,
+    )
     m = PINNModel(physics_targets={"dT_rc": 0.5}, n_neurons=4, epochs=2, early_stopping_epochs=1)
     td = prep.pipeline(csv, model=m)
     return prep, m, td
@@ -111,14 +116,16 @@ def test_pinn_options_and_errors(csv):
 def test_missing_splits(csv, tmp_path, test_size, val_size):
     """Models train, evaluate, plot and save without test or validation data (test_size=0, val_size=0)."""
     sizes = dict(test_size=test_size, val_size=val_size, random_state=0)
-    single = PreprocessingSingleStep(inputs=["mDot", "load", "T_in", "T"], output="Change(T)", eval_horizon=4,
-                                     **sizes)
+    single = PreprocessingSingleStep(inputs=["mDot", "load", "T_in", "T"], output="Change(T)", eval_horizon=4, **sizes)
     v = px.Vars()
     models = {
         "linreg": LinearRegressionModel(),
         "ann": ClassicalANNModel(n_neurons=4, epochs=1),
-        "modular": ModularANN(px.Linear([v.mDot * (v.T_in - v.T), v.load, v.T]), epochs=1,
-                              recursive_training=RecursiveTraining(horizon=3, epochs=1)),
+        "modular": ModularANN(
+            px.Linear([v.mDot * (v.T_in - v.T), v.load, v.T]),
+            epochs=1,
+            recursive_training=RecursiveTraining(horizon=3, epochs=1),
+        ),
     }
     comparison = ModelComparison()
     run = Run(tmp_path, "run")
@@ -137,8 +144,9 @@ def test_missing_splits(csv, tmp_path, test_size, val_size):
     assert set(td.metrics.physics["dT_rc"]) == set(td.metrics.by_output["Change(T)"])
     run.save("pinn", None, pinn, td)
 
-    multi = PreprocessingMultiStep(inputs=["mDot", "load", "T_in"], output=px.Change("T"), label_width=3,
-                                   warmup_width=1, **sizes)
+    multi = PreprocessingMultiStep(
+        inputs=["mDot", "load", "T_in"], output=px.Change("T"), label_width=3, warmup_width=1, **sizes
+    )
     td = multi.pipeline(csv)
     RNNModel(rnn_units=2, epochs=1, early_stopping_epochs=None).pipeline(td, plot=False, save_model=False)
     assert ("test" in td.metrics.by_output["T"]) == bool(test_size)

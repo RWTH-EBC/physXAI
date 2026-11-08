@@ -41,42 +41,46 @@ from physXAI.models import ModularANN, ShapeConstraints
 from physXAI.preprocessing.preprocessing import PreprocessingSingleStep
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA = ROOT / 'data' / 'bestest_hydronic_heat_pump' / 'pid_data.csv'
+DATA = ROOT / "data" / "bestest_hydronic_heat_pump" / "pid_data.csv"
 
-run = Run(ROOT / 'results', '05_constrained_regression', overwrite=True, log_level='warning')
+run = Run(ROOT / "results", "05_constrained_regression", overwrite=True, log_level="warning")
 physXAI.set_seed(0)
 
 v = px.Vars()
-u_hp, on = v.oveHeaPumY_u, v['Func(logistic)']
+u_hp, on = v.oveHeaPumY_u, v["Func(logistic)"]
 T, T_amb = v.reaTZon_y, v.weaSta_reaWeaTDryBul_y
 terms = [u_hp, u_hp * T_amb, u_hp * T, on, T_amb]
-shape = ShapeConstraints(monotonicities={'oveHeaPumY_u': 1, 'weaSta_reaWeaTDryBul_y': -1})
+shape = ShapeConstraints(monotonicities={"oveHeaPumY_u": 1, "weaSta_reaWeaTDryBul_y": -1})
 
 models = {
-    'constrained': ModularANN(px.Linear(terms), solver='qp', shape=shape),
-    'unconstrained': ModularANN(px.Linear(terms), solver='ols'),
+    "constrained": ModularANN(px.Linear(terms), solver="qp", shape=shape),
+    "unconstrained": ModularANN(px.Linear(terms), solver="ols"),
 }
-prep = PreprocessingSingleStep(output='reaPHeaPum_y', time_index_col='time')
+prep = PreprocessingSingleStep(output="reaPHeaPum_y", time_index_col="time")
 for name, model in models.items():
     td = prep.pipeline(DATA, model=model)
     model.pipeline(td)
     run.save(name, prep, model, td)  # the report <name>.html contains the table of the shape constraints
     print(f"{name:13s} test RMSE {td.metrics.kpi('test', 'rmse'):6.1f} W")
-    if name == 'constrained':
-        result = td.physics['shape_constraints']
-        for c in result['constraints']:
-            print(f"  {c['type']} {c['column']} ({c['sign']:+d}): {c['certificate']}, binding on "
-                  f"{c['active_share_data']:.0%} of the training samples")
-        print(f"  cost of the physics: train RMSE {result['rmse_train']:.1f} W instead of "
-              f"{result['rmse_train_unconstrained']:.1f} W")
-        box = result['domain']['box']
+    if name == "constrained":
+        result = td.physics["shape_constraints"]
+        for c in result["constraints"]:
+            print(
+                f"  {c['type']} {c['column']} ({c['sign']:+d}): {c['certificate']}, binding on "
+                f"{c['active_share_data']:.0%} of the training samples"
+            )
+        print(
+            f"  cost of the physics: train RMSE {result['rmse_train']:.1f} W instead of "
+            f"{result['rmse_train_unconstrained']:.1f} W"
+        )
+        box = result["domain"]["box"]
 
 # --- Independent check of the saved models: dP/dT_amb on random points of the box ------------------------------
 rng = np.random.default_rng(1)
 X = np.column_stack([rng.uniform(*box[column], 10000) for column in td.inputs]).astype(np.float32)
-j = td.inputs.index('weaSta_reaWeaTDryBul_y')
+j = td.inputs.index("weaSta_reaWeaTDryBul_y")
 for name in models:
-    saved = keras.saving.load_model(run.path / f'{name}.keras')
+    saved = keras.saving.load_model(run.path / f"{name}.keras")
     x = tf.constant(X)
     with tf.GradientTape() as tape:
         tape.watch(x)

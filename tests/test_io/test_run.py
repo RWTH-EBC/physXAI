@@ -93,7 +93,11 @@ def test_save(tmp_path, one_room_csv):
     run = Run(tmp_path, "run")
     files = run.save("lr", prep, m, td)
     assert {p.name for p in files.values()} == {
-        "lr_preprocessing.json", "lr_model.json", "lr_training_data.json", "lr.joblib", "lr.html"
+        "lr_preprocessing.json",
+        "lr_model.json",
+        "lr_training_data.json",
+        "lr.joblib",
+        "lr.html",
     }
     saved = json.loads(files["training_data"].read_text())
     assert saved["physXAI_version"] == __version__ and "by_output" in saved["metrics"]

@@ -10,28 +10,28 @@ class ClassicalANNConstruction_config(BaseModel):
 
     n_layers: int = Field(..., ge=0)
     n_neurons: int | list[int] = 32
-    activation_function: str | list[str] = 'softplus'
+    activation_function: str | list[str] = "softplus"
     rescale_output: bool = True
 
-    @field_validator('n_neurons')
+    @field_validator("n_neurons")
     def validate_n_neurons(cls, v, info):
-        ls = info.data.get('n_layers')
+        ls = info.data.get("n_layers")
         if isinstance(v, list):
             if len(v) != ls:
-                raise ValueError('List of n_neurons must have same length than n_layers')
+                raise ValueError("List of n_neurons must have same length than n_layers")
             for i in v:
                 if i <= 0:
-                    raise ValueError('n_neurons must be greater than 0')
+                    raise ValueError("n_neurons must be greater than 0")
         elif v <= 0:
-            raise ValueError('n_neurons must be greater than 0')
+            raise ValueError("n_neurons must be greater than 0")
         return v
 
-    @field_validator('activation_function')
+    @field_validator("activation_function")
     def validate_activation(cls, v, info):
-        ls = info.data.get('n_layers')
+        ls = info.data.get("n_layers")
         if isinstance(v, list):
             if len(v) != ls:
-                raise ValueError('List of activation functions must have same length than n_layers')
+                raise ValueError("List of activation functions must have same length than n_layers")
         return v
 
 
@@ -40,37 +40,37 @@ class RBFConstruction_config(ClassicalANNConstruction_config):
 
     n_layers: int = Field(..., ge=1, le=1)
     random_state: int = 42
-    rescale_mean: float | None = Field(
-        None, description="Mean value for z-score normalization of outputs"
-    )
-    rescale_sigma: float | None = Field(
-        None, description="Standard deviation for z-score normalization of outputs"
-    )
+    rescale_mean: float | None = Field(None, description="Mean value for z-score normalization of outputs")
+    rescale_sigma: float | None = Field(None, description="Standard deviation for z-score normalization of outputs")
 
 
 class CMNNModelConstruction_config(ClassicalANNConstruction_config):
     """Settings of a CMNN: monotonicities per input and the shares of convex, concave and saturated neurons."""
 
+    # without a hidden layer only the non negative weights of the output layer remain, which would make the
+    # prediction increasing in every input (also in inputs with monotonicity -1 or 0)
+    n_layers: int = Field(..., ge=1)
     monotonicities: dict[str, int] | None = None
     activation_split: list[float] | None = [1, 1, 1]
 
-    @field_validator('monotonicities')
+    @field_validator("monotonicities")
     def validate_monotonicities(cls, v):
         if v is not None:
             for i in v.values():
                 if i not in [0, -1, 1]:
-                    raise ValueError('monotonicities must be 0 (no monotony), 1 (positive monotony) '
-                                     'or -1 (negative monotony)')
+                    raise ValueError(
+                        "monotonicities must be 0 (no monotony), 1 (positive monotony) or -1 (negative monotony)"
+                    )
         return v
 
-    @field_validator('activation_split')
+    @field_validator("activation_split")
     def validate_activation_split(cls, v):
         if v is not None:
             if len(v) != 3:
-                raise ValueError('activation_split must have 3 elements')
+                raise ValueError("activation_split must have 3 elements")
             for i in v:
                 if i < 0:
-                    raise ValueError('activation_split must be greater than 0')
+                    raise ValueError("activation_split must be greater than 0")
             if sum(v) == 0:
                 raise ValueError("activation_split should contain at least one none-zero value")
         return v
@@ -78,5 +78,6 @@ class CMNNModelConstruction_config(ClassicalANNConstruction_config):
 
 class RNNModelConstruction_config(BaseModel):
     """Settings of the recurrent layer of an RNN or PCNN."""
+
     rnn_units: int = Field(32, gt=0)
     rnn_layer: Literal["RNN", "GRU", "LSTM"] = "RNN"

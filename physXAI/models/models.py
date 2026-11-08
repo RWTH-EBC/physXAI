@@ -22,15 +22,15 @@ from physXAI.io.run import input_path, keras_verbosity, output_path
 from physXAI.plotting.plotting import model_report, save_figure
 from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneric, TrainingDataMultiStep
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 import keras
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"
 
 
 logger = logging.getLogger("physXAI")
 
-MODEL_CLASS_REGISTRY: dict[str, type['AbstractModel']] = dict()
+MODEL_CLASS_REGISTRY: dict[str, type["AbstractModel"]] = dict()
 
 #: Keys of a saved model config which are no arguments of the model (see `Run.save`)
 CONFIG_META_KEYS = ("__class_name__", "physXAI_version", "environment")
@@ -151,8 +151,14 @@ class AbstractModel(ABC):
     #: The trained model of the last `pipeline` or `online_pipeline` (used by `Run.save`)
     trained_model = None
 
-    def pipeline(self, td: TrainingDataGeneric, save_path: str = None, plot: bool = True, save_model: bool = True,
-                 show_plot: bool = False):
+    def pipeline(
+        self,
+        td: TrainingDataGeneric,
+        save_path: str = None,
+        plot: bool = True,
+        save_model: bool = True,
+        show_plot: bool = False,
+    ):
         """
         Trains and evaluates the model:
 
@@ -187,8 +193,15 @@ class AbstractModel(ABC):
         self._finish(model, td, save_path, plot, save_model, show_plot)
         return model
 
-    def online_pipeline(self, td: TrainingDataGeneric, load_path: str, save_path: str = None,
-                        plot: bool = True, save_model: bool = True, show_plot: bool = False):
+    def online_pipeline(
+        self,
+        td: TrainingDataGeneric,
+        load_path: str,
+        save_path: str = None,
+        plot: bool = True,
+        save_model: bool = True,
+        show_plot: bool = False,
+    ):
         """
         Loads a saved model, trains it further on new data, evaluates and (optionally) saves it.
 
@@ -229,8 +242,9 @@ class AbstractModel(ABC):
         self.trained_model = model
         return model
 
-    def _finish(self, model, td: TrainingDataGeneric, save_path: str | None, plot: bool, save_model: bool,
-                show_plot: bool):
+    def _finish(
+        self, model, td: TrainingDataGeneric, save_path: str | None, plot: bool, save_model: bool, show_plot: bool
+    ):
         """Saves the model and its report next to it (with a `save_path`) and shows the report if requested."""
         if show_plot or (plot and save_path is not None):
             self.save_plot(self.plot(td, show=show_plot), save_path if plot else None)
@@ -239,11 +253,11 @@ class AbstractModel(ABC):
 
     def get_config(self) -> dict:
         return {
-            '__class_name__': self.__class__.__name__,
+            "__class_name__": self.__class__.__name__,
         }
 
     @classmethod
-    def from_config(cls, config: dict) -> 'AbstractModel':
+    def from_config(cls, config: dict) -> "AbstractModel":
         """
         Creates the model from its config (`get_config`). Meta keys of saved configs (`__class_name__`,
         `physXAI_version`, `environment`) are ignored, unknown settings raise a `TypeError`.
@@ -251,7 +265,7 @@ class AbstractModel(ABC):
         return cls(**{k: v for k, v in config.items() if k not in CONFIG_META_KEYS})
 
     @staticmethod
-    def model_from_config(item_conf: dict) -> 'AbstractModel':
+    def model_from_config(item_conf: dict) -> "AbstractModel":
         """
         Factory function to create a model object from its configuration dictionary.
 
@@ -265,7 +279,7 @@ class AbstractModel(ABC):
         Raises:
             KeyError: If '__class_name__' is not in `item_conf` or the class is not in `MODEL_CLASS_REGISTRY`.
         """
-        class_name = item_conf['__class_name__']
+        class_name = item_conf["__class_name__"]
         model_class = MODEL_CLASS_REGISTRY[class_name]
         m = model_class.from_config(item_conf)
         return m
@@ -304,7 +318,7 @@ class SingleStepModel(AbstractModel, ABC):
         """
         kwargs = {}
         if isinstance(model, keras.Model):
-            kwargs['verbose'] = keras_verbosity()
+            kwargs["verbose"] = keras_verbosity()
 
         # splits without data (e.g. test_size=0) have no predictions
         predictions = {
@@ -316,6 +330,7 @@ class SingleStepModel(AbstractModel, ABC):
         td.add_metrics(Metrics(td))
         # Error over the horizon of a recursive application, as in an MPC (if td.eval_horizon is set)
         from physXAI.evaluation.rollout import evaluate_horizon
+
         evaluate_horizon(model, td)
 
     def _check_training_data(self, td: TrainingDataGeneric):
@@ -374,7 +389,7 @@ class LinearRegressionModel(SingleStepModel):
             save_path (str): The path to save the model.
         """
 
-        dump(model, output_path(save_path, '.joblib'))
+        dump(model, output_path(save_path, ".joblib"))
 
     def load_model(self, load_path: str):
         """
@@ -423,6 +438,7 @@ class MultiStepModel(AbstractModel, ABC):
             td (TrainingDataMultiStep): The training data.
         """
         from physXAI.models.ann.model_construction.rnn_models import evaluate_sequences
+
         evaluate_sequences(model, td)
 
     def _check_training_data(self, td: TrainingDataGeneric):

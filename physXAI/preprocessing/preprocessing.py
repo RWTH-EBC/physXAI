@@ -169,7 +169,9 @@ def depends_on(name: str, features: set[str], columns: dict | None = None, _seen
     return base in features
 
 
-def holds_current_value(name: str, features: set[str], columns: dict | None = None, _seen: frozenset = frozenset()) -> bool:
+def holds_current_value(
+    name: str, features: set[str], columns: dict | None = None, _seen: frozenset = frozenset()
+) -> bool:
     """
     Whether a column holds the value of one of `features` at its own time step (lag 0): the feature itself, its change
     ('Change(T)' = T - T_lag1) and derived columns of them, also nested ('Change(Q)' with Q of T). Lagged columns
@@ -304,15 +306,22 @@ class PreprocessingData(ABC):
         if isinstance(split, dict):
             split = BlockSplit.from_config(split)
         if isinstance(split, str):
-            split = BlockSplit(0.1 if test_size is None else test_size, 0.1 if val_size is None else val_size,
-                               strategy=split, block_length=block_length, gap_steps=gap_steps)
+            split = BlockSplit(
+                0.1 if test_size is None else test_size,
+                0.1 if val_size is None else val_size,
+                strategy=split,
+                block_length=block_length,
+                gap_steps=gap_steps,
+            )
         else:
             # settings of the split given next to a BlockSplit would be ignored: they belong into the BlockSplit
             given = {"test_size": test_size, "val_size": val_size, "block_length": block_length, "gap_steps": gap_steps}
             conflicts = {k: v for k, v in given.items() if v is not None and v != getattr(split, k)}
             if conflicts:
-                raise ValueError(f"{sorted(conflicts)} differ from the given BlockSplit {split.get_config()}; set them "
-                                 "in the BlockSplit.")
+                raise ValueError(
+                    f"{sorted(conflicts)} differ from the given BlockSplit {split.get_config()}; set them "
+                    "in the BlockSplit."
+                )
         self.split: BlockSplit = split
 
         self.time_index_col = time_index_col
@@ -357,8 +366,9 @@ class PreprocessingData(ABC):
         )
         duplicates = int(df.index.duplicated().sum())
         if duplicates:
-            logger.warning("%d duplicate time stamps in '%s' are dropped (the first value is kept).", duplicates,
-                           file_path)
+            logger.warning(
+                "%d duplicate time stamps in '%s' are dropped (the first value is kept).", duplicates, file_path
+            )
         df = df[~df.index.duplicated(keep="first")].sort_index()
 
         index = df.index
@@ -374,8 +384,12 @@ class PreprocessingData(ABC):
             raise ValueError(f"Given time step {self.time_step} is not a multiple of data time step {data_step}.")
         off_grid = int((~np.isclose(seconds / data_step, np.round(seconds / data_step), atol=1e-6)).sum())
         if off_grid:
-            logger.warning("%d time stamps in '%s' are not on the grid of the data (%g s) and are dropped.", off_grid,
-                           file_path, data_step)
+            logger.warning(
+                "%d time stamps in '%s' are not on the grid of the data (%g s) and are dropped.",
+                off_grid,
+                file_path,
+                data_step,
+            )
 
         ratio = int(round(self.time_step / data_step))
         if ratio > 1:
@@ -384,7 +398,9 @@ class PreprocessingData(ABC):
                 "sampling). This suits states (e.g. temperatures). Quantities over an interval (power, energy, "
                 "averaged controls) have to be resampled before (e.g. averaged with pandas resample), else they are "
                 "aliased.",
-                data_step, self.time_step, ratio,
+                data_step,
+                self.time_step,
+                ratio,
             )
 
         positions = seconds / self.time_step
@@ -416,7 +432,7 @@ class PreprocessingData(ABC):
         ('Change(X)' needs X(t-1)) and the variables of derived columns.
         """
         plain = [c for c in self.loss_columns if not c.startswith(TARGET_PREFIX)]
-        shifted = [*self.output, *(c[len(TARGET_PREFIX):] for c in self.loss_columns if c.startswith(TARGET_PREFIX))]
+        shifted = [*self.output, *(c[len(TARGET_PREFIX) :] for c in self.loss_columns if c.startswith(TARGET_PREFIX))]
         reach = max(
             [0]
             + [input_lag(name, self.columns) for name in [*self.inputs, *plain]]
@@ -447,7 +463,7 @@ class PreprocessingData(ABC):
                 ensure_column(df, variable)
             df[name] = np.broadcast_to(expression.evaluate(df), (len(df),))
         # loss columns at the predicted time are shifted like the outputs, the others are taken as they are
-        shifted_loss = [c[len(TARGET_PREFIX):] for c in self.loss_columns if c.startswith(TARGET_PREFIX)]
+        shifted_loss = [c[len(TARGET_PREFIX) :] for c in self.loss_columns if c.startswith(TARGET_PREFIX)]
         plain_loss = [c for c in self.loss_columns if not c.startswith(TARGET_PREFIX)]
         for name in plain_loss:
             ensure_column(df, name)

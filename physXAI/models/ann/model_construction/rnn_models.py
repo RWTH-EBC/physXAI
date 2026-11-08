@@ -180,17 +180,29 @@ def build_pcnn_step_model(config: dict, td, terms: list[PCNNTerm], name: str = S
         if term.kind == "loss":
             column = keras.layers.Subtract(name=f"subtract_pcnn_gradient_{j}")([column, temperature])
         initial = keras.layers.Multiply(name=f"multiply_pcnn_scale_{j}")
-        constant = ConstantLayer(value=PCNN_TERMS[term.kind] * term.initial, shape=(1,), name=f"constant_pcnn_scale_{j}")
+        constant = ConstantLayer(
+            value=PCNN_TERMS[term.kind] * term.initial, shape=(1,), name=f"constant_pcnn_scale_{j}"
+        )
         scaled.append(initial([column, constant(column)]))
     physics = scaled[0] if len(scaled) == 1 else keras.layers.Concatenate(name="concatenate_pcnn_physics")(scaled)
     increment = keras.layers.Dense(
-        1, use_bias=False, kernel_initializer="ones", kernel_constraint=keras.constraints.NonNeg(),
+        1,
+        use_bias=False,
+        kernel_initializer="ones",
+        kernel_constraint=keras.constraints.NonNeg(),
         name=PCNN_PHYSICS_LAYER,
     )(physics)
     # E(k+1) = E(k) + increment(k): a linear recurrent layer with fixed weights 1
     accumulator = keras.layers.SimpleRNN(
-        1, activation="linear", use_bias=False, kernel_initializer="ones", recurrent_initializer="ones",
-        return_sequences=True, return_state=True, trainable=False, name="simple_rnn_pcnn_energy",
+        1,
+        activation="linear",
+        use_bias=False,
+        kernel_initializer="ones",
+        recurrent_initializer="ones",
+        return_sequences=True,
+        return_state=True,
+        trainable=False,
+        name="simple_rnn_pcnn_energy",
     )
     energy_next, new_energy_state = accumulator(increment, initial_state=[energy_state])
     energy = keras.layers.Subtract(name="subtract_pcnn_energy")([energy_next, increment])
@@ -206,24 +218,48 @@ def build_pcnn_step_model(config: dict, td, terms: list[PCNNTerm], name: str = S
     else:
         features = unforced
     normalized = keras.layers.Normalization(
-        mean=X[:, columns].mean(axis=0), variance=np.maximum(X[:, columns].var(axis=0), 1e-12),
+        mean=X[:, columns].mean(axis=0),
+        variance=np.maximum(X[:, columns].var(axis=0), 1e-12),
         name="normalization_pcnn",
     )(features)
     prefix = {"RNN": "simple_rnn", "GRU": "gru", "LSTM": "lstm"}[rnn_layer]
     rnn = RNN_LAYERS[rnn_layer](units, return_sequences=True, return_state=True, name=f"{prefix}_pcnn_unforced")
     hidden, *new_states = rnn(normalized, initial_state=states)
     unforced_change = keras.layers.Dense(1, name="dense_pcnn_unforced")(hidden)
-    unforced_change = keras.layers.Rescaling(
-        scale=float(max(change.std(), 1e-12)), offset=0.0, name="rescaling_pcnn"
-    )(unforced_change)
+    unforced_change = keras.layers.Rescaling(scale=float(max(change.std(), 1e-12)), offset=0.0, name="rescaling_pcnn")(
+        unforced_change
+    )
     prediction = keras.layers.Add(name="add_pcnn_change")([unforced_change, increment])
     return keras.Model([sequence, energy_state, *states], [prediction, new_energy_state, *new_states], name=name)
 
 
-def pcnn_parameters(step_model: keras.Model, terms: list[PCNNTerm]) -> list[float]:
-    """Trained parameters of the energy accumulator per time step, in the order of `terms`."""
+def pcnn_initial_values(step_model: keras.Model) -> list[float]:
+    """
+    Initial values of the parameters of the energy accumulator per time step, as built into the model (the constants
+    `constant_pcnn_scale_<j>`). They are read from the model, since the initial rates of a loaded model may have been
+    estimated from other data than the current one.
+    """
+    n_terms = int(step_model.get_layer(PCNN_PHYSICS_LAYER).get_weights()[0].shape[0])
+    return [
+        abs(float(np.ravel(step_model.get_layer(f"constant_pcnn_scale_{j}").get_weights()[0])[0]))
+        for j in range(n_terms)
+    ]
+
+
+def pcnn_parameters(step_model: keras.Model, terms: list[PCNNTerm] | None = None) -> list[float]:
+    """
+    Trained parameters of the energy accumulator per time step: the trained factor times the initial value built into
+    the model, in the order of the terms of the model.
+
+    Args:
+        step_model: The PCNN step model.
+        terms: Optional terms of the model, only to check their number.
+    """
     weights = step_model.get_layer(PCNN_PHYSICS_LAYER).get_weights()[0][:, 0]
-    return [float(w * term.initial) for w, term in zip(weights, terms, strict=True)]
+    initial = pcnn_initial_values(step_model)
+    if terms is not None and len(terms) != len(weights):
+        raise ValueError(f"The PCNN holds {len(weights)} terms, the model settings define {len(terms)}.")
+    return [float(w * s) for w, s in zip(weights, initial, strict=True)]
 
 
 def state_sizes(step_model: keras.Model) -> list[int]:

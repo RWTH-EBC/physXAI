@@ -123,8 +123,10 @@ class ShapeConstraints:
         return cls(**config)
 
     def __repr__(self) -> str:
-        return f"ShapeConstraints(monotonicities={self.monotonicities}, convexities={self.convexities}, " \
-               f"domain='{self.domain}')"
+        return (
+            f"ShapeConstraints(monotonicities={self.monotonicities}, convexities={self.convexities}, "
+            f"domain='{self.domain}')"
+        )
 
 
 def _signs(values: dict | None, label: str, meaning: str) -> dict[str, int]:
@@ -222,8 +224,13 @@ def fit_shape_constrained(
     features = np.column_stack([np.broadcast_to(np.asarray(t.evaluate(values), dtype=np.float64), (n,)) for t in terms])
     p = features.shape[1]
     F, target, mean, scales, y_mean, y_scale = _standardize(features, y, bias)
-    problem = _LeastSquares(F, target, shape.ridge if shape is not None else 1e-10, _signs_per_term(weight_signs, p),
-                            shape.qp_solver if shape is not None else "highs")
+    problem = _LeastSquares(
+        F,
+        target,
+        shape.ridge if shape is not None else 1e-10,
+        _signs_per_term(weight_signs, p),
+        shape.qp_solver if shape is not None else "highs",
+    )
 
     unconstrained = problem.unconstrained()
     result = ShapeFitResult(weights=np.zeros(p), bias=0.0)
@@ -241,8 +248,9 @@ def fit_shape_constrained(
     return result
 
 
-def constrained_least_squares(features: np.ndarray, y: np.ndarray, bias: bool = True,
-                              weight_signs: list[int] | None = None, ridge: float = 1e-10) -> tuple[np.ndarray, float]:
+def constrained_least_squares(
+    features: np.ndarray, y: np.ndarray, bias: bool = True, weight_signs: list[int] | None = None, ridge: float = 1e-10
+) -> tuple[np.ndarray, float]:
     """
     Least squares `y = b + features @ w` with optional sign bounds on the weights, deterministic (no seed).
 
@@ -297,7 +305,7 @@ class _LeastSquares:
 
     def __init__(self, F: np.ndarray, target: np.ndarray, ridge: float, weight_signs: list[int], solver: str):
         n, p = F.shape
-        lam = ridge * max(float(np.sum(F ** 2)) / n / p, 1e-12)
+        lam = ridge * max(float(np.sum(F**2)) / n / p, 1e-12)
         Q, R = np.linalg.qr(np.vstack([F, np.sqrt(n * lam) * np.eye(p)]))
         self.c = Q.T @ np.concatenate([target, np.zeros(p)])
         self.R_inv = np.linalg.solve(R, np.eye(p))
@@ -332,7 +340,10 @@ def _exchange(terms, values, problem: _LeastSquares, scales, shape: ShapeConstra
     box = [shape.bounds.get(name, data_range[k]) for k, name in enumerate(names)]
     low = np.array([b[0] for b in box])
     high = np.array([b[1] if b[1] > b[0] else b[0] + 1e-9 for b in box])  # constant columns
-    result.domain = {"type": shape.domain, "box": {name: [float(low[k]), float(high[k])] for k, name in enumerate(names)}}
+    result.domain = {
+        "type": shape.domain,
+        "box": {name: [float(low[k]), float(high[k])] for k, name in enumerate(names)},
+    }
 
     # Candidates: training samples and, for the box, a Sobol sample. Rows are computed once.
     candidates, points = list(), list()
@@ -343,8 +354,12 @@ def _exchange(terms, values, problem: _LeastSquares, scales, shape: ShapeConstra
             rows, pts = np.vstack([rows, c.rows(sample)]), np.vstack([pts, sample])
         finite = np.all(np.isfinite(rows), axis=1)
         if not finite.all():
-            logger.warning("%s: the derivative is not finite at %d candidate points, they are left out. Restrict the "
-                           "box with `bounds` to the domain where the terms are defined.", c.label, (~finite).sum())
+            logger.warning(
+                "%s: the derivative is not finite at %d candidate points, they are left out. Restrict the "
+                "box with `bounds` to the domain where the terms are defined.",
+                c.label,
+                (~finite).sum(),
+            )
         candidates.append(rows[finite])
         points.append(pts[finite])
 
@@ -417,21 +432,28 @@ def _exchange(terms, values, problem: _LeastSquares, scales, shape: ShapeConstra
         else:
             certificate = "verified"  # without a successful QP solve, the corners are only checked
         active = float(np.mean(np.abs(on_data) <= max(shape.tol, 1e-9))) if len(on_data) and not c.trivial else None
-        result.constraints.append({
-            "column": c.column,
-            "type": "monotonicity" if c.order == 1 else "convexity",
-            "sign": c.sign,
-            "certificate": certificate,
-            "max_violation": max(0.0, -float(worst[i])),
-            "constraint_points": int(len(active_rows[i])),
-            "active_share_data": active,  # share of the training samples where the constraint binds
-        })
+        result.constraints.append(
+            {
+                "column": c.column,
+                "type": "monotonicity" if c.order == 1 else "convexity",
+                "sign": c.sign,
+                "certificate": certificate,
+                "max_violation": max(0.0, -float(worst[i])),
+                "constraint_points": int(len(active_rows[i])),
+                "active_share_data": active,  # share of the training samples where the constraint binds
+            }
+        )
     if not converged:
         logger.warning("Shape constraints: no convergence after %d iterations, see the certificates.", shape.max_iter)
     for c in result.constraints:
         if c["certificate"] == "violated":
-            logger.warning("Shape constraint %s %s (%+d) is violated by %.3g (relative).", c["type"], c["column"],
-                           c["sign"], c["max_violation"])
+            logger.warning(
+                "Shape constraint %s %s (%+d) is violated by %.3g (relative).",
+                c["type"],
+                c["column"],
+                c["sign"],
+                c["max_violation"],
+            )
     return w, result
 
 
@@ -490,6 +512,7 @@ def _local_minima(c: _Constraint, w: np.ndarray, starts: np.ndarray, low: np.nda
     bounds = list(zip(low, high, strict=True))
     found = list()
     for start in starts:
+
         def fun(z):
             v, grad = f(z)
             return float(v) / scale, np.asarray(grad).ravel() / scale

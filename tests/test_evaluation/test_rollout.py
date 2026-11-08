@@ -197,8 +197,13 @@ def test_changes_of_the_feature_are_recomputed(csv):
 def test_change_inside_derived_column_and_without_the_feature(csv):
     """A derived column of Change(T), and a model with Change(T) but without T as input, are rolled out as well."""
     v = px.Vars()
-    prep = PreprocessingSingleStep(inputs=["mDot", "load", "dTx"], output="Change(T)", eval_horizon=HORIZON,
-                                   columns={"dTx": v.mDot * v["Change(T)"]}, random_state=0)
+    prep = PreprocessingSingleStep(
+        inputs=["mDot", "load", "dTx"],
+        output="Change(T)",
+        eval_horizon=HORIZON,
+        columns={"dTx": v.mDot * v["Change(T)"]},
+        random_state=0,
+    )
     td = prep.pipeline(csv)
     LinearRegressionModel().pipeline(td, plot=False, save_model=False)
     spec = recursion_spec(td)
@@ -214,8 +219,9 @@ def test_lags_and_changes_of_derived_columns_are_recomputed(csv):
     """
     v = px.Vars()
     inputs = ["mDot", "load", "T_in", "Q_lag1", "Change(Q)", "T"]
-    prep = PreprocessingSingleStep(inputs=inputs, output="Change(T)", eval_horizon=HORIZON, random_state=0,
-                                   columns={"Q": v.mDot * (v.T_in - v.T)})
+    prep = PreprocessingSingleStep(
+        inputs=inputs, output="Change(T)", eval_horizon=HORIZON, random_state=0, columns={"Q": v.mDot * (v.T_in - v.T)}
+    )
     td = prep.pipeline(csv)
     model = LinearRegressionModel().pipeline(td, plot=False, save_model=False)
     spec = recursion_spec(td)

@@ -1,4 +1,7 @@
-"""`check_agentlib_compatibility` has to accept and reject exactly what AgentLib-MPC accepts and rejects."""
+"""
+`check_agentlib_compatibility` has to reject everything AgentLib-MPC rejects and accept what AgentLib-MPC translates
+correctly. It is stricter for lags without the feature itself, which AgentLib-MPC accepts but translates wrongly.
+"""
 
 import pytest
 from conftest import import_agentlib
@@ -52,6 +55,22 @@ def test_same_decision_as_agentlib(name):
     except AgentLibCompatibilityError:
         physxai_accepts = False
     assert physxai_accepts == agentlib_accepts, name
+
+
+@pytest.mark.parametrize("inputs", [["u", "T_lag1"], ["u_lag1", "T"]])
+def test_isolated_lags_are_stricter_than_agentlib(inputs):
+    """
+    AgentLib-MPC accepts lags without the feature itself, but passes the values from lag 0 on: for 'T_lag1' it passes
+    T(k) (one recursive input), for 'u_lag1' the values u(k) and u(k-1). physXAI rejects these configs.
+    """
+    translated = physXAI_2_agentlib_json("001", _config(inputs))
+    lags = {
+        **{n: f["lag"] for n, f in translated["input"].items()},
+        **{n: f["lag"] for n, f in translated["output"].items()},
+    }
+    assert lags == ({"u": 1, "T": 1} if inputs[1] == "T_lag1" else {"u": 2, "T": 1})  # no trace of the lag 1 offset
+    with pytest.raises(AgentLibCompatibilityError, match="lag 0 on"):
+        check_agentlib_compatibility(_config(inputs))
 
 
 def test_multi_step_rejects_lags():

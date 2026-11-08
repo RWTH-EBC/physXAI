@@ -184,11 +184,15 @@ class Run:
         files: dict[str, Path] = dict()
         version = self.version_info()
         if preprocessing is not None:
-            files["preprocessing"] = self.save_json(f"{name}_preprocessing.json", {**preprocessing.get_config(), **version})
+            files["preprocessing"] = self.save_json(
+                f"{name}_preprocessing.json", {**preprocessing.get_config(), **version}
+            )
         if model is not None:
             files["model_config"] = self.save_json(f"{name}_model.json", {**model.get_config(), **version})
         if training_data is not None:
-            files["training_data"] = self.save_json(f"{name}_training_data.json", {**training_data.get_config(), **version})
+            files["training_data"] = self.save_json(
+                f"{name}_training_data.json", {**training_data.get_config(), **version}
+            )
         if model is not None:
             if trained_model is None:
                 trained_model = getattr(model, "trained_model", None)
