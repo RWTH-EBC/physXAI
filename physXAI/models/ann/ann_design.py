@@ -1067,8 +1067,10 @@ class PCNNModel(RNNModel):
     driven by the heating and cooling inputs and the heat losses to the outside (or neighbouring zones), and the
     unforced dynamics D, a recurrent network f on D and the remaining inputs (e.g. solar radiation):
 
-        E(k+1) = E(k) + sum a * u_heating(k) - sum d * u_cooling(k) + sum b * (T_x(k) - T(k))
+        E(k+1) = E(k) + sum a * u_heating(k) - sum d * u_cooling(k) + sum b * [V(k)] * (T_x(k) - T(k))
         D(k+1) = D(k) + f(D(k), x(k)),   T = D + E
+
+    (a loss can be scaled by a flow V, e.g. the air flow of a ventilation, see `flows`)
 
     Since D does not depend on the controls and T_x, the prediction is physically consistent over the whole
     horizon for any f: T increases with heating, decreases with cooling and increases with T_x, if the
@@ -1092,6 +1094,10 @@ class PCNNModel(RNNModel):
         cooling: {input: initial cooling rate in K/h per unit of the input, or None} (the input is a positive
                  cooling power).
         losses: {temperature input: initial loss rate in 1/h, or None}.
+        flows: {temperature input of a loss: flow input}: the loss is scaled by the flow, b * V * (T_x - T), e.g. a
+               ventilation with the air flow V and the supply temperature T_x (the rate is then in 1/h per unit of
+               the flow). The flow is no input of f, like the controls. Physically consistent with V >= 0; the check
+               1 - sum b > 0 uses the largest flow of the training data.
         rnn_units: Units of the recurrent layer of f.
         rnn_layer: 'LSTM' (default), 'GRU' or 'RNN'.
         **kwargs: Training settings of `RNNModel` (epochs, learning_rate, batch_size, early_stopping_epochs,
@@ -1111,6 +1117,7 @@ class PCNNModel(RNNModel):
         heating: dict[str, float] | None = None,
         cooling: dict[str, float] | None = None,
         losses: dict[str, float] | None = None,
+        flows: dict[str, str] | None = None,
         rnn_units: int = 32,
         rnn_layer: str = "LSTM",
         **kwargs,
@@ -1133,7 +1140,10 @@ class PCNNModel(RNNModel):
         # (weak reference to the series, rates per hour): ids of objects are reused after their deletion, a weak
         # reference cannot point to another series
         self._estimated: tuple[weakref.ref, dict[str, float]] | None = None
-        names = [*self.heating, *self.cooling, *self.losses]
+        self.flows = {str(k): str(v) for k, v in (flows or {}).items()}
+        if not set(self.flows) <= set(self.losses):
+            raise ValueError(f"flows scale losses, got flows for {sorted(set(self.flows) - set(self.losses))}.")
+        names = [*self.heating, *self.cooling, *self.losses, *self.flows.values()]
         if len(set(names)) != len(names):
             raise ValueError(f"Every input can only be part of one term, got {names}.")
 
@@ -1148,14 +1158,23 @@ class PCNNModel(RNNModel):
             raise ValueError("PCNNModel needs the time step of the data to scale its rates.")
         hours = td.time_step / 3600.0
         kinds = (("heating", self.heating), ("cooling", self.cooling), ("loss", self.losses))
-        for kind, rates in kinds:
-            for name in rates:
+        for kind, names in (*kinds, ("flow", self.flows.values())):
+            for name in names:
                 if name not in td.inputs:
                     raise ValueError(f"The {kind} input '{name}' is not an input of the data {td.inputs}.")
                 if name == feature:
                     raise ValueError(f"The predicted feature '{feature}' cannot be a {kind} input.")
         initial = self.initial_rates(td)
-        return [PCNNTerm(kind, td.inputs.index(name), initial[name] * hours) for kind, rates in kinds for name in rates]
+        return [
+            PCNNTerm(
+                kind,
+                td.inputs.index(name),
+                initial[name] * hours,
+                td.inputs.index(self.flows[name]) if kind == "loss" and name in self.flows else None,
+            )
+            for kind, rates in kinds
+            for name in rates
+        ]
 
     def initial_rates(self, td: TrainingDataMultiStep) -> dict[str, float]:
         """
@@ -1186,7 +1205,10 @@ class PCNNModel(RNNModel):
                 columns.append(sign * now[:, td.inputs.index(name)])
                 names.append(name)
         for name in self.losses:
-            columns.append(now[:, td.inputs.index(name)] - now[:, t])
+            column = now[:, td.inputs.index(name)] - now[:, t]
+            if name in self.flows:
+                column = now[:, td.inputs.index(self.flows[name])] * column
+            columns.append(column)
             names.append(name)
         features = np.column_stack(columns)
         weights, _ = constrained_least_squares(features, change, bias=True, weight_signs=[1] * len(names))
@@ -1252,7 +1274,15 @@ class PCNNModel(RNNModel):
         parameters = {"heating": {}, "cooling": {}, "losses": {}}
         for term, value in zip(terms, per_step, strict=True):
             parameters[kinds[term.kind]][td.inputs[term.input]] = value / hours
-        margin = 1.0 - sum(v for term, v in zip(terms, per_step, strict=True) if term.kind == "loss")
+        # a loss scaled by a flow counts with the largest flow of the training data
+        largest = {
+            term.flow: float(np.nanmax(td.X_train_single[:, term.flow])) for term in terms if term.flow is not None
+        }
+        margin = 1.0 - sum(
+            v * (1.0 if term.flow is None else max(largest[term.flow], 0.0))
+            for term, v in zip(terms, per_step, strict=True)
+            if term.kind == "loss"
+        )
         parameters["consistency_margin"] = margin
         if margin <= 0:
             logger.warning(
@@ -1267,4 +1297,7 @@ class PCNNModel(RNNModel):
         config = super().get_config()
         config.pop("feature_architecture", None)
         config.update({"heating": self.heating, "cooling": self.cooling, "losses": self.losses})
+        if self.flows:
+            # only when used: configs saved before the option stay the same
+            config["flows"] = self.flows
         return config

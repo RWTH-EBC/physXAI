@@ -106,7 +106,9 @@ loads single step models only. The export is verified against that branch, but n
   the unforced dynamics; the predicted temperature provably rises with heating and outside temperature over the
   horizon. Initial rates given as `None` are estimated from the training data by nonnegative least squares of the
   single step energy balance (`td.physics['initial_rates']`). Closed loop, warmup and step model export as for
-  `RNNModel`, verified against AgentLib-MPC (CasADi). Example `examples/10_pcnn.py`.
+  `RNNModel`, verified against AgentLib-MPC (CasADi). Example `examples/10_pcnn.py`. A loss can be scaled by a
+  flow input (`flows={'T_sup': 'V_flow'}`: b * V * (T_sup - T), e.g. a ventilation); the flow is no input of the
+  recurrent network, the consistency check uses its largest value in the training data.
 - Physics residuals with trainable physical parameters for all single step keras models:
   `physics=PhysicsResidual(px.Prediction() - model, weight)`, `physics_fit='calibrate'` (grey-box identification
   first, then the network), `'joint'` or `'fixed'`; `px.Prediction`, `px.Target`, `px.positive`, `px.freeze`;
