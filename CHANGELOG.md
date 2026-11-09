@@ -180,6 +180,9 @@ loads single step models only. The export is verified against that branch, but n
 - `PreprocessingData.from_config` restores the class from `__class_name__` and all settings.
 
 ### Fixed
+- `RNNModel`, `PCNNModel`: a constant input was normalized with the variance floor 1e-12, i.e. scaled by 1e6; a
+  rounded value in the MPC then shifted the hidden states strongly. Constant inputs are normalized with variance 1, as
+  in the single step models.
 - PINN: the arguments of the loss were swapped (`loss(y_pred, y_true)`), the RMSE metric accumulated over the data
   and physics terms, adding a physics term halved the weight of the data, the output rescaling used the physics
   columns, and a PINN could not be exported (two outputs).

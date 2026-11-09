@@ -34,6 +34,16 @@ STEP_MODEL_NAME = "rnn_step"
 RNN_LAYERS = {"RNN": keras.layers.SimpleRNN, "GRU": keras.layers.GRU, "LSTM": keras.layers.LSTM}
 
 
+def input_variance(X: np.ndarray) -> np.ndarray:
+    """
+    Variance per input column for the normalization, 1 for a (nearly) constant column, as in the single step models
+    (`expr.blocks`, `ann_models.output_scale`). A floor like 1e-12 would scale a constant input by 1e6, so that any
+    later deviation from the training value (e.g. a rounded value) would hit the network with a huge normalized input.
+    """
+    variance = np.asarray(X, dtype=np.float64).var(axis=0)
+    return np.where(variance > 1e-12, variance, 1.0)
+
+
 def number_of_states(rnn_layer: str) -> int:
     """Number of state tensors a recurrent layer carries between two time steps (2 for an LSTM)."""
     return 2 if rnn_layer == "LSTM" else 1
@@ -90,7 +100,7 @@ def build_step_model(
     states = [keras.Input(shape=(units,), name=f"state_input_{i}") for i in range(number_of_states(rnn_layer))]
 
     if feature_architecture is None:
-        normalization = keras.layers.Normalization(mean=X.mean(axis=0), variance=np.maximum(X.var(axis=0), 1e-12))
+        normalization = keras.layers.Normalization(mean=X.mean(axis=0), variance=input_variance(X))
         features = normalization(sequence)
     else:
         # the expressions slice the features they need out of the last axis, so they work on
@@ -219,7 +229,7 @@ def build_pcnn_step_model(config: dict, td, terms: list[PCNNTerm], name: str = S
         features = unforced
     normalized = keras.layers.Normalization(
         mean=X[:, columns].mean(axis=0),
-        variance=np.maximum(X[:, columns].var(axis=0), 1e-12),
+        variance=input_variance(X[:, columns]),
         name="normalization_pcnn",
     )(features)
     prefix = {"RNN": "simple_rnn", "GRU": "gru", "LSTM": "lstm"}[rnn_layer]
