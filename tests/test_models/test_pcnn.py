@@ -206,6 +206,39 @@ def test_initial_rates_from_the_data(data, caplog):
     assert "no positive effect of 'mDot'" in caplog.text
 
 
+def test_loss_scaled_by_a_flow(data, tmp_path):
+    """
+    flows: the loss to T_in is scaled by mDot, b * mDot * (T_in - T), the true structure of the data. The estimated
+    rate is dt * cp / C = 3 per step and kg/s (36 per hour), mDot leaves f, the step model is closed loop exact.
+    """
+    _, td = data
+    m, model = _train(td, heating={"load": None}, losses={"T_in": None}, flows={"T_in": "mDot"})
+    assert td.physics["initial_rates"]["T_in"] == pytest.approx(300.0 / 1e5 * 1000.0 * 12, rel=0.05)
+    step_model = model.get_layer("rnn_step")
+    names = [layer.name for layer in step_model.layers]
+    assert "multiply_pcnn_flow_1" in names and all(any(s in n for s in SUPPORTED) for n in names), names
+    # f sees only T: the normalization covers D alone, mDot is part of the physics
+    assert step_model.get_layer("normalization_pcnn").mean.shape[-1] == 1
+    X, initial = td.X("test")[:4], td.initial("test")[:4]
+    np.testing.assert_allclose(td.y_test_pred[:4], _rollout(step_model, X, initial), rtol=1e-4, atol=1e-4)
+
+    # consistency margin with the largest flow of the training data
+    parameters = td.physics["parameters"]
+    per_step = parameters["losses"]["T_in"] * td.time_step / 3600
+    assert parameters["consistency_margin"] == pytest.approx(1 - per_step * td.X_train_single[:, 2].max(), rel=1e-5)
+
+    config = json.loads(json.dumps(m.get_config()))
+    assert AbstractModel.model_from_config(config).flows == {"T_in": "mDot"}
+    assert "flows" not in PCNNModel(losses={"T_in": None}).get_config()  # unchanged configs without the option
+
+    with pytest.raises(ValueError, match="flows scale losses"):
+        PCNNModel(heating={"load": 1}, flows={"load": "mDot"})
+    with pytest.raises(ValueError, match="one term"):
+        PCNNModel(heating={"mDot": 1}, losses={"T_in": 1}, flows={"T_in": "mDot"})
+    with pytest.raises(ValueError, match="not an input"):
+        _train(td, losses={"T_in": 1.0}, flows={"T_in": "unknown"})
+
+
 def test_estimated_rates_are_not_taken_from_another_series(csv):
     """Regression: the cache of the estimated initial rates belongs to one series object (not to a reused id)."""
     import pickle

@@ -34,6 +34,16 @@ STEP_MODEL_NAME = "rnn_step"
 RNN_LAYERS = {"RNN": keras.layers.SimpleRNN, "GRU": keras.layers.GRU, "LSTM": keras.layers.LSTM}
 
 
+def input_variance(X: np.ndarray) -> np.ndarray:
+    """
+    Variance per input column for the normalization, 1 for a (nearly) constant column, as in the single step models
+    (`expr.blocks`, `ann_models.output_scale`). A floor like 1e-12 would scale a constant input by 1e6, so that any
+    later deviation from the training value (e.g. a rounded value) would hit the network with a huge normalized input.
+    """
+    variance = np.asarray(X, dtype=np.float64).var(axis=0)
+    return np.where(variance > 1e-12, variance, 1.0)
+
+
 def number_of_states(rnn_layer: str) -> int:
     """Number of state tensors a recurrent layer carries between two time steps (2 for an LSTM)."""
     return 2 if rnn_layer == "LSTM" else 1
@@ -90,7 +100,7 @@ def build_step_model(
     states = [keras.Input(shape=(units,), name=f"state_input_{i}") for i in range(number_of_states(rnn_layer))]
 
     if feature_architecture is None:
-        normalization = keras.layers.Normalization(mean=X.mean(axis=0), variance=np.maximum(X.var(axis=0), 1e-12))
+        normalization = keras.layers.Normalization(mean=X.mean(axis=0), variance=input_variance(X))
         features = normalization(sequence)
     else:
         # the expressions slice the features they need out of the last axis, so they work on
@@ -127,11 +137,14 @@ class PCNNTerm:
         input: Index of the input feature in the sequence.
         initial: Initial value of the parameter s per time step (> 0). The trained parameter is
                  `initial * weight`, the weight starts at 1 (s = s0 * s~ as in Di Natale et al. 2022).
+        flow: Only for a loss: index of a flow input (>= 0) that scales the term, + s * flow * (T_x - T), e.g. the
+              air flow of a ventilation with the supply temperature T_x. None: a constant conductance.
     """
 
     kind: str
     input: int
     initial: float
+    flow: int | None = None
 
 
 def build_pcnn_step_model(config: dict, td, terms: list[PCNNTerm], name: str = STEP_MODEL_NAME) -> keras.Model:
@@ -142,13 +155,14 @@ def build_pcnn_step_model(config: dict, td, terms: list[PCNNTerm], name: str = S
     The predicted feature T (input and output `Change(T)`) is the sum of the unforced dynamics D and the
     energy accumulator E:
 
-        E(k+1) = E(k) + sum_heating a * u(k) - sum_cooling d * u(k) + sum_losses b * (T_x(k) - T(k))
+        E(k+1) = E(k) + sum_heating a * u(k) - sum_cooling d * u(k) + sum_losses b * [V(k)] * (T_x(k) - T(k))
         D(k+1) = D(k) + f(D(k), x(k)),   D(k) = T(k) - E(k)
 
-    f is a recurrent network on D and the remaining inputs x, which excludes the controls and the
-    temperatures of the losses. With a, b, d > 0 and 1 - sum b > 0, T increases with heating, decreases
-    with cooling and increases with the temperatures T_x over the whole horizon, for any f. The parameters
-    work in physical units, f on normalized values.
+    A loss can be scaled by a flow V (e.g. a ventilation, `PCNNTerm.flow`). f is a recurrent network on D and the
+    remaining inputs x, which excludes the controls, the temperatures of the losses and their flows. With
+    a, b, d > 0 and 1 - sum b > 0, T increases with heating, decreases with cooling and increases with the
+    temperatures T_x over the whole horizon, for any f. The parameters work in physical units, f on normalized
+    values.
 
     Only keras layers translated by AgentLib-MPC are used (input slices, constants, subtract, multiply,
     concatenate, dense, simple_rnn, normalization, rescaling, add), the layer names carry their types.
@@ -179,6 +193,9 @@ def build_pcnn_step_model(config: dict, td, terms: list[PCNNTerm], name: str = S
         column = InputSliceLayer([term.input], name=f"input_slice_pcnn_term_{j}")(sequence)
         if term.kind == "loss":
             column = keras.layers.Subtract(name=f"subtract_pcnn_gradient_{j}")([column, temperature])
+            if term.flow is not None:
+                flow = InputSliceLayer([term.flow], name=f"input_slice_pcnn_flow_{j}")(sequence)
+                column = keras.layers.Multiply(name=f"multiply_pcnn_flow_{j}")([flow, column])
         initial = keras.layers.Multiply(name=f"multiply_pcnn_scale_{j}")
         constant = ConstantLayer(
             value=PCNN_TERMS[term.kind] * term.initial, shape=(1,), name=f"constant_pcnn_scale_{j}"
@@ -209,7 +226,7 @@ def build_pcnn_step_model(config: dict, td, terms: list[PCNNTerm], name: str = S
     unforced = keras.layers.Subtract(name="subtract_pcnn_unforced")([temperature, energy])
 
     # --- black-box module f(D, x) ----------------------------------------------------------------
-    used = {feature, *(term.input for term in terms)}
+    used = {feature, *(term.input for term in terms), *(term.flow for term in terms if term.flow is not None)}
     others = [i for i in range(n_inputs) if i not in used]
     columns = [feature, *others]
     if others:
@@ -219,7 +236,7 @@ def build_pcnn_step_model(config: dict, td, terms: list[PCNNTerm], name: str = S
         features = unforced
     normalized = keras.layers.Normalization(
         mean=X[:, columns].mean(axis=0),
-        variance=np.maximum(X[:, columns].var(axis=0), 1e-12),
+        variance=input_variance(X[:, columns]),
         name="normalization_pcnn",
     )(features)
     prefix = {"RNN": "simple_rnn", "GRU": "gru", "LSTM": "lstm"}[rnn_layer]

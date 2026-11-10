@@ -180,6 +180,33 @@ def test_export_for_agentlib(csv, tmp_path):
     assert all(any(s in layer.name for s in supported) for layer in step_model.layers), step_model.layers
 
 
+def test_constant_input_is_normalized_with_variance_one(tmp_path):
+    """
+    Regression: a constant input (e.g. a fixed air flow in the training data) was normalized with the variance floor
+    1e-12, i.e. scaled by 1e6: a deviation of 1e-4 from the training value (a rounded value in the MPC) reached the
+    network as 100 and changed the prediction completely. It is now normalized with variance 1, as in the single
+    step models.
+    """
+    from physXAI.models.ann.model_construction.rnn_models import input_variance
+
+    np.testing.assert_allclose(input_variance(np.array([[1.0, 0.072222], [3.0, 0.072222]])), [1.0, 1.0])
+    data = simulate_one_room(n_steps=600)
+    data["V"] = 0.072222
+    data.to_csv(tmp_path / "constant.csv", sep=";")
+    _, td = _data(str(tmp_path / "constant.csv"), ["V", "load", "T_in", "T"])
+    _, model = _train(td)
+    step_model = model.get_layer("rnn_step")
+    normalization = next(layer for layer in step_model.layers if isinstance(layer, keras.layers.Normalization))
+    assert float(np.ravel(normalization.variance)[0]) == pytest.approx(1.0)
+
+    X, initial = td.X("test")[:4], td.initial("test")[:4]
+    rounded = X.copy()
+    rounded[:, :, 0] = 0.07222
+    column = td.inputs.index("T")
+    difference = _mpc_rollout(step_model, rounded, initial, column) - _mpc_rollout(step_model, X, initial, column)
+    assert np.abs(difference).max() < 1e-3
+
+
 def test_wrong_models_and_data(csv):
     _, td = _data(csv, ["mDot", "load", "T_in"])
     with pytest.raises(TypeError, match="eval_horizon"):

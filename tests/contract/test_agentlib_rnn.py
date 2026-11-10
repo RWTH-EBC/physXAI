@@ -35,7 +35,10 @@ pytestmark = pytest.mark.agentlib
 WARMUP = 3
 
 
-@pytest.mark.parametrize("rnn_layer, pcnn", [("RNN", False), ("GRU", False), ("LSTM", False), ("LSTM", True)])
+@pytest.mark.parametrize(
+    "rnn_layer, pcnn",
+    [("RNN", False), ("GRU", False), ("LSTM", False), ("LSTM", True), ("LSTM", "flow")],
+)
 def test_casadi_step_function_reproduces_the_rnn(rnn_layer, pcnn, tmp_path):
     csv = tmp_path / "one_room.csv"
     simulate_one_room(n_steps=800).to_csv(csv, sep=";")
@@ -45,7 +48,9 @@ def test_casadi_step_function_reproduces_the_rnn(rnn_layer, pcnn, tmp_path):
     td = prep.pipeline(csv)
     settings = dict(rnn_units=4, rnn_layer=rnn_layer, epochs=1, early_stopping_epochs=None)
     # the PCNN step model has the energy accumulator as additional state
-    m = PCNNModel(heating={"load": 0.03}, losses={"T_in": 0.5}, **settings) if pcnn else RNNModel(**settings)
+    # pcnn 'flow': the loss to T_in scaled by mDot (PCNNModel flows)
+    flows = {"flows": {"T_in": "mDot"}} if pcnn == "flow" else {}
+    m = PCNNModel(heating={"load": 0.03}, losses={"T_in": 0.5}, **flows, **settings) if pcnn else RNNModel(**settings)
     model = m.pipeline(td, plot=False, save_model=False)
     run = Run(tmp_path, "rnn")
     run.save_for_agentlib("T", prep, m, td, trained_model=model)

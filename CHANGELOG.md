@@ -106,7 +106,9 @@ loads single step models only. The export is verified against that branch, but n
   the unforced dynamics; the predicted temperature provably rises with heating and outside temperature over the
   horizon. Initial rates given as `None` are estimated from the training data by nonnegative least squares of the
   single step energy balance (`td.physics['initial_rates']`). Closed loop, warmup and step model export as for
-  `RNNModel`, verified against AgentLib-MPC (CasADi). Example `examples/10_pcnn.py`.
+  `RNNModel`, verified against AgentLib-MPC (CasADi). Example `examples/10_pcnn.py`. A loss can be scaled by a
+  flow input (`flows={'T_sup': 'V_flow'}`: b * V * (T_sup - T), e.g. a ventilation); the flow is no input of the
+  recurrent network, the consistency check uses its largest value in the training data.
 - Physics residuals with trainable physical parameters for all single step keras models:
   `physics=PhysicsResidual(px.Prediction() - model, weight)`, `physics_fit='calibrate'` (grey-box identification
   first, then the network), `'joint'` or `'fixed'`; `px.Prediction`, `px.Target`, `px.positive`, `px.freeze`;
@@ -180,6 +182,9 @@ loads single step models only. The export is verified against that branch, but n
 - `PreprocessingData.from_config` restores the class from `__class_name__` and all settings.
 
 ### Fixed
+- `RNNModel`, `PCNNModel`: a constant input was normalized with the variance floor 1e-12, i.e. scaled by 1e6; a
+  rounded value in the MPC then shifted the hidden states strongly. Constant inputs are normalized with variance 1, as
+  in the single step models.
 - PINN: the arguments of the loss were swapped (`loss(y_pred, y_true)`), the RMSE metric accumulated over the data
   and physics terms, adding a physics term halved the weight of the data, the output rescaling used the physics
   columns, and a PINN could not be exported (two outputs).
