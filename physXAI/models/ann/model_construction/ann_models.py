@@ -1,13 +1,28 @@
+"""Construction of the keras models of `ClassicalANNModel` and `CMNNModel` (and of `PINNModel`)."""
+
 import os
 
 import numpy as np
+
+from physXAI.models.ann.configs.ann_model_configs import ClassicalANNConstruction_config, CMNNModelConstruction_config
+from physXAI.models.ann.keras_models.keras_models import ConcaveActivation, NonNegPartial, SaturatedActivation
 from physXAI.preprocessing.training_data import TrainingDataGeneric
-from physXAI.models.ann.configs.ann_model_configs import (ClassicalANNConstruction_config,
-                                                                 CMNNModelConstruction_config)
-from physXAI.models.ann.keras_models.keras_models import NonNegPartial, ConcaveActivation, SaturatedActivation
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import keras
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"
+
+
+def output_scale(y) -> float:
+    """Standard deviation of the training targets for the output rescaling, 1 for a constant target (no zero scale)."""
+    sigma = float(np.std(y, ddof=1)) if np.size(y) > 1 else 0.0
+    return sigma if np.isfinite(sigma) and sigma > 1e-12 else 1.0
+
+
+def _split_units(units: int, activation_split: list[float], part: int) -> int:
+    """Neurons of one part (convex, concave, saturated) of a CMNN layer: its share, at least one if the share is > 0."""
+    return max(int(units * activation_split[part] / sum(activation_split)), 1)
 
 
 def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
@@ -28,30 +43,26 @@ def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
     config = ClassicalANNConstruction_config.model_validate(config).model_dump()
 
     # Get config
-    n_layers = config['n_layers']
-    n_neurons = config['n_neurons']
+    n_layers = config["n_layers"]
+    n_neurons = config["n_neurons"]
     # If n_neurons is a single integer, replicate it for all layers
     if isinstance(n_neurons, int):
         n_neurons = [n_neurons] * n_layers
     else:
         assert len(n_neurons) == n_layers
-    n_featues = td.X_train_single.shape[1]
-    activation_function = config['activation_function']
+    n_features = td.X_train_single.shape[1]
+    activation_function = config["activation_function"]
     # If activation_function is a single string, replicate it for all layers
     if isinstance(activation_function, str):
         activation_function = [activation_function] * n_layers
     else:
         assert len(activation_function) == n_layers
 
-    # Rescaling for output layer
-    rescale_mean = float(np.mean(td.y_train_single))
-    rescale_sigma = float(np.std(td.y_train_single, ddof=1))
-
     # Build artificial neural network as Sequential
     model = keras.Sequential()
 
     # Add input layer
-    model.add(keras.layers.Input(shape=(n_featues,)))
+    model.add(keras.layers.Input(shape=(n_features,)))
 
     # Add normalization layer
     normalization = keras.layers.Normalization()
@@ -62,11 +73,13 @@ def ClassicalANNConstruction(config: dict, td: TrainingDataGeneric):
         # For each layer add dense
         model.add(keras.layers.Dense(n_neurons[i], activation=activation_function[i]))
     # Add output layer
-    model.add(keras.layers.Dense(1, activation='linear'))
+    model.add(keras.layers.Dense(1, activation="linear"))
     # Add rescaling
-    if config['rescale_output']:
+    if config["rescale_output"]:
+        # Rescaling for output layer
+        rescale_mean = float(np.mean(td.y_train_single))
+        rescale_sigma = output_scale(td.y_train_single)
         model.add(keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean))
-
     return model
 
 
@@ -89,15 +102,15 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
     config = CMNNModelConstruction_config.model_validate(config).model_dump()
 
     # Get config
-    n_layers = config['n_layers']
-    n_neurons = config['n_neurons']
+    n_layers = config["n_layers"]
+    n_neurons = config["n_neurons"]
     # If n_neurons is a single integer, replicate it for all layers
     if isinstance(n_neurons, int):
         n_neurons = [n_neurons] * n_layers
     else:
         assert len(n_neurons) == n_layers
-    n_featues = td.X_train_single.shape[1]
-    activation_function = config['activation_function']
+    n_features = td.X_train_single.shape[1]
+    activation_function = config["activation_function"]
     # If activation_function is a single string, replicate it for all layers
     if isinstance(activation_function, str):
         activation_function = [activation_function] * n_layers
@@ -105,18 +118,18 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
         assert len(activation_function) == n_layers
 
     # Get monotonicity constraints
-    mono = config['monotonicities']
+    mono = config["monotonicities"]
     if mono is None:
-        monotonicities = [0] * n_featues
+        monotonicities = [0] * n_features
     else:
-        monotonicities = [0 if name not in mono.keys() else mono[name] for name in td.columns]
-
-    # Rescaling for output layer
-    rescale_mean = float(np.mean(td.y_train_single))
-    rescale_sigma = float(np.std(td.y_train_single, ddof=1))
+        unknown = sorted(set(mono) - set(td.inputs))
+        if unknown:
+            # a misspelled name would silently drop the monotonicity guarantee
+            raise ValueError(f"Monotonicities of {unknown}, which are no inputs of the model {td.inputs}.")
+        monotonicities = [0 if name not in mono.keys() else mono[name] for name in td.inputs]
 
     # Add input layer
-    input_layer = keras.layers.Input(shape=(n_featues,))
+    input_layer = keras.layers.Input(shape=(n_features,))
 
     # Add normalization layer
     normalization = keras.layers.Normalization()
@@ -124,33 +137,38 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
     x = normalization(input_layer)
 
     # Add dense layer
-    activation_split = config['activation_split']
-    # Determine activation split
+    activation_split = config["activation_split"]
+    # Convex, concave and saturated neurons. Only convex neurons with the non negative weights of the following layers
+    # would make the prediction convex in all inputs, also without monotonicities.
     if activation_split is None:
-        if mono is None:
-            activation_split = [1, 0, 0]
-        else:
-            activation_split = [1, 1, 1]
+        activation_split = [1, 1, 1]
     # First layer has partial constraints based on monotonicities
     kernel_contraint = NonNegPartial(monotonicities)
     for i in range(0, n_layers):
         x_split = list()
         # Convex activation
         if activation_split[0] > 0:
-            x1 = keras.layers.Dense(int(n_neurons[i] * activation_split[0] / sum(activation_split)),
-                                    activation=activation_function[i], kernel_constraint=kernel_contraint)(x)
+            x1 = keras.layers.Dense(
+                _split_units(n_neurons[i], activation_split, 0),
+                activation=activation_function[i],
+                kernel_constraint=kernel_contraint,
+            )(x)
             x_split.append(x1)
         # Concave activation
         if activation_split[1] > 0:
-            x2 = keras.layers.Dense(int(n_neurons[i] * activation_split[1] / sum(activation_split)),
-                                    activation=ConcaveActivation(activation_function[i]),
-                                    kernel_constraint=kernel_contraint)(x)
+            x2 = keras.layers.Dense(
+                _split_units(n_neurons[i], activation_split, 1),
+                activation=ConcaveActivation(activation_function[i]),
+                kernel_constraint=kernel_contraint,
+            )(x)
             x_split.append(x2)
         # Saturated activation
         if activation_split[2] > 0:
-            x3 = keras.layers.Dense(int(n_neurons[i] * activation_split[2] / sum(activation_split)),
-                                    activation=SaturatedActivation(activation_function[i]),
-                                    kernel_constraint=kernel_contraint)(x)
+            x3 = keras.layers.Dense(
+                _split_units(n_neurons[i], activation_split, 2),
+                activation=SaturatedActivation(activation_function[i]),
+                kernel_constraint=kernel_contraint,
+            )(x)
             x_split.append(x3)
         # Concatenate activations
         if len(x_split) > 1:
@@ -163,20 +181,14 @@ def CMNNModelConstruction(config: dict, td: TrainingDataGeneric):
         kernel_contraint = keras.constraints.NonNeg()
 
     # Add output layer
-    x = keras.layers.Dense(1, activation='linear', kernel_constraint=keras.constraints.NonNeg())(x)
+    x = keras.layers.Dense(1, activation="linear", kernel_constraint=keras.constraints.NonNeg())(x)
 
     # Add rescaling
-    if config['rescale_output']:
+    if config["rescale_output"]:
+        # Rescaling for output layer
+        rescale_mean = float(np.mean(td.y_train_single))
+        rescale_sigma = output_scale(td.y_train_single)
         x = keras.layers.Rescaling(scale=rescale_sigma, offset=rescale_mean)(x)
-
-    # # Add min / max constraints
-    # min_value = config['min_value']
-    # max_value = config['max_value']
-    # if min_value is not None or max_value is not None:
-    #     d = keras.layers.Dense(1, activation=LimitedActivation(max_value, min_value),
-    #                            kernel_initializer=keras.initializers.Ones(), use_bias=False)
-    #     d.trainable = False
-    #     x = d(x)
 
     model = keras.models.Model(inputs=input_layer, outputs=x)
 
