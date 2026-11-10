@@ -279,6 +279,22 @@ T(t0), so the model can be trained on the trajectory.</p></li>
 </li>
 </ul>
 <dl class="py function">
+<dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.input_variance">
+<span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.rnn_models.</span></span><span class="sig-name descname"><span class="pre">input_variance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/rnn_models.html#input_variance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.input_variance" title="Permalink to this definition"></a></dt>
+<dd><p>Variance per input column for the normalization, 1 for a (nearly) constant column, as in the single step models
+(<code class="code docutils literal notranslate"><span class="pre">expr.blocks</span></code>, <code class="code docutils literal notranslate"><span class="pre">ann_models.output_scale</span></code>). A floor like 1e-12 would scale a constant input by 1e6, so that any
+later deviation from the training value (e.g. a rounded value) would hit the network with a huge normalized input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>X</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.number_of_states">
 <span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.rnn_models.</span></span><span class="sig-name descname"><span class="pre">number_of_states</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rnn_layer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/rnn_models.html#number_of_states"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.number_of_states" title="Permalink to this definition"></a></dt>
 <dd><p>Number of state tensors a recurrent layer carries between two time steps (2 for an LSTM).</p>
@@ -386,7 +402,7 @@ out of the input features. Defaults to the normalized inputs.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.PCNNTerm">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.rnn_models.</span></span><span class="sig-name descname"><span class="pre">PCNNTerm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/rnn_models.html#PCNNTerm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.rnn_models.</span></span><span class="sig-name descname"><span class="pre">PCNNTerm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/rnn_models.html#PCNNTerm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>One term of the energy accumulator of a PCNN.</p>
 <dl class="field-list simple">
@@ -396,6 +412,8 @@ out of the input features. Defaults to the normalized inputs.</p></li>
 <li><p><strong>input</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Index of the input feature in the sequence.</p></li>
 <li><p><strong>initial</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Initial value of the parameter s per time step (&gt; 0). The trained parameter is
 <code class="code docutils literal notranslate"><span class="pre">initial</span> <span class="pre">*</span> <span class="pre">weight</span></code>, the weight starts at 1 (s = s0 * s~ as in Di Natale et al. 2022).</p></li>
+<li><p><strong>flow</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – Only for a loss: index of a flow input (&gt;= 0) that scales the term, + s * flow * (T_x - T), e.g. the
+air flow of a ventilation with the supply temperature T_x. None: a constant conductance.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
@@ -403,6 +421,7 @@ out of the input features. Defaults to the normalized inputs.</p></li>
 <li><p><strong>kind</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
 <li><p><strong>input</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
 <li><p><strong>initial</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – </p></li>
+<li><p><strong>flow</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – </p></li>
 </ul>
 </dd>
 </dl>
@@ -421,6 +440,11 @@ out of the input features. Defaults to the normalized inputs.</p></li>
 <span class="sig-name descname"><span class="pre">initial</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm.initial" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.PCNNTerm.flow">
+<span class="sig-name descname"><span class="pre">flow</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm.flow" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py function">
@@ -431,13 +455,14 @@ Applied Energy 325, 119806), <code class="code docutils literal notranslate"><sp
 <p>The predicted feature T (input and output <code class="code docutils literal notranslate"><span class="pre">Change(T)</span></code>) is the sum of the unforced dynamics D and the
 energy accumulator E:</p>
 <blockquote>
-<div><p>E(k+1) = E(k) + sum_heating a * u(k) - sum_cooling d * u(k) + sum_losses b * (T_x(k) - T(k))
+<div><p>E(k+1) = E(k) + sum_heating a * u(k) - sum_cooling d * u(k) + sum_losses b * [V(k)] * (T_x(k) - T(k))
 D(k+1) = D(k) + f(D(k), x(k)),   D(k) = T(k) - E(k)</p>
 </div></blockquote>
-<p>f is a recurrent network on D and the remaining inputs x, which excludes the controls and the
-temperatures of the losses. With a, b, d &gt; 0 and 1 - sum b &gt; 0, T increases with heating, decreases
-with cooling and increases with the temperatures T_x over the whole horizon, for any f. The parameters
-work in physical units, f on normalized values.</p>
+<p>A loss can be scaled by a flow V (e.g. a ventilation, <code class="code docutils literal notranslate"><span class="pre">PCNNTerm.flow</span></code>). f is a recurrent network on D and the
+remaining inputs x, which excludes the controls, the temperatures of the losses and their flows. With
+a, b, d &gt; 0 and 1 - sum b &gt; 0, T increases with heating, decreases with cooling and increases with the
+temperatures T_x over the whole horizon, for any f. The parameters work in physical units, f on normalized
+values.</p>
 <p>Only keras layers translated by AgentLib-MPC are used (input slices, constants, subtract, multiply,
 concatenate, dense, simple_rnn, normalization, rescaling, add), the layer names carry their types.</p>
 <dl class="field-list simple">
