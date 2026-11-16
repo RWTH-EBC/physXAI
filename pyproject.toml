@@ -1,9 +1,11 @@
 [build-system]
-requires = ["setuptools>=80.9", "setuptools-scm>=8.3"]
+requires = ["setuptools>=80.9"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "physXAI"
+# Single source of truth for the version. Bump manually for each release and add an entry to CHANGELOG.md.
+version = "1.0.0"
 authors = [
     { name = "Patrick Henkel", email = "ebc-tools@eonerc.rwth-aachen.de" }
 ]
@@ -11,67 +13,98 @@ description = "Framework for development and execution of physics-guided machine
 readme = "README.md"
 requires-python = ">=3.11"
 keywords = [
-    "physics-guided", "physics-informed", "machine-learning", "mpc", "model-predictive-control", "building-energy-systems", 
+    "physics-guided", "physics-informed", "machine-learning", "mpc", "model-predictive-control", "building-energy-systems",
 ]
-license = { text = "BSD-3-Clause" }
+license = "BSD-3-Clause"
 classifiers = [
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
-    'Programming Language :: Python :: 3.11',
-    'Programming Language :: Python :: 3.12',
-    'Programming Language :: Python :: 3.13',
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
+# Upper bounds: the next major versions are untested. In particular the CasADi converter of AgentLib-MPC recognizes
+# keras layers by their names and attributes, which a new keras major version may change. The tested combination of
+# all (also transitive) versions is pinned in constraints.txt.
 dependencies = [
-    "numpy>=2.0",
-    "pandas>=2.2.3",
-    "scikit-learn>=1.6.1",
-    "keras>=3.15.0",  # older versions have known vulnerabilities in loading models
-    "tensorflow>=2.19.0",
-    "GitPython>=3.2.1",
-    "pydantic>=2.11.4",
-    "plotly>=6.0.1",
+    "numpy>=2.0,<3",
+    "pandas>=2.2.3,<4",
+    "scikit-learn>=1.6.1,<2",
+    "scipy>=1.11,<2",  # sampling and local search of the shape constraints, least squares calibration
+    "keras>=3.15.0,<4",  # older versions have known vulnerabilities in loading models (GitHub security advisories)
+    "tensorflow>=2.19.0,<3",
+    "casadi>=3.6.7,<4",
+    "pydantic>=2.11.4,<3",
+    "plotly>=6.0.1,<8",
 ]
-
-dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.4.1",
     "pytest-cov>=6.2.1",
-    "anybadge>=1.16.0"
+    "ruff>=0.17.4",  # formatting as in .pre-commit-config.yaml and quality.yml
+    "pre-commit>=4.2",
 ]
-gh-pages = [
-    "mkdocs-material>=9.6.15",
-    "mkdocstrings[python]>=0.30.0",
+# Required for the AgentLib-MPC contract tests (tests/contract). Tests are skipped if not installed, unless the
+# environment variable PHYSXAI_REQUIRE_AGENTLIB=1 is set (as in the CI).
+agentlib = [
+    "agentlib_mpc[ml]>=1.1.1,<2",
+]
+# TensorFlow with CUDA (GPU training). Only on Linux (also WSL2): TensorFlow >= 2.11 has no GPU support on native Windows.
+gpu = [
+    "tensorflow[and-cuda]>=2.19.0,<3; sys_platform == 'linux'",
+]
+# Sphinx documentation, as built by the EBC CI template (sphinx-apidoc + sphinx-build, see docs/source/conf.py)
+docs = [
+    "sphinx>=6.2",
+    "myst-parser>=2.0",
+    "sphinx-rtd-theme>=1.2",
+    "autodoc_pydantic>=2.0",
 ]
 
 [project.urls]
 homepage = "https://github.com/RWTH-EBC/physXAI"
 repository = "https://github.com/RWTH-EBC/physXAI"
-documentation = "https://github.com/RWTH-EBC/physXAI/blob/main/README.md"
+documentation = "https://rwth-ebc.github.io/physXAI/main/docs/index.html"
 "Bug Tracker" = "https://github.com/RWTH-EBC/physXAI/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["physXAI*"]
-exclude = ["unittests*", "executables*", "data*", "build*", "docs*"]
-
-[tool.setuptools_scm]
-write_to = "physXAI/_version.py"
+exclude = ["tests*", "examples*", "data*", "build*", "docs*"]
 
 [tool.pytest.ini_options]
 cache_dir = "build/.pytest_cache"
+testpaths = ["tests"]
+markers = [
+    "slow: long running tests (examples, full trainings)",
+    "agentlib: tests requiring agentlib_mpc (contract with AgentLib-MPC)",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:tensorflow.*",
+    "ignore::DeprecationWarning:keras.*",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["external", "build", "docs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "NPY"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]
 
 [tool.coverage.run]
 source = ["physXAI/"]
-data_file = "build/.coverage"
 branch = true
 omit = [
     "conftest.py",
-    "unittests/*",
+    "tests/*",
     "*/__init__.py",
-    "executables/*"
+    "examples/*"
 ]
 
 [tool.coverage.report]
@@ -80,12 +113,20 @@ exclude_lines = [
     "pragma: no cover",
     "raise NotImplementedError",
     "@abstractmethod",
-    "if Logger._logger is None:",
-    "Logger.setup_logger()"
 ]
 
-[tool.coverage.xml]
-output = "build/reports/coverage.xml"
+# Static analysis report of the EBC CI template (pylint, score only)
+[tool.pylint.format]
+max-line-length = 120
 
-[tool.coverage.html]
-directory = "build/reports/coverage_html"
+[tool.pylint."messages control"]
+disable = [
+    "invalid-name",            # physical symbols (T, dT, X_train) and keras conventions
+    "too-many-arguments",
+    "too-many-positional-arguments",
+    "too-many-locals",
+    "too-many-instance-attributes",
+    "too-few-public-methods",
+    "import-outside-toplevel",  # heavy imports (tensorflow, casadi) are deferred on purpose
+    "wrong-import-position",    # TF_CPP_MIN_LOG_LEVEL has to be set before importing keras
+]
