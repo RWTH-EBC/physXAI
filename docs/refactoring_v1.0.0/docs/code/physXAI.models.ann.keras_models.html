@@ -127,7 +127,7 @@ For example, if a feature should have a non-decreasing relationship with the out
 the corresponding weight can be constrained to be non-negative.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>monotonicities</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em>) – </p>
+<dd class="field-odd"><p><strong>monotonicities</strong> (<em>list</em><em>[</em><em>int</em><em>]</em>) – </p>
 </dd>
 </dl>
 <dl class="py method">
@@ -140,13 +140,13 @@ the corresponding weight can be constrained to be non-negative.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="physXAI.models.ann.keras_models.keras_models.ConcaveActivation">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.keras_models.keras_models.</span></span><span class="sig-name descname"><span class="pre">ConcaveActivation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">activation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/keras_models/keras_models.html#ConcaveActivation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.keras_models.keras_models.ConcaveActivation" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A Keras activation function wrapper that transforms a given activation function
 into its concave counterpart.
 If f(x) is the original activation, the concave version is -f(-x).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>activation</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>activation</strong> (<em>str</em>) – </p>
 </dd>
 </dl>
 <dl class="py method">
@@ -164,7 +164,7 @@ If f(x) is the original activation, the concave version is -f(-x).</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="physXAI.models.ann.keras_models.keras_models.SaturatedActivation">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.keras_models.keras_models.</span></span><span class="sig-name descname"><span class="pre">SaturatedActivation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">activation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/keras_models/keras_models.html#SaturatedActivation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.keras_models.keras_models.SaturatedActivation" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A Keras activation function that creates a saturated version of a given base activation.
 The saturation behavior is different for x &lt;= 0 and x &gt; 0.
 - For x &lt;= 0:  f(x + 1) - f(1)  (where f is the base activation)
@@ -172,7 +172,7 @@ The saturation behavior is different for x &lt;= 0 and x &gt; 0.
 This can be used to create activation functions that plateau or saturate at certain input ranges.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>activation</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>activation</strong> (<em>str</em>) – </p>
 </dd>
 </dl>
 <dl class="py method">
@@ -197,15 +197,15 @@ of the Euclidean distance between the input and the neuron’s center.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>units</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Positive integer, dimensionality of the output space (number of RBF neurons).</p></li>
-<li><p><strong>gamma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><em>list/array</em>) – The gamma parameter of the Gaussian function, controlling the width.
+<li><p><strong>units</strong> (<em>int</em>) – Positive integer, dimensionality of the output space (number of RBF neurons).</p></li>
+<li><p><strong>gamma</strong> (<em>float</em><em> or </em><em>list/array</em>) – The gamma parameter of the Gaussian function, controlling the width.
 Can be a scalar (same gamma for all neurons) or a tensor/array
 of length <code class="code docutils literal notranslate"><span class="pre">units</span></code> (individual gamma per neuron).</p></li>
 <li><p><strong>initial_centers</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – A NumPy array of shape (units, input_dim)
 for the initial centers. If None, they are
 initialized using a default initializer (RandomUniform).</p></li>
-<li><p><strong>learnable_centers</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether the centers should be trainable. Defaults to True.</p></li>
-<li><p><strong>learnable_gamma</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether gamma should be trainable. Defaults to True.</p></li>
+<li><p><strong>learnable_centers</strong> (<em>bool</em>) – Whether the centers should be trainable. Defaults to True.</p></li>
+<li><p><strong>learnable_gamma</strong> (<em>bool</em>) – Whether gamma should be trainable. Defaults to True.</p></li>
 </ul>
 </dd>
 </dl>
@@ -222,7 +222,7 @@ initialized using a default initializer (RandomUniform).</p></li>
 This method is called the first time the layer is used, with the shape of the input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>input_shape</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a>) – Shape of the input tensor.</p>
+<dd class="field-odd"><p><strong>input_shape</strong> (<em>tuple</em>) – Shape of the input tensor.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -254,13 +254,13 @@ This method is called the first time the layer is used, with the shape of the in
 <dd><p>Computes the output shape of the layer.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>input_shape</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a>) – Shape of the input tensor.</p>
+<dd class="field-odd"><p><strong>input_shape</strong> (<em>tuple</em>) – Shape of the input tensor.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Shape of the output tensor (batch_size, units).</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a></p>
+<dd class="field-odd"><p>tuple</p>
 </dd>
 </dl>
 </dd></dl>
@@ -284,7 +284,7 @@ This method is called the first time the layer is used, with the shape of the in
 <p>A simple layer to select specific features from the last axis.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>feature_indices</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em>) – </p>
+<dd class="field-odd"><p><strong>feature_indices</strong> (<em>int</em><em> | </em><em>list</em><em>[</em><em>int</em><em>]</em>) – </p>
 </dd>
 </dl>
 <dl class="py method">
@@ -320,7 +320,7 @@ pre-defined shape, initialized with a constant value.</p>
 trainable or non-trainable.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>weight_name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>weight_name</strong> (<em>str</em>) – </p>
 </dd>
 </dl>
 <dl class="py method">

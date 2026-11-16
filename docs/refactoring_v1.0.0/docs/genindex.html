@@ -257,12 +257,12 @@
 </li>
       <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.CMNNModel">CMNNModel (class in physXAI.models.ann.ann_design)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.ann_models.CMNNModelConstruction">CMNNModelConstruction() (in module physXAI.models.ann.model_construction.ann_models)</a>
 </li>
       <li><a href="code/physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.column">column() (physXAI.preprocessing.training_data.TrainingData method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="code/physXAI.evaluation.html#physXAI.evaluation.rollout.RecursionSpec.columns">columns (physXAI.evaluation.rollout.RecursionSpec attribute)</a>
 
       <ul>
@@ -312,6 +312,14 @@
       <li><a href="code/physXAI.models.modular.html#physXAI.models.modular.shape_constraints.ShapeConstraints.constraints">constraints() (physXAI.models.modular.shape_constraints.ShapeConstraints method)</a>
 </li>
       <li><a href="code/physXAI.feature_selection.html#physXAI.feature_selection.selection.FeatureSelectionResult.criterion">criterion (physXAI.feature_selection.selection.FeatureSelectionResult attribute)</a>
+</li>
+      <li><a href="code/physXAI.training.html#physXAI.training.cross_validation.cross_validate">cross_validate() (in module physXAI.training.cross_validation)</a>
+</li>
+      <li><a href="code/physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.cross_validation">cross_validation (physXAI.preprocessing.training_data.TrainingDataGeneric attribute)</a>
+</li>
+      <li><a href="code/physXAI.training.html#physXAI.training.cross_validation.CrossValidated">CrossValidated (class in physXAI.training.cross_validation)</a>
+</li>
+      <li><a href="code/physXAI.training.html#physXAI.training.cross_validation.CrossValidation">CrossValidation (class in physXAI.training.cross_validation)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -437,6 +445,8 @@
 </li>
       <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.find_step_model">find_step_model() (in module physXAI.models.ann.model_construction.rnn_models)</a>
 </li>
+      <li><a href="code/physXAI.training.html#physXAI.training.cross_validation.fit_cross_validated">fit_cross_validated() (in module physXAI.training.cross_validation)</a>
+</li>
       <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.ANNModel.fit_model">fit_model() (physXAI.models.ann.ann_design.ANNModel method)</a>
 
       <ul>
@@ -463,10 +473,12 @@
 </li>
       <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.PCNNTerm.flow">flow (physXAI.models.ann.model_construction.rnn_models.PCNNTerm attribute)</a>
 </li>
-      <li><a href="code/physXAI.expr.html#physXAI.expr.core.Expr.free_vars">free_vars() (physXAI.expr.core.Expr method)</a>
+      <li><a href="code/physXAI.training.html#physXAI.training.cross_validation.CrossValidation.folds">folds (physXAI.training.cross_validation.CrossValidation attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="code/physXAI.expr.html#physXAI.expr.core.Expr.free_vars">free_vars() (physXAI.expr.core.Expr method)</a>
+</li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.core.freeze">freeze() (in module physXAI.expr.core)</a>
 </li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.serialization.from_config">from_config() (in module physXAI.expr.serialization)</a>
@@ -621,6 +633,8 @@
         <li><a href="code/physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.get_config">(physXAI.preprocessing.training_data.TrainingDataGeneric method)</a>
 </li>
         <li><a href="code/physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.get_config">(physXAI.preprocessing.training_data.TrainingDataMultiStep method)</a>
+</li>
+        <li><a href="code/physXAI.training.html#physXAI.training.cross_validation.CrossValidation.get_config">(physXAI.training.cross_validation.CrossValidation method)</a>
 </li>
         <li><a href="code/physXAI.training.html#physXAI.training.recursive.RecursiveTraining.get_config">(physXAI.training.recursive.RecursiveTraining method)</a>
 </li>
@@ -793,12 +807,18 @@
 </li>
       <li><a href="code/physXAI.evaluation.html#physXAI.evaluation.metrics.MetricsPINN">MetricsPINN (class in physXAI.evaluation.metrics)</a>
 </li>
+      <li><a href="code/physXAI.training.html#physXAI.training.cross_validation.CrossValidation.min_epochs">min_epochs (physXAI.training.cross_validation.CrossValidation attribute)</a>
+</li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.blocks.MLP">MLP (class in physXAI.expr.blocks)</a>
 </li>
       <li><a href="code/physXAI.training.html#physXAI.training.recursive.Mode">Mode (in module physXAI.training.recursive)</a>
 </li>
       <li><a href="code/physXAI.evaluation.html#physXAI.evaluation.comparison.RunRecord.model">model (physXAI.evaluation.comparison.RunRecord attribute)</a>
+
+      <ul>
+        <li><a href="code/physXAI.training.html#physXAI.training.cross_validation.CrossValidated.model">(physXAI.training.cross_validation.CrossValidated attribute)</a>
 </li>
+      </ul></li>
       <li><a href="code/physXAI.evaluation.html#physXAI.evaluation.comparison.MODEL_COLORS">MODEL_COLORS (in module physXAI.evaluation.comparison)</a>
 </li>
       <li><a href="code/physXAI.evaluation.html#physXAI.evaluation.comparison.RunRecord.model_config">model_config (physXAI.evaluation.comparison.RunRecord attribute)</a>
@@ -902,6 +922,8 @@
         <li><a href="code/physXAI.preprocessing.html#module-physXAI.preprocessing.windows">physXAI.preprocessing.windows</a>
 </li>
         <li><a href="code/physXAI.training.html#module-physXAI.training">physXAI.training</a>
+</li>
+        <li><a href="code/physXAI.training.html#module-physXAI.training.cross_validation">physXAI.training.cross_validation</a>
 </li>
         <li><a href="code/physXAI.training.html#module-physXAI.training.recursive">physXAI.training.recursive</a>
 </li>
@@ -1050,6 +1072,12 @@
       </ul></li>
       <li><a href="code/physXAI.evaluation.html#physXAI.evaluation.comparison.RunRecord.path">path (physXAI.evaluation.comparison.RunRecord attribute)</a>
 </li>
+      <li><a href="code/physXAI.training.html#physXAI.training.cross_validation.CrossValidation.patience">patience (physXAI.training.cross_validation.CrossValidation attribute)</a>
+</li>
+      <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.PCNN_F">PCNN_F (in module physXAI.models.ann.model_construction.rnn_models)</a>
+</li>
+      <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.pcnn_f_inputs">pcnn_f_inputs() (in module physXAI.models.ann.model_construction.rnn_models)</a>
+</li>
       <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.pcnn_initial_values">pcnn_initial_values() (in module physXAI.models.ann.model_construction.rnn_models)</a>
 </li>
       <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.pcnn_parameters">pcnn_parameters() (in module physXAI.models.ann.model_construction.rnn_models)</a>
@@ -1061,6 +1089,8 @@
       <li><a href="code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel">PCNNModel (class in physXAI.models.ann.ann_design)</a>
 </li>
       <li><a href="code/physXAI.models.ann.model_construction.html#physXAI.models.ann.model_construction.rnn_models.PCNNTerm">PCNNTerm (class in physXAI.models.ann.model_construction.rnn_models)</a>
+</li>
+      <li><a href="code/physXAI.training.html#physXAI.training.cross_validation.phases">phases() (in module physXAI.training.cross_validation)</a>
 </li>
       <li><a href="code/physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.physics">physics (physXAI.preprocessing.training_data.TrainingDataGeneric attribute)</a>
 </li>
@@ -1378,6 +1408,13 @@
 </li>
       </ul></li>
       <li>
+    physXAI.training.cross_validation
+
+      <ul>
+        <li><a href="code/physXAI.training.html#module-physXAI.training.cross_validation">module</a>
+</li>
+      </ul></li>
+      <li>
     physXAI.training.recursive
 
       <ul>
@@ -1471,7 +1508,11 @@
 </li>
       </ul></li>
       <li><a href="code/physXAI.evaluation.html#physXAI.evaluation.comparison.RunRecord.preprocessing">preprocessing (physXAI.evaluation.comparison.RunRecord attribute)</a>
+
+      <ul>
+        <li><a href="code/physXAI.training.html#physXAI.training.cross_validation.CrossValidated.preprocessing">(physXAI.training.cross_validation.CrossValidated attribute)</a>
 </li>
+      </ul></li>
       <li><a href="code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingData">PreprocessingData (class in physXAI.preprocessing.preprocessing)</a>
 </li>
       <li><a href="code/physXAI.preprocessing.html#physXAI.preprocessing.preprocessing.PreprocessingMultiStep">PreprocessingMultiStep (class in physXAI.preprocessing.preprocessing)</a>
@@ -1714,6 +1755,8 @@
 </li>
       <li><a href="code/physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataMultiStep.targets">targets() (physXAI.preprocessing.training_data.TrainingDataMultiStep method)</a>
 </li>
+      <li><a href="code/physXAI.training.html#physXAI.training.cross_validation.CrossValidated.td">td (physXAI.training.cross_validation.CrossValidated attribute)</a>
+</li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.core.BuildContext.tensor">tensor() (physXAI.expr.core.BuildContext method)</a>
 </li>
       <li><a href="code/physXAI.models.ann.pinn.html#physXAI.models.ann.pinn.physics.TermLoss">TermLoss (class in physXAI.models.ann.pinn.physics)</a>
@@ -1875,6 +1918,8 @@
       <li><a href="code/physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingData.windows">windows() (physXAI.preprocessing.training_data.TrainingData method)</a>
 </li>
       <li><a href="code/physXAI.expr.html#physXAI.expr.core.Expr.with_children">with_children() (physXAI.expr.core.Expr method)</a>
+</li>
+      <li><a href="code/physXAI.preprocessing.html#physXAI.preprocessing.splitting.BlockSplit.with_fold">with_fold() (physXAI.preprocessing.splitting.BlockSplit method)</a>
 </li>
   </ul></td>
 </tr></table>

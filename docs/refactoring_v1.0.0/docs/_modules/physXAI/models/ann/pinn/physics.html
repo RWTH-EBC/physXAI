@@ -450,6 +450,7 @@
                     <span class="n">mode</span><span class="o">=</span><span class="s2">"min"</span><span class="p">,</span>
                     <span class="n">patience</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">early_stopping_epochs</span><span class="p">,</span>
                     <span class="n">restore_best_weights</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">start_from_epoch</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span> <span class="s2">"early_stopping_start"</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
                     <span class="n">verbose</span><span class="o">=</span><span class="n">keras_verbosity_int</span><span class="p">(),</span>
                 <span class="p">)</span>
             <span class="p">)</span>

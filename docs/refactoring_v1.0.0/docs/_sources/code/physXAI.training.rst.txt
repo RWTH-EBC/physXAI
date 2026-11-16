@@ -9,6 +9,14 @@ physXAI.training package
 Submodules
 ----------
 
+physXAI.training.cross\_validation module
+-----------------------------------------
+
+.. automodule:: physXAI.training.cross_validation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 physXAI.training.recursive module
 ---------------------------------
 

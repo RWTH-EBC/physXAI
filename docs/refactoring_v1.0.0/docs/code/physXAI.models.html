@@ -287,7 +287,7 @@ saved config (<code class="code docutils literal notranslate"><span class="pre">
 <dl class="py class">
 <dt class="sig sig-object py" id="physXAI.models.models.AbstractModel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.models.</span></span><span class="sig-name descname"><span class="pre">AbstractModel</span></span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>Base class of all models: the training pipeline (<code class="code docutils literal notranslate"><span class="pre">pipeline</span></code>, <code class="code docutils literal notranslate"><span class="pre">online_pipeline</span></code>), saving, loading and the
 config (<code class="code docutils literal notranslate"><span class="pre">get_config</span></code>, <code class="code docutils literal notranslate"><span class="pre">from_config</span></code>, <code class="code docutils literal notranslate"><span class="pre">model_from_config</span></code>).</p>
 <dl class="py method">
@@ -333,7 +333,7 @@ this might be a pass-through or not applicable.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="physXAI.models.models.AbstractModel.plot_title">
-<span class="sig-name descname"><span class="pre">plot_title</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Model'</span></em><a class="headerlink" href="#physXAI.models.models.AbstractModel.plot_title" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">plot_title</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Model'</span></em><a class="headerlink" href="#physXAI.models.models.AbstractModel.plot_title" title="Permalink to this definition"></a></dt>
 <dd><p>Title of the plots of the model</p>
 </dd></dl>
 
@@ -345,7 +345,7 @@ this might be a pass-through or not applicable.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – The evaluated training data.</p></li>
-<li><p><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether to open the figure.</p></li>
+<li><p><strong>show</strong> (<em>bool</em>) – Whether to open the figure.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -364,7 +364,7 @@ this might be a pass-through or not applicable.</p>
 Nothing is saved without a path (use <code class="code docutils literal notranslate"><span class="pre">Run.save</span></code> to save a model with its report).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>save_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – </p>
+<dd class="field-odd"><p><strong>save_path</strong> (<em>str</em><em> | </em><em>None</em>) – </p>
 </dd>
 </dl>
 </dd></dl>
@@ -377,7 +377,7 @@ Nothing is saved without a path (use <code class="code docutils literal notransl
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>model</strong> – The trained model instance to save.</p></li>
-<li><p><strong>save_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The path where the model should be saved.</p></li>
+<li><p><strong>save_path</strong> (<em>str</em>) – The path where the model should be saved.</p></li>
 </ul>
 </dd>
 </dl>
@@ -389,7 +389,7 @@ Nothing is saved without a path (use <code class="code docutils literal notransl
 <dd><p>Abstract method for loading a pre-trained model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>load_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The path from which to load the model.</p>
+<dd class="field-odd"><p><strong>load_path</strong> (<em>str</em>) – The path from which to load the model.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The loaded model instance.</p>
@@ -426,10 +426,10 @@ after the pipeline instead of <code class="code docutils literal notranslate"><s
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – The training data.</p></li>
-<li><p><strong>save_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Path of the model file. Without a path nothing is saved.</p></li>
-<li><p><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to save the report as html next to the model. Defaults to True.</p></li>
-<li><p><strong>save_model</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to save the trained model (if <code class="code docutils literal notranslate"><span class="pre">save_path</span></code> is given). Defaults to True.</p></li>
-<li><p><strong>show_plot</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to open the report. Defaults to False.</p></li>
+<li><p><strong>save_path</strong> (<em>str</em><em>, </em><em>optional</em>) – Path of the model file. Without a path nothing is saved.</p></li>
+<li><p><strong>plot</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to save the report as html next to the model. Defaults to True.</p></li>
+<li><p><strong>save_model</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to save the trained model (if <code class="code docutils literal notranslate"><span class="pre">save_path</span></code> is given). Defaults to True.</p></li>
+<li><p><strong>show_plot</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to open the report. Defaults to False.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -446,11 +446,11 @@ after the pipeline instead of <code class="code docutils literal notranslate"><s
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – New training data.</p></li>
-<li><p><strong>load_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Path to the saved model.</p></li>
-<li><p><strong>save_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Path of the model file. Without a path nothing is saved.</p></li>
-<li><p><strong>plot</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to save the report as html next to the model. Defaults to True.</p></li>
-<li><p><strong>save_model</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to save the trained model (if <code class="code docutils literal notranslate"><span class="pre">save_path</span></code> is given). Defaults to True.</p></li>
-<li><p><strong>show_plot</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to open the report. Defaults to False.</p></li>
+<li><p><strong>load_path</strong> (<em>str</em>) – Path to the saved model.</p></li>
+<li><p><strong>save_path</strong> (<em>str</em><em>, </em><em>optional</em>) – Path of the model file. Without a path nothing is saved.</p></li>
+<li><p><strong>plot</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to save the report as html next to the model. Defaults to True.</p></li>
+<li><p><strong>save_model</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to save the trained model (if <code class="code docutils literal notranslate"><span class="pre">save_path</span></code> is given). Defaults to True.</p></li>
+<li><p><strong>show_plot</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to open the report. Defaults to False.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -481,7 +481,7 @@ after the pipeline instead of <code class="code docutils literal notranslate"><s
 <span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#AbstractModel.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.AbstractModel.get_config" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+<dd class="field-odd"><p>dict</p>
 </dd>
 </dl>
 </dd></dl>
@@ -493,7 +493,7 @@ after the pipeline instead of <code class="code docutils literal notranslate"><s
 <code class="code docutils literal notranslate"><span class="pre">physXAI_version</span></code>, <code class="code docutils literal notranslate"><span class="pre">environment</span></code>) are ignored, unknown settings raise a <code class="code docutils literal notranslate"><span class="pre">TypeError</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – </p>
+<dd class="field-odd"><p><strong>config</strong> (<em>dict</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference internal" href="#physXAI.models.models.AbstractModel" title="physXAI.models.models.AbstractModel"><em>AbstractModel</em></a></p>
@@ -507,7 +507,7 @@ after the pipeline instead of <code class="code docutils literal notranslate"><s
 <dd><p>Factory function to create a model object from its configuration dictionary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>item_conf</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – The configuration dictionary for a model.
+<dd class="field-odd"><p><strong>item_conf</strong> (<em>dict</em>) – The configuration dictionary for a model.
 Must contain ‘__class_name__’ and other necessary parameters.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -517,7 +517,7 @@ Must contain ‘__class_name__’ and other necessary parameters.</p>
 <dd class="field-odd"><p><a class="reference internal" href="#physXAI.models.models.AbstractModel" title="physXAI.models.models.AbstractModel">AbstractModel</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#KeyError" title="(in Python v3.15)"><strong>KeyError</strong></a> – If ‘__class_name__’ is not in <code class="code docutils literal notranslate"><span class="pre">item_conf</span></code> or the class is not in <code class="code docutils literal notranslate"><span class="pre">MODEL_CLASS_REGISTRY</span></code>.</p>
+<dd class="field-even"><p><strong>KeyError</strong> – If ‘__class_name__’ is not in <code class="code docutils literal notranslate"><span class="pre">item_conf</span></code> or the class is not in <code class="code docutils literal notranslate"><span class="pre">MODEL_CLASS_REGISTRY</span></code>.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -534,7 +534,7 @@ The class is registered using its __name__.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="physXAI.models.models.SingleStepModel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.models.</span></span><span class="sig-name descname"><span class="pre">SingleStepModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#SingleStepModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.SingleStepModel" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#physXAI.models.models.AbstractModel" title="physXAI.models.models.AbstractModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractModel</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#physXAI.models.models.AbstractModel" title="physXAI.models.models.AbstractModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractModel</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>Abstract Base Class for single-step prediction models.
 Defines a common interface and a pipeline for training, evaluating,
 plotting, and saving models that predict a single output based on input features.</p>
@@ -562,7 +562,7 @@ Predictions are stored in the TrainingData object, and metrics are calculated an
 <p>A concrete implementation of SingleStepModel for scikit-learn’s Linear Regression.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="physXAI.models.models.LinearRegressionModel.plot_title">
-<span class="sig-name descname"><span class="pre">plot_title</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Linear</span> <span class="pre">Regression'</span></em><a class="headerlink" href="#physXAI.models.models.LinearRegressionModel.plot_title" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">plot_title</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Linear</span> <span class="pre">Regression'</span></em><a class="headerlink" href="#physXAI.models.models.LinearRegressionModel.plot_title" title="Permalink to this definition"></a></dt>
 <dd><p>Title of the plots of the model</p>
 </dd></dl>
 
@@ -601,7 +601,7 @@ Also records the training time.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>model</strong> (<em>LinearRegression</em>) – The trained scikit-learn model.</p></li>
-<li><p><strong>save_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The path to save the model.</p></li>
+<li><p><strong>save_path</strong> (<em>str</em>) – The path to save the model.</p></li>
 </ul>
 </dd>
 </dl>
@@ -613,7 +613,7 @@ Also records the training time.</p>
 <dd><p>Loads a scikit-learn LinearRegression model from a file using joblib.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>load_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The path from which to load the model.</p>
+<dd class="field-odd"><p><strong>load_path</strong> (<em>str</em>) – The path from which to load the model.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The loaded scikit-learn model.</p>
@@ -629,7 +629,7 @@ Also records the training time.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="physXAI.models.models.MultiStepModel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.models.</span></span><span class="sig-name descname"><span class="pre">MultiStepModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/models.html#MultiStepModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.models.MultiStepModel" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#physXAI.models.models.AbstractModel" title="physXAI.models.models.AbstractModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractModel</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#physXAI.models.models.AbstractModel" title="physXAI.models.models.AbstractModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractModel</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>Abstract Base Class for multi-step prediction models.
 Defines a common interface and pipeline for models that forecast multiple steps ahead.
 This class is similar to SingleStepModel but tailored for multi-step data and metrics.</p>

@@ -121,7 +121,7 @@
 <dd><p>Standard deviation of the training targets for the output rescaling, 1 for a constant target (no zero scale).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
+<dd class="field-odd"><p>float</p>
 </dd>
 </dl>
 </dd></dl>
@@ -133,7 +133,7 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – A dictionary containing the configuration parameters for the ANN.
+<li><p><strong>config</strong> (<em>dict</em>) – A dictionary containing the configuration parameters for the ANN.
 This will be validated against <code class="code docutils literal notranslate"><span class="pre">ClassicalANNConstruction_config</span></code>.</p></li>
 <li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – An object containing the training data,
 used for adapting normalization and determining input/output shapes.</p></li>
@@ -156,7 +156,7 @@ This type of network can enforce monotonicity constraints on the input features.
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – A dictionary containing the configuration parameters for the CMNN.
+<li><p><strong>config</strong> (<em>dict</em>) – A dictionary containing the configuration parameters for the CMNN.
 Validated against <code class="code docutils literal notranslate"><span class="pre">CMNNModelConstruction_config</span></code>.</p></li>
 <li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – An object containing the training data, used for normalization,
 input shape, and determining monotonicity constraints based on column names.</p></li>
@@ -183,7 +183,7 @@ input shape, and determining monotonicity constraints based on column names.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>centers</strong> (<em>np.ndarray</em>) – Array of shape (n_centers, n_features) representing the RBF centers.</p></li>
-<li><p><strong>overlap</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Desired overlap factor between RBFs. Higher values lead to more overlap.</p></li>
+<li><p><strong>overlap</strong> (<em>float</em>) – Desired overlap factor between RBFs. Higher values lead to more overlap.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -204,7 +204,7 @@ fixed, as does the width of the gaussians; only the output layer is trained.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – A dictionary containing the configuration parameters for the RBF network.
+<li><p><strong>config</strong> (<em>dict</em>) – A dictionary containing the configuration parameters for the RBF network.
 This is validated against <code class="code docutils literal notranslate"><span class="pre">RBFConstruction_config</span></code>.</p></li>
 <li><p><strong>td</strong> (<a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a>) – An object containing the training data,
 used for adapting normalization, K-Means clustering, and
@@ -235,7 +235,7 @@ prediction (which learns the residuals).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – A dictionary containing configuration parameters, primarily for
+<li><p><strong>config</strong> (<em>dict</em>) – A dictionary containing configuration parameters, primarily for
 the RBF network part of the model. This config will be modified
 to set rescaling parameters for the RBF network based on the
 linear model’s residuals.</p></li>
@@ -300,10 +300,10 @@ later deviation from the training value (e.g. a rounded value) would hit the net
 <dd><p>Number of state tensors a recurrent layer carries between two time steps (2 for an LSTM).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>rnn_layer</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>rnn_layer</strong> (<em>str</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+<dd class="field-even"><p>int</p>
 </dd>
 </dl>
 </dd></dl>
@@ -311,49 +311,49 @@ later deviation from the training value (e.g. a rounded value) would hit the net
 <dl class="py class">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.SequenceSpec">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.rnn_models.</span></span><span class="sig-name descname"><span class="pre">SequenceSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">difference</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feedback</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/rnn_models.html#SequenceSpec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.SequenceSpec" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Describes the in- and outputs of a recurrent model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Variables<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>n_inputs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of input features.</p></li>
-<li><p><strong>difference</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>]</em>) – Per output, whether it is the change of its feature.</p></li>
-<li><p><strong>feedback</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em><em>]</em>) – Pairs (input index, output index) of predicted features which are also inputs.</p></li>
-<li><p><strong>absolute</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether the start values of the features are known (trajectories are absolute).</p></li>
+<li><p><strong>n_inputs</strong> (<em>int</em>) – Number of input features.</p></li>
+<li><p><strong>difference</strong> (<em>list</em><em>[</em><em>bool</em><em>]</em>) – Per output, whether it is the change of its feature.</p></li>
+<li><p><strong>feedback</strong> (<em>list</em><em>[</em><em>tuple</em><em>[</em><em>int</em><em>, </em><em>int</em><em>]</em><em>]</em>) – Pairs (input index, output index) of predicted features which are also inputs.</p></li>
+<li><p><strong>absolute</strong> (<em>bool</em>) – Whether the start values of the features are known (trajectories are absolute).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>n_inputs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
-<li><p><strong>difference</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>]</em>) – </p></li>
-<li><p><strong>feedback</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em><em>]</em>) – </p></li>
-<li><p><strong>absolute</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – </p></li>
+<li><p><strong>n_inputs</strong> (<em>int</em>) – </p></li>
+<li><p><strong>difference</strong> (<em>list</em><em>[</em><em>bool</em><em>]</em>) – </p></li>
+<li><p><strong>feedback</strong> (<em>list</em><em>[</em><em>tuple</em><em>[</em><em>int</em><em>, </em><em>int</em><em>]</em><em>]</em>) – </p></li>
+<li><p><strong>absolute</strong> (<em>bool</em>) – </p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.SequenceSpec.n_inputs">
-<span class="sig-name descname"><span class="pre">n_inputs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.SequenceSpec.n_inputs" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">n_inputs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.SequenceSpec.n_inputs" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.SequenceSpec.difference">
-<span class="sig-name descname"><span class="pre">difference</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.SequenceSpec.difference" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">difference</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.SequenceSpec.difference" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.SequenceSpec.feedback">
-<span class="sig-name descname"><span class="pre">feedback</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.SequenceSpec.feedback" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">feedback</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.SequenceSpec.feedback" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.SequenceSpec.absolute">
-<span class="sig-name descname"><span class="pre">absolute</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.SequenceSpec.absolute" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">absolute</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.SequenceSpec.absolute" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.SequenceSpec.n_outputs">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_outputs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.SequenceSpec.n_outputs" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_outputs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.SequenceSpec.n_outputs" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -375,11 +375,11 @@ later deviation from the training value (e.g. a rounded value) would hit the net
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Settings, validated by <code class="code docutils literal notranslate"><span class="pre">RNNModelConstruction_config</span></code> (rnn_units, rnn_layer).</p></li>
+<li><p><strong>config</strong> (<em>dict</em>) – Settings, validated by <code class="code docutils literal notranslate"><span class="pre">RNNModelConstruction_config</span></code> (rnn_units, rnn_layer).</p></li>
 <li><p><strong>td</strong> – <code class="code docutils literal notranslate"><span class="pre">TrainingDataMultiStep</span></code>, used for the normalization of in- and outputs.</p></li>
-<li><p><strong>feature_architecture</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr" title="physXAI.expr.core.Expr"><em>physXAI.expr.core.Expr</em></a><em>] </em><em>| </em><em>None</em>) – Expressions (<code class="code docutils literal notranslate"><span class="pre">physXAI.expr</span></code>) building the inputs of the recurrent layer
+<li><p><strong>feature_architecture</strong> (<em>list</em><em>[</em><a class="reference internal" href="physXAI.expr.html#physXAI.expr.core.Expr" title="physXAI.expr.core.Expr"><em>physXAI.expr.core.Expr</em></a><em>] </em><em>| </em><em>None</em>) – Expressions (<code class="code docutils literal notranslate"><span class="pre">physXAI.expr</span></code>) building the inputs of the recurrent layer
 out of the input features. Defaults to the normalized inputs.</p></li>
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Name of the model.</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – Name of the model.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -403,53 +403,79 @@ out of the input features. Defaults to the normalized inputs.</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.PCNNTerm">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.rnn_models.</span></span><span class="sig-name descname"><span class="pre">PCNNTerm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/rnn_models.html#PCNNTerm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>One term of the energy accumulator of a PCNN.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Variables<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>kind</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – ‘heating’ (+ s * u), ‘cooling’ (- s * u) or ‘loss’ (+ s * (T_x - T), e.g. the outside temperature).</p></li>
-<li><p><strong>input</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Index of the input feature in the sequence.</p></li>
-<li><p><strong>initial</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Initial value of the parameter s per time step (&gt; 0). The trained parameter is
+<li><p><strong>kind</strong> (<em>str</em>) – ‘heating’ (+ s * u), ‘cooling’ (- s * u) or ‘loss’ (+ s * (T_x - T), e.g. the outside temperature).</p></li>
+<li><p><strong>input</strong> (<em>int</em>) – Index of the input feature in the sequence.</p></li>
+<li><p><strong>initial</strong> (<em>float</em>) – Initial value of the parameter s per time step (&gt; 0). The trained parameter is
 <code class="code docutils literal notranslate"><span class="pre">initial</span> <span class="pre">*</span> <span class="pre">weight</span></code>, the weight starts at 1 (s = s0 * s~ as in Di Natale et al. 2022).</p></li>
-<li><p><strong>flow</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – Only for a loss: index of a flow input (&gt;= 0) that scales the term, + s * flow * (T_x - T), e.g. the
+<li><p><strong>flow</strong> (<em>int</em><em> | </em><em>None</em>) – Only for a loss: index of a flow input (&gt;= 0) that scales the term, + s * flow * (T_x - T), e.g. the
 air flow of a ventilation with the supply temperature T_x. None: a constant conductance.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>kind</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
-<li><p><strong>input</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
-<li><p><strong>initial</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – </p></li>
-<li><p><strong>flow</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – </p></li>
+<li><p><strong>kind</strong> (<em>str</em>) – </p></li>
+<li><p><strong>input</strong> (<em>int</em>) – </p></li>
+<li><p><strong>initial</strong> (<em>float</em>) – </p></li>
+<li><p><strong>flow</strong> (<em>int</em><em> | </em><em>None</em>) – </p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.PCNNTerm.kind">
-<span class="sig-name descname"><span class="pre">kind</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm.kind" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">kind</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm.kind" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.PCNNTerm.input">
-<span class="sig-name descname"><span class="pre">input</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm.input" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">input</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm.input" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.PCNNTerm.initial">
-<span class="sig-name descname"><span class="pre">initial</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm.initial" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">initial</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm.initial" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.PCNNTerm.flow">
-<span class="sig-name descname"><span class="pre">flow</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm.flow" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">flow</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm.flow" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
+<dl class="py data">
+<dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.PCNN_F">
+<span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.rnn_models.</span></span><span class="sig-name descname"><span class="pre">PCNN_F</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('rnn',</span> <span class="pre">'monotone_rnn',</span> <span class="pre">'cmnn')</span></em><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.PCNN_F" title="Permalink to this definition"></a></dt>
+<dd><p>Kinds of the unforced dynamics f of a PCNN (<code class="code docutils literal notranslate"><span class="pre">build_pcnn_step_model</span></code>)</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.pcnn_f_inputs">
+<span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.rnn_models.</span></span><span class="sig-name descname"><span class="pre">pcnn_f_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">terms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rnn'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monotonicities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/rnn_models.html#pcnn_f_inputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.pcnn_f_inputs" title="Permalink to this definition"></a></dt>
+<dd><p>Indices of the inputs of the unforced dynamics f of a PCNN: the inputs that are no part of the energy accumulator
+(the predicted feature, the inputs of the terms and their flows), plus the inputs with a monotonicity, which may
+also be part of it (e.g. the outside temperature of a loss). ‘rnn’ also sees D, which is not counted here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>terms</strong> (<em>list</em><em>[</em><a class="reference internal" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm" title="physXAI.models.ann.model_construction.rnn_models.PCNNTerm"><em>physXAI.models.ann.model_construction.rnn_models.PCNNTerm</em></a><em>]</em>) – </p></li>
+<li><p><strong>f</strong> (<em>str</em>) – </p></li>
+<li><p><strong>monotonicities</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>int</em><em>] </em><em>| </em><em>None</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="physXAI.models.ann.model_construction.rnn_models.build_pcnn_step_model">
-<span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.rnn_models.</span></span><span class="sig-name descname"><span class="pre">build_pcnn_step_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">terms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rnn_step'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/rnn_models.html#build_pcnn_step_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.build_pcnn_step_model" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">physXAI.models.ann.model_construction.rnn_models.</span></span><span class="sig-name descname"><span class="pre">build_pcnn_step_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">td</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">terms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rnn_step'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rnn'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monotonicities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/models/ann/model_construction/rnn_models.html#build_pcnn_step_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.models.ann.model_construction.rnn_models.build_pcnn_step_model" title="Permalink to this definition"></a></dt>
 <dd><p>Builds the step model of a physically consistent neural network (PCNN, Di Natale et al. 2022,
 Applied Energy 325, 119806), <code class="code docutils literal notranslate"><span class="pre">[sequence,</span> <span class="pre">E,</span> <span class="pre">*states</span> <span class="pre">of</span> <span class="pre">f]</span> <span class="pre">-&gt;</span> <span class="pre">[change</span> <span class="pre">of</span> <span class="pre">T,</span> <span class="pre">E,</span> <span class="pre">*states</span> <span class="pre">of</span> <span class="pre">f]</span></code>.</p>
 <p>The predicted feature T (input and output <code class="code docutils literal notranslate"><span class="pre">Change(T)</span></code>) is the sum of the unforced dynamics D and the
@@ -458,20 +484,35 @@ energy accumulator E:</p>
 <div><p>E(k+1) = E(k) + sum_heating a * u(k) - sum_cooling d * u(k) + sum_losses b * [V(k)] * (T_x(k) - T(k))
 D(k+1) = D(k) + f(D(k), x(k)),   D(k) = T(k) - E(k)</p>
 </div></blockquote>
-<p>A loss can be scaled by a flow V (e.g. a ventilation, <code class="code docutils literal notranslate"><span class="pre">PCNNTerm.flow</span></code>). f is a recurrent network on D and the
-remaining inputs x, which excludes the controls, the temperatures of the losses and their flows. With
-a, b, d &gt; 0 and 1 - sum b &gt; 0, T increases with heating, decreases with cooling and increases with the
-temperatures T_x over the whole horizon, for any f. The parameters work in physical units, f on normalized
-values.</p>
+<p>A loss can be scaled by a flow V (e.g. a ventilation, <code class="code docutils literal notranslate"><span class="pre">PCNNTerm.flow</span></code>). With a, b, d &gt; 0 and 1 - sum b &gt; 0, T
+increases with heating, decreases with cooling and increases with the temperatures T_x over the whole horizon,
+for any f. The parameters work in physical units, f on normalized values. Kinds of f:</p>
+<ul class="simple">
+<li><p>‘rnn’: a recurrent layer (<code class="code docutils literal notranslate"><span class="pre">rnn_layer</span></code>) on D and the remaining inputs x, which excludes the controls, the
+temperatures of the losses and their flows (as in the paper).</p></li>
+<li><p>‘monotone_rnn’: D(k+1) = D(k) + g(x(0..k)) with a recurrent cell that is monotone in the inputs of
+<code class="code docutils literal notranslate"><span class="pre">monotonicities</span></code> ({input: 1 increasing | -1 decreasing}, also inputs of the losses such as the outside
+temperature) and free in the remaining x: SimpleRNN (tanh) with sign constrained input weights of the monotone
+inputs, non negative recurrent weights and a non negative output layer.</p></li>
+<li><p>‘cmnn’: D(k+1) = D(k) + g(x(k)) with a constrained monotonic network (<code class="code docutils literal notranslate"><span class="pre">px.MonotoneMLP</span></code>), no memory of its own.</p></li>
+</ul>
+<p>In both monotone kinds f does not see D: D only accumulates g, the decay of its share of T comes from the losses
+in E, which act on the whole T. A decay of D of its own (-lambda * D) would count it twice and turn a pulse of a
+monotone input into a negative effect after some hours, for every lambda &gt; 0. So with
+T(k+1) = T(k) + increment(T(k), …) + g(k), dT(k+1)/dT(k) = 1 - sum b &gt; 0 and g monotone, T is monotone in
+these inputs over the whole horizon.</p>
 <p>Only keras layers translated by AgentLib-MPC are used (input slices, constants, subtract, multiply,
-concatenate, dense, simple_rnn, normalization, rescaling, add), the layer names carry their types.</p>
+concatenate, dense, simple_rnn, lstm, gru, normalization, rescaling, add), the layer names carry their types.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Settings, validated by <code class="code docutils literal notranslate"><span class="pre">RNNModelConstruction_config</span></code> (rnn_units, rnn_layer of f).</p></li>
+<li><p><strong>config</strong> (<em>dict</em>) – Settings, validated by <code class="code docutils literal notranslate"><span class="pre">RNNModelConstruction_config</span></code> (rnn_units, rnn_layer of f; for ‘cmnn’ the
+units are the neurons of its hidden layer).</p></li>
 <li><p><strong>td</strong> – <code class="code docutils literal notranslate"><span class="pre">TrainingDataMultiStep</span></code> with one output <code class="code docutils literal notranslate"><span class="pre">Change(T)</span></code> and T as input.</p></li>
-<li><p><strong>terms</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference internal" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm" title="physXAI.models.ann.model_construction.rnn_models.PCNNTerm"><em>physXAI.models.ann.model_construction.rnn_models.PCNNTerm</em></a><em>]</em>) – The terms of the energy accumulator.</p></li>
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Name of the model.</p></li>
+<li><p><strong>terms</strong> (<em>list</em><em>[</em><a class="reference internal" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm" title="physXAI.models.ann.model_construction.rnn_models.PCNNTerm"><em>physXAI.models.ann.model_construction.rnn_models.PCNNTerm</em></a><em>]</em>) – The terms of the energy accumulator.</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – Name of the model.</p></li>
+<li><p><strong>f</strong> (<em>str</em>) – Kind of the unforced dynamics, see above.</p></li>
+<li><p><strong>monotonicities</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>int</em><em>] </em><em>| </em><em>None</em>) – Monotone inputs of f (‘monotone_rnn’ and ‘cmnn’ only).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -491,7 +532,7 @@ estimated from other data than the current one.</p>
 <dd class="field-odd"><p><strong>step_model</strong> (<em>Model</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a>]</p>
+<dd class="field-even"><p>list[float]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -505,11 +546,11 @@ the model, in the order of the terms of the model.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>step_model</strong> (<em>Model</em>) – The PCNN step model.</p></li>
-<li><p><strong>terms</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference internal" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm" title="physXAI.models.ann.model_construction.rnn_models.PCNNTerm"><em>physXAI.models.ann.model_construction.rnn_models.PCNNTerm</em></a><em>] </em><em>| </em><em>None</em>) – Optional terms of the model, only to check their number.</p></li>
+<li><p><strong>terms</strong> (<em>list</em><em>[</em><a class="reference internal" href="#physXAI.models.ann.model_construction.rnn_models.PCNNTerm" title="physXAI.models.ann.model_construction.rnn_models.PCNNTerm"><em>physXAI.models.ann.model_construction.rnn_models.PCNNTerm</em></a><em>] </em><em>| </em><em>None</em>) – Optional terms of the model, only to check their number.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a>]</p>
+<dd class="field-even"><p>list[float]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -523,7 +564,7 @@ the model, in the order of the terms of the model.</p>
 <dd class="field-odd"><p><strong>step_model</strong> (<em>Model</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a>]</p>
+<dd class="field-even"><p>list[int]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -535,7 +576,7 @@ the model, in the order of the terms of the model.</p>
 <p>Zero states (batch, size) for every size, with the batch size of the input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>sizes</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>]</em>) – </p>
+<dd class="field-odd"><p><strong>sizes</strong> (<em>list</em><em>[</em><em>int</em><em>]</em>) – </p>
 </dd>
 </dl>
 <dl class="py method">
@@ -558,8 +599,8 @@ the model, in the order of the terms of the model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>start</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
-<li><p><strong>stop</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – </p></li>
+<li><p><strong>start</strong> (<em>int</em>) – </p></li>
+<li><p><strong>stop</strong> (<em>int</em><em> | </em><em>None</em>) – </p></li>
 </ul>
 </dd>
 </dl>
@@ -582,7 +623,7 @@ the model, in the order of the terms of the model.</p>
 <p>Trajectory of the features: start value plus the accumulated changes (absolute outputs as they are).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>difference</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>]</em>) – </p>
+<dd class="field-odd"><p><strong>difference</strong> (<em>list</em><em>[</em><em>bool</em><em>]</em>) – </p>
 </dd>
 </dl>
 <dl class="py method">
@@ -628,8 +669,8 @@ Output: [trajectory of the predicted features, outputs of the step model].</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>start</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
-<li><p><strong>stop</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
+<li><p><strong>start</strong> (<em>int</em>) – </p></li>
+<li><p><strong>stop</strong> (<em>int</em>) – </p></li>
 </ul>
 </dd>
 </dl>
@@ -653,11 +694,11 @@ Output: [trajectory of the predicted features, outputs of the step model].</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>spec</strong> (<a class="reference internal" href="#physXAI.models.ann.model_construction.rnn_models.SequenceSpec" title="physXAI.models.ann.model_construction.rnn_models.SequenceSpec"><em>SequenceSpec</em></a>) – </p></li>
-<li><p><strong>trajectory</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – </p></li>
+<li><p><strong>trajectory</strong> (<em>bool</em>) – </p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)">bool</a></p>
+<dd class="field-even"><p>bool</p>
 </dd>
 </dl>
 </dd></dl>
@@ -671,9 +712,9 @@ Output: [trajectory of the predicted features, outputs of the step model].</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>step_model</strong> (<em>Model</em>) – The step model.</p></li>
 <li><p><strong>spec</strong> (<a class="reference internal" href="#physXAI.models.ann.model_construction.rnn_models.SequenceSpec" title="physXAI.models.ann.model_construction.rnn_models.SequenceSpec"><em>SequenceSpec</em></a>) – In- and outputs of the model.</p></li>
-<li><p><strong>warmup</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of warmup steps.</p></li>
-<li><p><strong>horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of predicted steps.</p></li>
-<li><p><strong>trajectory</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – If True (and the start values are known), the model returns the trajectories of
+<li><p><strong>warmup</strong> (<em>int</em>) – Number of warmup steps.</p></li>
+<li><p><strong>horizon</strong> (<em>int</em>) – Number of predicted steps.</p></li>
+<li><p><strong>trajectory</strong> (<em>bool</em>) – If True (and the start values are known), the model returns the trajectories of
 the predicted features, else the outputs of the step model (e.g. the changes).</p></li>
 </ul>
 </dd>
@@ -708,9 +749,9 @@ the predicted features, else the outputs of the step model (e.g. the changes).</
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+<li><p><strong>split</strong> (<em>str</em>) – </p></li>
 <li><p><strong>spec</strong> (<a class="reference internal" href="#physXAI.models.ann.model_construction.rnn_models.SequenceSpec" title="physXAI.models.ann.model_construction.rnn_models.SequenceSpec"><em>SequenceSpec</em></a>) – </p></li>
-<li><p><strong>trajectory</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – </p></li>
+<li><p><strong>trajectory</strong> (<em>bool</em>) – </p></li>
 </ul>
 </dd>
 </dl>
@@ -725,13 +766,13 @@ the predicted features, else the outputs of the step model (e.g. the changes).</
 <dd class="field-odd"><p>{split: (prediction, truth)}, both of shape (sequences, horizon, outputs).</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+<dd class="field-even"><p>dict</p>
 </dd>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>model</strong> (<em>Model</em>) – </p></li>
-<li><p><strong>horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
-<li><p><strong>stride</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
+<li><p><strong>horizon</strong> (<em>int</em>) – </p></li>
+<li><p><strong>stride</strong> (<em>int</em>) – </p></li>
 </ul>
 </dd>
 </dl>

@@ -579,6 +579,7 @@
 <li class="toctree-l2"><a class="reference internal" href="physXAI.preprocessing.html#module-physXAI.preprocessing.splitting">physXAI.preprocessing.splitting module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.BlockSplit"><code class="docutils literal notranslate"><span class="pre">BlockSplit</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.BlockSplit.get_config"><code class="docutils literal notranslate"><span class="pre">BlockSplit.get_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.BlockSplit.with_fold"><code class="docutils literal notranslate"><span class="pre">BlockSplit.with_fold()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.BlockSplit.from_config"><code class="docutils literal notranslate"><span class="pre">BlockSplit.from_config()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.BlockSplit.resolve_block_length"><code class="docutils literal notranslate"><span class="pre">BlockSplit.resolve_block_length()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.splitting.BlockSplit.assign"><code class="docutils literal notranslate"><span class="pre">BlockSplit.assign()</span></code></a></li>
@@ -593,6 +594,7 @@
 <li class="toctree-l3"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.recursive_training_record"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.recursive_training_record</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.physics"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.physics</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.cross_validation"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.cross_validation</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.add_training_record"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.add_training_record()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.add_predictions"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.add_predictions()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.add_metrics"><code class="docutils literal notranslate"><span class="pre">TrainingDataGeneric.add_metrics()</span></code></a></li>
@@ -677,6 +679,25 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="physXAI.training.html">physXAI.training package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="physXAI.training.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="physXAI.training.html#module-physXAI.training.cross_validation">physXAI.training.cross_validation module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.training.html#physXAI.training.cross_validation.CrossValidation"><code class="docutils literal notranslate"><span class="pre">CrossValidation</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html#physXAI.training.cross_validation.CrossValidation.folds"><code class="docutils literal notranslate"><span class="pre">CrossValidation.folds</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html#physXAI.training.cross_validation.CrossValidation.patience"><code class="docutils literal notranslate"><span class="pre">CrossValidation.patience</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html#physXAI.training.cross_validation.CrossValidation.min_epochs"><code class="docutils literal notranslate"><span class="pre">CrossValidation.min_epochs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html#physXAI.training.cross_validation.CrossValidation.get_config"><code class="docutils literal notranslate"><span class="pre">CrossValidation.get_config()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.training.html#physXAI.training.cross_validation.CrossValidated"><code class="docutils literal notranslate"><span class="pre">CrossValidated</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html#physXAI.training.cross_validation.CrossValidated.preprocessing"><code class="docutils literal notranslate"><span class="pre">CrossValidated.preprocessing</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html#physXAI.training.cross_validation.CrossValidated.model"><code class="docutils literal notranslate"><span class="pre">CrossValidated.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="physXAI.training.html#physXAI.training.cross_validation.CrossValidated.td"><code class="docutils literal notranslate"><span class="pre">CrossValidated.td</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.training.html#physXAI.training.cross_validation.phases"><code class="docutils literal notranslate"><span class="pre">phases()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.training.html#physXAI.training.cross_validation.cross_validate"><code class="docutils literal notranslate"><span class="pre">cross_validate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="physXAI.training.html#physXAI.training.cross_validation.fit_cross_validated"><code class="docutils literal notranslate"><span class="pre">fit_cross_validated()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="physXAI.training.html#module-physXAI.training.recursive">physXAI.training.recursive module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.training.html#physXAI.training.recursive.Mode"><code class="docutils literal notranslate"><span class="pre">Mode</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="physXAI.training.html#physXAI.training.recursive.RecursiveTraining"><code class="docutils literal notranslate"><span class="pre">RecursiveTraining</span></code></a><ul>

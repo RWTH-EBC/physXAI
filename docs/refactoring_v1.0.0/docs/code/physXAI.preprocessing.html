@@ -144,12 +144,12 @@ Lags of features which are no input are appended at the end.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>inputs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – </p></li>
-<li><p><strong>lags</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>] </em><em>| </em><em>None</em>) – </p></li>
+<li><p><strong>inputs</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – </p></li>
+<li><p><strong>lags</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>int</em><em>] </em><em>| </em><em>None</em>) – </p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>]</p>
+<dd class="field-even"><p>list[str]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -160,10 +160,10 @@ Lags of features which are no input are appended at the end.</p>
 <dd><p>Largest lag of a list of feature names.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>names</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – </p>
+<dd class="field-odd"><p><strong>names</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+<dd class="field-even"><p>int</p>
 </dd>
 </dl>
 </dd></dl>
@@ -174,12 +174,12 @@ Lags of features which are no input are appended at the end.</p>
 <dd><p>Creates <code class="code docutils literal notranslate"><span class="pre">name</span></code> from the naming conventions if it is not a column of <code class="code docutils literal notranslate"><span class="pre">df</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#KeyError" title="(in Python v3.15)"><strong>KeyError</strong></a> – If the column neither exists nor can be derived.</p>
+<dd class="field-odd"><p><strong>KeyError</strong> – If the column neither exists nor can be derived.</p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
 <li><p><strong>df</strong> (<a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.1)"><em>DataFrame</em></a>) – </p></li>
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
+<li><p><strong>name</strong> (<em>str</em>) – </p></li>
 </ul>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -194,10 +194,10 @@ Lags of features which are no input are appended at the end.</p>
 <dd><p>Feature predicted by an output: ‘T’ for ‘Change(T)’ and for ‘T’.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>output</strong> (<em>str</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a></p>
+<dd class="field-even"><p>str</p>
 </dd>
 </dl>
 </dd></dl>
@@ -216,12 +216,12 @@ output) and its lags last.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>names</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – </p></li>
-<li><p><strong>outputs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – </p></li>
+<li><p><strong>names</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – </p></li>
+<li><p><strong>outputs</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – </p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>]</p>
+<dd class="field-even"><p>list[str]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -239,13 +239,13 @@ output) and its lags last.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
-<li><p><strong>columns</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> | </em><em>None</em>) – </p></li>
-<li><p><strong>_seen</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#frozenset" title="(in Python v3.15)"><em>frozenset</em></a>) – </p></li>
+<li><p><strong>name</strong> (<em>str</em>) – </p></li>
+<li><p><strong>columns</strong> (<em>dict</em><em> | </em><em>None</em>) – </p></li>
+<li><p><strong>_seen</strong> (<em>frozenset</em>) – </p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+<dd class="field-even"><p>int</p>
 </dd>
 </dl>
 </dd></dl>
@@ -258,14 +258,14 @@ derived column {name: expression} of any of them.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
-<li><p><strong>features</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#set" title="(in Python v3.15)"><em>set</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – </p></li>
-<li><p><strong>columns</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> | </em><em>None</em>) – </p></li>
-<li><p><strong>_seen</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#frozenset" title="(in Python v3.15)"><em>frozenset</em></a>) – </p></li>
+<li><p><strong>name</strong> (<em>str</em>) – </p></li>
+<li><p><strong>features</strong> (<em>set</em><em>[</em><em>str</em><em>]</em>) – </p></li>
+<li><p><strong>columns</strong> (<em>dict</em><em> | </em><em>None</em>) – </p></li>
+<li><p><strong>_seen</strong> (<em>frozenset</em>) – </p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)">bool</a></p>
+<dd class="field-even"><p>bool</p>
 </dd>
 </dl>
 </dd></dl>
@@ -279,14 +279,14 @@ derived column {name: expression} of any of them.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
-<li><p><strong>features</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#set" title="(in Python v3.15)"><em>set</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – </p></li>
-<li><p><strong>columns</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> | </em><em>None</em>) – </p></li>
-<li><p><strong>_seen</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#frozenset" title="(in Python v3.15)"><em>frozenset</em></a>) – </p></li>
+<li><p><strong>name</strong> (<em>str</em>) – </p></li>
+<li><p><strong>features</strong> (<em>set</em><em>[</em><em>str</em><em>]</em>) – </p></li>
+<li><p><strong>columns</strong> (<em>dict</em><em> | </em><em>None</em>) – </p></li>
+<li><p><strong>_seen</strong> (<em>frozenset</em>) – </p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)">bool</a></p>
+<dd class="field-even"><p>bool</p>
 </dd>
 </dl>
 </dd></dl>
@@ -299,13 +299,13 @@ a predicted feature itself is fed back (closed loop), but its lags, changes or d
 taken from the data during the prediction, i.e. the model would see the measured truth (leakage).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – Listing the inputs depending on a predicted feature.</p>
+<dd class="field-odd"><p><strong>ValueError</strong> – Listing the inputs depending on a predicted feature.</p>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>inputs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – </p></li>
-<li><p><strong>outputs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – </p></li>
-<li><p><strong>columns</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> | </em><em>None</em>) – </p></li>
+<li><p><strong>inputs</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – </p></li>
+<li><p><strong>outputs</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – </p></li>
+<li><p><strong>columns</strong> (<em>dict</em><em> | </em><em>None</em>) – </p></li>
 </ul>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -317,45 +317,45 @@ taken from the data during the prediction, i.e. the model would see the measured
 <dl class="py class">
 <dt class="sig sig-object py" id="physXAI.preprocessing.preprocessing.PreprocessingData">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.preprocessing.preprocessing.</span></span><span class="sig-name descname"><span class="pre">PreprocessingData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'blocks'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gap_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_index_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">csv_delimiter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">';'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">csv_encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'latin1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">csv_header</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">csv_skiprows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_nan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/preprocessing.html#PreprocessingData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.preprocessing.PreprocessingData" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>Common preprocessing of single step and multi step models, see the module docstring.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>inputs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – Input features of the model. Lagged inputs (‘X_lag1’) and changes (‘Change(X)’)
+<li><p><strong>inputs</strong> (<em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>) – Input features of the model. Lagged inputs (‘X_lag1’) and changes (‘Change(X)’)
 are derived automatically. If None, the inputs are taken from the model passed to
 <code class="code docutils literal notranslate"><span class="pre">pipeline</span></code> (the free variables of its expression graph).</p></li>
-<li><p><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – Output feature(s), e.g. ‘Change(T)’ for a model predicting the change of T.</p></li>
-<li><p><strong>columns</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> | </em><em>None</em>) – Optional derived data columns {name: expression}, e.g. {‘Q’: v.mDot * (v.T_in - v.T)}.
+<li><p><strong>output</strong> (<em>str</em><em> | </em><em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>) – Output feature(s), e.g. ‘Change(T)’ for a model predicting the change of T.</p></li>
+<li><p><strong>columns</strong> (<em>dict</em><em> | </em><em>None</em>) – Optional derived data columns {name: expression}, e.g. {‘Q’: v.mDot * (v.T_in - v.T)}.
 Prefer expressions inside the model, then the MPC does not need to compute them.</p></li>
-<li><p><strong>lags</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>] </em><em>| </em><em>None</em>) – Optional number of lags per feature, e.g. {‘T’: 2}.</p></li>
-<li><p><strong>shift</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Steps between the inputs and the predicted output. 1 (default): the next time step, for states
+<li><p><strong>lags</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>int</em><em>] </em><em>| </em><em>None</em>) – Optional number of lags per feature, e.g. {‘T’: 2}.</p></li>
+<li><p><strong>shift</strong> (<em>int</em>) – Steps between the inputs and the predicted output. 1 (default): the next time step, for states
 (e.g. ‘Change(T)’) and for outputs over the interval [t, t+1) (as AgentLib-MPC uses them). 0: the
 time of the inputs, for algebraic outputs of point sampled data, e.g. P_el(t) = f(u(t), T(t)); the
 output feature must then not be an input (only its lags), and there is no recursive evaluation.</p></li>
-<li><p><strong>time_step</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – Sampling time in seconds. The data is sub-sampled to it by taking the values at the time steps
+<li><p><strong>time_step</strong> (<em>float</em><em> | </em><em>None</em>) – Sampling time in seconds. The data is sub-sampled to it by taking the values at the time steps
 (point sampling, logged as a warning). Quantities over an interval (power, energy) have to
 be resampled before (e.g. averaged with <code class="code docutils literal notranslate"><span class="pre">pandas.DataFrame.resample</span></code>). Defaults to the
 sampling time of the data.</p></li>
-<li><p><strong>test_size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – Fraction of the data used for testing (default 0.1).</p></li>
-<li><p><strong>val_size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – Fraction of the data used for validation (default 0.1).</p></li>
-<li><p><strong>random_state</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – Seed of the split. Defaults to the global seed (<code class="code docutils literal notranslate"><span class="pre">physXAI.set_seed</span></code>), else a
+<li><p><strong>test_size</strong> (<em>float</em><em> | </em><em>None</em>) – Fraction of the data used for testing (default 0.1).</p></li>
+<li><p><strong>val_size</strong> (<em>float</em><em> | </em><em>None</em>) – Fraction of the data used for validation (default 0.1).</p></li>
+<li><p><strong>random_state</strong> (<em>int</em><em> | </em><em>None</em>) – Seed of the split. Defaults to the global seed (<code class="code docutils literal notranslate"><span class="pre">physXAI.set_seed</span></code>), else a
 new seed is drawn. The used seed is stored in the config.</p></li>
-<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference internal" href="#physXAI.preprocessing.splitting.BlockSplit" title="physXAI.preprocessing.splitting.BlockSplit"><em>BlockSplit</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Split strategy (‘blocks’, ‘holdout_end’, ‘random_rows’) or a <code class="code docutils literal notranslate"><span class="pre">BlockSplit</span></code>, which then holds the sizes,
+<li><p><strong>split</strong> (<em>str</em><em> | </em><a class="reference internal" href="#physXAI.preprocessing.splitting.BlockSplit" title="physXAI.preprocessing.splitting.BlockSplit"><em>BlockSplit</em></a><em> | </em><em>dict</em>) – Split strategy (‘blocks’, ‘holdout_end’, ‘random_rows’) or a <code class="code docutils literal notranslate"><span class="pre">BlockSplit</span></code>, which then holds the sizes,
 the block length and the embargo (different <code class="code docutils literal notranslate"><span class="pre">test_size</span></code>, <code class="code docutils literal notranslate"><span class="pre">val_size</span></code>, <code class="code docutils literal notranslate"><span class="pre">block_length</span></code> or <code class="code docutils literal notranslate"><span class="pre">gap_steps</span></code>
 next to it raise a <code class="code docutils literal notranslate"><span class="pre">ValueError</span></code>).</p></li>
-<li><p><strong>block_length</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – Block length of the split in steps or as time delta string (‘7D’).</p></li>
-<li><p><strong>gap_steps</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – Embargo between splits in steps. Defaults to the reach of a sample into the past + shift.</p></li>
-<li><p><strong>time_index_col</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Name or index of the time column of the csv file.</p></li>
-<li><p><strong>csv_delimiter</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Delimiter of the csv file (<code class="code docutils literal notranslate"><span class="pre">pandas.read_csv</span></code>).</p></li>
-<li><p><strong>csv_encoding</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Encoding of the csv file.</p></li>
-<li><p><strong>csv_header</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Row of the column names.</p></li>
-<li><p><strong>csv_skiprows</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>] </em><em>| </em><em>None</em>) – Rows to skip.</p></li>
-<li><p><strong>ignore_nan</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – If False, missing values between valid rows raise an error. If True, rows
+<li><p><strong>block_length</strong> (<em>int</em><em> | </em><em>str</em><em> | </em><em>None</em>) – Block length of the split in steps or as time delta string (‘7D’).</p></li>
+<li><p><strong>gap_steps</strong> (<em>int</em><em> | </em><em>None</em>) – Embargo between splits in steps. Defaults to the reach of a sample into the past + shift.</p></li>
+<li><p><strong>time_index_col</strong> (<em>str</em><em> | </em><em>int</em>) – Name or index of the time column of the csv file.</p></li>
+<li><p><strong>csv_delimiter</strong> (<em>str</em>) – Delimiter of the csv file (<code class="code docutils literal notranslate"><span class="pre">pandas.read_csv</span></code>).</p></li>
+<li><p><strong>csv_encoding</strong> (<em>str</em>) – Encoding of the csv file.</p></li>
+<li><p><strong>csv_header</strong> (<em>int</em>) – Row of the column names.</p></li>
+<li><p><strong>csv_skiprows</strong> (<em>int</em><em> | </em><em>list</em><em>[</em><em>int</em><em>] </em><em>| </em><em>None</em>) – Rows to skip.</p></li>
+<li><p><strong>ignore_nan</strong> (<em>bool</em>) – If False, missing values between valid rows raise an error. If True, rows
 with missing values are left out.</p></li>
 <li><p><strong>transform</strong> (<em>Callable</em><em>[</em><em>[</em><em>pd.DataFrame</em><em>]</em><em>, </em><em>pd.DataFrame</em><em>] </em><em>| </em><em>None</em>) – Optional function <code class="code docutils literal notranslate"><span class="pre">df</span> <span class="pre">-&gt;</span> <span class="pre">df</span></code> applied after loading, e.g. to add columns that are
 no inputs of the model. It is not serialized.</p></li>
-<li><p><strong>loss_columns</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – Columns used only in the training loss, no inputs or outputs of the model (e.g. the
+<li><p><strong>loss_columns</strong> (<em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>) – Columns used only in the training loss, no inputs or outputs of the model (e.g. the
 physics targets of a PINN). ‘name’ is the value at the time of the inputs, ‘y:name’
 the value at the predicted time (shifted like the outputs). Models declare the columns
 they need (<code class="code docutils literal notranslate"><span class="pre">required_loss_columns</span></code>), they are added by <code class="code docutils literal notranslate"><span class="pre">pipeline(path,</span> <span class="pre">model=model)</span></code>.</p></li>
@@ -364,12 +364,12 @@ they need (<code class="code docutils literal notranslate"><span class="pre">req
 </dl>
 <dl class="py property">
 <dt class="sig sig-object py" id="physXAI.preprocessing.preprocessing.PreprocessingData.test_size">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">test_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></em><a class="headerlink" href="#physXAI.preprocessing.preprocessing.PreprocessingData.test_size" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">test_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#physXAI.preprocessing.preprocessing.PreprocessingData.test_size" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="physXAI.preprocessing.preprocessing.PreprocessingData.val_size">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">val_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></em><a class="headerlink" href="#physXAI.preprocessing.preprocessing.PreprocessingData.val_size" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">val_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#physXAI.preprocessing.preprocessing.PreprocessingData.val_size" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -380,7 +380,7 @@ they need (<code class="code docutils literal notranslate"><span class="pre">req
 dropped; missing time stamps become rows with missing values.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – Path to the csv file (absolute or relative to the working directory).</p>
+<dd class="field-odd"><p><strong>file_path</strong> (<em>str</em><em> | </em><em>Path</em>) – Path to the csv file (absolute or relative to the working directory).</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Data indexed by the regular time grid.</p>
@@ -399,8 +399,8 @@ dropped; missing time stamps become rows with missing values.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>df</strong> (<a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.1)"><em>DataFrame</em></a>) – Data on a regular time grid, see <code class="code docutils literal notranslate"><span class="pre">load_data</span></code>.</p></li>
-<li><p><strong>eval_horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – Steps of the multi step evaluation stored in the training data.</p></li>
-<li><p><strong>eval_stride</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Distance between two evaluation windows.</p></li>
+<li><p><strong>eval_horizon</strong> (<em>int</em><em> | </em><em>None</em>) – Steps of the multi step evaluation stored in the training data.</p></li>
+<li><p><strong>eval_stride</strong> (<em>int</em>) – Distance between two evaluation windows.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -415,10 +415,10 @@ dropped; missing time stamps become rows with missing values.</p>
 <dd><p>Determines the inputs: the given ones or, if None, the inputs required by the model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If the model needs inputs which are not part of the given inputs.</p>
+<dd class="field-odd"><p><strong>ValueError</strong> – If the model needs inputs which are not part of the given inputs.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>]</p>
+<dd class="field-even"><p>list[str]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -429,7 +429,7 @@ dropped; missing time stamps become rows with missing values.</p>
 <dd><p>Loads and preprocesses a csv file. Inputs can be taken from <code class="code docutils literal notranslate"><span class="pre">model</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – </p>
+<dd class="field-odd"><p><strong>file_path</strong> (<em>str</em><em> | </em><em>Path</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference internal" href="#physXAI.preprocessing.training_data.TrainingDataGeneric" title="physXAI.preprocessing.training_data.TrainingDataGeneric"><em>TrainingDataGeneric</em></a></p>
@@ -442,7 +442,7 @@ dropped; missing time stamps become rows with missing values.</p>
 <span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/preprocessing.html#PreprocessingData.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.preprocessing.PreprocessingData.get_config" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+<dd class="field-odd"><p>dict</p>
 </dd>
 </dl>
 </dd></dl>
@@ -454,7 +454,7 @@ dropped; missing time stamps become rows with missing values.</p>
 from ‘__class_name__’. A <code class="code docutils literal notranslate"><span class="pre">transform</span></code> hook is not serialized and has to be set again.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – </p>
+<dd class="field-odd"><p><strong>config</strong> (<em>dict</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference internal" href="#physXAI.preprocessing.preprocessing.PreprocessingData" title="physXAI.preprocessing.preprocessing.PreprocessingData"><em>PreprocessingData</em></a></p>
@@ -472,13 +472,13 @@ from ‘__class_name__’. A <code class="code docutils literal notranslate"><sp
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>eval_horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – Optional horizon of the multi step (recursive) evaluation of the model, in
+<li><p><strong>eval_horizon</strong> (<em>int</em><em> | </em><em>str</em><em> | </em><em>None</em>) – Optional horizon of the multi step (recursive) evaluation of the model, in
 steps or as time delta string (e.g. ‘24h’).</p></li>
-<li><p><strong>eval_stride</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – Distance between two evaluation windows, in steps or as time delta string.
+<li><p><strong>eval_stride</strong> (<em>int</em><em> | </em><em>str</em><em> | </em><em>None</em>) – Distance between two evaluation windows, in steps or as time delta string.
 Defaults to a quarter of the horizon.</p></li>
 <li><p><strong>**kwargs</strong> – See <code class="code docutils literal notranslate"><span class="pre">PreprocessingData</span></code>.</p></li>
-<li><p><strong>inputs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – </p></li>
-<li><p><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – </p></li>
+<li><p><strong>inputs</strong> (<em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>) – </p></li>
+<li><p><strong>output</strong> (<em>str</em><em> | </em><em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>) – </p></li>
 </ul>
 </dd>
 </dl>
@@ -495,7 +495,7 @@ Defaults to a quarter of the horizon.</p></li>
 </dd>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – Path to the csv file.</p></li>
+<li><p><strong>file_path</strong> (<em>str</em><em> | </em><em>Path</em>) – Path to the csv file.</p></li>
 <li><p><strong>model</strong> – Optional model; without explicit inputs, its required inputs are used.</p></li>
 </ul>
 </dd>
@@ -507,7 +507,7 @@ Defaults to a quarter of the horizon.</p></li>
 <span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/preprocessing.html#PreprocessingSingleStep.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.preprocessing.PreprocessingSingleStep.get_config" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+<dd class="field-odd"><p>dict</p>
 </dd>
 </dl>
 </dd></dl>
@@ -528,18 +528,18 @@ start value plus the accumulated changes, and the model is trained on that traje
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>inputs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – Input features of the model (no lags, changes or derived columns of a predicted feature: the memory
+<li><p><strong>inputs</strong> (<em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>) – Input features of the model (no lags, changes or derived columns of a predicted feature: the memory
 of a recurrent model is its state, and the predicted feature itself is fed back).</p></li>
-<li><p><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – Output feature(s), e.g. <code class="code docutils literal notranslate"><span class="pre">px.Change('T')</span></code>.</p></li>
-<li><p><strong>label_width</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Number of predicted steps (training horizon), in steps or as time delta string
+<li><p><strong>output</strong> (<em>str</em><em> | </em><em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>) – Output feature(s), e.g. <code class="code docutils literal notranslate"><span class="pre">px.Change('T')</span></code>.</p></li>
+<li><p><strong>label_width</strong> (<em>int</em><em> | </em><em>str</em>) – Number of predicted steps (training horizon), in steps or as time delta string
 (‘12h’). Choose it longer than the MPC horizon, so the model stays stable over
 the whole horizon.</p></li>
-<li><p><strong>warmup_width</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Number of warmup steps, in steps or as time delta string.</p></li>
-<li><p><strong>overlapping_sequences</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – If True, training sequences start at every step, else every
+<li><p><strong>warmup_width</strong> (<em>int</em><em> | </em><em>str</em>) – Number of warmup steps, in steps or as time delta string.</p></li>
+<li><p><strong>overlapping_sequences</strong> (<em>bool</em>) – If True, training sequences start at every step, else every
 <code class="code docutils literal notranslate"><span class="pre">label_width</span></code> steps.</p></li>
-<li><p><strong>eval_horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – Number of predicted steps of the evaluation (steps or time delta string).
+<li><p><strong>eval_horizon</strong> (<em>int</em><em> | </em><em>str</em><em> | </em><em>None</em>) – Number of predicted steps of the evaluation (steps or time delta string).
 Defaults to <code class="code docutils literal notranslate"><span class="pre">label_width</span></code>; a longer horizon shows the stability beyond training.</p></li>
-<li><p><strong>eval_stride</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – Distance between two evaluation sequences. Defaults to a quarter of the horizon.</p></li>
+<li><p><strong>eval_stride</strong> (<em>int</em><em> | </em><em>str</em><em> | </em><em>None</em>) – Distance between two evaluation sequences. Defaults to a quarter of the horizon.</p></li>
 <li><p><strong>**kwargs</strong> – See <code class="code docutils literal notranslate"><span class="pre">PreprocessingData</span></code>.</p></li>
 </ul>
 </dd>
@@ -557,7 +557,7 @@ Defaults to <code class="code docutils literal notranslate"><span class="pre">la
 </dd>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – Path to the csv file.</p></li>
+<li><p><strong>file_path</strong> (<em>str</em><em> | </em><em>Path</em>) – Path to the csv file.</p></li>
 <li><p><strong>model</strong> – Optional model; without explicit inputs, its required inputs are used.</p></li>
 </ul>
 </dd>
@@ -569,7 +569,7 @@ Defaults to <code class="code docutils literal notranslate"><span class="pre">la
 <span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/preprocessing.html#PreprocessingMultiStep.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.preprocessing.PreprocessingMultiStep.get_config" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+<dd class="field-odd"><p>dict</p>
 </dd>
 </dl>
 </dd></dl>
@@ -602,21 +602,27 @@ period of the data. It is optimistic for a new period (e.g. another season or ye
 the performance.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="physXAI.preprocessing.splitting.BlockSplit">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.preprocessing.splitting.</span></span><span class="sig-name descname"><span class="pre">BlockSplit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">test_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'blocks'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gap_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/splitting.html#BlockSplit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.splitting.BlockSplit" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.preprocessing.splitting.</span></span><span class="sig-name descname"><span class="pre">BlockSplit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">test_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'blocks'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gap_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">folds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/splitting.html#BlockSplit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.splitting.BlockSplit" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Assigns every row of a time series to the training, validation or test split.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>test_size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Fraction of the rows used for testing.</p></li>
-<li><p><strong>val_size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Fraction of the rows used for validation.</p></li>
+<li><p><strong>test_size</strong> (<em>float</em>) – Fraction of the rows used for testing.</p></li>
+<li><p><strong>val_size</strong> (<em>float</em>) – Fraction of the rows used for validation.</p></li>
 <li><p><strong>strategy</strong> (<em>Strategy</em>) – ‘blocks’ (default), ‘holdout_end’ or ‘random_rows’, see the module docstring.</p></li>
-<li><p><strong>block_length</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><em>None</em>) – Length of a block in time steps (int) or as a pandas time delta string,
+<li><p><strong>block_length</strong> (<em>int</em><em> | </em><em>str</em><em> | </em><em>None</em>) – Length of a block in time steps (int) or as a pandas time delta string,
 e.g. ‘7D’. Defaults to max(4 * window length, 1 day).</p></li>
-<li><p><strong>gap_steps</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – Number of rows left out at each boundary between two splits. Defaults to the
+<li><p><strong>gap_steps</strong> (<em>int</em><em> | </em><em>None</em>) – Number of rows left out at each boundary between two splits. Defaults to the
 value given by the preprocessing (reach of a sample into the past + shift).</p></li>
-<li><p><strong>min_blocks</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – The block length is reduced if the data holds fewer blocks, so that small data
+<li><p><strong>min_blocks</strong> (<em>int</em>) – The block length is reduced if the data holds fewer blocks, so that small data
 sets can still be split.</p></li>
+<li><p><strong>folds</strong> (<em>int</em><em> | </em><em>None</em>) – Blocked k-fold cross validation (‘blocks’ only, see <code class="code docutils literal notranslate"><span class="pre">physXAI.training.cross_validation</span></code>): the test
+blocks are drawn as without folds (the same for every fold), the other blocks are divided into
+<code class="code docutils literal notranslate"><span class="pre">folds</span></code> contiguous groups in time order. <code class="code docutils literal notranslate"><span class="pre">val_size</span></code> is not used.</p></li>
+<li><p><strong>fold</strong> (<em>int</em><em> | </em><em>None</em>) – The group (0, …, folds - 1) used for validation, all other groups are training data. None: no
+validation data, all blocks except the test blocks are training data (the final training after
+the cross validation).</p></li>
 </ul>
 </dd>
 </dl>
@@ -625,7 +631,24 @@ sets can still be split.</p></li>
 <span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/splitting.html#BlockSplit.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.splitting.BlockSplit.get_config" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="physXAI.preprocessing.splitting.BlockSplit.with_fold">
+<span class="sig-name descname"><span class="pre">with_fold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fold</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/splitting.html#BlockSplit.with_fold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.splitting.BlockSplit.with_fold" title="Permalink to this definition"></a></dt>
+<dd><p>The same split with the given fold of a blocked k-fold cross validation (<code class="code docutils literal notranslate"><span class="pre">fold=None</span></code>: no validation).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folds</strong> (<em>int</em>) – </p></li>
+<li><p><strong>fold</strong> (<em>int</em><em> | </em><em>None</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#physXAI.preprocessing.splitting.BlockSplit" title="physXAI.preprocessing.splitting.BlockSplit"><em>BlockSplit</em></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -635,7 +658,7 @@ sets can still be split.</p></li>
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/splitting.html#BlockSplit.from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.splitting.BlockSplit.from_config" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – </p>
+<dd class="field-odd"><p><strong>config</strong> (<em>dict</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference internal" href="#physXAI.preprocessing.splitting.BlockSplit" title="physXAI.preprocessing.splitting.BlockSplit"><em>BlockSplit</em></a></p>
@@ -650,13 +673,13 @@ sets can still be split.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>n_rows</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
-<li><p><strong>window_length</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
-<li><p><strong>time_step</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – </p></li>
+<li><p><strong>n_rows</strong> (<em>int</em>) – </p></li>
+<li><p><strong>window_length</strong> (<em>int</em>) – </p></li>
+<li><p><strong>time_step</strong> (<em>float</em><em> | </em><em>None</em>) – </p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+<dd class="field-even"><p>int</p>
 </dd>
 </dl>
 </dd></dl>
@@ -668,11 +691,11 @@ sets can still be split.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>n_rows</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of rows of the (regular) time series.</p></li>
-<li><p><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Seed of the random assignment.</p></li>
-<li><p><strong>window_length</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Length of the windows that are cut out of each split later.</p></li>
-<li><p><strong>time_step</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – Sampling time in seconds, needed for block lengths given as time delta.</p></li>
-<li><p><strong>default_gap</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Embargo used if <code class="code docutils literal notranslate"><span class="pre">gap_steps</span></code> is None.</p></li>
+<li><p><strong>n_rows</strong> (<em>int</em>) – Number of rows of the (regular) time series.</p></li>
+<li><p><strong>seed</strong> (<em>int</em>) – Seed of the random assignment.</p></li>
+<li><p><strong>window_length</strong> (<em>int</em>) – Length of the windows that are cut out of each split later.</p></li>
+<li><p><strong>time_step</strong> (<em>float</em><em> | </em><em>None</em>) – Sampling time in seconds, needed for block lengths given as time delta.</p></li>
+<li><p><strong>default_gap</strong> (<em>int</em>) – Embargo used if <code class="code docutils literal notranslate"><span class="pre">gap_steps</span></code> is None.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -698,7 +721,7 @@ but the rows of the neighbouring block are kept.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>labels</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – </p></li>
-<li><p><strong>gap</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
+<li><p><strong>gap</strong> (<em>int</em>) – </p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -718,7 +741,7 @@ on the window length (horizon, warmup) and the size of the data.</p>
 <dd class="field-odd"><p><strong>labels</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>]</p>
+<dd class="field-even"><p>dict[str, str]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -732,7 +755,7 @@ on the window length (horizon, warmup) and the size of the data.</p>
 <dd class="field-odd"><p><strong>labels</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a>]</p>
+<dd class="field-even"><p>dict[str, float]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -749,7 +772,7 @@ evaluation. Only NumPy objects are stored: the container can be saved and loaded
 <dl class="py class">
 <dt class="sig sig-object py" id="physXAI.preprocessing.training_data.TrainingDataGeneric">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">physXAI.preprocessing.training_data.</span></span><span class="sig-name descname"><span class="pre">TrainingDataGeneric</span></span><a class="reference internal" href="../_modules/physXAI/preprocessing/training_data.html#TrainingDataGeneric"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataGeneric" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>Common results of all training data containers: predictions, metrics, training history and
 training time.</p>
 <dl class="py attribute">
@@ -760,8 +783,14 @@ training time.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="physXAI.preprocessing.training_data.TrainingDataGeneric.physics">
-<span class="sig-name descname"><span class="pre">physics</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></em><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataGeneric.physics" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">physics</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataGeneric.physics" title="Permalink to this definition"></a></dt>
 <dd><p>Results of physics-based models, e.g. learned physical parameters (<code class="code docutils literal notranslate"><span class="pre">PCNNModel</span></code>, physics residuals)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="physXAI.preprocessing.training_data.TrainingDataGeneric.cross_validation">
+<span class="sig-name descname"><span class="pre">cross_validation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataGeneric.cross_validation" title="Permalink to this definition"></a></dt>
+<dd><p>Result of a cross validation of the number of epochs (<code class="code docutils literal notranslate"><span class="pre">physXAI.training.fit_cross_validated</span></code>)</p>
 </dd></dl>
 
 <dl class="py method">
@@ -797,7 +826,7 @@ training time.</p>
 <dd><p>Stores the training time in seconds.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – </p>
+<dd class="field-odd"><p><strong>time</strong> (<em>float</em>) – </p>
 </dd>
 </dl>
 </dd></dl>
@@ -807,7 +836,7 @@ training time.</p>
 <span class="sig-name descname"><span class="pre">add_file_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/training_data.html#TrainingDataGeneric.add_file_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataGeneric.add_file_path" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – </p>
 </dd>
 </dl>
 </dd></dl>
@@ -817,7 +846,7 @@ training time.</p>
 <em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/training_data.html#TrainingDataGeneric.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataGeneric.get_config" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+<dd class="field-odd"><p>dict</p>
 </dd>
 </dl>
 </dd></dl>
@@ -878,23 +907,23 @@ training time.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<em>np.ndarray</em>) – Array of shape (rows, columns) on a regular time grid.</p></li>
-<li><p><strong>columns</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – Names of the columns of <code class="code docutils literal notranslate"><span class="pre">data</span></code>.</p></li>
-<li><p><strong>inputs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – Names of the input columns of the model, in model order.</p></li>
-<li><p><strong>outputs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – Names of the outputs (e.g. ‘Change(T)’).</p></li>
-<li><p><strong>targets</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – Names of the target columns in <code class="code docutils literal notranslate"><span class="pre">data</span></code>, one per output. Row t of a target column holds
+<li><p><strong>columns</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Names of the columns of <code class="code docutils literal notranslate"><span class="pre">data</span></code>.</p></li>
+<li><p><strong>inputs</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Names of the input columns of the model, in model order.</p></li>
+<li><p><strong>outputs</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Names of the outputs (e.g. ‘Change(T)’).</p></li>
+<li><p><strong>targets</strong> (<em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>) – Names of the target columns in <code class="code docutils literal notranslate"><span class="pre">data</span></code>, one per output. Row t of a target column holds
 the value the model predicts from the inputs of row t (targets are already shifted).
 Defaults to <code class="code docutils literal notranslate"><span class="pre">outputs</span></code>.</p></li>
 <li><p><strong>labels</strong> (<em>np.ndarray</em>) – Split label per row (0 train, 1 val, 2 test, -1 unused).</p></li>
 <li><p><strong>valid</strong> (<em>np.ndarray</em>) – True for rows without missing values in the inputs and targets.</p></li>
 <li><p><strong>time</strong> (<em>np.ndarray</em><em> | </em><em>None</em>) – Time stamp per row (seconds or datetime64).</p></li>
-<li><p><strong>time_step</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>) – Sampling time in seconds.</p></li>
-<li><p><strong>eval_horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – Number of steps of the multi step evaluation (None: no multi step evaluation).</p></li>
-<li><p><strong>eval_stride</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Distance between two evaluation windows in steps.</p></li>
-<li><p><strong>derived</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em> | </em><em>None</em>) – Expressions of derived data columns {name: expression}. They are recomputed in every
+<li><p><strong>time_step</strong> (<em>float</em><em> | </em><em>None</em>) – Sampling time in seconds.</p></li>
+<li><p><strong>eval_horizon</strong> (<em>int</em><em> | </em><em>None</em>) – Number of steps of the multi step evaluation (None: no multi step evaluation).</p></li>
+<li><p><strong>eval_stride</strong> (<em>int</em>) – Distance between two evaluation windows in steps.</p></li>
+<li><p><strong>derived</strong> (<em>dict</em><em> | </em><em>None</em>) – Expressions of derived data columns {name: expression}. They are recomputed in every
 step of a recursive (multi step) prediction.</p></li>
-<li><p><strong>loss_columns</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – Columns used only in the training loss (e.g. physics targets of a PINN), see
+<li><p><strong>loss_columns</strong> (<em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>) – Columns used only in the training loss (e.g. physics targets of a PINN), see
 <code class="code docutils literal notranslate"><span class="pre">PreprocessingData(loss_columns=...)</span></code>. They are no model outputs.</p></li>
-<li><p><strong>shift</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Steps between the inputs and the targets (1: next step, 0: time of the inputs). Recursive
+<li><p><strong>shift</strong> (<em>int</em>) – Steps between the inputs and the targets (1: next step, 0: time of the inputs). Recursive
 (multi step) predictions need shift=1.</p></li>
 </ul>
 </dd>
@@ -911,7 +940,7 @@ step of a recursive (multi step) prediction.</p></li>
 <dd><p>All values of one column.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
@@ -925,7 +954,7 @@ step of a recursive (multi step) prediction.</p></li>
 <dd><p>Indices of all valid rows of a split (‘train’, ‘val’ or ‘test’).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>split</strong> (<em>str</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
@@ -940,7 +969,7 @@ step of a recursive (multi step) prediction.</p></li>
 use <code class="code docutils literal notranslate"><span class="pre">dtype=np.float64</span></code>, the precision of the data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>split</strong> (<em>str</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
@@ -954,7 +983,7 @@ use <code class="code docutils literal notranslate"><span class="pre">dtype=np.f
 <dd><p>Single step targets of a split, shape (samples, outputs), see <code class="code docutils literal notranslate"><span class="pre">X</span></code> for the dtype.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>split</strong> (<em>str</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a></p>
@@ -969,8 +998,8 @@ use <code class="code docutils literal notranslate"><span class="pre">dtype=np.f
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
-<li><p><strong>columns</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>]</em>) – </p></li>
+<li><p><strong>split</strong> (<em>str</em>) – </p></li>
+<li><p><strong>columns</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – </p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -986,9 +1015,9 @@ use <code class="code docutils literal notranslate"><span class="pre">dtype=np.f
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
-<li><p><strong>length</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
-<li><p><strong>stride</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
+<li><p><strong>split</strong> (<em>str</em>) – </p></li>
+<li><p><strong>length</strong> (<em>int</em>) – </p></li>
+<li><p><strong>stride</strong> (<em>int</em>) – </p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -1004,10 +1033,10 @@ use <code class="code docutils literal notranslate"><span class="pre">dtype=np.f
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p></li>
-<li><p><strong>length</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
-<li><p><strong>stride</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – </p></li>
-<li><p><strong>columns</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>) – </p></li>
+<li><p><strong>split</strong> (<em>str</em>) – </p></li>
+<li><p><strong>length</strong> (<em>int</em>) – </p></li>
+<li><p><strong>stride</strong> (<em>int</em>) – </p></li>
+<li><p><strong>columns</strong> (<em>list</em><em>[</em><em>str</em><em>] </em><em>| </em><em>None</em>) – </p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -1021,10 +1050,10 @@ use <code class="code docutils literal notranslate"><span class="pre">dtype=np.f
 <span class="sig-name descname"><span class="pre">has_split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/training_data.html#TrainingData.has_split"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingData.has_split" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>split</strong> (<em>str</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)">bool</a></p>
+<dd class="field-even"><p>bool</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1034,7 +1063,7 @@ use <code class="code docutils literal notranslate"><span class="pre">dtype=np.f
 <span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/training_data.html#TrainingData.summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingData.summary" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+<dd class="field-odd"><p>dict</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1104,7 +1133,7 @@ use <code class="code docutils literal notranslate"><span class="pre">dtype=np.f
 <span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/training_data.html#TrainingData.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingData.get_config" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+<dd class="field-odd"><p>dict</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1121,7 +1150,7 @@ use <code class="code docutils literal notranslate"><span class="pre">dtype=np.f
 <dd class="field-even"><p>Path</p>
 </dd>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – </p>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em><em> | </em><em>Path</em>) – </p>
 </dd>
 </dl>
 </dd></dl>
@@ -1132,7 +1161,7 @@ use <code class="code docutils literal notranslate"><span class="pre">dtype=np.f
 <dd><p>Loads data saved with <code class="code docutils literal notranslate"><span class="pre">save</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>) – </p>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em><em> | </em><em>Path</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference internal" href="#physXAI.preprocessing.training_data.TrainingData" title="physXAI.preprocessing.training_data.TrainingData"><em>TrainingData</em></a></p>
@@ -1158,29 +1187,29 @@ targets of the outputs themselves are available via <code class="code docutils l
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<a class="reference internal" href="#physXAI.preprocessing.training_data.TrainingData" title="physXAI.preprocessing.training_data.TrainingData"><em>TrainingData</em></a>) – The preprocessed time series (<code class="code docutils literal notranslate"><span class="pre">TrainingData</span></code>).</p></li>
-<li><p><strong>warmup_width</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of warmup steps.</p></li>
-<li><p><strong>label_width</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of predicted steps (training horizon).</p></li>
-<li><p><strong>stride</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Distance between two training sequences.</p></li>
-<li><p><strong>eval_horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – Number of predicted steps of the evaluation. Defaults to <code class="code docutils literal notranslate"><span class="pre">label_width</span></code>.</p></li>
-<li><p><strong>eval_stride</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – Distance between two evaluation sequences. Defaults to <code class="code docutils literal notranslate"><span class="pre">stride</span></code>.</p></li>
+<li><p><strong>warmup_width</strong> (<em>int</em>) – Number of warmup steps.</p></li>
+<li><p><strong>label_width</strong> (<em>int</em>) – Number of predicted steps (training horizon).</p></li>
+<li><p><strong>stride</strong> (<em>int</em>) – Distance between two training sequences.</p></li>
+<li><p><strong>eval_horizon</strong> (<em>int</em><em> | </em><em>None</em>) – Number of predicted steps of the evaluation. Defaults to <code class="code docutils literal notranslate"><span class="pre">label_width</span></code>.</p></li>
+<li><p><strong>eval_stride</strong> (<em>int</em><em> | </em><em>None</em>) – Distance between two evaluation sequences. Defaults to <code class="code docutils literal notranslate"><span class="pre">stride</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="physXAI.preprocessing.training_data.TrainingDataMultiStep.features">
-<span class="sig-name descname"><span class="pre">features</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataMultiStep.features" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">features</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataMultiStep.features" title="Permalink to this definition"></a></dt>
 <dd><p>Predicted feature of every output (‘T’ for ‘Change(T)’)</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="physXAI.preprocessing.training_data.TrainingDataMultiStep.difference">
-<span class="sig-name descname"><span class="pre">difference</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataMultiStep.difference" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">difference</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataMultiStep.difference" title="Permalink to this definition"></a></dt>
 <dd><p>Whether an output is the change of its feature</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="physXAI.preprocessing.training_data.TrainingDataMultiStep.absolute">
-<span class="sig-name descname"><span class="pre">absolute</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></em><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataMultiStep.absolute" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">absolute</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataMultiStep.absolute" title="Permalink to this definition"></a></dt>
 <dd><p>Whether the start values of the features are known, then trajectories are absolute</p>
 </dd></dl>
 
@@ -1197,9 +1226,9 @@ targets of the outputs themselves are available via <code class="code docutils l
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – ‘train’, ‘val’ or ‘test’.</p></li>
-<li><p><strong>horizon</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – Number of predicted steps. Defaults to <code class="code docutils literal notranslate"><span class="pre">label_width</span></code>.</p></li>
-<li><p><strong>stride</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> | </em><em>None</em>) – Distance between two sequences. Defaults to <code class="code docutils literal notranslate"><span class="pre">stride</span></code>.</p></li>
+<li><p><strong>split</strong> (<em>str</em>) – ‘train’, ‘val’ or ‘test’.</p></li>
+<li><p><strong>horizon</strong> (<em>int</em><em> | </em><em>None</em>) – Number of predicted steps. Defaults to <code class="code docutils literal notranslate"><span class="pre">label_width</span></code>.</p></li>
+<li><p><strong>stride</strong> (<em>int</em><em> | </em><em>None</em>) – Distance between two sequences. Defaults to <code class="code docutils literal notranslate"><span class="pre">stride</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -1211,7 +1240,7 @@ None, if the split holds no sequence.</p>
 </p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a></p>
+<dd class="field-odd"><p>tuple</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1238,10 +1267,10 @@ None, if the split holds no sequence.</p>
 <span class="sig-name descname"><span class="pre">has_split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/training_data.html#TrainingDataMultiStep.has_split"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataMultiStep.has_split" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>split</strong> (<em>str</em>) – </p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)">bool</a></p>
+<dd class="field-even"><p>bool</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1252,7 +1281,7 @@ None, if the split holds no sequence.</p>
 <dd><p>Input sequences (warmup and prediction) of a split.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>split</strong> (<em>str</em>) – </p>
 </dd>
 </dl>
 </dd></dl>
@@ -1263,7 +1292,7 @@ None, if the split holds no sequence.</p>
 <dd><p>Targets of the outputs (e.g. the changes) over the prediction steps of a split.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>split</strong> (<em>str</em>) – </p>
 </dd>
 </dl>
 </dd></dl>
@@ -1274,7 +1303,7 @@ None, if the split holds no sequence.</p>
 <dd><p>Start values of the predicted features of a split (None if unknown).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>split</strong> (<em>str</em>) – </p>
 </dd>
 </dl>
 </dd></dl>
@@ -1285,7 +1314,7 @@ None, if the split holds no sequence.</p>
 <dd><p>True trajectories of the predicted features over the prediction steps of a split.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – </p>
+<dd class="field-odd"><p><strong>split</strong> (<em>str</em>) – </p>
 </dd>
 </dl>
 </dd></dl>
@@ -1355,7 +1384,7 @@ None, if the split holds no sequence.</p>
 <span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/training_data.html#TrainingDataMultiStep.summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataMultiStep.summary" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+<dd class="field-odd"><p>dict</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1365,7 +1394,7 @@ None, if the split holds no sequence.</p>
 <span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/physXAI/preprocessing/training_data.html#TrainingDataMultiStep.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#physXAI.preprocessing.training_data.TrainingDataMultiStep.get_config" title="Permalink to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
+<dd class="field-odd"><p>dict</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1388,9 +1417,9 @@ cross a split boundary or a gap in the data.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>labels</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – Split label per row (see <code class="code docutils literal notranslate"><span class="pre">physXAI.preprocessing.splitting</span></code>).</p></li>
 <li><p><strong>valid</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – Whether a row holds no missing values.</p></li>
-<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – The split to take the windows from.</p></li>
-<li><p><strong>length</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Length of a window in rows.</p></li>
-<li><p><strong>stride</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Distance between the starts of two windows within a contiguous segment.</p></li>
+<li><p><strong>split</strong> (<em>int</em>) – The split to take the windows from.</p></li>
+<li><p><strong>length</strong> (<em>int</em>) – Length of a window in rows.</p></li>
+<li><p><strong>stride</strong> (<em>int</em>) – Distance between the starts of two windows within a contiguous segment.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -1411,7 +1440,7 @@ cross a split boundary or a gap in the data.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – Array of shape (rows, features).</p></li>
 <li><p><strong>starts</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>) – Start rows of the windows.</p></li>
-<li><p><strong>length</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Length of the windows.</p></li>
+<li><p><strong>length</strong> (<em>int</em>) – Length of the windows.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>

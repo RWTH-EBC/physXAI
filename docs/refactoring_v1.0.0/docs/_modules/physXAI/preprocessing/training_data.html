@@ -127,6 +127,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="c1">#: Results of physics-based models, e.g. learned physical parameters (`PCNNModel`, physics residuals)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">physics</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Result of a cross validation of the number of epochs (`physXAI.training.fit_cross_validated`)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cross_validation</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="TrainingDataGeneric.add_training_record"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.add_training_record">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">add_training_record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Stores the training history (e.g. the keras `History` object)."""</span>
@@ -159,13 +161,16 @@
         <span class="k">return</span> <span class="n">state</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_results_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">{</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">"file_path"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">,</span>
             <span class="s2">"metrics"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="s2">"training_time"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_time</span><span class="p">,</span>
             <span class="s2">"training_record"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_record</span><span class="o">.</span><span class="n">history</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_record</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="s2">"physics"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">physics</span><span class="p">,</span>
         <span class="p">}</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"cross_validation"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">config</span><span class="p">[</span><span class="s2">"cross_validation"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cross_validation</span>
+        <span class="k">return</span> <span class="n">config</span>
 
 <div class="viewcode-block" id="TrainingDataGeneric.get_config"><a class="viewcode-back" href="../../../code/physXAI.preprocessing.html#physXAI.preprocessing.training_data.TrainingDataGeneric.get_config">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>

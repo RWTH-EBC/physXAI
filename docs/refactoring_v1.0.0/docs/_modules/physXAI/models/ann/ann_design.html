@@ -174,6 +174,7 @@
         <span class="n">physics</span><span class="p">:</span> <span class="n">PhysicsResidual</span> <span class="o">|</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">physics_fit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"calibrate"</span><span class="p">,</span>
         <span class="n">physics_learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">early_stopping_start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
@@ -185,6 +186,9 @@
 <span class="sd">            learning_rate (float): Learning rate for the Adam optimizer.</span>
 <span class="sd">            early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.</span>
 <span class="sd">                                         If None, early stopping is disabled.</span>
+<span class="sd">            early_stopping_start (int): Minimum number of epochs: the early stopping only watches the validation</span>
+<span class="sd">                                         loss from this epoch on (keras `start_from_epoch`), so a noisy validation</span>
+<span class="sd">                                         loss cannot end the training in the first epochs.</span>
 <span class="sd">            random_seed (int, optional): Seed of the weight initialization and the batch order, set when the model</span>
 <span class="sd">                               is generated. Defaults to the global seed (`physXAI.set_seed`), else a new seed is</span>
 <span class="sd">                               drawn. The used seed is stored in the config.</span>
@@ -201,6 +205,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">epochs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">learning_rate</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">early_stopping_epochs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">early_stopping_start</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">resolve_seed</span><span class="p">(</span><span class="n">random_seed</span><span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.training.recursive</span><span class="w"> </span><span class="kn">import</span> <span class="n">RecursiveTraining</span>
 
@@ -328,6 +333,7 @@
                 <span class="n">mode</span><span class="o">=</span><span class="s2">"min"</span><span class="p">,</span>
                 <span class="n">patience</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_epochs</span><span class="p">,</span>
                 <span class="n">restore_best_weights</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">start_from_epoch</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_start</span><span class="p">,</span>
                 <span class="n">verbose</span><span class="o">=</span><span class="n">keras_verbosity_int</span><span class="p">(),</span>
             <span class="p">)</span>
             <span class="n">callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">es</span><span class="p">)</span>
@@ -408,6 +414,7 @@
                 <span class="s2">"epochs"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
                 <span class="s2">"learning_rate"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span>
                 <span class="s2">"early_stopping_epochs"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_epochs</span><span class="p">,</span>
+                <span class="s2">"early_stopping_start"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_start</span><span class="p">,</span>
                 <span class="s2">"random_seed"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">,</span>
                 <span class="s2">"recursive_training"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">recursive_training</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">recursive_training</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -924,6 +931,8 @@
 <span class="sd">        learning_rate: Learning rate of the Adam optimizer.</span>
 <span class="sd">        batch_size: Number of sequences per batch.</span>
 <span class="sd">        early_stopping_epochs: Patience of the early stopping on the validation loss (None disables it).</span>
+<span class="sd">        early_stopping_start: Minimum number of epochs: the early stopping watches the validation loss only from</span>
+<span class="sd">                              this epoch on (keras `start_from_epoch`).</span>
 <span class="sd">        random_seed: Seed of the weight initialization and the batch order, set when the model is generated.</span>
 <span class="sd">                     Defaults to the global seed (`physXAI.set_seed`), else a new seed is drawn (stored in the config).</span>
 <span class="sd">        feature_architecture: An expression (`physXAI.expr`), or a list of them, building the inputs of</span>
@@ -951,6 +960,7 @@
         <span class="n">loss_on</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"trajectory"</span><span class="p">,</span>
         <span class="n">first_step_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">step_weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">early_stopping_start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -965,6 +975,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">learning_rate</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">batch_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">early_stopping_epochs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">early_stopping_start</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">resolve_seed</span><span class="p">(</span><span class="n">random_seed</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">feature_architecture</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
             <span class="n">feature_architecture</span> <span class="o">=</span> <span class="n">expr_from_config</span><span class="p">(</span><span class="n">feature_architecture</span><span class="p">)</span>
@@ -1064,6 +1075,7 @@
                     <span class="n">mode</span><span class="o">=</span><span class="s2">"min"</span><span class="p">,</span>
                     <span class="n">patience</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_epochs</span><span class="p">,</span>
                     <span class="n">restore_best_weights</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">start_from_epoch</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_start</span><span class="p">,</span>
                     <span class="n">verbose</span><span class="o">=</span><span class="n">keras_verbosity_int</span><span class="p">(),</span>
                 <span class="p">)</span>
             <span class="p">)</span>
@@ -1131,6 +1143,7 @@
                 <span class="s2">"learning_rate"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span>
                 <span class="s2">"batch_size"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
                 <span class="s2">"early_stopping_epochs"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_epochs</span><span class="p">,</span>
+                <span class="s2">"early_stopping_start"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_start</span><span class="p">,</span>
                 <span class="s2">"random_seed"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">,</span>
                 <span class="s2">"feature_architecture"</span><span class="p">:</span> <span class="n">expr_to_config</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_architecture</span><span class="p">)</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_architecture</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -1184,8 +1197,15 @@
 <span class="sd">               ventilation with the air flow V and the supply temperature T_x (the rate is then in 1/h per unit of</span>
 <span class="sd">               the flow). The flow is no input of f, like the controls. Physically consistent with V &gt;= 0; the check</span>
 <span class="sd">               1 - sum b &gt; 0 uses the largest flow of the training data.</span>
-<span class="sd">        rnn_units: Units of the recurrent layer of f.</span>
-<span class="sd">        rnn_layer: 'LSTM' (default), 'GRU' or 'RNN'.</span>
+<span class="sd">        rnn_units: Units of the recurrent layer of f (neurons of the hidden layer for f='cmnn').</span>
+<span class="sd">        rnn_layer: 'LSTM' (default), 'GRU' or 'RNN' (f='rnn' only).</span>
+<span class="sd">        f: The unforced dynamics: 'rnn' (default, a recurrent layer on D and the remaining inputs, as in the paper),</span>
+<span class="sd">           'monotone_rnn' (a recurrent cell monotone in `monotonicities`) or 'cmnn' (a constrained monotonic network</span>
+<span class="sd">           on the inputs of the step). The monotone kinds do not see D, see `build_pcnn_step_model`: T is then</span>
+<span class="sd">           monotone in these inputs over the whole horizon.</span>
+<span class="sd">        monotonicities: {input: 1 increasing | -1 decreasing} of the monotone f. These inputs are inputs of f even if</span>
+<span class="sd">                        they are part of the energy accumulator (e.g. the outside temperature of a loss: f adds a</span>
+<span class="sd">                        non-linear, delayed effect to the linear loss).</span>
 <span class="sd">        **kwargs: Training settings of `RNNModel` (epochs, learning_rate, batch_size, early_stopping_epochs,</span>
 <span class="sd">                  random_seed, loss_on, first_step_weight, step_weights).</span>
 
@@ -1206,11 +1226,23 @@
         <span class="n">flows</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">rnn_units</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
         <span class="n">rnn_layer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"LSTM"</span><span class="p">,</span>
+        <span class="n">f</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"rnn"</span><span class="p">,</span>
+        <span class="n">monotonicities</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.model_construction.rnn_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PCNN_F</span>
+
         <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"feature_architecture"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"PCNNModel has no feature_architecture, the inputs of f are all non-physics inputs."</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">rnn_units</span><span class="o">=</span><span class="n">rnn_units</span><span class="p">,</span> <span class="n">rnn_layer</span><span class="o">=</span><span class="n">rnn_layer</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">f</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PCNN_F</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown f '</span><span class="si">{</span><span class="n">f</span><span class="si">}</span><span class="s2">', use one of </span><span class="si">{</span><span class="n">PCNN_F</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">f</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">monotonicities</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">if</span> <span class="n">f</span> <span class="o">==</span> <span class="s2">"rnn"</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Monotonicities need a monotone f ('monotone_rnn' or 'cmnn')."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Monotonicities are 1 or -1, got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">rates_of</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
             <span class="k">return</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="p">(</span><span class="kc">None</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">values</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
@@ -1324,13 +1356,17 @@
         <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">,</span> <span class="s2">"_estimated"</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_check_training_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.model_construction.rnn_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">pcnn_f_inputs</span>
+
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_check_training_data</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_terms</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+        <span class="n">pcnn_f_inputs</span><span class="p">(</span><span class="n">td</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_terms</span><span class="p">(</span><span class="n">td</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">)</span>
 
 <div class="viewcode-block" id="PCNNModel.generate_model"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.generate_model">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Builds the PCNN step model and the sequence model used for training."""</span>
         <span class="n">td</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">"td"</span><span class="p">]</span>
-        <span class="n">step_model</span> <span class="o">=</span> <span class="n">build_pcnn_step_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="p">,</span> <span class="n">td</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_terms</span><span class="p">(</span><span class="n">td</span><span class="p">))</span>
+        <span class="n">step_model</span> <span class="o">=</span> <span class="n">build_pcnn_step_model</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="p">,</span> <span class="n">td</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_terms</span><span class="p">(</span><span class="n">td</span><span class="p">),</span> <span class="n">f</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">,</span> <span class="n">monotonicities</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_training_model</span><span class="p">(</span><span class="n">step_model</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="PCNNModel.evaluate"><a class="viewcode-back" href="../../../../code/physXAI.models.ann.html#physXAI.models.ann.ann_design.PCNNModel.evaluate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataMultiStep</span><span class="p">):</span>
@@ -1386,6 +1422,8 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">flows</span><span class="p">:</span>
             <span class="c1"># only when used: configs saved before the option stay the same</span>
             <span class="n">config</span><span class="p">[</span><span class="s2">"flows"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flows</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span> <span class="o">!=</span> <span class="s2">"rnn"</span><span class="p">:</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">"f"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">,</span> <span class="s2">"monotonicities"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">monotonicities</span><span class="p">})</span>
         <span class="k">return</span> <span class="n">config</span></div></div>
 </pre></div>
 
