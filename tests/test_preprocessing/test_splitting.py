@@ -203,3 +203,49 @@ def test_multi_step_embargo_without_warmup(one_room_csv):
         s: set((td.series.window_starts(s, length)[:, None] + np.arange(length + 1)).ravel()) for s in ("train", "test")
     }
     assert not rows["train"] & rows["test"]
+
+
+def test_folds_keep_the_test_blocks_and_cover_the_rest():
+    """Cross validation: the same test blocks in every fold, every other block in exactly one validation fold."""
+    plain = BlockSplit(0.1, 0.1, gap_steps=0).assign(N_YEAR, seed=2, time_step=3600)
+    folds = [
+        BlockSplit(0.1, 0.1, gap_steps=0, folds=4, fold=j).assign(N_YEAR, seed=2, time_step=3600) for j in range(4)
+    ]
+    final = BlockSplit(0.1, 0.1, gap_steps=0, folds=4).assign(N_YEAR, seed=2, time_step=3600)
+    for labels in [*folds, final]:
+        np.testing.assert_array_equal(labels == TEST, plain == TEST)
+    assert not np.any(final == VAL)
+    in_val = np.sum([labels == VAL for labels in folds], axis=0)
+    np.testing.assert_array_equal(in_val, (plain != TEST).astype(int))
+    # contiguous groups: the validation rows of a fold lie in one stretch of the time axis (test blocks may interrupt)
+    for labels in folds:
+        val = np.flatnonzero(labels == VAL)
+        between = labels[val[0] : val[-1] + 1]
+        assert np.all((between == VAL) | (between == TEST))
+
+
+def test_fold_config_round_trip_and_with_fold():
+    split = BlockSplit(0.2, 0.1, block_length="1D", folds=5, fold=3)
+    assert BlockSplit.from_config(split.get_config()).get_config() == split.get_config()
+    assert "folds" not in BlockSplit().get_config()
+    other = BlockSplit(0.2, 0.1, block_length="1D").with_fold(5, None)
+    assert other.folds == 5 and other.fold is None and other.test_size == 0.2
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {"folds": 1},
+        {"folds": 3, "fold": 3},
+        {"fold": 0},
+        {"folds": 3, "strategy": "holdout_end"},
+    ],
+)
+def test_invalid_fold_config(config):
+    with pytest.raises(ValueError):
+        BlockSplit(**config)
+
+
+def test_too_few_blocks_for_the_folds():
+    with pytest.raises(ValueError, match="folds"):
+        BlockSplit(0.5, 0.0, block_length=100, folds=8, fold=0, min_blocks=1).assign(1000, seed=0)

@@ -54,6 +54,12 @@ class BlockSplit:
                    value given by the preprocessing (reach of a sample into the past + shift).
         min_blocks: The block length is reduced if the data holds fewer blocks, so that small data
                     sets can still be split.
+        folds: Blocked k-fold cross validation ('blocks' only, see `physXAI.training.cross_validation`): the test
+               blocks are drawn as without folds (the same for every fold), the other blocks are divided into
+               `folds` contiguous groups in time order. `val_size` is not used.
+        fold: The group (0, ..., folds - 1) used for validation, all other groups are training data. None: no
+              validation data, all blocks except the test blocks are training data (the final training after
+              the cross validation).
     """
 
     def __init__(
@@ -64,6 +70,8 @@ class BlockSplit:
         block_length: int | str | None = None,
         gap_steps: int | None = None,
         min_blocks: int = 20,
+        folds: int | None = None,
+        fold: int | None = None,
     ):
         if not (0 <= test_size < 1 and 0 <= val_size < 1 and test_size + val_size < 1):
             raise ValueError(f"Invalid split sizes: test_size={test_size}, val_size={val_size}.")
@@ -71,15 +79,26 @@ class BlockSplit:
             raise ValueError(f"Unknown split strategy '{strategy}'.")
         if gap_steps is not None and gap_steps < 0:
             raise ValueError("gap_steps must not be negative.")
+        if folds is not None:
+            if strategy != "blocks":
+                raise ValueError("folds (cross validation) need the strategy 'blocks'.")
+            if folds < 2:
+                raise ValueError(f"folds has to be at least 2, got {folds}.")
+            if fold is not None and not 0 <= fold < folds:
+                raise ValueError(f"fold has to be in 0, ..., {folds - 1}, got {fold}.")
+        elif fold is not None:
+            raise ValueError("fold needs folds.")
         self.test_size = test_size
         self.val_size = val_size
         self.strategy: Strategy = strategy
         self.block_length = block_length
         self.gap_steps = gap_steps
         self.min_blocks = min_blocks
+        self.folds = folds
+        self.fold = fold
 
     def get_config(self) -> dict:
-        return {
+        config = {
             "test_size": self.test_size,
             "val_size": self.val_size,
             "strategy": self.strategy,
@@ -87,6 +106,13 @@ class BlockSplit:
             "gap_steps": self.gap_steps,
             "min_blocks": self.min_blocks,
         }
+        if self.folds is not None:
+            config.update({"folds": self.folds, "fold": self.fold})
+        return config
+
+    def with_fold(self, folds: int, fold: int | None) -> BlockSplit:
+        """The same split with the given fold of a blocked k-fold cross validation (`fold=None`: no validation)."""
+        return BlockSplit(**{**self.get_config(), "folds": folds, "fold": fold})
 
     @classmethod
     def from_config(cls, config: dict) -> BlockSplit:
@@ -169,6 +195,8 @@ class BlockSplit:
         length = self.resolve_block_length(n_rows, window_length, time_step)
         n_blocks = max(n_rows // length, 1)
         n_test = _n_blocks(n_blocks, self.test_size)
+        if self.folds is not None:
+            return self._fold_blocks(n_rows, n_blocks, n_test, length, rng)
         n_val = _n_blocks(n_blocks - n_test, self.val_size * n_blocks / max(n_blocks - n_test, 1))
         if n_test + n_val >= n_blocks:
             logger.warning("Too few blocks (%d) for a split, all data is used for training.", n_blocks)
@@ -181,6 +209,21 @@ class BlockSplit:
         block_labels[val_blocks] = VAL
 
         # the last block absorbs the remainder of the rows
+        block_of_row = np.minimum(np.arange(n_rows) // length, n_blocks - 1)
+        return block_labels[block_of_row]
+
+    def _fold_blocks(self, n_rows: int, n_blocks: int, n_test: int, length: int, rng: np.random.Generator):
+        """Test blocks as without folds (same draw), the other blocks in `folds` contiguous groups."""
+        if n_blocks - n_test < self.folds:
+            raise ValueError(
+                f"{n_blocks - n_test} blocks outside the test data for {self.folds} folds: reduce folds, test_size or "
+                "the block length."
+            )
+        block_labels = np.full(n_blocks, TRAIN, dtype=np.int8)
+        block_labels[_stratified_choice(np.arange(n_blocks), n_test, rng)] = TEST
+        if self.fold is not None:
+            groups = np.array_split(np.flatnonzero(block_labels == TRAIN), self.folds)
+            block_labels[groups[self.fold]] = VAL
         block_of_row = np.minimum(np.arange(n_rows) // length, n_blocks - 1)
         return block_labels[block_of_row]
 

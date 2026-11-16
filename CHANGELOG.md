@@ -17,6 +17,22 @@ recurrent models (branch `143-feature-multistep-model-support`), which is not re
 loads single step models only. The export is verified against that branch, but not in the CI of physXAI.
 
 ### Added
+- Blocked k-fold cross validation of the number of epochs (`physXAI.training.CrossValidation`,
+  `cross_validate`, `fit_cross_validated`): `folds` trainings, each validated on another contiguous group of the
+  blocks outside the test data (`BlockSplit(folds=k, fold=j)`), E* from the mean validation curve, then the final
+  training on all data outside the test blocks for E* epochs (no validation split). Models trained in two phases
+  (`RecursiveTraining`) get the epochs of both phases. For small data sets, where the early stopping on one small
+  validation split picks a random epoch. `fit_cross_validated(..., result=...)` reuses an earlier cross
+  validation (e.g. of another seed): one training instead of folds + 1. A fold whose validation blocks hold no
+  window of the multi step horizon (short blocks, long lags) skips the multi step training and does not count for
+  its epochs (`folds_used` in the result); an error only if no fold holds one.
+- `PCNNModel(f=..., monotonicities=...)`: unforced dynamics f monotone in chosen inputs (also inputs of the losses,
+  e.g. the outside temperature): `'monotone_rnn'` (SimpleRNN with sign constrained input weights, non negative
+  recurrent and output weights) or `'cmnn'` (constrained monotonic network on the inputs of the step). f does not
+  see D then, so T is monotone in these inputs over the whole horizon. Default `'rnn'` as before.
+- `early_stopping_start` (minimum number of epochs before the early stopping watches the validation loss, keras
+  `start_from_epoch`) for the ANN models, `RNNModel` / `PCNNModel`, the physics residual training and
+  `RecursiveTraining`.
 - `physXAI.__version__` (read from the installed package metadata).
 - `physXAI.io.Run`: explicit output directory for a training run, replaces the global `Logger`. The default
   directory of the runs is `results/` (before `stored_data/`).
