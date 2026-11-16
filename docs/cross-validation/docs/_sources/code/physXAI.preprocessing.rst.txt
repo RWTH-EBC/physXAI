@@ -1,0 +1,42 @@
+physXAI.preprocessing package
+=============================
+
+.. automodule:: physXAI.preprocessing
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+physXAI.preprocessing.preprocessing module
+------------------------------------------
+
+.. automodule:: physXAI.preprocessing.preprocessing
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+physXAI.preprocessing.splitting module
+--------------------------------------
+
+.. automodule:: physXAI.preprocessing.splitting
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+physXAI.preprocessing.training\_data module
+-------------------------------------------
+
+.. automodule:: physXAI.preprocessing.training_data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+physXAI.preprocessing.windows module
+------------------------------------
+
+.. automodule:: physXAI.preprocessing.windows
+   :members:
+   :undoc-members:
+   :show-inheritance:

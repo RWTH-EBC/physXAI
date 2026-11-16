@@ -1,0 +1,18 @@
+physXAI.plotting package
+========================
+
+.. automodule:: physXAI.plotting
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+physXAI.plotting.plotting module
+--------------------------------
+
+.. automodule:: physXAI.plotting.plotting
+   :members:
+   :undoc-members:
+   :show-inheritance:

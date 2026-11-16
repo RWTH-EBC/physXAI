@@ -1,0 +1,42 @@
+physXAI.models.ann.model\_construction package
+==============================================
+
+.. automodule:: physXAI.models.ann.model_construction
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+physXAI.models.ann.model\_construction.ann\_models module
+---------------------------------------------------------
+
+.. automodule:: physXAI.models.ann.model_construction.ann_models
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+physXAI.models.ann.model\_construction.rbf\_models module
+---------------------------------------------------------
+
+.. automodule:: physXAI.models.ann.model_construction.rbf_models
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+physXAI.models.ann.model\_construction.residual\_models module
+--------------------------------------------------------------
+
+.. automodule:: physXAI.models.ann.model_construction.residual_models
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+physXAI.models.ann.model\_construction.rnn\_models module
+---------------------------------------------------------
+
+.. automodule:: physXAI.models.ann.model_construction.rnn_models
+   :members:
+   :undoc-members:
+   :show-inheritance:

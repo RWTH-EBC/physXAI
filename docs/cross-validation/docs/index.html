@@ -1,0 +1,308 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>physXAI &mdash; physXAI 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="_static/autodoc_pydantic.css" />
+
+  
+      <script src="_static/jquery.js"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+      <script src="_static/doctools.js"></script>
+      <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Getting started" href="guide/getting_started.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            physXAI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="guide/getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/expressions.html">Expressions: physics inside the model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/data.html">Data pipeline and split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/multi_step.html">Multi step evaluation and training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/rnn.html">Recurrent models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/physics.html">Physics-informed models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/evaluation.html">Evaluation, comparison and feature selection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/agentlib.html">Export for AgentLib-MPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration.html">Migration from physXAI 0.x to 1.0</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="code/modules.html">physXAI</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">physXAI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">physXAI</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <p><img alt="E.ON EBC RWTH Aachen University" src="https://github.com/RWTH-EBC/physXAI/blob/main/docs/EBC_Logo.png?raw=true" /></p>
+<p><a class="reference external" href="https://opensource.org/licenses/BSD-3-Clause"><img alt="License" src="https://img.shields.io/badge/License-BSD%203--Clause-blue.svg" /></a>
+<a class="reference external" href="https://rwth-ebc.github.io/physXAI/main/docs/index.html"><img alt="Documentation" src="https://rwth-ebc.github.io/physXAI/main/docs/doc.svg" /></a>
+<a class="reference external" href="https://rwth-ebc.github.io/physXAI/main/coverage/index.html"><img alt="Coverage" src="https://rwth-ebc.github.io/physXAI/main/coverage/badge.svg" /></a>
+<a class="reference external" href="https://rwth-ebc.github.io/physXAI/main/pylint/pylint.html"><img alt="Pylint" src="https://rwth-ebc.github.io/physXAI/main/pylint/pylint.svg" /></a>
+<a class="reference external" href="https://doi.org/10.1016/j.buildenv.2025.113640"><img alt="DOI:10.1016/j.buildenv.2025.113640" src="https://img.shields.io/badge/DOI-10.1016%2Fj.buildenv.2025.113640-227BC0" /></a></p>
+<div>
+<img src="https://github.com/RWTH-EBC/physXAI/blob/main/docs/physXAI.png?raw=true" height="300" alt="physXAI Logo">
+</div>
+<section id="physxai">
+<h1>physXAI<a class="headerlink" href="#physxai" title="Permalink to this heading"></a></h1>
+<section id="about-the-project">
+<h2>About The Project<a class="headerlink" href="#about-the-project" title="Permalink to this heading"></a></h2>
+<p>The physXAI Toolbox is designed for creating physics-guided machine learning models, also known as physics-informed or physics-constrained models. <br />
+These models are specifically intended for application in Model Predictive Control (MPC) of Building Energy Systems (BES). <br />
+The toolbox aims to integrate physical knowledge into machine learning models to improve their accuracy, robustness, and interpretability for energy system optimization. <br />
+<br />
+If you have any questions regarding physXAI, feel free to contact us at ebc-tools&#64;eonerc.rwth-aachen.de</p>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h2>
+<ol class="arabic">
+<li><p>Clone the physXAI repository and switch into it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">RWTH</span><span class="o">-</span><span class="n">EBC</span><span class="o">/</span><span class="n">physXAI</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="n">physXAI</span>
+</pre></div>
+</div>
+</li>
+<li><p>Create a virtual environment with Python &gt;= 3.11 and activate it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">venv</span> <span class="o">.</span><span class="n">venv</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>On Windows:</strong> <code class="docutils literal notranslate"><span class="pre">.venv\Scripts\activate</span></code></p></li>
+<li><p><strong>On Unix/Linux/macOS:</strong> <code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">.venv/bin/activate</span></code></p></li>
+</ul>
+</li>
+<li><p>A) To install physXAI as a user:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">.</span>
+</pre></div>
+</div>
+<p>B) To install physXAI as a developer (tests, linting, AgentLib-MPC contract tests):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span><span class="p">[</span><span class="n">dev</span><span class="p">,</span><span class="n">agentlib</span><span class="p">]</span>
+<span class="n">pre</span><span class="o">-</span><span class="n">commit</span> <span class="n">install</span>
+</pre></div>
+</div>
+<p>Options: <code class="docutils literal notranslate"><span class="pre">-c</span> <span class="pre">constraints.txt</span></code> installs the versions physXAI was tested with, <code class="docutils literal notranslate"><span class="pre">.[gpu]</span></code> TensorFlow with CUDA
+(Linux or WSL2, see the <a class="reference external" href="https://rwth-ebc.github.io/physXAI/main/docs/guide/getting_started.html#gpu">documentation</a>).</p>
+</li>
+</ol>
+</section>
+<section id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this heading"></a></h2>
+<p>The <a class="reference external" href="https://rwth-ebc.github.io/physXAI/main/docs/index.html">documentation</a> contains a user guide, the API reference and a
+<a class="reference external" href="https://rwth-ebc.github.io/physXAI/main/docs/migration.html">migration guide from physXAI 0.x to 1.0</a>. <br />
+The <a class="reference external" href="https://github.com/RWTH-EBC/physXAI/tree/main/examples"><code class="docutils literal notranslate"><span class="pre">examples</span></code></a> directory is a tutorial in numbered,
+commented scripts, from a first model (<code class="docutils literal notranslate"><span class="pre">01_first_model.py</span></code>) over expressions, recurrent and physics-informed models
+and the comparison of models to the export for AgentLib-MPC (<code class="docutils literal notranslate"><span class="pre">13_agentlib_mpc.py</span></code>). They serve as a starting point
+for new projects:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/01_first_model.py
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">physXAI</span><span class="w"> </span><span class="kn">import</span> <span class="n">expr</span> <span class="k">as</span> <span class="n">px</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">Run</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegressionModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.preprocessing.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreprocessingSingleStep</span>
+
+<span class="n">run</span> <span class="o">=</span> <span class="n">Run</span><span class="p">(</span><span class="s2">"results"</span><span class="p">,</span> <span class="s2">"TAir"</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">prep</span> <span class="o">=</span> <span class="n">PreprocessingSingleStep</span><span class="p">(</span>
+    <span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="s2">"weaSta_reaWeaTDryBul_y"</span><span class="p">,</span> <span class="s2">"oveHeaPumY_u"</span><span class="p">,</span> <span class="s2">"reaTZon_y"</span><span class="p">],</span>
+    <span class="n">output</span><span class="o">=</span><span class="n">px</span><span class="o">.</span><span class="n">Change</span><span class="p">(</span><span class="s2">"reaTZon_y"</span><span class="p">),</span>
+    <span class="n">time_index_col</span><span class="o">=</span><span class="s2">"time"</span><span class="p">,</span>
+    <span class="n">eval_horizon</span><span class="o">=</span><span class="s2">"12h"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">td</span> <span class="o">=</span> <span class="n">prep</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="s2">"data/bestest_hydronic_heat_pump/pid_data.csv"</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">pipeline</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>  <span class="c1"># train, evaluate (single step and recursively over 12 h)</span>
+<span class="n">run</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">"model"</span><span class="p">,</span> <span class="n">prep</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">)</span>  <span class="c1"># configs, metrics, model and report (html)</span>
+</pre></div>
+</div>
+</section>
+<section id="model-types">
+<h2>Model Types<a class="headerlink" href="#model-types" title="Permalink to this heading"></a></h2>
+<p>physXAI focuses on physics-guided models built with Keras and TensorFlow (and scikit-learn for the linear regression).
+The models fall into two groups:</p>
+<ul class="simple">
+<li><p>Single step models predict one step ahead. In the MPC they are applied recursively; they are evaluated and
+optionally trained on the error over the prediction horizon.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code>: linear regression (scikit-learn).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ClassicalANNModel</span></code>: feed forward neural network.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RBFModel</span></code>: radial basis function network. It extrapolates to 0, which makes it useful for residual models.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LinANNModel</span></code>: linear regression plus an RBF network trained on its residuals.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CMNNModel</span></code>: constrained monotonic neural network, monotonic in selected inputs (convex, concave and saturated activations).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PINNModel</span></code>: physics-informed neural network, trained on the data and on physics targets (data columns of a physical model).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ModularANN</span></code>: physically motivated expressions and trainable blocks (linear, MLP, monotonic MLP, RBF, …) in one model
+(<code class="docutils literal notranslate"><span class="pre">physXAI.expr</span></code>), trained by gradient descent or, for a linear block, in closed form (<code class="docutils literal notranslate"><span class="pre">solver='ols'</span></code>).</p></li>
+<li><p>Constrained regression, <code class="docutils literal notranslate"><span class="pre">ModularANN(px.Linear(terms),</span> <span class="pre">solver='qp',</span> <span class="pre">shape=ShapeConstraints(...))</span></code>: linear
+regression on physical terms whose prediction is monotonic or convex in raw inputs, guaranteed on the box of the
+training data or on given bounds (with a certificate per constraint).</p></li>
+<li><p>Physics residuals with trainable physical parameters (<code class="docutils literal notranslate"><span class="pre">physics=PhysicsResidual(...)</span></code>) for the keras networks: a
+grey-box model is calibrated on the data and acts as an additional loss term.</p></li>
+</ul>
+</li>
+<li><p>Multi step models predict a trajectory.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code>: SimpleRNN, GRU or LSTM, warmed up on the measured past, with closed loop prediction of fed back features.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PCNNModel</span></code>: physically consistent neural network (Di Natale et al. 2022), the predicted temperature rises with
+heating and outside temperature by construction.</p></li>
+</ul>
+</li>
+</ul>
+<p>Trained models can be used in <a class="reference external" href="https://github.com/RWTH-EBC/AgentLib-MPC">AgentLib-MPC</a>.
+Several models, each trained with several seeds, can be compared with <code class="docutils literal notranslate"><span class="pre">physXAI.evaluation.comparison</span></code>.</p>
+</section>
+<section id="project-structure">
+<h2>Project Structure<a class="headerlink" href="#project-structure" title="Permalink to this heading"></a></h2>
+<p>The project is organized into the following directories:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">examples</span></code>: Tutorial scripts showing the features of physXAI, the starting point for users (see <code class="docutils literal notranslate"><span class="pre">examples/README.md</span></code>).</p>
+<ul>
+<li><p>The examples use data from the BOPTEST ‘Bestest Hydronic Heat Pump’ test case: https://ibpsa.github.io/project1-boptest/testcases/ibpsa/testcases_ibpsa_bestest_hydronic_heat_pump/</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data</span></code>: Storage for input data, typically in <code class="docutils literal notranslate"><span class="pre">.csv</span></code> format. Datasets required for training and evaluating models should be placed here.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">results</span></code>: Default directory of the runs (<code class="docutils literal notranslate"><span class="pre">Run</span></code>): trained models, configs, metrics and reports.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">physXAI</span></code>: Contains the core logic and main functionalities of the physXAI Toolbox.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">expr</span></code>: Expression language for physically motivated terms and trainable blocks (NumPy, Keras and CasADi).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">preprocessing</span></code>: Loading, derived columns, leakage free split and training data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">models</span></code>: Model definitions (linear regression, ANNs, modular models, recurrent models, physics residuals).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">training</span></code>: Training on the error over the prediction horizon.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">evaluation</span></code>: Metrics, errors over the horizon and the comparison of models.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">feature_selection</span></code>: Feature selection by backward elimination (experimental).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plotting</span></code>: Reports of trained models.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">io</span></code>: Run directories and the export for AgentLib-MPC.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">agentlib_mpc_plugin</span></code>: Example training scripts for AgentLib-MPC.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">utils</span></code>: The global random seed (<code class="docutils literal notranslate"><span class="pre">physXAI.set_seed</span></code>).</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">docs</span></code>: Contains documentation for the project.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tests</span></code>: Tests of physXAI (pytest), the contract tests with AgentLib-MPC and the smoke run of the examples.</p></li>
+</ul>
+</section>
+<section id="how-to-contribute-to-the-development">
+<h2>How to contribute to the development<a class="headerlink" href="#how-to-contribute-to-the-development" title="Permalink to this heading"></a></h2>
+<p>You are invited to contribute to the development of this toolbox.
+Issues can be reported using this site’s Issues section.
+Furthermore, you are welcome to contribute via Pull Requests.</p>
+</section>
+<section id="referencing-physxai">
+<h2>Referencing physXAI<a class="headerlink" href="#referencing-physxai" title="Permalink to this heading"></a></h2>
+<p>To cite physXAI, please use the following paper:</p>
+<blockquote>
+<div><p>Henkel, Patrick and Roß, Simon and Rätz, Martin and Müller, Dirk, Monotonic physics-constrained neural networks for model predictive control of building energy systems. Building and Environment, 2025, 285, 113640. https://doi.org/10.1016/j.buildenv.2025.113640</p>
+</div></blockquote>
+</section>
+<section id="copyright-and-license">
+<h2>Copyright and license<a class="headerlink" href="#copyright-and-license" title="Permalink to this heading"></a></h2>
+<p>This tool is released by RWTH Aachen University, E.ON Energy Research Center, Institute for Energy Efficient Buildings and Indoor Climate <br />
+and is licensed under the BSD 3 Clause License - see the <a class="reference external" href="https://github.com/RWTH-EBC/physXAI/blob/main/LICENSE">LICENSE</a> file for details.</p>
+</section>
+<section id="acknowledgments">
+<h2>Acknowledgments<a class="headerlink" href="#acknowledgments" title="Permalink to this heading"></a></h2>
+<p>We gratefully acknowledge the financial support by Federal Ministry for Economic Affairs and Climate Action (BMWK), promotional reference 03EN6022B.</p>
+<img src="https://github.com/RWTH-EBC/physXAI/blob/main/docs/BMWK_logo.png?raw=true" alt="BMWK" width="200"/>
+</section>
+<section id="contact">
+<h2>Contact<a class="headerlink" href="#contact" title="Permalink to this heading"></a></h2>
+<p>Patrick Henkel <br />
+ebc-tools&#64;eonerc.rwth-aachen.de <br />
+https://www.ebc.eonerc.rwth-aachen.de/cms/~dmzz/E-ON-ERC-EBC/</p>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="guide/getting_started.html"><span class="std std-doc">Getting started</span></a>, <a class="reference internal" href="guide/examples.html"><span class="std std-doc">examples</span></a>, <a class="reference internal" href="guide/expressions.html"><span class="std std-doc">expressions</span></a>,
+<a class="reference internal" href="guide/data.html"><span class="std std-doc">data pipeline and split</span></a>, <a class="reference internal" href="guide/models.html"><span class="std std-doc">models</span></a>,
+<a class="reference internal" href="guide/multi_step.html"><span class="std std-doc">multi step evaluation and training</span></a>, <a class="reference internal" href="guide/rnn.html"><span class="std std-doc">recurrent models</span></a>,
+<a class="reference internal" href="guide/physics.html"><span class="std std-doc">physics-informed models</span></a>,
+<a class="reference internal" href="guide/evaluation.html"><span class="std std-doc">evaluation and comparison</span></a>, <a class="reference internal" href="guide/agentlib.html"><span class="std std-doc">AgentLib-MPC export</span></a></p></li>
+<li><p><a class="reference internal" href="migration.html"><span class="std std-doc">Migration from physXAI 0.x to 1.0</span></a></p></li>
+<li><p><a class="reference internal" href="code/modules.html"><span class="doc std std-doc">API reference</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="guide/getting_started.html" class="btn btn-neutral float-right" title="Getting started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright RWTH Aachen University, E.ON ERC EBC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
