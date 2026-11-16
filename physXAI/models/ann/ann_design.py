@@ -88,6 +88,7 @@ class ANNModel(SingleStepModel, ABC):
         physics: PhysicsResidual | dict | None = None,
         physics_fit: str = "calibrate",
         physics_learning_rate: float | None = None,
+        early_stopping_start: int = 0,
         **kwargs,
     ):
         """
@@ -99,6 +100,9 @@ class ANNModel(SingleStepModel, ABC):
             learning_rate (float): Learning rate for the Adam optimizer.
             early_stopping_epochs (int): Number of epochs with no improvement after which training will be stopped.
                                          If None, early stopping is disabled.
+            early_stopping_start (int): Minimum number of epochs: the early stopping only watches the validation
+                                         loss from this epoch on (keras `start_from_epoch`), so a noisy validation
+                                         loss cannot end the training in the first epochs.
             random_seed (int, optional): Seed of the weight initialization and the batch order, set when the model
                                is generated. Defaults to the global seed (`physXAI.set_seed`), else a new seed is
                                drawn. The used seed is stored in the config.
@@ -115,6 +119,7 @@ class ANNModel(SingleStepModel, ABC):
         self.epochs: int = epochs
         self.learning_rate: float = learning_rate
         self.early_stopping_epochs: int | None = early_stopping_epochs
+        self.early_stopping_start: int = early_stopping_start
         self.random_seed: int = resolve_seed(random_seed)
         from physXAI.training.recursive import RecursiveTraining
 
@@ -242,6 +247,7 @@ class ANNModel(SingleStepModel, ABC):
                 mode="min",
                 patience=self.early_stopping_epochs,
                 restore_best_weights=True,
+                start_from_epoch=self.early_stopping_start,
                 verbose=keras_verbosity_int(),
             )
             callbacks.append(es)
@@ -322,6 +328,7 @@ class ANNModel(SingleStepModel, ABC):
                 "epochs": self.epochs,
                 "learning_rate": self.learning_rate,
                 "early_stopping_epochs": self.early_stopping_epochs,
+                "early_stopping_start": self.early_stopping_start,
                 "random_seed": self.random_seed,
                 "recursive_training": self.recursive_training.get_config()
                 if self.recursive_training is not None
@@ -838,6 +845,8 @@ class RNNModel(MultiStepModel):
         learning_rate: Learning rate of the Adam optimizer.
         batch_size: Number of sequences per batch.
         early_stopping_epochs: Patience of the early stopping on the validation loss (None disables it).
+        early_stopping_start: Minimum number of epochs: the early stopping watches the validation loss only from
+                              this epoch on (keras `start_from_epoch`).
         random_seed: Seed of the weight initialization and the batch order, set when the model is generated.
                      Defaults to the global seed (`physXAI.set_seed`), else a new seed is drawn (stored in the config).
         feature_architecture: An expression (`physXAI.expr`), or a list of them, building the inputs of
@@ -865,6 +874,7 @@ class RNNModel(MultiStepModel):
         loss_on: str = "trajectory",
         first_step_weight: float | None = None,
         step_weights: list[float] | None = None,
+        early_stopping_start: int = 0,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -879,6 +889,7 @@ class RNNModel(MultiStepModel):
         self.learning_rate: float = learning_rate
         self.batch_size: int = batch_size
         self.early_stopping_epochs: int | None = early_stopping_epochs
+        self.early_stopping_start: int = early_stopping_start
         self.random_seed: int = resolve_seed(random_seed)
         if isinstance(feature_architecture, dict):
             feature_architecture = expr_from_config(feature_architecture)
@@ -978,6 +989,7 @@ class RNNModel(MultiStepModel):
                     mode="min",
                     patience=self.early_stopping_epochs,
                     restore_best_weights=True,
+                    start_from_epoch=self.early_stopping_start,
                     verbose=keras_verbosity_int(),
                 )
             )
@@ -1045,6 +1057,7 @@ class RNNModel(MultiStepModel):
                 "learning_rate": self.learning_rate,
                 "batch_size": self.batch_size,
                 "early_stopping_epochs": self.early_stopping_epochs,
+                "early_stopping_start": self.early_stopping_start,
                 "random_seed": self.random_seed,
                 "feature_architecture": expr_to_config(self.feature_architecture)
                 if self.feature_architecture is not None
@@ -1098,8 +1111,15 @@ class PCNNModel(RNNModel):
                ventilation with the air flow V and the supply temperature T_x (the rate is then in 1/h per unit of
                the flow). The flow is no input of f, like the controls. Physically consistent with V >= 0; the check
                1 - sum b > 0 uses the largest flow of the training data.
-        rnn_units: Units of the recurrent layer of f.
-        rnn_layer: 'LSTM' (default), 'GRU' or 'RNN'.
+        rnn_units: Units of the recurrent layer of f (neurons of the hidden layer for f='cmnn').
+        rnn_layer: 'LSTM' (default), 'GRU' or 'RNN' (f='rnn' only).
+        f: The unforced dynamics: 'rnn' (default, a recurrent layer on D and the remaining inputs, as in the paper),
+           'monotone_rnn' (a recurrent cell monotone in `monotonicities`) or 'cmnn' (a constrained monotonic network
+           on the inputs of the step). The monotone kinds do not see D, see `build_pcnn_step_model`: T is then
+           monotone in these inputs over the whole horizon.
+        monotonicities: {input: 1 increasing | -1 decreasing} of the monotone f. These inputs are inputs of f even if
+                        they are part of the energy accumulator (e.g. the outside temperature of a loss: f adds a
+                        non-linear, delayed effect to the linear loss).
         **kwargs: Training settings of `RNNModel` (epochs, learning_rate, batch_size, early_stopping_epochs,
                   random_seed, loss_on, first_step_weight, step_weights).
 
@@ -1120,11 +1140,23 @@ class PCNNModel(RNNModel):
         flows: dict[str, str] | None = None,
         rnn_units: int = 32,
         rnn_layer: str = "LSTM",
+        f: str = "rnn",
+        monotonicities: dict[str, int] | None = None,
         **kwargs,
     ):
+        from physXAI.models.ann.model_construction.rnn_models import PCNN_F
+
         if kwargs.get("feature_architecture") is not None:
             raise ValueError("PCNNModel has no feature_architecture, the inputs of f are all non-physics inputs.")
         super().__init__(rnn_units=rnn_units, rnn_layer=rnn_layer, **kwargs)
+        if f not in PCNN_F:
+            raise ValueError(f"Unknown f '{f}', use one of {PCNN_F}.")
+        self.f = f
+        self.monotonicities = {str(k): int(v) for k, v in (monotonicities or {}).items()}
+        if f == "rnn" and self.monotonicities:
+            raise ValueError("Monotonicities need a monotone f ('monotone_rnn' or 'cmnn').")
+        if any(v not in (-1, 1) for v in self.monotonicities.values()):
+            raise ValueError(f"Monotonicities are 1 or -1, got {self.monotonicities}.")
 
         def rates_of(values):
             return {str(k): (None if v is None else float(v)) for k, v in (values or {}).items()}
@@ -1238,13 +1270,17 @@ class PCNNModel(RNNModel):
         return {**self.__dict__, "_estimated": None}
 
     def _check_training_data(self, td: TrainingDataGeneric):
+        from physXAI.models.ann.model_construction.rnn_models import pcnn_f_inputs
+
         super()._check_training_data(td)
-        self._terms(td)
+        pcnn_f_inputs(td, self._terms(td), self.f, self.monotonicities)
 
     def generate_model(self, **kwargs):
         """Builds the PCNN step model and the sequence model used for training."""
         td = kwargs["td"]
-        step_model = build_pcnn_step_model(self.model_config, td, self._terms(td))
+        step_model = build_pcnn_step_model(
+            self.model_config, td, self._terms(td), f=self.f, monotonicities=self.monotonicities
+        )
         return self._training_model(step_model, td)
 
     def evaluate(self, model, td: TrainingDataMultiStep):
@@ -1300,4 +1336,6 @@ class PCNNModel(RNNModel):
         if self.flows:
             # only when used: configs saved before the option stay the same
             config["flows"] = self.flows
+        if self.f != "rnn":
+            config.update({"f": self.f, "monotonicities": self.monotonicities})
         return config

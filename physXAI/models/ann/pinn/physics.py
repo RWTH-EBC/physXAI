@@ -364,6 +364,7 @@ def fit_with_physics(
                     mode="min",
                     patience=settings.early_stopping_epochs,
                     restore_best_weights=True,
+                    start_from_epoch=getattr(settings, "early_stopping_start", 0),
                     verbose=keras_verbosity_int(),
                 )
             )

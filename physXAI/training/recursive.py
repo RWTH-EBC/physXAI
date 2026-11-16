@@ -53,6 +53,8 @@ class RecursiveTraining:
         stride: Distance between two training windows in steps.
         early_stopping_epochs: Patience of the early stopping on the validation loss. Defaults to
                                the one of the model.
+        early_stopping_start: Minimum number of epochs of the multi step training before the early stopping
+                              watches the validation loss. Defaults to the one of the model.
     """
 
     def __init__(
@@ -66,6 +68,7 @@ class RecursiveTraining:
         batch_size: int | None = None,
         stride: int = 1,
         early_stopping_epochs: int | None = None,
+        early_stopping_start: int | None = None,
     ):
         if mode not in ("multi_step", "single_then_multi"):
             raise ValueError(f"Unknown mode '{mode}', use 'multi_step' or 'single_then_multi'.")
@@ -80,6 +83,7 @@ class RecursiveTraining:
         self.batch_size = batch_size
         self.stride = stride
         self.early_stopping_epochs = early_stopping_epochs
+        self.early_stopping_start = early_stopping_start
 
     def resolve_horizon(self, td) -> int:
         horizon = self.horizon
@@ -110,6 +114,7 @@ class RecursiveTraining:
             "batch_size": self.batch_size,
             "stride": self.stride,
             "early_stopping_epochs": self.early_stopping_epochs,
+            "early_stopping_start": self.early_stopping_start,
         }
 
     @classmethod
@@ -217,9 +222,14 @@ def fit_recursive(keras_model: keras.Model, td, config: RecursiveTraining, model
 
     callbacks = list()
     patience = config.early_stopping_epochs or model_settings.early_stopping_epochs
+    start_epoch = config.early_stopping_start
+    if start_epoch is None:
+        start_epoch = getattr(model_settings, "early_stopping_start", 0)
     if patience is not None and val_ds is not None:
         callbacks.append(
-            keras.callbacks.EarlyStopping(monitor="val_loss", patience=patience, restore_best_weights=True)
+            keras.callbacks.EarlyStopping(
+                monitor="val_loss", patience=patience, restore_best_weights=True, start_from_epoch=start_epoch
+            )
         )
     start = time.perf_counter()
     record = rollout.fit(

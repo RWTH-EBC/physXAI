@@ -113,6 +113,37 @@ def test_physical_consistency(data):
         assert (difference[:, -1] > 1e-6).all(), name  # and an effect until the end of the horizon
 
 
+@pytest.mark.parametrize("f", ["monotone_rnn", "cmnn"])
+def test_monotone_f(data, f, tmp_path):
+    """f monotone in T_in (also a loss) and mDot: T rises at all later steps if they rise, the step model is exported."""
+    prep, td = data
+    monotone = {"T_in": 1, "mDot": 1}
+    m, model = _train(td, f=f, monotonicities=monotone, epochs=3, learning_rate=0.01)
+    path = str(tmp_path / "pcnn.keras")
+    m.save_model(model, path)
+    step_model = keras.saving.load_model(path)
+    # states: E, and one state of the cell for the monotone RNN, none for the feed forward cmnn
+    assert [int(t.shape[-1]) for t in step_model.inputs[1:]] == [1] + ([4] if f == "monotone_rnn" else [])
+    assert all(any(s in layer.name for s in SUPPORTED) for layer in step_model.layers), [
+        layer.name for layer in step_model.layers
+    ]
+    X, initial = td.X("test")[:8].copy(), td.initial("test")[:8]
+    np.testing.assert_allclose(td.y_test_pred[:8], _rollout(step_model, X, initial), rtol=1e-4, atol=1e-4)
+
+    base = _rollout(step_model, X, initial)
+    j = WARMUP + 1
+    for name, delta in (("T_in", 1.0), ("mDot", 0.01)):
+        changed = X.copy()
+        changed[:, j, INPUTS.index(name)] += delta
+        difference = _rollout(step_model, changed, initial) - base
+        np.testing.assert_allclose(difference[:, : j - WARMUP], 0, atol=1e-5)
+        assert (difference[:, j - WARMUP :] > -1e-5).all(), name
+
+    restored = AbstractModel.model_from_config(json.loads(json.dumps(m.get_config())))
+    assert restored.f == f and restored.monotonicities == monotone
+    assert "f" not in PCNNModel(heating={"load": None}).get_config()  # configs of the default stay the same
+
+
 def test_parameters_and_config(data, tmp_path):
     prep, td = data
     m, model = _train(td, epochs=3, learning_rate=0.01)
@@ -180,6 +211,16 @@ def test_invalid_configurations(csv, data):
         _train(td, heating={"unknown": 1.0})
     with pytest.raises(ValueError, match="cannot be a"):
         _train(td, losses={"T": 1.0})
+    with pytest.raises(ValueError, match="Unknown f"):
+        PCNNModel(heating={"load": 1}, f="lstm")
+    with pytest.raises(ValueError, match="monotone f"):
+        PCNNModel(heating={"load": 1}, monotonicities={"mDot": 1})
+    with pytest.raises(ValueError, match="1 or -1"):
+        PCNNModel(heating={"load": 1}, f="cmnn", monotonicities={"mDot": 2})
+    with pytest.raises(ValueError, match="no inputs of the data"):
+        _train(td, f="cmnn", monotonicities={"unknown": 1})
+    with pytest.raises(ValueError, match="predicted feature"):
+        _train(td, f="cmnn", monotonicities={"T": 1})
     open_loop = PreprocessingMultiStep(inputs=["load", "T_in"], output=px.Change("T"), label_width=3).pipeline(csv)
     with pytest.raises(ValueError, match="has to be an input"):
         _train(open_loop)

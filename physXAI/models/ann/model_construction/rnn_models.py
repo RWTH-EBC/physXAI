@@ -147,7 +147,35 @@ class PCNNTerm:
     flow: int | None = None
 
 
-def build_pcnn_step_model(config: dict, td, terms: list[PCNNTerm], name: str = STEP_MODEL_NAME) -> keras.Model:
+#: Kinds of the unforced dynamics f of a PCNN (`build_pcnn_step_model`)
+PCNN_F = ("rnn", "monotone_rnn", "cmnn")
+
+
+def pcnn_f_inputs(td, terms: list[PCNNTerm], f: str = "rnn", monotonicities: dict[str, int] | None = None) -> list[int]:
+    """
+    Indices of the inputs of the unforced dynamics f of a PCNN: the inputs that are no part of the energy accumulator
+    (the predicted feature, the inputs of the terms and their flows), plus the inputs with a monotonicity, which may
+    also be part of it (e.g. the outside temperature of a loss). 'rnn' also sees D, which is not counted here.
+    """
+    monotonicities = dict(monotonicities or {})
+    unknown = set(monotonicities) - set(td.inputs)
+    if unknown:
+        raise ValueError(f"Monotonicities of f for {sorted(unknown)}, which are no inputs of the data {td.inputs}.")
+    feature = td.inputs.index(td.features[0])
+    if td.features[0] in monotonicities:
+        raise ValueError(f"f cannot be monotone in the predicted feature '{td.features[0]}'.")
+    used = {feature, *(term.input for term in terms), *(term.flow for term in terms if term.flow is not None)}
+    return [i for i, name in enumerate(td.inputs) if i not in used or name in monotonicities]
+
+
+def build_pcnn_step_model(
+    config: dict,
+    td,
+    terms: list[PCNNTerm],
+    name: str = STEP_MODEL_NAME,
+    f: str = "rnn",
+    monotonicities: dict[str, int] | None = None,
+) -> keras.Model:
     """
     Builds the step model of a physically consistent neural network (PCNN, Di Natale et al. 2022,
     Applied Energy 325, 119806), `[sequence, E, *states of f] -> [change of T, E, *states of f]`.
@@ -158,25 +186,49 @@ def build_pcnn_step_model(config: dict, td, terms: list[PCNNTerm], name: str = S
         E(k+1) = E(k) + sum_heating a * u(k) - sum_cooling d * u(k) + sum_losses b * [V(k)] * (T_x(k) - T(k))
         D(k+1) = D(k) + f(D(k), x(k)),   D(k) = T(k) - E(k)
 
-    A loss can be scaled by a flow V (e.g. a ventilation, `PCNNTerm.flow`). f is a recurrent network on D and the
-    remaining inputs x, which excludes the controls, the temperatures of the losses and their flows. With
-    a, b, d > 0 and 1 - sum b > 0, T increases with heating, decreases with cooling and increases with the
-    temperatures T_x over the whole horizon, for any f. The parameters work in physical units, f on normalized
-    values.
+    A loss can be scaled by a flow V (e.g. a ventilation, `PCNNTerm.flow`). With a, b, d > 0 and 1 - sum b > 0, T
+    increases with heating, decreases with cooling and increases with the temperatures T_x over the whole horizon,
+    for any f. The parameters work in physical units, f on normalized values. Kinds of f:
+
+    - 'rnn': a recurrent layer (`rnn_layer`) on D and the remaining inputs x, which excludes the controls, the
+      temperatures of the losses and their flows (as in the paper).
+    - 'monotone_rnn': D(k+1) = D(k) + g(x(0..k)) with a recurrent cell that is monotone in the inputs of
+      `monotonicities` ({input: 1 increasing | -1 decreasing}, also inputs of the losses such as the outside
+      temperature) and free in the remaining x: SimpleRNN (tanh) with sign constrained input weights of the monotone
+      inputs, non negative recurrent weights and a non negative output layer.
+    - 'cmnn': D(k+1) = D(k) + g(x(k)) with a constrained monotonic network (`px.MonotoneMLP`), no memory of its own.
+
+    In both monotone kinds f does not see D: D only accumulates g, the decay of its share of T comes from the losses
+    in E, which act on the whole T. A decay of D of its own (-lambda * D) would count it twice and turn a pulse of a
+    monotone input into a negative effect after some hours, for every lambda > 0. So with
+    T(k+1) = T(k) + increment(T(k), ...) + g(k), dT(k+1)/dT(k) = 1 - sum b > 0 and g monotone, T is monotone in
+    these inputs over the whole horizon.
 
     Only keras layers translated by AgentLib-MPC are used (input slices, constants, subtract, multiply,
-    concatenate, dense, simple_rnn, normalization, rescaling, add), the layer names carry their types.
+    concatenate, dense, simple_rnn, lstm, gru, normalization, rescaling, add), the layer names carry their types.
 
     Args:
-        config: Settings, validated by `RNNModelConstruction_config` (rnn_units, rnn_layer of f).
+        config: Settings, validated by `RNNModelConstruction_config` (rnn_units, rnn_layer of f; for 'cmnn' the
+                units are the neurons of its hidden layer).
         td: `TrainingDataMultiStep` with one output `Change(T)` and T as input.
         terms: The terms of the energy accumulator.
         name: Name of the model.
+        f: Kind of the unforced dynamics, see above.
+        monotonicities: Monotone inputs of f ('monotone_rnn' and 'cmnn' only).
     """
     from physXAI.models.ann.keras_models.keras_models import ConstantLayer, InputSliceLayer
 
+    if f not in PCNN_F:
+        raise ValueError(f"Unknown f '{f}', use one of {PCNN_F}.")
+    monotonicities = dict(monotonicities or {})
+    if f == "rnn" and monotonicities:
+        raise ValueError("Monotonicities need a monotone f ('monotone_rnn' or 'cmnn').")
+    if any(v not in (-1, 1) for v in monotonicities.values()):
+        raise ValueError(f"Monotonicities are 1 or -1, got {monotonicities}.")
     config = RNNModelConstruction_config.model_validate(config).model_dump()
     units, rnn_layer = config["rnn_units"], config["rnn_layer"]
+    if f == "monotone_rnn":
+        rnn_layer = "RNN"
     n_inputs = len(td.inputs)
     X = td.X_train_single
     feature = td.inputs.index(td.features[0])
@@ -184,7 +236,8 @@ def build_pcnn_step_model(config: dict, td, terms: list[PCNNTerm], name: str = S
 
     sequence = keras.Input(shape=(None, n_inputs), name="sequence_input")
     energy_state = keras.Input(shape=(1,), name="state_input_0")
-    states = [keras.Input(shape=(units,), name=f"state_input_{i + 1}") for i in range(number_of_states(rnn_layer))]
+    n_states = 0 if f == "cmnn" else number_of_states(rnn_layer)
+    states = [keras.Input(shape=(units,), name=f"state_input_{i + 1}") for i in range(n_states)]
 
     # --- physics-inspired module: increment of the energy accumulator in physical units -----------
     temperature = InputSliceLayer([feature], name="input_slice_pcnn_feature")(sequence)
@@ -226,23 +279,63 @@ def build_pcnn_step_model(config: dict, td, terms: list[PCNNTerm], name: str = S
     unforced = keras.layers.Subtract(name="subtract_pcnn_unforced")([temperature, energy])
 
     # --- black-box module f(D, x) ----------------------------------------------------------------
-    used = {feature, *(term.input for term in terms), *(term.flow for term in terms if term.flow is not None)}
-    others = [i for i in range(n_inputs) if i not in used]
-    columns = [feature, *others]
-    if others:
-        disturbances = InputSliceLayer(others, name="input_slice_pcnn_disturbances")(sequence)
-        features = keras.layers.Concatenate(name="concatenate_pcnn_unforced")([unforced, disturbances])
+    others = pcnn_f_inputs(td, terms, f, monotonicities)
+    if f == "rnn":
+        columns = [feature, *others]
+        if others:
+            disturbances = InputSliceLayer(others, name="input_slice_pcnn_disturbances")(sequence)
+            features = keras.layers.Concatenate(name="concatenate_pcnn_unforced")([unforced, disturbances])
+        else:
+            features = unforced
     else:
-        features = unforced
+        if not others:
+            raise ValueError("f has no inputs: give monotonicities or leave inputs out of the energy accumulator.")
+        columns = others
+        features = InputSliceLayer(others, name="input_slice_pcnn_disturbances")(sequence)
+    # the normalization scales by a positive factor, so it keeps the monotonicity
     normalized = keras.layers.Normalization(
         mean=X[:, columns].mean(axis=0),
         variance=input_variance(X[:, columns]),
         name="normalization_pcnn",
     )(features)
-    prefix = {"RNN": "simple_rnn", "GRU": "gru", "LSTM": "lstm"}[rnn_layer]
-    rnn = RNN_LAYERS[rnn_layer](units, return_sequences=True, return_state=True, name=f"{prefix}_pcnn_unforced")
-    hidden, *new_states = rnn(normalized, initial_state=states)
-    unforced_change = keras.layers.Dense(1, name="dense_pcnn_unforced")(hidden)
+    signs = [monotonicities.get(td.inputs[i], 0) for i in columns]
+    new_states = list()
+    if f == "rnn":
+        prefix = {"RNN": "simple_rnn", "GRU": "gru", "LSTM": "lstm"}[rnn_layer]
+        rnn = RNN_LAYERS[rnn_layer](units, return_sequences=True, return_state=True, name=f"{prefix}_pcnn_unforced")
+        hidden, *new_states = rnn(normalized, initial_state=states)
+        unforced_change = keras.layers.Dense(1, name="dense_pcnn_unforced")(hidden)
+    elif f == "monotone_rnn":
+        from physXAI.models.ann.keras_models.keras_models import NonNegPartial
+
+        # tanh is increasing; the recurrent weights start at 0.9 * identity (non negative, memory of ~10 steps)
+        rnn = keras.layers.SimpleRNN(
+            units,
+            activation="tanh",
+            kernel_constraint=NonNegPartial(signs),
+            recurrent_constraint=keras.constraints.NonNeg(),
+            recurrent_initializer=keras.initializers.Identity(gain=0.9),
+            return_sequences=True,
+            return_state=True,
+            name="simple_rnn_pcnn_unforced",
+        )
+        hidden, *new_states = rnn(normalized, initial_state=states)
+        unforced_change = keras.layers.Dense(
+            1, kernel_constraint=keras.constraints.NonNeg(), name="dense_pcnn_unforced"
+        )(hidden)
+    else:
+        from physXAI.expr.blocks import MonotoneMLP
+
+        names = [td.inputs[i] for i in columns]
+        mlp = MonotoneMLP(
+            names,
+            monotonicities={n: s for n, s in zip(names, signs, strict=True) if s},
+            n_neurons=units,
+            normalize=False,  # normalized above
+        )
+        # the block reads its inputs by name from the normalized columns of f
+        ctx = BuildContext(normalized, names)
+        unforced_change = ctx.tensor(mlp)
     unforced_change = keras.layers.Rescaling(scale=float(max(change.std(), 1e-12)), offset=0.0, name="rescaling_pcnn")(
         unforced_change
     )

@@ -41,6 +41,8 @@ class TrainingDataGeneric(ABC):
         self.metrics = None
         #: Results of physics-based models, e.g. learned physical parameters (`PCNNModel`, physics residuals)
         self.physics: dict | None = None
+        #: Result of a cross validation of the number of epochs (`physXAI.training.fit_cross_validated`)
+        self.cross_validation: dict | None = None
 
     def add_training_record(self, data):
         """Stores the training history (e.g. the keras `History` object)."""
@@ -73,13 +75,16 @@ class TrainingDataGeneric(ABC):
         return state
 
     def _results_config(self) -> dict:
-        return {
+        config = {
             "file_path": self.file_path,
             "metrics": self.metrics.get_config() if self.metrics is not None else None,
             "training_time": self.training_time,
             "training_record": self.training_record.history if self.training_record is not None else None,
             "physics": self.physics,
         }
+        if getattr(self, "cross_validation", None) is not None:
+            config["cross_validation"] = self.cross_validation
+        return config
 
     @abstractmethod
     def get_config(self) -> dict:
