@@ -333,9 +333,13 @@ class Polynomial(Block):
 @register_expression
 class RBF(Block):
     """
-    Radial basis function network with `units` gaussian neurons. Centers are initialized by
-    k-means on the (normalized) training data, if available. `random_state` is the seed of the k-means,
-    defaults to the global seed (`physXAI.set_seed`), else a new seed is drawn (stored in the config).
+    Radial basis function network with `units` gaussian neurons. Centers are set by k-means on the (normalized)
+    training data, the common width from the median distance of neighbouring centers (`overlap`, as `RBFModel`).
+    By default both stay fixed and only the output weights are trained (a linear model on fixed gaussian features,
+    as `RBFModel` and `LinANNModel`); `learnable_centers` / `learnable_gamma` train them too. Without training data
+    for the inputs (e.g. an RBF on the output of another block) the centers are drawn at random and always trained.
+    `random_state` is the seed of the k-means, defaults to the global seed (`physXAI.set_seed`), else a new seed is
+    drawn (stored in the config).
     """
 
     def __init__(
@@ -346,13 +350,28 @@ class RBF(Block):
         normalize: bool | None = None,
         nominal_range=None,
         random_state: int | None = None,
+        learnable_centers: bool = False,
+        learnable_gamma: bool = False,
+        overlap: float = 0.5,
     ):
         super().__init__(inputs, name, normalize, nominal_range)
+        if not 0 < overlap < 1:
+            raise ValueError(f"overlap has to be in (0, 1), got {overlap}.")
         self.units = units
         self.random_state = resolve_seed(random_state)
+        self.learnable_centers = bool(learnable_centers)
+        self.learnable_gamma = bool(learnable_gamma)
+        self.overlap = float(overlap)
 
     def params(self):
-        return {**super().params(), "units": self.units, "random_state": self.random_state}
+        return {
+            **super().params(),
+            "units": self.units,
+            "random_state": self.random_state,
+            "learnable_centers": self.learnable_centers,
+            "learnable_gamma": self.learnable_gamma,
+            "overlap": self.overlap,
+        }
 
     def to_keras(self, ctx):
         from physXAI.models.ann.keras_models.keras_models import RBFLayer
@@ -375,8 +394,14 @@ class RBF(Block):
                 .fit(data)
                 .cluster_centers_
             )
-            gamma = gamma_init(centers) if units > 1 else 1.0
-        layer = RBFLayer(self.units if centers is None else len(centers), gamma=gamma, initial_centers=centers)
+            gamma = gamma_init(centers, overlap=self.overlap) if units > 1 else 1.0
+        layer = RBFLayer(
+            self.units if centers is None else len(centers),
+            gamma=gamma,
+            initial_centers=centers,
+            learnable_centers=self.learnable_centers or centers is None,
+            learnable_gamma=self.learnable_gamma or centers is None,
+        )
         return self.rescale(keras.layers.Dense(1, activation="linear")(layer(x)))
 
 

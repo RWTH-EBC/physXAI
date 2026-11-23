@@ -87,6 +87,42 @@ class NonNegPartial(keras.constraints.Constraint):
         return {"monotonicities": self.monotonicities}
 
 
+@keras.saving.register_keras_serializable(package="custom_constraint", name="FixedPartial")
+class FixedPartial(keras.constraints.Constraint):
+    """
+    Keeps some entries of a weight tensor at fixed values (along its first dimension), the other entries are trained
+    and optionally keep a sign (as `NonNegPartial`). Used by the frozen warm start of `ModularANN`: the weights of the
+    data terms of a `Linear` block stay at their least squares solution, only the trainable terms are fitted.
+
+    Args:
+        mask: One bool per entry of the first dimension, True: fixed.
+        values: One value per entry, the fixed value where `mask` is True (ignored elsewhere).
+        monotonicities: Optional sign of the free entries (1, -1 or 0 per entry, see `NonNegPartial`).
+    """
+
+    def __init__(self, mask: list[bool], values: list[float], monotonicities: list[int] | None = None):
+        if len(mask) != len(values) or (monotonicities is not None and len(monotonicities) != len(mask)):
+            raise ValueError("mask, values and monotonicities need one entry per weight.")
+        self.mask = [bool(m) for m in mask]
+        self.values = [float(v) for v in values]
+        self.monotonicities = None if monotonicities is None else [int(m) for m in monotonicities]
+        self._signs = NonNegPartial(self.monotonicities) if self.monotonicities and any(self.monotonicities) else None
+
+    def __call__(self, w):
+        w = keras.ops.convert_to_tensor(w)
+        if len(self.mask) != w.shape[0]:
+            raise ValueError("Length of mask must be equal to the first element of the weight tensor´s shape.")
+        if self._signs is not None:
+            w = self._signs(w)
+        shape = (len(self.mask),) + (1,) * (len(w.shape) - 1)
+        mask = keras.ops.reshape(keras.ops.convert_to_tensor(self.mask, dtype="bool"), shape)
+        values = keras.ops.reshape(keras.ops.convert_to_tensor(self.values, dtype=w.dtype), shape)
+        return keras.ops.where(mask, keras.ops.broadcast_to(values, w.shape), w)
+
+    def get_config(self):
+        return {"mask": self.mask, "values": self.values, "monotonicities": self.monotonicities}
+
+
 @keras.saving.register_keras_serializable(package="custom_activation", name="ConcaveActivation")
 class ConcaveActivation:
     """
