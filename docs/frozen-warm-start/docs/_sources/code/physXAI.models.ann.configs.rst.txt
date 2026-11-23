@@ -1,0 +1,18 @@
+physXAI.models.ann.configs package
+==================================
+
+.. automodule:: physXAI.models.ann.configs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+physXAI.models.ann.configs.ann\_model\_configs module
+-----------------------------------------------------
+
+.. automodule:: physXAI.models.ann.configs.ann_model_configs
+   :members:
+   :undoc-members:
+   :show-inheritance:

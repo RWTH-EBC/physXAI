@@ -1,0 +1,27 @@
+physXAI.models package
+======================
+
+.. automodule:: physXAI.models
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   physXAI.models.ann
+   physXAI.models.modular
+
+Submodules
+----------
+
+physXAI.models.models module
+----------------------------
+
+.. automodule:: physXAI.models.models
+   :members:
+   :undoc-members:
+   :show-inheritance:

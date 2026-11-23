@@ -1,0 +1,18 @@
+physXAI.models.ann.pinn package
+===============================
+
+.. automodule:: physXAI.models.ann.pinn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+physXAI.models.ann.pinn.physics module
+--------------------------------------
+
+.. automodule:: physXAI.models.ann.pinn.physics
+   :members:
+   :undoc-members:
+   :show-inheritance:

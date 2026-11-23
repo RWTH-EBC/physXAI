@@ -1,0 +1,26 @@
+physXAI.agentlib\_mpc\_plugin package
+=====================================
+
+.. automodule:: physXAI.agentlib_mpc_plugin
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+physXAI.agentlib\_mpc\_plugin.example module
+--------------------------------------------
+
+.. automodule:: physXAI.agentlib_mpc_plugin.example
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+physXAI.agentlib\_mpc\_plugin.example\_ci module
+------------------------------------------------
+
+.. automodule:: physXAI.agentlib_mpc_plugin.example_ci
+   :members:
+   :undoc-members:
+   :show-inheritance:
