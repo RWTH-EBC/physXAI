@@ -68,7 +68,7 @@ physXAI/preprocessing/preprocessing.py:339:4: C0116: Missing function or method 
 physXAI/preprocessing/preprocessing.py:343:4: C0116: Missing function or method docstring (missing-function-docstring)
 physXAI/preprocessing/preprocessing.py:561:4: C0116: Missing function or method docstring (missing-function-docstring)
 ************* Module physXAI.preprocessing.splitting
-physXAI/preprocessing/splitting.py:1:0: F0002: physXAI/preprocessing/splitting.py: Fatal error while checking 'physXAI/preprocessing/splitting.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-23-10-08-03.txt'. (astroid-error)
+physXAI/preprocessing/splitting.py:1:0: F0002: physXAI/preprocessing/splitting.py: Fatal error while checking 'physXAI/preprocessing/splitting.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-24-08-51-54.txt'. (astroid-error)
 ************* Module physXAI.models
 physXAI/models/__init__.py:1:0: C0114: Missing module docstring (missing-module-docstring)
 ************* Module physXAI.models.models
@@ -90,7 +90,7 @@ physXAI/models/models.py:428:8: W0107: Unnecessary pass statement (unnecessary-p
 physXAI/models/models.py:26:0: C0411: third party import "import keras" should be placed before "from physXAI.evaluation.metrics import Metrics" (wrong-import-order)
 ************* Module physXAI.models.ann.ann_design
 physXAI/models/ann/ann_design.py:1:0: C0302: Too many lines in module (1341/1000) (too-many-lines)
-physXAI/models/ann/ann_design.py:1:0: F0002: physXAI/models/ann/ann_design.py: Fatal error while checking 'physXAI/models/ann/ann_design.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-23-10-08-03.txt'. (astroid-error)
+physXAI/models/ann/ann_design.py:1:0: F0002: physXAI/models/ann/ann_design.py: Fatal error while checking 'physXAI/models/ann/ann_design.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-24-08-51-55.txt'. (astroid-error)
 ************* Module physXAI.models.ann.model_construction.__init__
 physXAI/models/ann/model_construction/__init__.py:1:0: C0305: Trailing newlines (trailing-newlines)
 ************* Module physXAI.models.ann.model_construction.residual_models
@@ -134,7 +134,7 @@ physXAI/models/ann/model_construction/ann_models.py:12:0: C0411: third party imp
 ************* Module physXAI.models.ann.configs.__init__
 physXAI/models/ann/configs/__init__.py:1:0: C0305: Trailing newlines (trailing-newlines)
 ************* Module physXAI.models.ann.configs.ann_model_configs
-physXAI/models/ann/configs/ann_model_configs.py:1:0: F0002: physXAI/models/ann/configs/ann_model_configs.py: Fatal error while checking 'physXAI/models/ann/configs/ann_model_configs.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-23-10-08-04.txt'. (astroid-error)
+physXAI/models/ann/configs/ann_model_configs.py:1:0: F0002: physXAI/models/ann/configs/ann_model_configs.py: Fatal error while checking 'physXAI/models/ann/configs/ann_model_configs.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-24-08-51-55.txt'. (astroid-error)
 ************* Module physXAI.models.ann.pinn.__init__
 physXAI/models/ann/pinn/__init__.py:1:0: C0305: Trailing newlines (trailing-newlines)
 ************* Module physXAI.models.ann.pinn.physics
@@ -221,10 +221,10 @@ physXAI/models/modular/modular_ann.py:249:29: W0212: Access to a protected membe
 physXAI/models/modular/modular_ann.py:224:4: R1710: Either all return statements in a function should return an expression, or none of them should. (inconsistent-return-statements)
 physXAI/models/modular/modular_ann.py:36:0: C0411: third party import "import keras" should be placed before "from physXAI.expr import Expr, Linear, from_config, to_config" (wrong-import-order)
 ************* Module physXAI.io.run
-physXAI/io/run.py:1:0: F0002: physXAI/io/run.py: Fatal error while checking 'physXAI/io/run.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-23-10-08-05.txt'. (astroid-error)
+physXAI/io/run.py:1:0: F0002: physXAI/io/run.py: Fatal error while checking 'physXAI/io/run.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-24-08-51-56.txt'. (astroid-error)
 ************* Module physXAI.io.agentlib
 physXAI/io/agentlib.py:165:0: C0301: Line too long (122/120) (line-too-long)
-physXAI/io/agentlib.py:1:0: F0002: physXAI/io/agentlib.py: Fatal error while checking 'physXAI/io/agentlib.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-23-10-08-05.txt'. (astroid-error)
+physXAI/io/agentlib.py:1:0: F0002: physXAI/io/agentlib.py: Fatal error while checking 'physXAI/io/agentlib.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-24-08-51-56.txt'. (astroid-error)
 physXAI/io/agentlib.py:18:0: C0412: Imports from package __future__ are not grouped (ungrouped-imports)
 ************* Module physXAI.expr.serialization
 physXAI/expr/serialization.py:20:26: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
@@ -232,7 +232,7 @@ physXAI/expr/serialization.py:21:12: R1734: Consider using [] instead of list() 
 physXAI/expr/serialization.py:31:28: W0212: Access to a protected member _name of a client class (protected-access)
 physXAI/expr/serialization.py:41:29: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
 ************* Module physXAI.expr.core
-physXAI/expr/core.py:1:0: F0002: physXAI/expr/core.py: Fatal error while checking 'physXAI/expr/core.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-23-10-08-05.txt'. (astroid-error)
+physXAI/expr/core.py:1:0: F0002: physXAI/expr/core.py: Fatal error while checking 'physXAI/expr/core.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-24-08-51-56.txt'. (astroid-error)
 ************* Module physXAI.expr.blocks
 physXAI/expr/blocks.py:17:0: E0401: Unable to import 'numpy' (import-error)
 physXAI/expr/blocks.py:68:4: C0116: Missing function or method docstring (missing-function-docstring)
@@ -268,7 +268,7 @@ physXAI/training/cross_validation.py:157:41: R1734: Consider using [] instead of
 physXAI/training/cross_validation.py:188:26: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
 physXAI/training/cross_validation.py:188:34: R1735: Consider using '{}' instead of a call to 'dict'. (use-dict-literal)
 ************* Module physXAI.training.recursive
-physXAI/training/recursive.py:1:0: F0002: physXAI/training/recursive.py: Fatal error while checking 'physXAI/training/recursive.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-23-10-08-06.txt'. (astroid-error)
+physXAI/training/recursive.py:1:0: F0002: physXAI/training/recursive.py: Fatal error while checking 'physXAI/training/recursive.py'. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in '/home/runner/.cache/pylint/pylint-crash-2026-11-24-08-51-57.txt'. (astroid-error)
 ************* Module physXAI.plotting.__init__
 physXAI/plotting/__init__.py:1:0: C0305: Trailing newlines (trailing-newlines)
 ************* Module physXAI.plotting.plotting

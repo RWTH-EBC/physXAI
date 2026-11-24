@@ -80,13 +80,13 @@
                 <td><pre>Similar lines in 2 files
 ==physXAI.evaluation.comparison:[713:720]
 ==physXAI.plotting.plotting:[163:170]
-                    )
                 )
-            fig.add_trace(
-                go.Scatter(
-                    x=x,
-                    y=median,
-                    mode=&#34;lines&#34;,</pre></td>
+            )
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=median,
+                mode=&#34;lines&#34;,</pre></td>
             </tr>
             
             <tr>
@@ -97,6 +97,16 @@
                 <td>R0401</td>
                 <td></td>
                 <td><pre>Cyclic import (physXAI.preprocessing.preprocessing -&gt; physXAI.preprocessing.training_data)</pre></td>
+            </tr>
+            
+            <tr>
+                <td>1</td>
+                <td>0</td>
+                <td>refactor</td>
+                <td><code>cyclic-import</code></td>
+                <td>R0401</td>
+                <td></td>
+                <td><pre>Cyclic import (physXAI.expr -&gt; physXAI.expr.blocks -&gt; physXAI.models.ann.model_construction.rbf_models -&gt; physXAI.preprocessing.training_data -&gt; physXAI.preprocessing.preprocessing)</pre></td>
             </tr>
             
             <tr>
@@ -770,7 +780,7 @@
                 <td><code>astroid-error</code></td>
                 <td>F0002</td>
                 <td></td>
-                <td><pre>physXAI/expr/core.py: Fatal error while checking &#39;physXAI/expr/core.py&#39;. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in &#39;/home/runner/.cache/pylint/pylint-crash-2026-11-23-10-08-16.txt&#39;.</pre></td>
+                <td><pre>physXAI/expr/core.py: Fatal error while checking &#39;physXAI/expr/core.py&#39;. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in &#39;/home/runner/.cache/pylint/pylint-crash-2026-11-24-08-52-03.txt&#39;.</pre></td>
             </tr>
             
         </table>
@@ -1006,7 +1016,7 @@
                 <td><code>astroid-error</code></td>
                 <td>F0002</td>
                 <td></td>
-                <td><pre>physXAI/io/agentlib.py: Fatal error while checking &#39;physXAI/io/agentlib.py&#39;. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in &#39;/home/runner/.cache/pylint/pylint-crash-2026-11-23-10-08-16.txt&#39;.</pre></td>
+                <td><pre>physXAI/io/agentlib.py: Fatal error while checking &#39;physXAI/io/agentlib.py&#39;. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in &#39;/home/runner/.cache/pylint/pylint-crash-2026-11-24-08-52-03.txt&#39;.</pre></td>
             </tr>
             
             <tr>
@@ -1050,7 +1060,7 @@
                 <td><code>astroid-error</code></td>
                 <td>F0002</td>
                 <td></td>
-                <td><pre>physXAI/io/run.py: Fatal error while checking &#39;physXAI/io/run.py&#39;. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in &#39;/home/runner/.cache/pylint/pylint-crash-2026-11-23-10-08-16.txt&#39;.</pre></td>
+                <td><pre>physXAI/io/run.py: Fatal error while checking &#39;physXAI/io/run.py&#39;. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in &#39;/home/runner/.cache/pylint/pylint-crash-2026-11-24-08-52-03.txt&#39;.</pre></td>
             </tr>
             
         </table>
@@ -1108,7 +1118,7 @@
                 <td><code>astroid-error</code></td>
                 <td>F0002</td>
                 <td></td>
-                <td><pre>physXAI/models/ann/ann_design.py: Fatal error while checking &#39;physXAI/models/ann/ann_design.py&#39;. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in &#39;/home/runner/.cache/pylint/pylint-crash-2026-11-23-10-08-14.txt&#39;.</pre></td>
+                <td><pre>physXAI/models/ann/ann_design.py: Fatal error while checking &#39;physXAI/models/ann/ann_design.py&#39;. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in &#39;/home/runner/.cache/pylint/pylint-crash-2026-11-24-08-52-02.txt&#39;.</pre></td>
             </tr>
             
         </table>
@@ -1156,7 +1166,7 @@
                 <td><code>astroid-error</code></td>
                 <td>F0002</td>
                 <td></td>
-                <td><pre>physXAI/models/ann/configs/ann_model_configs.py: Fatal error while checking &#39;physXAI/models/ann/configs/ann_model_configs.py&#39;. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in &#39;/home/runner/.cache/pylint/pylint-crash-2026-11-23-10-08-14.txt&#39;.</pre></td>
+                <td><pre>physXAI/models/ann/configs/ann_model_configs.py: Fatal error while checking &#39;physXAI/models/ann/configs/ann_model_configs.py&#39;. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in &#39;/home/runner/.cache/pylint/pylint-crash-2026-11-24-08-52-02.txt&#39;.</pre></td>
             </tr>
             
         </table>
@@ -3000,7 +3010,7 @@
                 <td><code>astroid-error</code></td>
                 <td>F0002</td>
                 <td></td>
-                <td><pre>physXAI/preprocessing/splitting.py: Fatal error while checking &#39;physXAI/preprocessing/splitting.py&#39;. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in &#39;/home/runner/.cache/pylint/pylint-crash-2026-11-23-10-08-13.txt&#39;.</pre></td>
+                <td><pre>physXAI/preprocessing/splitting.py: Fatal error while checking &#39;physXAI/preprocessing/splitting.py&#39;. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in &#39;/home/runner/.cache/pylint/pylint-crash-2026-11-24-08-52-01.txt&#39;.</pre></td>
             </tr>
             
         </table>
@@ -3536,7 +3546,7 @@
                 <td><code>astroid-error</code></td>
                 <td>F0002</td>
                 <td></td>
-                <td><pre>physXAI/training/recursive.py: Fatal error while checking &#39;physXAI/training/recursive.py&#39;. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in &#39;/home/runner/.cache/pylint/pylint-crash-2026-11-23-10-08-17.txt&#39;.</pre></td>
+                <td><pre>physXAI/training/recursive.py: Fatal error while checking &#39;physXAI/training/recursive.py&#39;. Please open an issue in our bug tracker so we address this. There is a pre-filled template that you can use in &#39;/home/runner/.cache/pylint/pylint-crash-2026-11-24-08-52-04.txt&#39;.</pre></td>
             </tr>
             
         </table>
@@ -3671,7 +3681,7 @@
             
             <tr>
                 <td>refactor</td>
-                <td>94</td>
+                <td>95</td>
             </tr>
             
             <tr>
@@ -3811,7 +3821,7 @@
             
             <tr>
                 <td>cyclic-import</td>
-                <td>2</td>
+                <td>3</td>
             </tr>
             
         </table>
@@ -4016,7 +4026,7 @@
             
             <tr>
                 <td>physXAI.agentlib_mpc_plugin.example</td>
-                <td>4</td>
+                <td>5</td>
             </tr>
             
         </table>
@@ -4221,7 +4231,7 @@
             
             <tr>
                 <td>physXAI/agentlib_mpc_plugin/example.py</td>
-                <td>4</td>
+                <td>5</td>
             </tr>
             
         </table>
