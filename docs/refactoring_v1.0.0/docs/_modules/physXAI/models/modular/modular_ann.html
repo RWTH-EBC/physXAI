@@ -124,6 +124,8 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"physXAI"</span><span class="p">)</span>
 
 <span class="n">SOLVERS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"adam"</span><span class="p">,</span> <span class="s2">"ols"</span><span class="p">,</span> <span class="s2">"qp"</span><span class="p">)</span>
+<span class="c1">#: warm_start value keeping the data only terms of the Linear block at the least squares solution</span>
+<span class="n">FROZEN</span> <span class="o">=</span> <span class="s2">"frozen"</span>
 <span class="c1">#: Solvers computing the weights of a Linear block in closed form (no gradient descent)</span>
 <span class="n">CLOSED_FORM</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"ols"</span><span class="p">,</span> <span class="s2">"qp"</span><span class="p">)</span>
 
@@ -152,7 +154,11 @@
 <span class="sd">                    least squares solution of its data only terms (sign bounds of its monotonicities included), the</span>
 <span class="sd">                    trainable terms (e.g. a `px.MLP` for the remaining dynamics) start with weight 0. The model starts</span>
 <span class="sd">                    as the linear model and the network learns its residual, which makes the training independent of</span>
-<span class="sd">                    a bad initialization. No effect for other architectures.</span>
+<span class="sd">                    a bad initialization. No effect for other architectures. 'frozen': the weights and the bias of</span>
+<span class="sd">                    the data only terms stay at this least squares solution, only the trainable terms (and their</span>
+<span class="sd">                    weights) are fitted, a strict residual model on top of the (sign constrained) linear regression;</span>
+<span class="sd">                    requires such an architecture (normalized `Linear` with data only and trainable terms). Use it</span>
+<span class="sd">                    with `rescale_output=True`, so the residual network is fitted on a standardized target.</span>
 <span class="sd">    """</span>
 
     <span class="n">plot_title</span> <span class="o">=</span> <span class="s2">"Modular ANN"</span>
@@ -168,7 +174,7 @@
         <span class="n">early_stopping_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
         <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">shape</span><span class="p">:</span> <span class="n">ShapeConstraints</span> <span class="o">|</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">warm_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">warm_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">epochs</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">,</span> <span class="n">early_stopping_epochs</span><span class="p">,</span> <span class="n">random_seed</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -182,7 +188,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">rescale_output</span> <span class="o">=</span> <span class="n">rescale_output</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">=</span> <span class="n">solver</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span> <span class="n">ShapeConstraints</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">shape</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">warm_start</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">warm_start</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">warm_start</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">FROZEN</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"warm_start has to be True, False or '</span><span class="si">{</span><span class="n">FROZEN</span><span class="si">}</span><span class="s2">', got </span><span class="si">{</span><span class="n">warm_start</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">warm_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">warm_start</span> <span class="k">if</span> <span class="n">warm_start</span> <span class="o">==</span> <span class="n">FROZEN</span> <span class="k">else</span> <span class="nb">bool</span><span class="p">(</span><span class="n">warm_start</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ctx</span><span class="p">:</span> <span class="n">BuildContext</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_rescaling</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">solver</span> <span class="o">!=</span> <span class="s2">"qp"</span><span class="p">:</span>
@@ -195,6 +203,14 @@
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                     <span class="s2">"Shape constraints cannot be combined with recursive_training: the training on the "</span>
                     <span class="s2">"multi step error (gradient descent) would not keep them."</span>
+                <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">warm_start</span> <span class="o">==</span> <span class="n">FROZEN</span><span class="p">:</span>
+            <span class="n">arch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">architecture</span>
+            <span class="n">trainable</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">trainable</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">arch</span><span class="o">.</span><span class="n">inputs</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arch</span><span class="p">,</span> <span class="n">Linear</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">warm_start_applies</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="n">trainable</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"warm_start='</span><span class="si">{</span><span class="n">FROZEN</span><span class="si">}</span><span class="s2">' requires solver='adam' and a normalized Linear block as architecture with "</span>
+                    <span class="s2">"data only terms (kept at the least squares solution) and trainable terms (the residual)."</span>
                 <span class="p">)</span>
 
     <span class="nd">@property</span>
@@ -267,12 +283,29 @@
         <span class="n">dense</span><span class="o">.</span><span class="n">set_weights</span><span class="p">(</span>
             <span class="p">[</span><span class="n">kernel</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)]</span> <span class="o">+</span> <span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">bias</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)]</span> <span class="k">if</span> <span class="n">arch</span><span class="o">.</span><span class="n">bias</span> <span class="k">else</span> <span class="p">[])</span>
         <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">warm_start</span> <span class="o">==</span> <span class="n">FROZEN</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_freeze_data_terms</span><span class="p">(</span><span class="n">dense</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">bias</span><span class="p">,</span> <span class="n">signs</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="s2">"Warm start: least squares solution of </span><span class="si">%d</span><span class="s2"> data only term(s), </span><span class="si">%d</span><span class="s2"> trainable term(s) start at 0 (</span><span class="si">%.2f</span><span class="s2"> s)"</span><span class="p">,</span>
+            <span class="s2">"Warm start</span><span class="si">%s</span><span class="s2">: least squares solution of </span><span class="si">%d</span><span class="s2"> data only term(s), </span><span class="si">%d</span><span class="s2"> trainable term(s) start at 0 (</span><span class="si">%.2f</span><span class="s2"> s)"</span><span class="p">,</span>
+            <span class="s2">" (frozen)"</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">warm_start</span> <span class="o">==</span> <span class="n">FROZEN</span> <span class="k">else</span> <span class="s2">""</span><span class="p">,</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">arch</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
             <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">,</span>
         <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_freeze_data_terms</span><span class="p">(</span><span class="n">dense</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">kernel</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">bias</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">signs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">"""Frozen warm start: the weights of the data only terms and the bias keep their least squares values (the</span>
+<span class="sd">        optimizer applies the constraints after every update, also in a recursive fine-tuning); the constraint is</span>
+<span class="sd">        also the one of the layer, so it is saved with the model."""</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.keras_models.keras_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">FixedPartial</span>
+
+        <span class="n">mask</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">kernel</span><span class="p">))]</span>
+        <span class="n">dense</span><span class="o">.</span><span class="n">kernel_constraint</span> <span class="o">=</span> <span class="n">FixedPartial</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">kernel</span><span class="p">],</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">signs</span><span class="p">])</span>
+        <span class="n">dense</span><span class="o">.</span><span class="n">kernel</span><span class="o">.</span><span class="n">constraint</span> <span class="o">=</span> <span class="n">dense</span><span class="o">.</span><span class="n">kernel_constraint</span>
+        <span class="k">if</span> <span class="n">dense</span><span class="o">.</span><span class="n">use_bias</span><span class="p">:</span>
+            <span class="n">dense</span><span class="o">.</span><span class="n">bias_constraint</span> <span class="o">=</span> <span class="n">FixedPartial</span><span class="p">([</span><span class="kc">True</span><span class="p">],</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">bias</span><span class="p">)])</span>
+            <span class="n">dense</span><span class="o">.</span><span class="n">bias</span><span class="o">.</span><span class="n">constraint</span> <span class="o">=</span> <span class="n">dense</span><span class="o">.</span><span class="n">bias_constraint</span>
 
 <div class="viewcode-block" id="ModularANN.fit_model"><a class="viewcode-back" href="../../../../code/physXAI.models.modular.html#physXAI.models.modular.modular_ann.ModularANN.fit_model">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">td</span><span class="p">:</span> <span class="n">TrainingDataGeneric</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">==</span> <span class="s2">"adam"</span><span class="p">:</span>

@@ -419,9 +419,13 @@
 <div class="viewcode-block" id="RBF"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.RBF">[docs]</a><span class="nd">@register_expression</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">RBF</span><span class="p">(</span><span class="n">Block</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Radial basis function network with `units` gaussian neurons. Centers are initialized by</span>
-<span class="sd">    k-means on the (normalized) training data, if available. `random_state` is the seed of the k-means,</span>
-<span class="sd">    defaults to the global seed (`physXAI.set_seed`), else a new seed is drawn (stored in the config).</span>
+<span class="sd">    Radial basis function network with `units` gaussian neurons. Centers are set by k-means on the (normalized)</span>
+<span class="sd">    training data, the common width from the median distance of neighbouring centers (`overlap`, as `RBFModel`).</span>
+<span class="sd">    By default both stay fixed and only the output weights are trained (a linear model on fixed gaussian features,</span>
+<span class="sd">    as `RBFModel` and `LinANNModel`); `learnable_centers` / `learnable_gamma` train them too. Without training data</span>
+<span class="sd">    for the inputs (e.g. an RBF on the output of another block) the centers are drawn at random and always trained.</span>
+<span class="sd">    `random_state` is the seed of the k-means, defaults to the global seed (`physXAI.set_seed`), else a new seed is</span>
+<span class="sd">    drawn (stored in the config).</span>
 <span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
@@ -432,13 +436,28 @@
         <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">nominal_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">learnable_centers</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">learnable_gamma</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">overlap</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">normalize</span><span class="p">,</span> <span class="n">nominal_range</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">overlap</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"overlap has to be in (0, 1), got </span><span class="si">{</span><span class="n">overlap</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">units</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">resolve_seed</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">learnable_centers</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">learnable_centers</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">learnable_gamma</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">learnable_gamma</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overlap</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">overlap</span><span class="p">)</span>
 
 <div class="viewcode-block" id="RBF.params"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.RBF.params">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="s2">"units"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="s2">"random_state"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">}</span></div>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="o">**</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span>
+            <span class="s2">"units"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span>
+            <span class="s2">"random_state"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="s2">"learnable_centers"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">learnable_centers</span><span class="p">,</span>
+            <span class="s2">"learnable_gamma"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">learnable_gamma</span><span class="p">,</span>
+            <span class="s2">"overlap"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">overlap</span><span class="p">,</span>
+        <span class="p">}</span></div>
 
 <div class="viewcode-block" id="RBF.to_keras"><a class="viewcode-back" href="../../../code/physXAI.expr.html#physXAI.expr.blocks.RBF.to_keras">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_keras</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">physXAI.models.ann.keras_models.keras_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RBFLayer</span>
@@ -461,8 +480,14 @@
                 <span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
                 <span class="o">.</span><span class="n">cluster_centers_</span>
             <span class="p">)</span>
-            <span class="n">gamma</span> <span class="o">=</span> <span class="n">gamma_init</span><span class="p">(</span><span class="n">centers</span><span class="p">)</span> <span class="k">if</span> <span class="n">units</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mf">1.0</span>
-        <span class="n">layer</span> <span class="o">=</span> <span class="n">RBFLayer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="k">if</span> <span class="n">centers</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">centers</span><span class="p">),</span> <span class="n">gamma</span><span class="o">=</span><span class="n">gamma</span><span class="p">,</span> <span class="n">initial_centers</span><span class="o">=</span><span class="n">centers</span><span class="p">)</span>
+            <span class="n">gamma</span> <span class="o">=</span> <span class="n">gamma_init</span><span class="p">(</span><span class="n">centers</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">overlap</span><span class="p">)</span> <span class="k">if</span> <span class="n">units</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mf">1.0</span>
+        <span class="n">layer</span> <span class="o">=</span> <span class="n">RBFLayer</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="k">if</span> <span class="n">centers</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">centers</span><span class="p">),</span>
+            <span class="n">gamma</span><span class="o">=</span><span class="n">gamma</span><span class="p">,</span>
+            <span class="n">initial_centers</span><span class="o">=</span><span class="n">centers</span><span class="p">,</span>
+            <span class="n">learnable_centers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">learnable_centers</span> <span class="ow">or</span> <span class="n">centers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">learnable_gamma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">learnable_gamma</span> <span class="ow">or</span> <span class="n">centers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rescale</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">)(</span><span class="n">layer</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span></div></div>
 
 

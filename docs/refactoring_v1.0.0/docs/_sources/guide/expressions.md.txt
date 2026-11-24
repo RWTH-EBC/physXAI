@@ -47,7 +47,7 @@ feature are recomputed in every step.
 | `px.MLP(inputs, n_layers=1, n_neurons=32, activation='softplus')` | neural network |
 | `px.MonotoneMLP(inputs, monotonicities={...}, activation_split=None)` | constrained monotonic network (CMNN) |
 | `px.Polynomial(inputs, degree=2, interaction_degree=1)` | polynomial features |
-| `px.RBF(inputs, units=32, random_state=None)` | radial basis functions (extrapolate to 0, for residual models) |
+| `px.RBF(inputs, units=32, random_state=None, learnable_centers=False, learnable_gamma=False, overlap=0.5)` | radial basis functions (extrapolate to 0, for residual models); k-means centers and width fixed by default, only the output weights trained |
 | `px.Mean(inputs)` | mean of expressions |
 | `px.Normalize(x)` | normalization with the training data statistics |
 | `px.Param(init=None, trainable=True)` | (trainable) scalar parameter |
@@ -74,7 +74,11 @@ model = ModularANN(architecture, epochs=200)
 Warm start (`warm_start=True`, default): when the architecture is a normalized `Linear` block, the training starts
 at the least squares solution of its data only terms (with the sign bounds of `monotonicities`), the trainable terms
 (here the `px.MLP`) start with weight 0. The model starts as the linear model and the network learns its residual,
-so the training does not depend on a bad initialization of the weights.
+so the training does not depend on a bad initialization of the weights. The linear weights are trained further
+together with the network. `warm_start='frozen'` keeps the weights of the data only terms and the bias at the least
+squares solution, only the trainable terms are fitted: a strict residual model on top of the linear regression
+(use it with `rescale_output=True`). A `px.RBF` as residual goes to 0 away from the training data, the model falls
+back to the linear regression there.
 
 Physical parameters: `px.Param(init)` is a trainable scalar, `px.positive(value, name)` a positive one
 (`value · exp(p)`), `px.freeze(expr, values)` replaces the parameters by numbers. `px.Prediction()` (the model
