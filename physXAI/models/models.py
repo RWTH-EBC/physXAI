@@ -1,25 +1,59 @@
+"""
+Base classes of all physXAI models and the scikit-learn linear regression.
+
+A model object holds the settings of a model (its config) and runs the training pipeline: generate, compile,
+fit, evaluate, save. The trained (keras or scikit-learn) model is returned by `pipeline` and kept in
+`trained_model`. Models are registered by class name (`register_model`), so they can be created from their
+saved config (`AbstractModel.model_from_config`); AgentLib-MPC reads the class name from `{name}_model.json`.
+"""
+
+import logging
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import Type
+
 import joblib
 import numpy as np
 from joblib import dump
 from sklearn.linear_model import LinearRegression
-from physXAI.utils.logging import get_full_path, create_full_path, Logger
-from physXAI.preprocessing.training_data import TrainingData, TrainingDataMultiStep, TrainingDataGeneric
-from physXAI.evaluation.metrics import Metrics, MetricsMultiStep
-from physXAI.plotting.plotting import (plot_prediction_correlation, plot_metrics_table, subplots,
-                                              plot_predictions, plot_multi_rmse)
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+
+from physXAI.evaluation.metrics import Metrics
+from physXAI.io.run import input_path, keras_verbosity, output_path
+from physXAI.plotting.plotting import model_report, save_figure
+from physXAI.preprocessing.training_data import TrainingData, TrainingDataGeneric, TrainingDataMultiStep
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 import keras
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"
 
 
-MODEL_CLASS_REGISTRY: dict[str, Type['AbstractModel']] = dict()
+logger = logging.getLogger("physXAI")
+
+MODEL_CLASS_REGISTRY: dict[str, type["AbstractModel"]] = dict()
+
+#: Keys of a saved model config which are no arguments of the model (see `Run.save`)
+CONFIG_META_KEYS = ("__class_name__", "physXAI_version", "environment")
+
+
+def _reject_unknown_arguments(model, kwargs: dict) -> None:
+    """Unknown arguments are errors, so a misspelled setting does not silently fall back to its default."""
+    if kwargs:
+        raise TypeError(f"{model.__class__.__name__} got unknown arguments {sorted(kwargs)}.")
+
+
+def train_data_float64(td: TrainingDataGeneric):
+    """Training inputs and targets in float64 for closed form solvers (keras models train on float32)."""
+    if isinstance(td, TrainingData):
+        return td.X("train", np.float64), td.y("train", np.float64)
+    return np.asarray(td.X_train_single, dtype=np.float64), np.asarray(td.y_train_single, dtype=np.float64)
 
 
 class AbstractModel(ABC):
+    """
+    Base class of all models: the training pipeline (`pipeline`, `online_pipeline`), saving, loading and the
+    config (`get_config`, `from_config`, `model_from_config`).
+    """
 
     @abstractmethod
     def generate_model(self, **kwargs):
@@ -53,17 +87,36 @@ class AbstractModel(ABC):
     @staticmethod
     @abstractmethod
     def evaluate(model, td: TrainingDataGeneric):
+        """Predicts all splits of `td` with the trained model and stores predictions and metrics in `td`."""
         pass
 
-    @abstractmethod
-    def plot(self, td: TrainingDataGeneric):
+    #: Title of the plots of the model
+    plot_title: str = "Model"
+
+    def plot(self, td: TrainingDataGeneric, show: bool = False):
         """
-         Abstract method for generating and displaying plots related to model performance.
+        Plots the predictions, the errors (over the horizon), the training history and the metrics.
 
-         Args:
-             td (TrainingDataGeneric): The TrainingData object containing true values and predictions.
-         """
-        pass
+        Args:
+            td (TrainingDataGeneric): The evaluated training data.
+            show (bool): Whether to open the figure.
+
+        Returns:
+            plotly.graph_objects.Figure: The figure.
+        """
+        return model_report(td, self.plot_title, show=show)
+
+    @staticmethod
+    def save_plot(figure, save_path: str | None = None):
+        """
+        Saves the figure of `plot` as html file next to the model: `<save_path>.html`.
+        Nothing is saved without a path (use `Run.save` to save a model with its report).
+        """
+        if save_path is None:
+            return None
+        save_path = str(save_path)
+        stem = os.path.splitext(save_path)[0] if save_path.endswith((".keras", ".joblib")) else save_path
+        return save_figure(figure, output_path(stem + ".html"))
 
     @abstractmethod
     def save_model(self, model, save_path: str):
@@ -89,109 +142,144 @@ class AbstractModel(ABC):
         """
         pass
 
-    def pipeline(self, td: TrainingDataGeneric, save_path: str = None, plot: bool = True, save_model: bool = True):
+    def prepare(self):  # noqa: B027 - optional hook
+        """Hook called before the model is generated (e.g. to set random seeds)."""
+
+    def _check_training_data(self, td: TrainingDataGeneric):  # noqa: B027 - optional hook
+        """Hook checking that the training data fits the model, called before the model is generated."""
+
+    #: The trained model of the last `pipeline` or `online_pipeline` (used by `Run.save`)
+    trained_model = None
+
+    def pipeline(
+        self,
+        td: TrainingDataGeneric,
+        save_path: str = None,
+        plot: bool = True,
+        save_model: bool = True,
+        show_plot: bool = False,
+    ):
         """
-          Defines a standard pipeline for single-step models:
-          1. Generate model
-          2. Compile model (if applicable)
-          3. Fit model
-          4. Evaluate model
-          5. Plot results
-          6. Save model (if save_path is provided)
+        Trains and evaluates the model:
 
-          Args:
-              td (TrainingDataGeneric): The training data.
-              save_path (str, optional): Path to save the trained model. Defaults to None (Saving path from Logger).
-              plot (bool, optional): Whether to plot the results. Defaults to True.
-              save_model (bool, optional): Whether to save the trained model. Defaults to True.
+        1. Generate the model
+        2. Compile the model (if applicable)
+        3. Fit the model
+        4. Evaluate the model, the metrics are stored in `td`
+        5. Save the model and its report, if a `save_path` is given, and show the report if requested
 
-          Returns:
-              The trained model instance.
-          """
+        To save the model together with its configs and metrics, use `Run.save(name, preprocessing, model, td)`
+        after the pipeline instead of `save_path`.
 
+        Args:
+            td (TrainingDataGeneric): The training data.
+            save_path (str, optional): Path of the model file. Without a path nothing is saved.
+            plot (bool, optional): Whether to save the report as html next to the model. Defaults to True.
+            save_model (bool, optional): Whether to save the trained model (if `save_path` is given). Defaults to True.
+            show_plot (bool, optional): Whether to open the report. Defaults to False.
+
+        Returns:
+            The trained model instance (also available as `self.trained_model`).
+        """
+
+        self._check_training_data(td)
+        self.prepare()
         model = self.generate_model(td=td)
         self.compile_model(model)
         self.fit_model(model, td)
 
         self.evaluate(model, td)
-        if plot:
-            self.plot(td)
-        if save_model:
-            self.save_model(model, save_path=save_path)
-
+        self.trained_model = model
+        self._finish(model, td, save_path, plot, save_model, show_plot)
         return model
 
-    def online_pipeline(self, td: TrainingDataGeneric, load_path: str, save_path: str = None,
-                        plot: bool = True, save_model: bool = True):
+    def online_pipeline(
+        self,
+        td: TrainingDataGeneric,
+        load_path: str,
+        save_path: str = None,
+        plot: bool = True,
+        save_model: bool = True,
+        show_plot: bool = False,
+    ):
         """
-        Implements an "online" training pipeline: loads a pre-existing model,
-        further trains it on new data, evaluates, plots, and saves it back.
+        Loads a saved model, trains it further on new data, evaluates and (optionally) saves it.
 
         Args:
             td (TrainingDataGeneric): New training data.
-            load_path (str): Path to the pre-existing model.
-            save_path (str, optional): Path to save the trained model. Defaults to None (Saving path from Logger).
-            plot (bool, optional): Whether to plot the results. Defaults to True.
-            save_model (bool, optional): Whether to save the trained model. Defaults to True.
+            load_path (str): Path to the saved model.
+            save_path (str, optional): Path of the model file. Without a path nothing is saved.
+            plot (bool, optional): Whether to save the report as html next to the model. Defaults to True.
+            save_model (bool, optional): Whether to save the trained model (if `save_path` is given). Defaults to True.
+            show_plot (bool, optional): Whether to open the report. Defaults to False.
 
         Returns:
-            The updated and saved model.
+            The trained model.
         """
 
+        self._check_training_data(td)
+        self.prepare()
         model = self.load_model(load_path)
         self.compile_model(model)
 
         model = self.online_pipeline_internal(td, model)
-
-        if plot:
-            self.plot(td)
-        if save_model:
-            self.save_model(model, save_path=save_path)
-
+        self._finish(model, td, save_path, plot, save_model, show_plot)
         return model
 
     def online_pipeline_internal(self, td: TrainingDataGeneric, model):
         """
-        Implements an "online" training pipeline: trains a pre-existing model on new data
+        Trains a loaded model on new data and evaluates it.
 
         Args:
             td (TrainingDataGeneric): New training data.
             model: The model to train.
 
         Returns:
-            The updated and saved model.
+            The trained model.
         """
         self.fit_model(model, td)
         self.evaluate(model, td)
-
+        self.trained_model = model
         return model
+
+    def _finish(
+        self, model, td: TrainingDataGeneric, save_path: str | None, plot: bool, save_model: bool, show_plot: bool
+    ):
+        """Saves the model and its report next to it (with a `save_path`) and shows the report if requested."""
+        if show_plot or (plot and save_path is not None):
+            self.save_plot(self.plot(td, show=show_plot), save_path if plot else None)
+        if save_model and save_path is not None:
+            self.save_model(model, save_path=save_path)
 
     def get_config(self) -> dict:
         return {
-            '__class_name__': self.__class__.__name__,
+            "__class_name__": self.__class__.__name__,
         }
 
     @classmethod
-    @abstractmethod
-    def from_config(cls, config: dict) -> 'AbstractModel':
-        pass
+    def from_config(cls, config: dict) -> "AbstractModel":
+        """
+        Creates the model from its config (`get_config`). Meta keys of saved configs (`__class_name__`,
+        `physXAI_version`, `environment`) are ignored, unknown settings raise a `TypeError`.
+        """
+        return cls(**{k: v for k, v in config.items() if k not in CONFIG_META_KEYS})
 
     @staticmethod
-    def model_from_config(item_conf: dict) -> 'AbstractModel':
+    def model_from_config(item_conf: dict) -> "AbstractModel":
         """
         Factory function to create a model object from its configuration dictionary.
 
         Args:
             item_conf (dict): The configuration dictionary for a model.
-                              Must contain 'class_name' and other necessary parameters.
+                              Must contain '__class_name__' and other necessary parameters.
 
         Returns:
             AbstractModel: An instance of the appropriate model subclass.
 
         Raises:
-            KeyError: If 'class_name' is not in `item_conf` or if the class_name is not in `MODEL_CLASS_REGISTRY`.
+            KeyError: If '__class_name__' is not in `item_conf` or the class is not in `MODEL_CLASS_REGISTRY`.
         """
-        class_name = item_conf['__class_name__']
+        class_name = item_conf["__class_name__"]
         model_class = MODEL_CLASS_REGISTRY[class_name]
         m = model_class.from_config(item_conf)
         return m
@@ -203,7 +291,7 @@ def register_model(cls):  # pragma: no cover
     The class is registered using its __name__.
     """
     if cls.__name__ in MODEL_CLASS_REGISTRY:
-        Logger.print(f"Warning: Class '{cls.__name__}' is already registered. Overwriting.", 'warning')
+        logger.warning("Class '%s' is already registered. Overwriting.", cls.__name__)
     MODEL_CLASS_REGISTRY[cls.__name__] = cls
     return cls  # Decorators must return the class (or a replacement)
 
@@ -216,10 +304,10 @@ class SingleStepModel(AbstractModel, ABC):
     """
 
     def __init__(self, **kwargs):
-        pass
+        _reject_unknown_arguments(self, kwargs)
 
     @staticmethod
-    def evaluate(model, td: TrainingDataGeneric):
+    def evaluate(model, td: TrainingData):
         """
         Evaluates the trained model on training, validation (if available), and test sets.
         Predictions are stored in the TrainingData object, and metrics are calculated and stored.
@@ -230,114 +318,27 @@ class SingleStepModel(AbstractModel, ABC):
         """
         kwargs = {}
         if isinstance(model, keras.Model):
-            kwargs['verbose'] = Logger.verbosity()
+            kwargs["verbose"] = keras_verbosity()
 
-        y_pred_train = model.predict(td.X_train_single, **kwargs)
-        y_pred_test = model.predict(td.X_test_single, **kwargs)
-        if td.X_val_single is not None:
-            y_pred_val = model.predict(td.X_val_single, **kwargs)
-        else:
-            y_pred_val = None
-        td.add_predictions(y_pred_train, y_pred_val, y_pred_test)
+        # splits without data (e.g. test_size=0) have no predictions
+        predictions = {
+            split: model.predict(X, **kwargs) if X is not None else None
+            for split, X in (("train", td.X_train_single), ("val", td.X_val_single), ("test", td.X_test_single))
+        }
+        td.add_predictions(predictions["train"], predictions["val"], predictions["test"])
 
-        metrics = Metrics(td)
-        if isinstance(td, TrainingData):
-            td.add_metrics(metrics)
-        elif isinstance(td, TrainingDataMultiStep):
-            td.add_single_step_metrics(metrics)
-            SingleStepModel.evaluate_multi(model, td)
-        else:
-            raise NotImplementedError
+        td.add_metrics(Metrics(td))
+        # Error over the horizon of a recursive application, as in an MPC (if td.eval_horizon is set)
+        from physXAI.evaluation.rollout import evaluate_horizon
 
-    @staticmethod
-    def evaluate_multi(model, td: TrainingDataMultiStep):
-        if td.init_columns[0] != td.output[0]:
-            delta_prediction = True
-        else:
-            delta_prediction = False
-        y_pred_train, y_train = SingleStepModel._evaluate_multi_inner_loop(model, td.X_train_features, td.y_train,
-                                                                           td.columns, td.init_columns[0],
-                                                                           delta_prediction)
-        y_pred_test, y_test = SingleStepModel._evaluate_multi_inner_loop(model, td.X_test_features, td.y_test,
-                                                                         td.columns, td.init_columns[0],
-                                                                         delta_prediction)
-        if td.X_val_features is not None:
-            y_pred_val, y_val = SingleStepModel._evaluate_multi_inner_loop(model, td.X_val_features, td.y_val,
-                                                                           td.columns, td.init_columns[0],
-                                                                           delta_prediction)
-        else:
-            y_pred_val, y_val = None, None
-        td.add_predictions(y_pred_train, y_pred_val, y_pred_test)
-        td.y_train = y_train
-        td.y_val = y_val
-        td.y_test = y_test
+        evaluate_horizon(model, td)
 
-        metrics = MetricsMultiStep(td)
-        td.add_metrics(metrics)
-
-    @staticmethod
-    def _evaluate_multi_inner_loop(model, X: np.ndarray, y: np.ndarray, X_columns: list[str],
-                                   recursive_output_column: str, delta_prediction: bool = True) \
-            -> tuple[np.ndarray, np.ndarray]:
-        true_vals = np.ndarray(shape=(y.shape[0], y.shape[1], 1), dtype=np.float64)
-        preds = np.ndarray(shape=(X.shape[0], X.shape[1], 1), dtype=np.float64)
-
-        assert recursive_output_column in X_columns, (f'Error: Cannot find recursive_output_column '
-                                                      f'"{recursive_output_column}" in X_columns')
-        if isinstance(model, LinearRegression):
-            for b in range(X.shape[0]):
-                index = X_columns.index(recursive_output_column)
-                current_val = X[b, 0, index]
-                current_true_val = current_val
-                for t in range(X.shape[1]):
-                    pred = model.predict(X[b, t, :].reshape(1, -1)).item()
-                    if delta_prediction:
-                        current_val += pred
-                        current_true_val += y[b, t, 0]
-                        pred = current_val
-                    else:
-                        current_true_val = y[b, t, 0]
-                    preds[b, t, 0] = pred
-                    true_vals[b, t, 0] = current_true_val
-
-                    for l in range(0, 10):
-                        if l == 0:
-                            col = recursive_output_column
-                        else:
-                            col = recursive_output_column + f'_lag{l}'
-                        if col in X_columns:
-                            index = X_columns.index(col)
-                            if t + 1 + l < X.shape[1]:
-                                X[b, t + 1 + l, index] = pred
-        else:
-            index = X_columns.index(recursive_output_column)
-            current_val = X[:, 0, index].reshape(-1, 1)
-            current_true_val = current_val.copy()
-            for t in range(X.shape[1]):
-                pred = model.predict(X[:, t, :], verbose=Logger.verbosity())
-                if delta_prediction:
-                    current_val += pred
-                    current_true_val += y[:, t, 0].reshape(-1, 1)
-                    pred = current_val
-                else:
-                    current_true_val = y[:, t, 0].reshape(-1, 1)
-                preds[:, t, 0] = pred.reshape(-1)
-                true_vals[:, t, 0] = current_true_val.reshape(-1)
-
-                for l in range(0, 10):
-                    if l == 0:
-                        col = recursive_output_column
-                    else:
-                        col = recursive_output_column + f'_lag{l}'
-                    if col in X_columns:
-                        index = X_columns.index(col)
-                        if t + 1 + l < X.shape[1]:
-                            X[:, t + 1 + l, index] = pred.reshape(-1)
-        return preds, true_vals
-
-    @classmethod
-    def from_config(cls, config: dict) -> 'SingleStepModel':
-        return cls(**config)
+    def _check_training_data(self, td: TrainingDataGeneric):
+        if isinstance(td, TrainingDataMultiStep):
+            raise TypeError(
+                f"{self.__class__.__name__} is a single step model and needs PreprocessingSingleStep data. "
+                "To evaluate it over a horizon, use PreprocessingSingleStep(eval_horizon=...)."
+            )
 
 
 @register_model
@@ -345,6 +346,8 @@ class LinearRegressionModel(SingleStepModel):
     """
     A concrete implementation of SingleStepModel for scikit-learn's Linear Regression.
     """
+
+    plot_title = "Linear Regression"
 
     def generate_model(self, **kwargs):
         """
@@ -363,46 +366,19 @@ class LinearRegressionModel(SingleStepModel):
         """
 
         start_time = time.perf_counter()
-        model.fit(td.X_train_single, td.y_train_single)
+        model.fit(*train_data_float64(td))
         stop_time = time.perf_counter()
         td.add_training_time(stop_time - start_time)
+
+        if logger.isEnabledFor(logging.INFO):
+            weights = "\n".join(f"  {inp}: {model.coef_[0][i]:.6g}" for i, inp in enumerate(td.inputs))
+            logger.info("Linear regression bias: %.6g, weights:\n%s", model.intercept_[0], weights)
 
     def compile_model(self, model):
         """
         No compilation step is needed for scikit-learn models.
         """
         pass
-
-    def plot(self, td: TrainingDataGeneric):
-        """
-        Generates and displays various plots related to model performance.
-
-        Args:
-            td (TrainingDataGeneric): The TrainingData object
-        """
-
-        fig1 = plot_prediction_correlation(td)
-        fig2 = plot_predictions(td)
-        fig3 = plot_metrics_table(td)
-
-        if isinstance(td, TrainingData):
-            subplots(
-                "Linear Regression",
-                {"title": "Prediction Correlation", "type": "scatter", "figure": fig1},
-                {"title": "Predictions Sorted", "type": "scatter", "figure": fig2},
-                {"title": "Performance Metrics", "type": "table", "figure": fig3}
-            )
-        elif isinstance(td, TrainingDataMultiStep):
-            fig4 = plot_multi_rmse(td)
-            subplots(
-                "Linear Regression",
-                # {"title": "Prediction Correlation", "type": "scatter", "figure": fig1},
-                {"title": "Predictions Sorted", "type": "scatter", "figure": fig2},
-                {"title": "Prediction Step RMSE", "type": "scatter", "figure": fig4},
-                {"title": "Performance Metrics", "type": "table", "figure": fig3}
-            )
-        else:
-            raise NotImplementedError
 
     def save_model(self, model, save_path: str):
         """
@@ -413,14 +389,7 @@ class LinearRegressionModel(SingleStepModel):
             save_path (str): The path to save the model.
         """
 
-        if save_path is None:
-            save_path = Logger.get_model_savepath()
-
-        if not save_path.endswith('.joblib'):
-            save_path += '.joblib'
-
-        save_path = create_full_path(save_path)
-        dump(model, save_path)
+        dump(model, output_path(save_path, ".joblib"))
 
     def load_model(self, load_path: str):
         """
@@ -433,8 +402,7 @@ class LinearRegressionModel(SingleStepModel):
             LinearRegression: The loaded scikit-learn model.
         """
 
-        load_path = get_full_path(load_path)
-        model = joblib.load(load_path)
+        model = joblib.load(input_path(load_path))
         return model
 
 
@@ -446,7 +414,7 @@ class MultiStepModel(AbstractModel, ABC):
     """
 
     def __init__(self, **kwargs):
-        pass
+        _reject_unknown_arguments(self, kwargs)
 
     @abstractmethod
     def fit_model(self, model, td: TrainingDataMultiStep):
@@ -462,35 +430,17 @@ class MultiStepModel(AbstractModel, ABC):
     @staticmethod
     def evaluate(model, td: TrainingDataMultiStep):
         """
-        Evaluates the trained model on training, validation (if available), and test sets.
-        Predictions are stored in the TrainingDataMultiStep object, and metrics are calculated and stored.
+        Predicts all sequences (with warmup, closed loop for fed back features) and stores the
+        predicted trajectories, the metrics and the errors over the evaluation horizon in `td`.
 
         Args:
-            model: The trained model instance.
-            td (TrainingDataMultistep): The TrainingDataMultiStep object containing datasets and for storing results.
+            model: The trained model (sequence or step model).
+            td (TrainingDataMultiStep): The training data.
         """
+        from physXAI.models.ann.model_construction.rnn_models import evaluate_sequences
 
-        y_pred_train = model.predict(td.X_train, verbose=Logger.verbosity())
-        if td.X_val is not None:
-            y_pred_val = model.predict(td.X_val, verbose=Logger.verbosity())
-        else:
-            y_pred_val = None
-        y_pred_test = model.predict(td.X_test, verbose=Logger.verbosity())
-        td.add_predictions(y_pred_train, y_pred_val, y_pred_test)
+        evaluate_sequences(model, td)
 
-        metrics = MetricsMultiStep(td)
-        td.add_metrics(metrics)
-
-    @abstractmethod
-    def plot(self, td: TrainingDataMultiStep):
-        """
-         Abstract method for generating and displaying plots related to model performance.
-
-         Args:
-             td (TrainingDataMultiStep): The TrainingDataMultiStep object containing true values and predictions.
-         """
-        pass
-
-    @classmethod
-    def from_config(cls, config: dict) -> 'MultiStepModel':
-        return cls(**config)
+    def _check_training_data(self, td: TrainingDataGeneric):
+        if not isinstance(td, TrainingDataMultiStep):
+            raise TypeError(f"{self.__class__.__name__} is a multi step model and needs PreprocessingMultiStep data.")

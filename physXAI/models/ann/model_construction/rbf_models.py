@@ -1,11 +1,18 @@
+"""Construction of radial basis function networks (`RBFModel`): k-means centers and the width of the gaussians."""
+
+import logging
+
 import keras
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.neighbors import NearestNeighbors
-from physXAI.preprocessing.training_data import TrainingDataGeneric
+
 from physXAI.models.ann.configs.ann_model_configs import RBFConstruction_config
 from physXAI.models.ann.keras_models.keras_models import RBFLayer
-from physXAI.utils.logging import Logger
+from physXAI.models.ann.model_construction.ann_models import output_scale
+from physXAI.preprocessing.training_data import TrainingDataGeneric
+
+logger = logging.getLogger("physXAI")
 
 
 def gamma_init(centers, overlap=0.5) -> float:
@@ -25,24 +32,22 @@ def gamma_init(centers, overlap=0.5) -> float:
 
     if avg_dist_sq == 0:
         return 1.0  # Fallback
-    
+
     gamma = -np.log(overlap) / avg_dist_sq
-    Logger.print(f"Calculated Gamma: {gamma}", 'info')
+    logger.info("Calculated Gamma: %s", gamma)
     return gamma
-    
 
 
 def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
     """
     Constructs a Radial Basis Function (RBF) Network model using Keras.
 
-    The first RBF layer's centers can be initialized using K-Means clustering
-    on the training data. Subsequent RBF layers (if any) will have their
-    centers initialized by the RBFLayer's default mechanism or as specified.
+    The network has one RBF layer. Its centers are the k-means centers of the (normalized) training data and stay
+    fixed, as does the width of the gaussians; only the output layer is trained.
 
     Args:
         config (dict): A dictionary containing the configuration parameters for the RBF network.
-                       This is validated against `ClassicalANNConstruction_config`.
+                       This is validated against `RBFConstruction_config`.
         td (TrainingDataGeneric): An object containing the training data,
                            used for adapting normalization, K-Means clustering, and
                            determining input/output shapes.
@@ -55,56 +60,50 @@ def RBFModelConstruction(config: dict, td: TrainingDataGeneric):
     config = RBFConstruction_config.model_validate(config).model_dump()
 
     # Get config
-    n_neurons = config['n_neurons']
-    # If n_neurons is a single integer, replicate it for all layers
+    n_neurons = config["n_neurons"]
+    # one RBF layer: a list holds its number of neurons as only element
     if isinstance(n_neurons, list):
         n_neurons = n_neurons[0]
-    if config['n_features'] is not None:
-        n_features = config['n_features']
-    else:
-        n_features = td.X_train_single.shape[1]
+    n_features = td.X_train_single.shape[1]
 
     # Add input layer
     input_layer = keras.layers.Input(shape=(n_features,))
     # Add normalization layer
-    if config['normalize']:
-        normalization = keras.layers.Normalization()
-        normalization.adapt(td.X_train_single)
-        x = normalization(input_layer)
-        training_data = normalization(td.X_train_single).numpy()
-    else:
-        x = input_layer
-        training_data = td.X_train_single.numpy()
+    normalization = keras.layers.Normalization()
+    normalization.adapt(td.X_train_single)
+    x = normalization(input_layer)
+    training_data = normalization(td.X_train_single).numpy()
 
-    kmeans = KMeans(n_clusters=n_neurons, random_state=config['random_state'], n_init='auto')
+    kmeans = KMeans(n_clusters=n_neurons, random_state=config["random_state"], n_init="auto")
     kmeans.fit(training_data)
     initial_centers_kmeans = kmeans.cluster_centers_
-    
-    x = RBFLayer(n_neurons, 
-                 initial_centers=initial_centers_kmeans, 
-                 gamma=gamma_init(initial_centers_kmeans, overlap=0.5),
-                 learnable_centers=False,
-                 learnable_gamma=False)(x)
+
+    x = RBFLayer(
+        n_neurons,
+        initial_centers=initial_centers_kmeans,
+        gamma=gamma_init(initial_centers_kmeans, overlap=0.5),
+        learnable_centers=False,
+        learnable_gamma=False,
+    )(x)
 
     # Add output layer
-    x = keras.layers.Dense(1, activation='linear', use_bias=False)(x)
+    x = keras.layers.Dense(1, activation="linear", use_bias=False)(x)
 
     # Add rescaling
-    if config['rescale_output']:
-
+    if config["rescale_output"]:
         # Rescaling for output layer
         # Custom rescaling
         # --- Sigma (Scale) ---
-        if 'rescale_sigma' in config and config['rescale_sigma'] is not None:
-            rescale_sigma = config['rescale_sigma']
+        if "rescale_sigma" in config and config["rescale_sigma"] is not None:
+            rescale_sigma = config["rescale_sigma"]
         else:
             # Auto-calculate from data
-            rescale_sigma = float(np.std(td.y_train_single, ddof=1))
+            rescale_sigma = output_scale(td.y_train_single)
         # --- Mean (Offset) ---
         # CASE A: Residual Mode -> Config must provide 0.0
         # CASE B: Direct Prediction -> Config is None, calculate from data
-        if 'rescale_mean' in config and config['rescale_mean'] is not None:
-            rescale_mean = config['rescale_mean']
+        if "rescale_mean" in config and config["rescale_mean"] is not None:
+            rescale_mean = config["rescale_mean"]
         else:
             rescale_mean = float(np.mean(td.y_train_single))
 

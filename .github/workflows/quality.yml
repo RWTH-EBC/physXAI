@@ -1,0 +1,42 @@
+name: Code Quality
+
+# Strict checks next to the CI template, whose ruff and pylint jobs only report (exit zero) and whose
+# Sphinx build does not fail on warnings:
+# - ruff (lint and format) on the package, the tests and the examples. The version is pinned like in
+#   .pre-commit-config.yaml, since the formatting can change between ruff versions,
+# - the documentation with the same commands as the template, warnings are errors.
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Ruff
+      run: |
+        pip install "ruff==0.17.4"
+        ruff check physXAI tests examples
+        ruff format --check .
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: pip
+        cache-dependency-path: pyproject.toml
+    - name: Install physXAI and the Sphinx version of the template
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .[docs] "sphinx==6.2.1"
+    - name: Build documentation (warnings are errors)
+      run: |
+        sphinx-apidoc -M -o docs/source/code physXAI
+        sphinx-build -W --keep-going -b html docs/source docs_output

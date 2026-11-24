@@ -1,0 +1,7 @@
+# Normalize line endings, so the repository behaves identically on Windows and Linux
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.keras binary
+*.joblib binary
+*.npz binary
