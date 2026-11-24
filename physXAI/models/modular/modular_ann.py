@@ -38,6 +38,8 @@ import keras  # noqa: E402
 logger = logging.getLogger("physXAI")
 
 SOLVERS = ("adam", "ols", "qp")
+#: warm_start value keeping the data only terms of the Linear block at the least squares solution
+FROZEN = "frozen"
 #: Solvers computing the weights of a Linear block in closed form (no gradient descent)
 CLOSED_FORM = ("ols", "qp")
 
@@ -66,7 +68,11 @@ class ModularANN(ANNModel):
                     least squares solution of its data only terms (sign bounds of its monotonicities included), the
                     trainable terms (e.g. a `px.MLP` for the remaining dynamics) start with weight 0. The model starts
                     as the linear model and the network learns its residual, which makes the training independent of
-                    a bad initialization. No effect for other architectures.
+                    a bad initialization. No effect for other architectures. 'frozen': the weights and the bias of
+                    the data only terms stay at this least squares solution, only the trainable terms (and their
+                    weights) are fitted, a strict residual model on top of the (sign constrained) linear regression;
+                    requires such an architecture (normalized `Linear` with data only and trainable terms). Use it
+                    with `rescale_output=True`, so the residual network is fitted on a standardized target.
     """
 
     plot_title = "Modular ANN"
@@ -82,7 +88,7 @@ class ModularANN(ANNModel):
         early_stopping_epochs: int | None = 100,
         random_seed: int | None = None,
         shape: ShapeConstraints | dict | None = None,
-        warm_start: bool = True,
+        warm_start: bool | str = True,
         **kwargs,
     ):
         super().__init__(batch_size, epochs, learning_rate, early_stopping_epochs, random_seed, **kwargs)
@@ -96,7 +102,9 @@ class ModularANN(ANNModel):
         self.rescale_output = rescale_output
         self.solver = solver
         self.shape: ShapeConstraints | None = shape
-        self.warm_start = bool(warm_start)
+        if warm_start not in (True, False, FROZEN):
+            raise ValueError(f"warm_start has to be True, False or '{FROZEN}', got {warm_start!r}.")
+        self.warm_start: bool | str = warm_start if warm_start == FROZEN else bool(warm_start)
         self._ctx: BuildContext | None = None
         self._rescaling: tuple[float, float] | None = None
         if shape is not None and solver != "qp":
@@ -109,6 +117,14 @@ class ModularANN(ANNModel):
                 raise ValueError(
                     "Shape constraints cannot be combined with recursive_training: the training on the "
                     "multi step error (gradient descent) would not keep them."
+                )
+        if self.warm_start == FROZEN:
+            arch = self.architecture
+            trainable = [c.trainable for c in arch.inputs] if isinstance(arch, Linear) else []
+            if not (self.warm_start_applies and any(trainable)):
+                raise ValueError(
+                    f"warm_start='{FROZEN}' requires solver='adam' and a normalized Linear block as architecture with "
+                    "data only terms (kept at the least squares solution) and trainable terms (the residual)."
                 )
 
     @property
@@ -181,12 +197,29 @@ class ModularANN(ANNModel):
         dense.set_weights(
             [kernel.reshape(-1, 1).astype(np.float32)] + ([np.array([bias], dtype=np.float32)] if arch.bias else [])
         )
+        if self.warm_start == FROZEN:
+            self._freeze_data_terms(dense, data, kernel, bias, signs)
         logger.info(
-            "Warm start: least squares solution of %d data only term(s), %d trainable term(s) start at 0 (%.2f s)",
+            "Warm start%s: least squares solution of %d data only term(s), %d trainable term(s) start at 0 (%.2f s)",
+            " (frozen)" if self.warm_start == FROZEN else "",
             len(data),
             len(arch.inputs) - len(data),
             time.perf_counter() - start,
         )
+
+    @staticmethod
+    def _freeze_data_terms(dense, data: list[int], kernel: np.ndarray, bias: float, signs: list[int]):
+        """Frozen warm start: the weights of the data only terms and the bias keep their least squares values (the
+        optimizer applies the constraints after every update, also in a recursive fine-tuning); the constraint is
+        also the one of the layer, so it is saved with the model."""
+        from physXAI.models.ann.keras_models.keras_models import FixedPartial
+
+        mask = [i in data for i in range(len(kernel))]
+        dense.kernel_constraint = FixedPartial(mask, [float(k) for k in kernel], [int(s) for s in signs])
+        dense.kernel.constraint = dense.kernel_constraint
+        if dense.use_bias:
+            dense.bias_constraint = FixedPartial([True], [float(bias)])
+            dense.bias.constraint = dense.bias_constraint
 
     def fit_model(self, model, td: TrainingDataGeneric):
         if self.solver == "adam":

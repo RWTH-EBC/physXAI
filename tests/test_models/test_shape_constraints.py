@@ -12,6 +12,7 @@ import tensorflow as tf
 from scipy.optimize import nnls
 
 from physXAI import expr as px
+from physXAI.expr import from_config, to_config
 from physXAI.io import Run
 from physXAI.models import AbstractModel, ModularANN, ShapeConstraints
 from physXAI.models.ann.pinn.physics import PhysicsResidual
@@ -353,3 +354,78 @@ def test_warm_start_applies_only_to_normalized_linear_blocks():
     assert not _hybrid(warm_start=False).warm_start_applies
     config = json.loads(json.dumps(_hybrid(warm_start=False).get_config()))
     assert AbstractModel.model_from_config(config).warm_start is False
+
+
+def _frozen(**kwargs):
+    """Residual model: linear regression on data terms (frozen at least squares) plus an RBF network."""
+    return ModularANN(
+        px.Linear([v.u, v.u * v.T_amb, v.T_amb, px.RBF([v.u, v.T], units=8)], normalize=True),
+        rescale_output=True,
+        warm_start="frozen",
+        epochs=3,
+        early_stopping_epochs=None,
+        **kwargs,
+    )
+
+
+def test_frozen_warm_start_keeps_the_least_squares_weights(csv):
+    model = _frozen()
+    td = PreprocessingSingleStep(output="P", random_state=0).pipeline(csv, model=model)
+    keras_model = model.generate_model(td=td)
+    model.compile_model(keras_model)
+    model._initialize_least_squares(keras_model, td)
+    dense = model._ctx.layers[id(model.architecture)]
+    kernel0, bias0 = (w.copy() for w in dense.get_weights())
+    assert kernel0[3, 0] == 0  # the RBF starts at 0
+    model.fit_model(keras_model, td)  # starts again at the (deterministic) least squares solution, then trains
+    kernel, bias = dense.get_weights()
+    np.testing.assert_allclose(kernel[:3], kernel0[:3], rtol=1e-6)
+    np.testing.assert_allclose(bias, bias0, rtol=1e-6)
+    assert kernel[3, 0] != 0  # only the residual network was trained
+
+
+def test_rbf_keeps_its_centers_and_width_by_default(csv):
+    from physXAI.models.ann.keras_models.keras_models import RBFLayer
+
+    for learnable, trained in ((False, 0), (True, 2)):
+        model = ModularANN(
+            px.Linear(
+                [v.u, px.RBF([v.u, v.T], units=8, learnable_centers=learnable, learnable_gamma=learnable)],
+                normalize=True,
+            ),
+            epochs=1,
+        )
+        td = PreprocessingSingleStep(output="P", random_state=0).pipeline(csv, model=model)
+        keras_model = model.generate_model(td=td)
+        rbf = next(layer for layer in keras_model.layers if isinstance(layer, RBFLayer))
+        assert len(rbf.trainable_weights) == trained
+    config = json.loads(json.dumps(to_config(px.RBF([v.u], overlap=0.3))))
+    assert from_config(config).overlap == 0.3 and from_config(config).learnable_centers is False
+
+
+def test_frozen_warm_start_is_saved_with_the_model(csv, tmp_path):
+    from physXAI.models.ann.keras_models.keras_models import FixedPartial
+
+    model = _frozen()
+    td = PreprocessingSingleStep(output="P", random_state=0).pipeline(csv, model=model)
+    model.pipeline(td, plot=False, save_path=str(tmp_path / "m"))
+    loaded = keras.models.load_model(str(tmp_path / "m.keras"))
+    constraints = [layer.kernel_constraint for layer in loaded.layers if isinstance(layer, keras.layers.Dense)]
+    frozen = [c for c in constraints if isinstance(c, FixedPartial)]
+    assert len(frozen) == 1 and frozen[0].mask == [True, True, True, False]
+    np.testing.assert_allclose(
+        loaded.predict(td.X_test, verbose=0), model.trained_model.predict(td.X_test, verbose=0), rtol=1e-5
+    )
+    config = json.loads(json.dumps(model.get_config()))
+    assert AbstractModel.model_from_config(config).warm_start == "frozen"
+
+
+def test_frozen_warm_start_needs_data_and_trainable_terms():
+    with pytest.raises(ValueError, match="frozen"):
+        ModularANN(px.Linear([v.u, v.T], normalize=True), warm_start="frozen")  # nothing to train
+    with pytest.raises(ValueError, match="frozen"):
+        ModularANN(px.Linear([px.MLP([v.u])], normalize=True), warm_start="frozen")  # nothing to freeze
+    with pytest.raises(ValueError, match="frozen"):
+        ModularANN(px.Linear([v.u, px.MLP([v.u])]), warm_start="frozen")  # not normalized
+    with pytest.raises(ValueError, match="warm_start"):
+        ModularANN(px.MLP([v.u]), warm_start="yes")

@@ -17,6 +17,14 @@ recurrent models (branch `143-feature-multistep-model-support`), which is not re
 loads single step models only. The export is verified against that branch, but not in the CI of physXAI.
 
 ### Added
+- `ModularANN(warm_start='frozen')`: strict residual model on a normalized `Linear` block. The weights of the data
+  only terms and the bias stay at the (sign constrained) least squares solution of the warm start, only the
+  trainable terms (e.g. a `px.RBF` or `px.MLP` on the residual) are fitted. Kept by a constraint
+  (`custom_constraint>FixedPartial`) that is saved with the model; the keras graph and the export are unchanged.
+- `px.RBF(learnable_centers=False, learnable_gamma=False, overlap=0.5)`: the k-means centers and the common width
+  stay fixed by default, only the output weights are trained, as in `RBFModel` and `LinANNModel` (before, the block
+  trained centers and widths too: units x inputs more parameters, prone to overfitting on small data sets). The
+  former behaviour with `learnable_centers=True, learnable_gamma=True`.
 - Blocked k-fold cross validation of the number of epochs (`physXAI.training.CrossValidation`,
   `cross_validate`, `fit_cross_validated`): `folds` trainings, each validated on another contiguous group of the
   blocks outside the test data (`BlockSplit(folds=k, fold=j)`), E* from the mean validation curve, then the final
