@@ -389,8 +389,10 @@ def test_rbf_keeps_its_centers_and_width_by_default(csv):
 
     for learnable, trained in ((False, 0), (True, 2)):
         model = ModularANN(
-            px.Linear([v.u, px.RBF([v.u, v.T], units=8, learnable_centers=learnable, learnable_gamma=learnable)],
-                      normalize=True),
+            px.Linear(
+                [v.u, px.RBF([v.u, v.T], units=8, learnable_centers=learnable, learnable_gamma=learnable)],
+                normalize=True,
+            ),
             epochs=1,
         )
         td = PreprocessingSingleStep(output="P", random_state=0).pipeline(csv, model=model)
